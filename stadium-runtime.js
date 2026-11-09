@@ -42,4 +42,4 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/
  function render(V,w,h){setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
  window.P11Stadium={get ready(){return ready;},render,project};
  addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
-})().catch(e=>console.error('PITCH 11 3D runtime failed; original renderer remains available.',e));
+})();
