@@ -29,7 +29,7 @@ const GOAL_SIZES=[{h:33,z:22,d:18},{h:36.6,z:24.4,d:22},{h:40.3,z:26.8,d:24}];  
 const PEN_DEPTH=165,PEN_WIDTH=403,SIX_DEPTH=55,SIX_WIDTH=183,SPOT=110,ARC_R=91.5;    // FIFA fixed markings (16.5m, 5.5m, 11m spot, circle r)
 let PREFS={pitch:1,goal:1,ball:1,player:1};
 let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,WW=PW+120,WH=PH+120;
-let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BALL_SCALE=1,PLAYER_SCALE=1;
+let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
 const GRAV=700,KG=0.9,KA=0.12,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // gravity, ground drag, air drag
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
 const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
@@ -1264,7 +1264,7 @@ function drawPlayerOld(p,a){
 function drawBallShadow(a){
   const b=ball,x=b.px+(b.x-b.px)*a,y=b.py+(b.y-b.py)*a,z=b.pz+(b.z-b.pz)*a,s=1+z/90;
   ctx.fillStyle='rgba(0,0,0,'+(0.32/(1+z/60))+')';
-  ctx.beginPath();ctx.ellipse(x+1+z*0.12,y+1.5+z*0.08,BR*1.1*s,BR*0.8*s,0,0,TAU);ctx.fill();
+  ctx.beginPath();ctx.ellipse(x+1+z*0.12,y+1.5+z*0.08,BVR*1.1*s,BVR*0.8*s,0,0,TAU);ctx.fill();
 }
 function drawBall(a){
   const b=ball,x=b.px+(b.x-b.px)*a,y=b.py+(b.y-b.py)*a-(b.pz+(b.z-b.pz)*a)*0.55,sq=b.sq>0?b.sq/0.1:0,sp=Math.hypot(b.vx,b.vy);
@@ -1753,7 +1753,7 @@ function applyConfig(){                                   // recompute all pitch
   const s=PITCH_SIZES[PREFS.pitch],g=GOAL_SIZES[PREFS.goal];
   PW=s[0];PH=s[1];PX0=60;PY0=60;PX1=PX0+PW;PY1=PY0+PH;CX=PX0+PW/2;CY=PY0+PH/2;WW=PW+120;WH=PH+120;
   GOALH=g.h;GOALD=g.d;GOALZ=g.z;
-  BALL_SCALE=[0.8,1,1.3][PREFS.ball];BR=2.6*BALL_SCALE;       // real-life proportions: 10 units = 1 m, 22 cm ball next to a 0.5 m wide player
+  BALL_SCALE=[0.8,1,1.3][PREFS.ball];BR=2.6*BALL_SCALE;BVR=BR*0.423; // physics radius stays BR; visual radius is ~22 cm at default size (10 units = 1 m)
   PLAYER_SCALE=[0.66,0.8,0.95][PREFS.player];
   calcCams();rebuildLines();rebuildPLN();
 }
@@ -1779,9 +1779,9 @@ function rebuildPLN(){
 }
 function sortOrd(){for(let i=1;i<22;i++){const v=ORD[i];let j=i-1;while(j>=0&&ORD[j].y>v.y){ORD[j+1]=ORD[j];j--;}ORD[j+1]=v;}}
 const bpos=a=>{const b=ball;return[b.px+(b.x-b.px)*a,b.py+(b.y-b.py)*a,b.pz+(b.z-b.pz)*a];};
-function drawBallShadow3(a){const q=bpos(a);pj(q[0],q[1],0);const r=BR*V.s*(1+q[2]/90);ctx.fillStyle='rgba(0,0,0,'+(0.4/(1+q[2]/50))+')';ctx.beginPath();ctx.ellipse(V.sx,V.sy,r*1.4,r*.55,0,0,TAU);ctx.fill();}
+function drawBallShadow3(a){const q=bpos(a);pj(q[0],q[1],0);const r=BVR*V.s*(1+q[2]/90);ctx.fillStyle='rgba(0,0,0,'+(0.4/(1+q[2]/50))+')';ctx.beginPath();ctx.ellipse(V.sx,V.sy,r*1.4,r*.55,0,0,TAU);ctx.fill();}
 function drawBall3(a){
-  const q=bpos(a);pj(q[0],q[1],q[2]+BR);const r=Math.max(2.2,BR*V.s*1.35),sq=ball.sq>0?ball.sq/0.1:0;
+  const q=bpos(a);pj(q[0],q[1],q[2]+BVR);const r=Math.max(.8,BVR*V.s*1.35),sq=ball.sq>0?ball.sq/0.1:0;
   ctx.fillStyle='#fff';ctx.strokeStyle='#222';ctx.lineWidth=Math.max(.7,r*.12);ctx.beginPath();ctx.ellipse(V.sx,V.sy+r*.2*sq,r*(1+.3*sq),r*(1-.25*sq),0,0,TAU);ctx.fill();ctx.stroke();
   ballPat(V.sx,V.sy+r*.2*sq,r,r,ball.rot);
 }
@@ -2819,9 +2819,9 @@ drawPitch=function(){
 };
 const _dball=drawBall;
 drawBall=function(a){
-  const b=ball,x=b.px+(b.x-b.px)*a,y=b.py+(b.y-b.py)*a-(b.pz+(b.z-b.pz)*a)*0.55,sq=b.sq>0?b.sq/0.1:0,sp=Math.hypot(b.vx,b.vy),hs=1+(b.pz+(b.z-b.pz)*a)/150,rx=BR*hs*(1+0.3*sq),ry=BR*hs*(1-0.25*sq);
-  for(let i=0;i<BT.length;i++){const q=BT[i],f=(i+1)/BT.length;ctx.fillStyle='rgba(255,255,255,'+(.2*f*Math.min(1,q.sp/500))+')';ctx.beginPath();ctx.arc(q.x,q.y,BR*(.35+.55*f),0,TAU);ctx.fill();}
-  if(sp>260&&!b.owner){const n=Math.min(1,(sp-260)/340);ctx.strokeStyle='rgba(255,255,255,'+(.12+.3*n)+')';ctx.lineWidth=BR*1.3;ctx.lineCap='round';
+  const b=ball,x=b.px+(b.x-b.px)*a,y=b.py+(b.y-b.py)*a-(b.pz+(b.z-b.pz)*a)*0.55,sq=b.sq>0?b.sq/0.1:0,sp=Math.hypot(b.vx,b.vy),hs=1+(b.pz+(b.z-b.pz)*a)/150,rx=BVR*hs*(1+0.3*sq),ry=BVR*hs*(1-0.25*sq);
+  for(let i=0;i<BT.length;i++){const q=BT[i],f=(i+1)/BT.length;ctx.fillStyle='rgba(255,255,255,'+(.2*f*Math.min(1,q.sp/500))+')';ctx.beginPath();ctx.arc(q.x,q.y,BVR*(.35+.55*f),0,TAU);ctx.fill();}
+  if(sp>260&&!b.owner){const n=Math.min(1,(sp-260)/340);ctx.strokeStyle='rgba(255,255,255,'+(.12+.3*n)+')';ctx.lineWidth=BVR*1.3;ctx.lineCap='round';
     ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-b.vx*0.014,y-b.vy*0.014);ctx.stroke();ctx.lineCap='butt';}
   const g=ctx.createRadialGradient(x-rx*.35,y-ry*.4,.3,x,y,rx*1.1);g.addColorStop(0,'#fff');g.addColorStop(.7,'#e9edf0');g.addColorStop(1,'#aab2b8');
   ctx.fillStyle=g;ctx.strokeStyle='#1c1c1c';ctx.lineWidth=.6;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,TAU);ctx.fill();ctx.stroke();
@@ -2847,7 +2847,7 @@ function jockey(p,o){                                       // stand goal-side o
 }
 const _db3=drawBall3;
 drawBall3=function(a){
-  for(let i=0;i<BT.length;i++){const q=BT[i],f=(i+1)/BT.length;pj(q.wx,q.wy,q.wz+BR);ctx.fillStyle='rgba(255,255,255,'+(.22*f*Math.min(1,q.sp/500))+')';ctx.beginPath();ctx.arc(V.sx,V.sy,Math.max(.8,BR*V.s*(.35+.55*f)),0,TAU);ctx.fill();}
+  for(let i=0;i<BT.length;i++){const q=BT[i],f=(i+1)/BT.length;pj(q.wx,q.wy,q.wz+BVR);ctx.fillStyle='rgba(255,255,255,'+(.22*f*Math.min(1,q.sp/500))+')';ctx.beginPath();ctx.arc(V.sx,V.sy,Math.max(.35,BVR*V.s*(.35+.55*f)),0,TAU);ctx.fill();}
   _db3(a);
 };
 const _camSet=camSet;
@@ -4441,7 +4441,7 @@ drawBallShadow=function(a){
 const _ballPerspective2D=drawBall;
 drawBall=function(a){
   const z=ball.pz+(ball.z-ball.pz)*a,y=ball.py+(ball.y-ball.py)*a;
-  const x=ball.px+(ball.x-ball.px)*a,s=ballPerspective2D(y,z);
+  const x=ball.px+(ball.x-ball.px)*a,s=ballPerspective2D(y,z)*(BVR/BR);
   ctx.save();ctx.translate(x,y-z*0.55);ctx.scale(s,s);ctx.translate(-x,-(y-z*0.55));
   _ballPerspective2D(a);ctx.restore();
 };
