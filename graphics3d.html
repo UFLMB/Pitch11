@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#07110c">
-<title>PITCH 11 — Stadium Graphics 2.4</title>
+<title>PITCH 11 — Stadium Graphics 2.6</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}#stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 .hud{position:fixed;z-index:3;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(12px,2.2vw,28px);pointer-events:none;gap:12px}
 .brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000}.brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}.brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
 .controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end}
-button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 11px inherit;letter-spacing:.08em;cursor:pointer;backdrop-filter:blur(12px)}
+button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 11px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer;backdrop-filter:blur(12px)}
 button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #status{position:fixed;z-index:3;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.08em;white-space:nowrap;backdrop-filter:blur(12px)}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:5;color:#d9f3d5;font-size:12px;letter-spacing:.16em}
@@ -23,9 +23,9 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 @media(max-width:600px){#drone-hud{left:10px;bottom:12px;gap:7px}.drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}.drone-pad button,.drone-alt button{width:38px;height:38px}#drone-help{right:9px;bottom:12px;max-width:145px;font-size:9px}.controls{max-width:70vw}}
 @media(max-width:600px){.hud{align-items:flex-start}.controls{max-width:58vw}button{padding:9px 10px;font-size:9px}#status{bottom:10px;font-size:9px}}
 </style></head><body>
-<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.5 · MATCHDAY ENVIRONMENT</span></div>
+<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.6 · STADIUM GEOMETRY FIX</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button data-view="drone">DRONE CAM · DEV</button><button id="back">BACK TO GAME</button></div></div>
-<div id="status">MATCHDAY ENVIRONMENT 2.5 · CROWD / LED / STADIUM DETAIL</div>
+<div id="status">MATCHDAY ENVIRONMENT 2.6 · STADIUM ALIGNMENT</div>
 <div id="drone-hud"><div class="drone-pad"><button data-move="forward" aria-label="Move forward">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="back" aria-label="Move backward">▼</button><button data-move="right" aria-label="Move right">▶</button></div><div class="drone-alt"><button data-move="up" aria-label="Rise">＋</button><button data-move="down" aria-label="Descend">−</button></div></div><div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: use directional controls</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 <script>
@@ -69,9 +69,9 @@ const spotMat=mat(0xf2f4e9,.8);function spot(x,z,r=.13){const m=new THREE.Mesh(n
 for(const side of [-1,1]){const gx=side*52.5;rect(side<0?-52.5:36,-20.16,16.5,40.32);rect(side<0?-52.5:47,-9.16,5.5,18.32);
  const arc=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,64,Math.PI),lineMat);arc.rotation.x=Math.PI/2;arc.rotation.z=side<0?Math.PI/2:-Math.PI/2;arc.position.set(side*41,0,0);scene.add(arc);
  const goal=new THREE.Group();scene.add(goal);const postMat=mat(0xf7f7ef,.36,.12),postR=.12,goalW=7.32,goalH=2.44,depth=2.1;
- for(const z of [-goalW/2,goalW/2]){const p=new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,goalH,12),postMat);p.position.set(gx+side*.1,goalH/2,z);p.castShadow=true;goal.add(p);}
- const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx+side*.1,goalH,0);bar.castShadow=true;goal.add(bar);
- for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx-side*depth,goalH/2,z);goal.add(back);line(gx+side*.1,z,gx-side*depth,z,.045,goalH);}
+ for(const z of [-goalW/2,goalW/2]){const p=new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,goalH,12),postMat);p.position.set(gx,goalH/2,z);p.castShadow=true;goal.add(p);}
+ const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx,goalH,0);bar.castShadow=true;goal.add(bar);
+ for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx+side*depth,goalH/2,z);goal.add(back);line(gx,z,gx+side*depth,z,.045,goalH);}
  // Goal net is built separately as fine cord geometry below; no oversized wireframe box.
 }
 const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,opacity:.22,roughness:.12,metalness:.15,side:THREE.DoubleSide});
@@ -89,8 +89,8 @@ function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
  for(let i=0;i<seats;i++){
   const along=(i-(seats-1)/2)*spacing,p=axis==='long'?[along,y,rowZ]:[rowX,y,along];
   const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();seatBaseInstances.push(dummy.matrix.clone());
-  const back=new THREE.Object3D();back.position.set(p[0],p[1]+.32,p[2]);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
-  const person=new THREE.Object3D();person.position.set(p[0],p[1]+.87,p[2]+side*.30);person.rotation.y=rotation;person.scale.set(.9,.88,.9);person.updateMatrix();
+  const back=new THREE.Object3D();back.position.set(p[0]-Math.sin(rotation)*.30,p[1]+.32,p[2]-Math.cos(rotation)*.30);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
+  const person=new THREE.Object3D();person.position.set(p[0]-Math.sin(rotation)*.06,p[1]+.87,p[2]-Math.cos(rotation)*.06);person.rotation.y=rotation;person.scale.set(.9,.88,.9);person.updateMatrix();
   crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length,skin:(i*7+deckIndex*3+Math.floor(offset))%4,hair:(i*11+deckIndex*5+Math.floor(offset*2))%4,cheer:(i*17+deckIndex*11)%23===0,phase:(i*1.71+deckIndex*.43)%Math.PI*2});
  }
 }
@@ -263,11 +263,19 @@ for(const side of [-1,1]){for(const along of [-32,-16,0,16,32])for(let step=0;st
  for(const along of [-24,-8,8,24])for(let step=0;step<12;step++){const x=side*(40+step*1.05),y=.95+step*.34;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.08,.045,.42),stairGlow);lamp.position.set(x,y,along);scene.add(lamp);}}
 /* Fine goal net cords: a repeated grid instead of a single wireframe box. */
 const netThread=new THREE.LineBasicMaterial({color:0xe8eee9,transparent:true,opacity:.3});
-function addNetGrid(gx,side){const pts=[],backX=gx-side*2.08,frontX=gx+side*.12;
- for(let i=0;i<=24;i++){const z=-3.66+i*7.32/24;pts.push(new THREE.Vector3(backX,0,z),new THREE.Vector3(backX,2.44,z));}
- for(let j=0;j<=10;j++){const y=j*2.44/10;pts.push(new THREE.Vector3(backX,y,-3.66),new THREE.Vector3(backX,y,3.66));}
- for(const z of [-3.66,3.66])for(let i=0;i<=10;i++){const x=backX+(frontX-backX)*i/10;pts.push(new THREE.Vector3(x,0,z),new THREE.Vector3(x,2.44,z));}
- const geo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.LineSegments(geo,netThread));}
+function addNetGrid(gx,side){
+ const pts=[],frontX=gx+side*.14,backX=gx+side*2.08,zMin=-3.66,zMax=3.66,goalH=2.44;
+ const segment=(a,b)=>{pts.push(new THREE.Vector3(...a),new THREE.Vector3(...b));};
+ for(let i=0;i<=24;i++){const z=zMin+(zMax-zMin)*i/24;segment([backX,0,z],[backX,goalH,z]);}
+ for(let j=0;j<=10;j++){const y=goalH*j/10;segment([backX,y,zMin],[backX,y,zMax]);}
+ for(const z of [zMin,zMax]){
+  for(let i=0;i<=10;i++){const x=frontX+(backX-frontX)*i/10;segment([x,0,z],[x,goalH,z]);}
+  for(let j=0;j<=10;j++){const y=goalH*j/10;segment([frontX,y,z],[backX,y,z]);}
+ }
+ for(let i=0;i<=12;i++){const z=zMin+(zMax-zMin)*i/12;segment([frontX,goalH,z],[backX,goalH,z]);}
+ for(let j=0;j<=8;j++){const x=frontX+(backX-frontX)*j/8;segment([x,goalH,zMin],[x,goalH,zMax]);}
+ const geo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.LineSegments(geo,netThread));
+}
 for(const side of [-1,1])addNetGrid(side*52.5,side);
 // Corner flags, with slender metal poles and cloth triangles.
 const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55),flags=[];
