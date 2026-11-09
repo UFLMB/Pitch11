@@ -30,7 +30,7 @@ const PEN_DEPTH=165,PEN_WIDTH=403,SIX_DEPTH=55,SIX_WIDTH=183,SPOT=110,ARC_R=91.5
 let PREFS={pitch:1,goal:1,ball:1,player:1};
 let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,WW=PW+120,WH=PH+120;
 let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
-const BALL_GRAV=98.1,KG=0.12,KA=0.08,ROLL_DECEL=24,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // 1 unit = 10 cm; rolling resistance is 2.4 m/s²
+const BALL_GRAV=98.1,KG=0.12,KA=0.08,ROLL_DECEL=42,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // 1 unit = 10 cm; rolling resistance is 2.4 m/s²
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
 const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
 // 4-3-3: [depth 0..1 from own goal, width 0..1]; index 0 = GK
@@ -222,10 +222,11 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 const KEYACT={KeyL:0,KeyK:1,KeyJ:2,ShiftLeft:3,ShiftRight:3,Space:3};   // key -> diamond slot (TL,TR,BL,BR): same context logic as touch
 addEventListener('keydown',e=>{
   if(keys[e.code])return;keys[e.code]=true;if(S.mode==='replay'){RP.skip=1;return;}
-  if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter')e.preventDefault();
+  if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter'||e.code==='KeyU')e.preventDefault();
   if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){if((e.code==='Enter'||e.code==='Space')&&UI.def)UI.def();else if(e.code==='Escape'&&S.mode==='menu')back();return;}
   if(e.code==='KeyP'){openSubs(S.mode);return;}
   if(e.code==='KeyC'){cycleCam();return;}
+  if(e.code==='KeyU'){I.skill=true;I.skd=8;return;}
   if(e.code in KEYACT)press(KEYACT[e.code],e.code);
   else if(e.code.startsWith('Arrow')){for(const q of GS.s)if(q.on&&typeof q.pid==='string')kswipe(q.pid);}   // tap an arrow while holding an action key = swipe that way
 });
@@ -3054,7 +3055,7 @@ update=function(){
 /* ===================== 21. STAGE 15: CUSTOMISE hub - match rules, gameplay feel, looks & weather, kit editor ===================== */
 const DX={len:1,win:0,offside:1,fouls:2,cards:1,inj:2,spd:2,spr:1,stam:1,ball:1,aitk:1,gk:1,sbar:1,pitch:0,mow:0,wx:0,kit:[null,null,null]};
 G.x=Object.assign({},DX,{kit:[null,null,null]});
-const SPD=[.85,.93,1,1.08,1.18],SPR=[.9,1,1.12],LENS=[90,180,300,480],FRIC=[1.001,1,.998];
+const SPD=[.85,.93,1,1.08,1.18],SPR=[.9,1,1.12],LENS=[90,180,300,480],FRIC=[1,1,.998];
 const X=()=>G.x;
 function fixX(){const x=G.x&&typeof G.x==='object'?G.x:{};const o={};
   for(const k in DX){if(k==='kit')o.kit=Array.isArray(x.kit)&&x.kit.length===3?x.kit.map(v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)?v:null):[null,null,null];
