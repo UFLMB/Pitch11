@@ -39,7 +39,7 @@ const apron=new THREE.Mesh(new THREE.PlaneGeometry(118,82),apronMat);apron.rotat
 const pitch=new THREE.Mesh(new THREE.PlaneGeometry(105,68),turfMat);pitch.rotation.x=-Math.PI/2;pitch.position.y=0;pitch.receiveShadow=true;scene.add(pitch);
 for(let i=0;i<14;i++){const lane=new THREE.Mesh(new THREE.PlaneGeometry(105/14,68),new THREE.MeshStandardMaterial({color:i%2?0x286c36:0x317b3e,roughness:1}));lane.rotation.x=-Math.PI/2;lane.position.set(-52.5+(i+.5)*105,.012,0);lane.receiveShadow=true;scene.add(lane);}
 const lineMat=new THREE.MeshStandardMaterial({color:0xf2f4e9,roughness:.7});
-function line(x1,z1,x2,z2,w=.12,y=.035){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=new THREE.Mesh(new THREE.BoxGeometry(len,w,.035),lineMat);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);scene.add(m);return m;}
+function line(x1,z1,x2,z2,w=.12,y=.035){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=new THREE.Mesh(new THREE.BoxGeometry(len,.035,w),lineMat);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);scene.add(m);return m;}
 function rect(x,z,w,d,t=.12){line(x,z,x+w,z,t);line(x+w,z,x+w,z+d,t);line(x+w,z+d,x,z+d,t);line(x,z+d,x,z,t);}
 rect(-52.5,-34,105,68);line(0,-34,0,34);const circle=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,96),lineMat);circle.rotation.x=Math.PI/2;circle.position.y=.045;scene.add(circle);
 const spotMat=mat(0xf2f4e9,.8);function spot(x,z,r=.13){const m=new THREE.Mesh(new THREE.CircleGeometry(r,16),spotMat);m.rotation.x=-Math.PI/2;m.position.set(x,.05,z);scene.add(m);}spot(0,0);spot(-41.5,0);spot(41.5,0);
