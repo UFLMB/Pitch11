@@ -36,292 +36,168 @@ window.addEventListener("unhandledrejection",event=>show3DError(event.reason?.me
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+
 const host=document.querySelector('#stage'),loading=document.querySelector('#loading');
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x91a9b5);scene.fog=new THREE.Fog(0x91a9b5,145,310);
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x91a9b5);
+scene.fog=new THREE.Fog(0x91a9b5,260,620);
+
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;host.appendChild(renderer.domElement);
-const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,600);
-const views={broadcast:{p:[0,76,112],target:[0,0,0],fov:48},tactical:{p:[0,142,12],target:[0,0,0],fov:43},low:{p:[-4,22,72],target:[0,1,0],fov:58}};
-const drone={active:false,yaw:0,pitch:-.42,speed:34,keys:new Set(),move:new Set(),drag:false,lastX:0,lastY:0};
-camera.position.set(...views.broadcast.p);camera.fov=views.broadcast.fov;camera.updateProjectionMatrix();
-const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(...views.broadcast.target);controls.enableDamping=true;controls.dampingFactor=.055;controls.minDistance=22;controls.maxDistance=230;controls.maxPolarAngle=Math.PI*.48;controls.enabled=false;
-scene.add(new THREE.HemisphereLight(0xdcecff,0x203322,1.7));
-const sun=new THREE.DirectionalLight(0xfff1d7,3.1);sun.position.set(-42,95,48);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-95;sun.shadow.camera.right=95;sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;sun.shadow.bias=-.00018;sun.shadow.normalBias=.025;scene.add(sun);
-const fill=new THREE.DirectionalLight(0x9dc7ff,.85);fill.position.set(55,42,-65);scene.add(fill);
-const mat=(color,roughness=.82,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-const turfMat=mat(0x286c36,.94),apronMat=mat(0x17251d,1),standMat=mat(0x27323a,.88),roofMat=mat(0x121b20,.65,.28);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(330,260),mat(0x26362e,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
-const apron=new THREE.Mesh(new THREE.PlaneGeometry(118,82),apronMat);apron.rotation.x=-Math.PI/2;apron.position.y=-.08;apron.receiveShadow=true;scene.add(apron);
-// High-resolution procedural turf: mowing bands, fine blades and subtle wear.
-const grassCanvas=document.createElement('canvas');grassCanvas.width=1024;grassCanvas.height=680;
-const grassCtx=grassCanvas.getContext('2d');grassCtx.fillStyle='#286d37';grassCtx.fillRect(0,0,1024,680);
-for(let i=0;i<14;i++){grassCtx.fillStyle=i%2?'rgba(7,35,13,.10)':'rgba(145,190,105,.09)';grassCtx.fillRect(i*1024/14,0,1024/14,680);}
-let grassSeed=197711;const grassRand=()=>{grassSeed=(grassSeed*1664525+1013904223)>>>0;return grassSeed/4294967296;};
-for(let i=0;i<42000;i++){const x=grassRand()*1024,y=grassRand()*680;grassCtx.strokeStyle=grassRand()>.5?'rgba(190,220,150,.11)':'rgba(4,38,12,.13)';grassCtx.lineWidth=.35+grassRand()*.65;grassCtx.beginPath();grassCtx.moveTo(x,y);grassCtx.lineTo(x+(grassRand()-.5)*2,y-1-grassRand()*4);grassCtx.stroke();}
-const grassTexture=new THREE.CanvasTexture(grassCanvas);grassTexture.colorSpace=THREE.SRGBColorSpace;grassTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-turfMat.map=grassTexture;turfMat.color.set(0xffffff);turfMat.needsUpdate=true;
-const pitch=new THREE.Mesh(new THREE.PlaneGeometry(105,68),turfMat);pitch.rotation.x=-Math.PI/2;pitch.position.y=0;pitch.receiveShadow=true;scene.add(pitch);
-const lineMat=new THREE.MeshStandardMaterial({color:0xf2f4e9,roughness:.7});
-function line(x1,z1,x2,z2,w=.12,y=.035){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=new THREE.Mesh(new THREE.BoxGeometry(len,.035,w),lineMat);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);scene.add(m);return m;}
-function rect(x,z,w,d,t=.12){line(x,z,x+w,z,t);line(x+w,z,x+w,z+d,t);line(x+w,z+d,x,z+d,t);line(x,z+d,x,z,t);}
-rect(-52.5,-34,105,68);line(0,-34,0,34);const circle=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,96),lineMat);circle.rotation.x=Math.PI/2;circle.position.y=.045;scene.add(circle);
-const spotMat=mat(0xf2f4e9,.8);function spot(x,z,r=.13){const m=new THREE.Mesh(new THREE.CircleGeometry(r,16),spotMat);m.rotation.x=-Math.PI/2;m.position.set(x,.05,z);scene.add(m);}spot(0,0);spot(-41.5,0);spot(41.5,0);
-for(const side of [-1,1]){const gx=side*52.5;rect(side<0?-52.5:36,-20.16,16.5,40.32);rect(side<0?-52.5:47,-9.16,5.5,18.32);
- const arc=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,64,Math.PI),lineMat);arc.rotation.x=Math.PI/2;arc.rotation.z=side<0?Math.PI/2:-Math.PI/2;arc.position.set(side*41,0,0);scene.add(arc);
- const goal=new THREE.Group();scene.add(goal);const postMat=mat(0xf7f7ef,.36,.12),postR=.12,goalW=7.32,goalH=2.44,depth=2.1;
- for(const z of [-goalW/2,goalW/2]){const p=new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,goalH,12),postMat);p.position.set(gx,goalH/2,z);p.castShadow=true;goal.add(p);}
- const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx,goalH,0);bar.castShadow=true;goal.add(bar);
- for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx+side*depth,goalH/2,z);goal.add(back);line(gx,z,gx+side*depth,z,.045,goalH);}
- // Goal net is built separately as fine cord geometry below; no oversized wireframe box.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.15;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+host.appendChild(renderer.domElement);
+
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1200);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.06;
+controls.minDistance=24;
+controls.maxDistance=480;
+controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,10,0);
+
+scene.add(new THREE.HemisphereLight(0xe4f1ff,0x263326,2.0));
+const sun=new THREE.DirectionalLight(0xfff1d8,3.0);
+sun.position.set(-100,180,110);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-150;sun.shadow.camera.right=150;
+sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;
+sun.shadow.bias=-.00015;
+scene.add(sun);
+const fill=new THREE.DirectionalLight(0x9dc7ff,1.0);
+fill.position.set(120,90,-140);scene.add(fill);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(900,900),new THREE.MeshStandardMaterial({color:0x26352d,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
+
+const views={
+ broadcast:{p:[0,105,220],target:[0,12,0],fov:48},
+ tactical:{p:[0,260,1],target:[0,0,0],fov:43},
+ low:{p:[0,34,150],target:[0,9,0],fov:58}
+};
+const drone={active:false,yaw:0,pitch:-.35,speed:42,keys:new Set(),move:new Set(),drag:false,lastX:0,lastY:0};
+let stadium=null,stadiumBounds=null;
+
+function showLoadError(message){
+ loading.style.display='grid';
+ loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM MODEL COULD NOT LOAD</strong><small style="display:block;max-width:560px;margin:12px auto;color:#d5dcd5"></small><button id="retry">RETRY</button><small style="display:block;margin-top:12px">The model is hosted externally; check the connection and CORS access.</small></div>';
+ loading.querySelector('small').textContent=message;
+ loading.querySelector('#retry').addEventListener('click',()=>location.reload());
 }
-const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,opacity:.22,roughness:.12,metalness:.15,side:THREE.DoubleSide});
-// Multi-tier grandstands: structural bowls, seating decks, human-shaped crowd and canopy roofs.
-const concreteMat=mat(0x465057,.9),fasciaMat=mat(0x182329,.58,.24),seatMats=[0x263b36,0x30443d,0x354c43,0x253a34].map(c=>mat(c,.72));
-const seatBaseGeo=new THREE.BoxGeometry(.72,.13,.72),seatBackGeo=new THREE.BoxGeometry(.72,.58,.12);
-const crowdBodyGeo=new THREE.CapsuleGeometry(.145,.34,4,8),crowdHeadGeo=new THREE.SphereGeometry(.125,10,8),crowdArmGeo=new THREE.CapsuleGeometry(.055,.28,3,6),crowdHairGeo=new THREE.SphereGeometry(.132,10,6,0,Math.PI*2,0,Math.PI*.62);
-const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61,0x9a6b45,0x5c6268,0xc3c1b4].map(c=>mat(c,.94));
-const skinPalette=[0xe0b99a,0xb98260,0x87583f,0x583b31].map(c=>mat(c,.92));
-const hairPalette=[0x201b18,0x3a2a21,0x75604a,0xb39a72].map(c=>mat(c,.9));
-const seatBaseInstances=[],seatBackInstances=[];
-const crowdData=[];
-function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
- const seats=Math.floor(length/spacing),rowZ=axis==='long'?side*offset:0,rowX=axis==='end'?side*offset:0;
- for(let i=0;i<seats;i++){
-  const along=(i-(seats-1)/2)*spacing,p=axis==='long'?[along,y,rowZ]:[rowX,y,along];
-  const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();seatBaseInstances.push(dummy.matrix.clone());
-  const back=new THREE.Object3D();back.position.set(p[0]-Math.sin(rotation)*.30,p[1]+.32,p[2]-Math.cos(rotation)*.30);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
-  const person=new THREE.Object3D();person.position.set(p[0]-Math.sin(rotation)*.06,p[1]+.87,p[2]-Math.cos(rotation)*.06);person.rotation.y=rotation;person.scale.set(.9,.88,.9);person.updateMatrix();
-  crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length,skin:(i*7+deckIndex*3+Math.floor(offset))%4,hair:(i*11+deckIndex*5+Math.floor(offset*2))%4,cheer:(i*17+deckIndex*11)%23===0,phase:(i*1.71+deckIndex*.43)%Math.PI*2});
+window.addEventListener('error',e=>showLoadError(e.message||'A script or WebGL error occurred.'));
+window.addEventListener('unhandledrejection',e=>showLoadError(e.reason?.message||String(e.reason||'A module failed to load.')));
+
+function applyView(name){
+ const v=views[name]||views.broadcast;
+ drone.active=name==='drone';
+ document.querySelector('#drone-hud').classList.toggle('visible',drone.active);
+ document.querySelector('#drone-help').classList.toggle('visible',drone.active);
+ controls.enabled=!drone.active&&name==='tactical';
+ if(drone.active){
+  camera.position.set(0,stadiumBounds?stadiumBounds.max.y+75:90,stadiumBounds?stadiumBounds.max.z+80:150);
+  drone.yaw=0;drone.pitch=-.42;camera.fov=62;camera.updateProjectionMatrix();updateDroneLook();
+ }else{
+  camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();
+  controls.target.set(...v.target);controls.update();
  }
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
 }
-function buildLongStand(side){
- const tiers=[{rows:13,z:39.5,y:.72,dz:1.05,dy:.34},{rows:10,z:55.2,y:6.1,dz:1.12,dy:.39},{rows:9,z:67.1,y:11.2,dz:1.18,dy:.43}];
- tiers.forEach((tier,deck)=>{
-  for(let r=0;r<tier.rows;r++){
-   const z=side*(tier.z+r*tier.dz),y=tier.y+r*tier.dy;
-   const rowLength=Math.abs(z)<50.5?78:133,seatLength=rowLength-6;
-   const slab=new THREE.Mesh(new THREE.BoxGeometry(rowLength,.28,1.05),concreteMat);slab.position.set(0,y-.18,z);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
-   addSeatRow('long',side,Math.abs(z),y,seatLength,1.02,side>0?Math.PI:0,deck*100+r);
-  }
-  const frontZ=side*(tier.z-.7),fascia=new THREE.Mesh(new THREE.BoxGeometry(tier.z<50.5?80:135,1.25,.8),fasciaMat);fascia.position.set(0,tier.y+1.25,frontZ);scene.add(fascia);
- });
- const concourse=new THREE.Mesh(new THREE.BoxGeometry(138,1.25,3.5),concreteMat);concourse.position.set(0,6.25,side*54.1);scene.add(concourse);
- const glassRail=new THREE.Mesh(new THREE.BoxGeometry(136,1.1,.12),glassMat);glassRail.position.set(0,7.05,side*52.25);scene.add(glassRail);
-}
-function buildEndStand(side){
- const tiers=[{rows:13,x:39.5,y:.72,dx:1.05,dy:.34},{rows:10,x:55.2,y:6.1,dx:1.12,dy:.39},{rows:9,x:67.1,y:11.2,dx:1.18,dy:.43}];
- tiers.forEach((tier,deck)=>{
-  for(let r=0;r<tier.rows;r++){
-   const x=side*(tier.x+r*tier.dx),y=tier.y+r*tier.dy;
-   const rowDepth=Math.abs(x)<66.5?68:101,seatDepth=rowDepth-6;
-   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.05,.28,rowDepth),concreteMat);slab.position.set(x,y-.18,0);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
-   addSeatRow('end',side,Math.abs(x),y,seatDepth,1.02,side>0?-Math.PI/2:Math.PI/2,deck*100+r);
-  }
-  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.8,1.25,tier.x<66.5?70:103),fasciaMat);fascia.position.set(side*(tier.x-.7),tier.y+1.25,0);scene.add(fascia);
- });
- const concourse=new THREE.Mesh(new THREE.BoxGeometry(3.5,1.25,106),concreteMat);concourse.position.set(side*54.1,6.25,0);scene.add(concourse);
- const glassRail=new THREE.Mesh(new THREE.BoxGeometry(.12,1.1,104),glassMat);glassRail.position.set(side*52.25,7.05,0);scene.add(glassRail);
-}
-for(const side of [-1,1]){buildLongStand(side);buildEndStand(side);}
-const seatBases=new THREE.InstancedMesh(seatBaseGeo,seatMats[0],seatBaseInstances.length);
-const seatBacks=new THREE.InstancedMesh(seatBackGeo,seatMats[1],seatBackInstances.length);
-seatBaseInstances.forEach((m,i)=>seatBases.setMatrixAt(i,m));seatBackInstances.forEach((m,i)=>seatBacks.setMatrixAt(i,m));
-seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=true;seatBases.castShadow=true;seatBacks.castShadow=true;
-for(let i=0;i<seatBaseInstances.length;i++){const v=((i*9301+49297)%233280)/233280;const shade=.82+v*.28;seatBases.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));seatBacks.setColorAt(i,new THREE.Color().setRGB(shade*.92,shade,shade*.94));}
-if(seatBases.instanceColor)seatBases.instanceColor.needsUpdate=true;if(seatBacks.instanceColor)seatBacks.instanceColor.needsUpdate=true;scene.add(seatBases,seatBacks);
-const crowdArmMeshes=[];
-for(let hair=0;hair<hairPalette.length;hair++){const entries=crowdData.filter(p=>p.hair===hair),hairs=new THREE.InstancedMesh(crowdHairGeo,hairPalette[hair],entries.length);
- entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix),cap=new THREE.Matrix4().compose(new THREE.Vector3(0,.47,0),new THREE.Quaternion(),new THREE.Vector3(1,1,1));hairs.setMatrixAt(i,base.multiply(cap));});
- hairs.instanceMatrix.needsUpdate=true;scene.add(hairs);
-}
-for(let skin=0;skin<skinPalette.length;skin++){const entries=crowdData.filter(p=>p.skin===skin),heads=new THREE.InstancedMesh(crowdHeadGeo,skinPalette[skin],entries.length);
- entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix),head=new THREE.Matrix4().compose(new THREE.Vector3(0,.43,0),new THREE.Quaternion(),new THREE.Vector3(1,1,1));heads.setMatrixAt(i,base.multiply(head));});
- heads.instanceMatrix.needsUpdate=true;scene.add(heads);
-}
-for(let palette=0;palette<crowdPalette.length;palette++){
- const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),arms=new THREE.InstancedMesh(crowdArmGeo,crowdPalette[palette],entries.length*2);
- entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix);bodies.setMatrixAt(i,base);
-  for(let a=0;a<2;a++){const side=a===0?-1:1;const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*.28)),new THREE.Vector3(1,1,1));arms.setMatrixAt(i*2+a,base.clone().multiply(local));}
- });
- bodies.instanceMatrix.needsUpdate=true;arms.instanceMatrix.needsUpdate=true;scene.add(bodies,arms);crowdArmMeshes.push({mesh:arms,entries});
-}
-// Continuous cantilevered roof canopies with radial steel trusses.
-const roofSurface=new THREE.MeshStandardMaterial({color:0x172126,roughness:.48,metalness:.42,side:THREE.DoubleSide});
-const roofUnderside=mat(0x303d40,.72,.2);
-function makeCanopy(axis,side){
- const length=axis==='long'?138:108,segments=36,depth=37,verts=[],indices=[];
- for(let i=0;i<=segments;i++){
-  const along=-length/2+length*i/segments;
-  for(let j=0;j<=12;j++){
-   const u=j/12,radial=depth*u;
-   const y=20+5.4*Math.sin(u*Math.PI*.92)-2.4*u+.65*Math.sin(along/length*Math.PI*2);
-   if(axis==='long')verts.push(along,y,side*(39+radial));else verts.push(side*(39+radial),y,along);
-  }
- }
- for(let i=0;i<segments;i++)for(let j=0;j<12;j++){const a=i*13+j,b=a+13;indices.push(a,b,a+1,b,b+1,a+1);}
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();
- const canopy=new THREE.Mesh(geo,roofSurface);canopy.receiveShadow=true;canopy.castShadow=true;scene.add(canopy);
- for(let k=0;k<9;k++){
-  const along=-length*.46+k*length*.115;
-  const pts=[];
-  for(let j=0;j<=8;j++){const u=j/8,y=20+5.4*Math.sin(u*Math.PI*.92)-2.4*u+.65*Math.sin(along/length*Math.PI*2);pts.push(axis==='long'?new THREE.Vector3(along,y,side*(39+depth*u)):new THREE.Vector3(side*(39+depth*u),y,along));}
-  const trussGeo=new THREE.BufferGeometry().setFromPoints(pts);const truss=new THREE.Line(trussGeo,new THREE.LineBasicMaterial({color:0x718087,transparent:true,opacity:.7}));scene.add(truss);
- }
- const fascia=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.75,1.2):new THREE.BoxGeometry(1.2,.75,length),fasciaMat);
- fascia.position.set(axis==='long'?0:side*76,18.3,axis==='long'?side*76:0);scene.add(fascia);
- // Continuous luminous roof-edge strip.
- const strip=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.12,.3):new THREE.BoxGeometry(.3,.12,length),new THREE.MeshStandardMaterial({color:0xe8f3ff,emissive:0xc7ddff,emissiveIntensity:1.25}));
- strip.position.set(axis==='long'?0:side*75.3,18.75,axis==='long'?side*75.3:0);scene.add(strip);
+function updateDroneLook(){
+ const cp=Math.cos(drone.pitch),dir=new THREE.Vector3(Math.sin(drone.yaw)*cp,Math.sin(drone.pitch),-Math.cos(drone.yaw)*cp);
+ camera.lookAt(camera.position.clone().add(dir));
 }
 
-for(const side of [-1,1]){makeCanopy('long',side);makeCanopy('end',side);}
-// GRAPHICS 2.3 — stadium interior architecture and matchday infrastructure.
-const ledMat=new THREE.MeshStandardMaterial({color:0xd9f3e6,emissive:0x79dca2,emissiveIntensity:1.8,roughness:.42});
-const ledDark=mat(0x10191d,.55,.2);
-const adCanvas=document.createElement('canvas');adCanvas.width=2048;adCanvas.height=128;const adCtx=adCanvas.getContext('2d');adCtx.fillStyle='#07151a';adCtx.fillRect(0,0,2048,128);
-const adPanels=[['PITCH 11','#d9e8d7'],['PLAY WITH PURPOSE','#b9d9c6'],['THE BEAUTIFUL GAME','#f0eee2'],['MATCHDAY','#d8e5ee'],['PITCH 11','#d9e8d7'],['FOOTBALL. REIMAGINED.','#c5d4ca']];
-for(let i=0;i<adPanels.length;i++){const x=i*2048/adPanels.length;adCtx.fillStyle=i%2?'#10242a':'#0a1c20';adCtx.fillRect(x+3,3,2048/adPanels.length-6,122);adCtx.fillStyle=adPanels[i][1];adCtx.font='800 37px Arial';adCtx.textAlign='center';adCtx.textBaseline='middle';adCtx.fillText(adPanels[i][0],x+2048/adPanels.length/2,64);adCtx.fillStyle='#8fbf9b';adCtx.fillRect(x+22,108,2048/adPanels.length-44,3);}
-const adTexture=new THREE.CanvasTexture(adCanvas);adTexture.colorSpace=THREE.SRGBColorSpace;adTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-const adFaceMat=new THREE.MeshBasicMaterial({map:adTexture,side:THREE.DoubleSide});
-function ribbonBoard(axis,side){const length=axis==='long'?105:68;
- const board=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,1.05,.34):new THREE.BoxGeometry(.34,1.05,length),ledDark);board.position.set(axis==='long'?0:side*53.45,.72,axis==='long'?side*35.15:0);scene.add(board);
- const face=new THREE.Mesh(new THREE.PlaneGeometry(length-.4,.72),adFaceMat);face.rotation.y=axis==='long'?(side>0?0:Math.PI):side>0?Math.PI/2:-Math.PI/2;face.position.set(axis==='long'?0:side*53.26,.74,axis==='long'?side*34.96:0);scene.add(face);
- const trim=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.08,.38):new THREE.BoxGeometry(.38,.08,length),fasciaMat);trim.position.set(axis==='long'?0:side*53.45,1.28,axis==='long'?side*35.15:0);scene.add(trim);
-}
-for(const side of [-1,1]){ribbonBoard('long',side);ribbonBoard('end',side);}
-// Stadium vomitories: dark access portals, concrete reveals and illuminated aisle edges.
-const portalMat=mat(0x080e12,.95),portalTrim=mat(0x7c898b,.72,.18);
-function portal(x,z,width,rotation=0){
- const group=new THREE.Group();group.position.set(x,.25,z);group.rotation.y=rotation;scene.add(group);
- const opening=new THREE.Mesh(new THREE.BoxGeometry(width,4.6,.34),portalMat);opening.position.y=2.3;group.add(opening);
- const left=new THREE.Mesh(new THREE.BoxGeometry(.22,5,.48),portalTrim);left.position.set(-width/2,2.5,0);group.add(left);
- const right=left.clone();right.position.x=width/2;group.add(right);
- const lintel=new THREE.Mesh(new THREE.BoxGeometry(width+.3,.24,.5),portalTrim);lintel.position.y=4.95;group.add(lintel);
- const aisleLight=new THREE.Mesh(new THREE.BoxGeometry(.07,3.8,.06),ledMat);aisleLight.position.set(-width/2+.18,2.35,.22);group.add(aisleLight);
-}
-for(const side of [-1,1]){
- for(const z of [-23,0,23])portal(side*54.8,z,4,side<0?Math.PI/2:-Math.PI/2);
- for(const x of [-32,0,32])portal(x,side*55.5,4,side>0?0:Math.PI);
-}
-// Exposed roof engineering: primary edge girders and repeated diagonal braces.
-const steelMat=mat(0x59676e,.38,.72);
-function beam(a,b,r=.16,material=steelMat){
- const start=new THREE.Vector3(...a),end=new THREE.Vector3(...b),delta=end.clone().sub(start);
- const mesh=new THREE.Mesh(new THREE.CylinderGeometry(r,r,delta.length(),8),material);
- mesh.position.copy(start).add(end).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),delta.normalize());mesh.castShadow=true;scene.add(mesh);return mesh;
-}
-for(const side of [-1,1]){
- for(let i=0;i<=8;i++){
-  const x=-62+i*15.5;
-  beam([x,18.4,side*40],[x,25,side*73],.13);
-  beam([x,25,side*73],[x+7.75,18.4,side*40],.095);
- }
- for(let i=0;i<=6;i++){
-  const z=-46+i*15.33;
-  beam([side*40,18.4,z],[side*73,25,z],.13);
-  beam([side*73,25,z],[side*40,18.4,z+7.66],.095);
- }
-}
-// Roof-mounted floodlight banks with individual luminous optics.
-const floodMat=new THREE.MeshStandardMaterial({color:0xf5f5e8,emissive:0xd8eaff,emissiveIntensity:2.4});
-for(const side of [-1,1]){
- for(let i=0;i<7;i++){
-  const x=-48+i*16;
-  const housing=new THREE.Mesh(new THREE.BoxGeometry(12,.48,1.15),ledDark);housing.position.set(x,18.25,side*39.5);scene.add(housing);
-  for(let n=0;n<9;n++){const lamp=new THREE.Mesh(new THREE.BoxGeometry(.72,.12,.18),floodMat);lamp.position.set(x-5.1+n*1.27,18.52,side*39.15);scene.add(lamp);}
- }
-}
+const loader=new GLTFLoader();
+loader.setCrossOrigin('anonymous');
+loader.load(
+ 'https://www.innerscene.com/api/library/football-stadium-f7b93967/download',
+ gltf=>{
+  stadium=gltf.scene;
+  stadium.traverse(obj=>{
+   if(!obj.isMesh)return;
+   obj.castShadow=true;obj.receiveShadow=true;
+   if(obj.material){const mats=Array.isArray(obj.material)?obj.material:[obj.material];for(const m of mats){if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}}
+  });
+  const bounds=new THREE.Box3().setFromObject(stadium);
+  const center=bounds.getCenter(new THREE.Vector3());
+  stadium.position.x-=center.x;
+  stadium.position.z-=center.z;
+  stadium.position.y-=bounds.min.y;
+  scene.add(stadium);
+  stadiumBounds=new THREE.Box3().setFromObject(stadium);
+  const size=stadiumBounds.getSize(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.z);
+  camera.position.set(0,Math.max(75,size.y*2.65),Math.max(185,maxDim*1.12));
+  camera.fov=48;camera.updateProjectionMatrix();
+  controls.target.set(0,size.y*.28,0);controls.update();
+  views.broadcast.p=[0,Math.max(75,size.y*2.65),Math.max(185,maxDim*1.12)];
+  views.broadcast.target=[0,size.y*.28,0];
+  views.tactical.p=[0,maxDim*1.5,.01];views.tactical.target=[0,0,0];
+  views.low.p=[0,Math.max(28,size.y*.85),maxDim*.78];views.low.target=[0,size.y*.22,0];
+  loading.style.display='none';
+  document.querySelector('#status').textContent='CC0 STADIUM MODEL · REAL-WORLD SCALE · '+Math.round(size.x)+' × '+Math.round(size.z)+' M';
+  applyView('broadcast');
+ },
+ undefined,
+ error=>showLoadError(error?.message||'The stadium model request failed.')
+);
 
-
-/* GRAPHICS 2.4 — atmospheric sky, enclosed concourse shell and architectural scale. */
-const skyCanvas=document.createElement('canvas');skyCanvas.width=2048;skyCanvas.height=1024;const skyCtx=skyCanvas.getContext('2d');
-const skyGrad=skyCtx.createLinearGradient(0,0,0,1024);skyGrad.addColorStop(0,'#263f58');skyGrad.addColorStop(.38,'#7697aa');skyGrad.addColorStop(.72,'#c4c9bd');skyGrad.addColorStop(1,'#e2d8c4');skyCtx.fillStyle=skyGrad;skyCtx.fillRect(0,0,2048,1024);
-let cloudSeed=771102;const cloudRand=()=>{cloudSeed=(cloudSeed*1664525+1013904223)>>>0;return cloudSeed/4294967296;};
-for(let i=0;i<210;i++){const x=cloudRand()*2048,y=90+cloudRand()*560,rx=35+cloudRand()*150,ry=8+cloudRand()*24;const g=skyCtx.createRadialGradient(x,y,2,x,y,rx);g.addColorStop(0,'rgba(244,246,239,.20)');g.addColorStop(1,'rgba(244,246,239,0)');skyCtx.fillStyle=g;skyCtx.save();skyCtx.translate(x,y);skyCtx.scale(1,ry/rx);skyCtx.beginPath();skyCtx.arc(0,0,rx,0,Math.PI*2);skyCtx.fill();skyCtx.restore();}
-const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;
-const skyDome=new THREE.Mesh(new THREE.SphereGeometry(295,48,32),new THREE.MeshBasicMaterial({map:skyTexture,side:THREE.BackSide,depthWrite:false,fog:false}));skyDome.position.y=8;scene.add(skyDome);scene.background=null;
-// Continuous enclosed upper-bowl façade: glazed concourses, concrete piers and service bands.
-const facadeConcrete=mat(0x59636a,.82,.12),facadeDark=mat(0x172329,.56,.28),facadeGlass=new THREE.MeshPhysicalMaterial({color:0x91b6c2,metalness:.22,roughness:.2,transparent:true,opacity:.42,side:THREE.DoubleSide});
-const facadeGlow=new THREE.MeshStandardMaterial({color:0xc8e4dc,emissive:0x729b91,emissiveIntensity:.42,roughness:.4});
-function facadeRun(axis,side){const long=axis==='long',length=long?146:112;
- const wall=new THREE.Mesh(long?new THREE.BoxGeometry(length,8,1.1):new THREE.BoxGeometry(1.1,8,length),facadeConcrete);wall.position.set(long?0:side*82,12.5,long?side*82:0);wall.castShadow=true;wall.receiveShadow=true;scene.add(wall);
- const glazing=new THREE.Mesh(long?new THREE.BoxGeometry(length-3,3.7,.16):new THREE.BoxGeometry(.16,3.7,length-3),facadeGlass);glazing.position.set(long?0:side*81.38,13.1,long?side*81.38:0);scene.add(glazing);
- const upperBand=new THREE.Mesh(long?new THREE.BoxGeometry(length,1.1,1.45):new THREE.BoxGeometry(1.45,1.1,length),facadeDark);upperBand.position.set(long?0:side*82,17.2,long?side*82:0);scene.add(upperBand);
- const lowerBand=new THREE.Mesh(long?new THREE.BoxGeometry(length,.42,1.5):new THREE.BoxGeometry(1.5,.42,length),facadeDark);lowerBand.position.set(long?0:side*82,8.2,long?side*82:0);scene.add(lowerBand);
- for(let i=0;i<=Math.floor(length/5);i++){const along=-length/2+i*5;const mullion=new THREE.Mesh(long?new THREE.BoxGeometry(.13,3.9,.24):new THREE.BoxGeometry(.24,3.9,.13),facadeDark);mullion.position.set(long?along:side*81.28,13.1,long?side*81.28:along);scene.add(mullion);}
- for(let i=0;i<=Math.floor(length/10);i++){const along=-length/2+i*10;const pier=new THREE.Mesh(long?new THREE.BoxGeometry(.62,10,1.6):new THREE.BoxGeometry(1.6,10,.62),facadeDark);pier.position.set(long?along:side*82,12.1,long?side*82:along);pier.castShadow=true;scene.add(pier);}
-}
-for(const side of [-1,1]){facadeRun('long',side);facadeRun('end',side);}
-// Upper concourse handrails and support posts.
-const railMat=mat(0x9aa7a8,.34,.72);
-function rail(axis,side,y,offset,length){const horizontal=axis==='long';const bar=new THREE.Mesh(horizontal?new THREE.BoxGeometry(length,.07,.07):new THREE.BoxGeometry(.07,.07,length),railMat);bar.position.set(horizontal?0:side*offset,y,horizontal?side*offset:0);scene.add(bar);
- for(let i=0;i<=Math.floor(length/2);i++){const p=-length/2+i*2;const post=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.9,6),railMat);post.position.set(horizontal?p:side*offset,y-.46,horizontal?side*offset:p);scene.add(post);}}
-for(const side of [-1,1]){rail('long',side,8.2,52.2,136);rail('end',side,8.2,52.2,104);}
-// Recessed stair aisle safety lights, repeated at realistic step intervals.
-const stairGlow=new THREE.MeshStandardMaterial({color:0xffd99b,emissive:0xffb45f,emissiveIntensity:1.35});
-for(const side of [-1,1]){for(const along of [-32,-16,0,16,32])for(let step=0;step<12;step++){const z=side*(40+step*1.05),y=.95+step*.34;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.42,.045,.08),stairGlow);lamp.position.set(along,y,z);scene.add(lamp);}
- for(const along of [-24,-8,8,24])for(let step=0;step<12;step++){const x=side*(40+step*1.05),y=.95+step*.34;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.08,.045,.42),stairGlow);lamp.position.set(x,y,along);scene.add(lamp);}}
-/* Fine goal net cords: a repeated grid instead of a single wireframe box. */
-const netThread=new THREE.LineBasicMaterial({color:0xe8eee9,transparent:true,opacity:.3});
-function addNetGrid(gx,side){
- const pts=[],frontX=gx+side*.14,backX=gx+side*2.08,zMin=-3.66,zMax=3.66,goalH=2.44;
- const segment=(a,b)=>{pts.push(new THREE.Vector3(...a),new THREE.Vector3(...b));};
- for(let i=0;i<=24;i++){const z=zMin+(zMax-zMin)*i/24;segment([backX,0,z],[backX,goalH,z]);}
- for(let j=0;j<=10;j++){const y=goalH*j/10;segment([backX,y,zMin],[backX,y,zMax]);}
- for(const z of [zMin,zMax]){
-  for(let i=0;i<=10;i++){const x=frontX+(backX-frontX)*i/10;segment([x,0,z],[x,goalH,z]);}
-  for(let j=0;j<=10;j++){const y=goalH*j/10;segment([frontX,y,z],[backX,y,z]);}
- }
- for(let i=0;i<=12;i++){const z=zMin+(zMax-zMin)*i/12;segment([frontX,goalH,z],[backX,goalH,z]);}
- for(let j=0;j<=8;j++){const x=frontX+(backX-frontX)*j/8;segment([x,goalH,zMin],[x,goalH,zMax]);}
- const geo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.LineSegments(geo,netThread));
-}
-for(const side of [-1,1])addNetGrid(side*52.5,side);
-// Corner flags, with slender metal poles and cloth triangles.
-const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55),flags=[];
-for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.8,8),flagPole);pole.position.set(x,.9,z);scene.add(pole);
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([0,1.65,0,.72,1.5,0,0,1.22,0],3));geo.setIndex([0,1,2]);geo.computeVertexNormals();const flag=new THREE.Mesh(geo,flagCloth);flag.position.set(x,0,z);scene.add(flag);flags.push(flag);}
-// Team technical areas: glass dugouts, individual seats and marked coaching zones.
-const dugoutFrame=mat(0x68777b,.36,.72),dugoutGlass=new THREE.MeshPhysicalMaterial({color:0x9eb8bd,transparent:true,opacity:.24,roughness:.12,metalness:.12,side:THREE.DoubleSide});
-const benchSeat=mat(0x182c27,.62),technicalLine=mat(0xe8e9df,.72);
-function buildDugout(side){const group=new THREE.Group();group.position.set(0,0,side*38.15);scene.add(group);
- const roof=new THREE.Mesh(new THREE.BoxGeometry(20,.22,2.15),dugoutFrame);roof.position.set(0,2.45,0);group.add(roof);
- const back=new THREE.Mesh(new THREE.BoxGeometry(20,2.15,.08),dugoutGlass);back.position.set(0,1.25,side*.95);group.add(back);
- for(const x of [-9.8,9.8]){const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,2.5,8),dugoutFrame);post.position.set(x,1.25,0);group.add(post);}
- for(let i=0;i<10;i++){const x=-8.8+i*1.95;const seat=new THREE.Mesh(new THREE.BoxGeometry(1.55,.18,.62),benchSeat);seat.position.set(x,.72,0);group.add(seat);const backrest=new THREE.Mesh(new THREE.BoxGeometry(1.55,.58,.12),benchSeat);backrest.position.set(x,1.05,-.22);group.add(backrest);}
- const fascia=new THREE.Mesh(new THREE.BoxGeometry(20,.28,.16),ledDark);fascia.position.set(0,2.15,-side*1.02);group.add(fascia);
-}
-buildDugout(-1);buildDugout(1);
-for(const side of [-1,1]){line(-15.5,side*36.6,15.5,side*36.6,.08,.045);line(-15.5,side*36.6,-15.5,side*38.1,.08,.045);line(15.5,side*36.6,15.5,side*38.1,.08,.045);}
-// Main stadium scoreboards, mounted to the end stands and facing the pitch.
-const screenCanvas=document.createElement('canvas');screenCanvas.width=1024;screenCanvas.height=512;const sc=screenCanvas.getContext('2d');
-sc.fillStyle='#071218';sc.fillRect(0,0,1024,512);sc.fillStyle='#18352d';sc.fillRect(18,18,988,476);sc.strokeStyle='#91bda1';sc.lineWidth=5;sc.strokeRect(22,22,980,468);
-sc.fillStyle='#dce9dc';sc.textAlign='center';sc.font='800 52px Arial';sc.fillText('PITCH 11',512,100);
-sc.font='700 36px Arial';sc.fillStyle='#a9c4b2';sc.fillText('MATCHDAY',512,165);
-sc.font='800 112px Arial';sc.fillStyle='#f4f4e8';sc.fillText('HOME  0  —  0  AWAY',512,305);
-sc.font='600 30px Arial';sc.fillStyle='#b2c8b8';sc.fillText('FRIENDLY  ·  00:00',512,390);
-const screenTexture=new THREE.CanvasTexture(screenCanvas);screenTexture.colorSpace=THREE.SRGBColorSpace;
-const screenMaterial=new THREE.MeshBasicMaterial({map:screenTexture,side:THREE.DoubleSide});
-for(const side of [-1,1]){const frame=new THREE.Mesh(new THREE.BoxGeometry(.7,10.2,21),fasciaMat);frame.position.set(side*61,17,0);scene.add(frame);
- const display=new THREE.Mesh(new THREE.PlaneGeometry(20,9),screenMaterial);display.rotation.y=side>0?-Math.PI/2:Math.PI/2;display.position.set(side*60.58,17,0);scene.add(display);}
-// Subtle roof-mounted match lights. Daylight remains the dominant source in this preview.
-for(const side of [-1,1])for(const x of [-42,0,42]){const lamp=new THREE.SpotLight(0xe8f2ff,34,125,Math.PI/5,.7,1.5);lamp.position.set(x,20,side*40);lamp.target.position.set(x*.72,0,0);scene.add(lamp,lamp.target);}
-
-// Stadium-only preview: no decorative static ball or artificial floating haze.
-function setView(name){const v=views[name]||views.broadcast;drone.active=name==='drone';document.querySelector('#drone-hud').classList.toggle('visible',drone.active);document.querySelector('#drone-help').classList.toggle('visible',drone.active);controls.enabled=name==='tactical';if(drone.active){camera.position.set(0,48,82);drone.yaw=0;drone.pitch=-.43;camera.fov=62;camera.updateProjectionMatrix();updateDroneLook();}else{camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();controls.target.set(...v.target);controls.update();}document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));}
-function updateDroneLook(){const cp=Math.cos(drone.pitch),dir=new THREE.Vector3(Math.sin(drone.yaw)*cp,Math.sin(drone.pitch),-Math.cos(drone.yaw)*cp);camera.lookAt(camera.position.clone().add(dir));}
 const keyMap={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',q:'down',e:'up'};
 window.addEventListener('keydown',e=>{if(!drone.active)return;const k=e.key.toLowerCase();if(keyMap[k]){drone.keys.add(keyMap[k]);e.preventDefault();}});
 window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(keyMap[k])drone.keys.delete(keyMap[k]);});
-document.querySelectorAll('.drone-pad button').forEach(b=>{const move=b.dataset.move;const start=e=>{e.preventDefault();drone.move.add(move);b.setPointerCapture?.(e.pointerId);};const stop=e=>{e.preventDefault();drone.move.delete(move);};b.addEventListener('pointerdown',start);b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop);});
+document.querySelectorAll('.drone-pad button').forEach(b=>{
+ const move=b.dataset.move;
+ const start=e=>{e.preventDefault();drone.move.add(move);b.setPointerCapture?.(e.pointerId);};
+ const stop=e=>{e.preventDefault();drone.move.delete(move);};
+ b.addEventListener('pointerdown',start);b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop);
+});
 renderer.domElement.addEventListener('pointerdown',e=>{if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
-renderer.domElement.addEventListener('pointermove',e=>{if(!drone.active||!drone.drag)return;const dx=e.clientX-drone.lastX,dy=e.clientY-drone.lastY;drone.lastX=e.clientX;drone.lastY=e.clientY;drone.yaw-=dx*.004;drone.pitch=Math.max(-1.28,Math.min(-.06,drone.pitch-dy*.003));updateDroneLook();});
-renderer.domElement.addEventListener('pointerup',()=>drone.drag=false);renderer.domElement.addEventListener('pointercancel',()=>drone.drag=false);
-renderer.domElement.addEventListener('wheel',e=>{if(!drone.active)return;e.preventDefault();const dir=new THREE.Vector3(Math.sin(drone.yaw)*Math.cos(drone.pitch),Math.sin(drone.pitch),-Math.cos(drone.yaw)*Math.cos(drone.pitch));camera.position.addScaledVector(dir,e.deltaY*.035);camera.position.y=Math.max(7,Math.min(125,camera.position.y));},{passive:false});
-function updateDrone(dt){if(!drone.active)return;const active=new Set([...drone.keys,...drone.move]);const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));const step=drone.speed*dt;if(active.has('forward'))camera.position.addScaledVector(forward,step);if(active.has('back'))camera.position.addScaledVector(forward,-step);if(active.has('left'))camera.position.addScaledVector(right,-step);if(active.has('right'))camera.position.addScaledVector(right,step);if(active.has('up'))camera.position.y+=step;if(active.has('down'))camera.position.y-=step;camera.position.y=Math.max(6,Math.min(130,camera.position.y));updateDroneLook();}
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));document.querySelector('#back').addEventListener('click',()=>location.href='./');
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);});
-let previous=performance.now(),crowdAccumulator=0;function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);crowdAccumulator+=dt;const time=now*.001;flags.forEach((flag,i)=>{flag.rotation.y=Math.sin(time*1.7+i*1.9)*.10;});
- if(crowdAccumulator>=.12){crowdAccumulator=0;for(const group of crowdArmMeshes){const {mesh,entries}=group;for(let i=0;i<entries.length;i++){const p=entries[i];if(!p.cheer)continue;for(let a=0;a<2;a++){const side=a===0?-1:1,raise=.55+.45*Math.sin(time*2.2+p.phase);const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*(.25+raise*.92)));const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),rot,new THREE.Vector3(1,1,1));mesh.setMatrixAt(i*2+a,new THREE.Matrix4().copy(p.matrix).multiply(local));}}mesh.instanceMatrix.needsUpdate=true;}}
- renderer.render(scene,camera);}loading.style.display='none';animate();
+renderer.domElement.addEventListener('pointermove',e=>{
+ if(!drone.active||!drone.drag)return;
+ const dx=e.clientX-drone.lastX,dy=e.clientY-drone.lastY;drone.lastX=e.clientX;drone.lastY=e.clientY;
+ drone.yaw-=dx*.004;drone.pitch=Math.max(-1.28,Math.min(-.06,drone.pitch-dy*.003));updateDroneLook();
+});
+renderer.domElement.addEventListener('pointerup',()=>drone.drag=false);
+renderer.domElement.addEventListener('pointercancel',()=>drone.drag=false);
+renderer.domElement.addEventListener('wheel',e=>{
+ if(!drone.active)return;e.preventDefault();
+ const dir=new THREE.Vector3(Math.sin(drone.yaw)*Math.cos(drone.pitch),Math.sin(drone.pitch),-Math.cos(drone.yaw)*Math.cos(drone.pitch));
+ camera.position.addScaledVector(dir,e.deltaY*.035);
+},{passive:false});
+function updateDrone(dt){
+ if(!drone.active)return;
+ const active=new Set([...drone.keys,...drone.move]);
+ const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
+ const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));
+ const step=drone.speed*dt;
+ if(active.has('forward'))camera.position.addScaledVector(forward,step);
+ if(active.has('back'))camera.position.addScaledVector(forward,-step);
+ if(active.has('left'))camera.position.addScaledVector(right,-step);
+ if(active.has('right'))camera.position.addScaledVector(right,step);
+ if(active.has('up'))camera.position.y+=step;
+ if(active.has('down'))camera.position.y-=step;
+ camera.position.y=Math.max(5,camera.position.y);updateDroneLook();
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>applyView(b.dataset.view)));
+document.querySelector('#back').addEventListener('click',()=>location.href='./');
+window.addEventListener('resize',()=>{
+ camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
+});
+let previous=performance.now();
+function animate(now=performance.now()){
+ requestAnimationFrame(animate);
+ const dt=Math.min(.05,(now-previous)/1000);previous=now;
+ if(controls.enabled)controls.update();
+ updateDrone(dt);
+ renderer.render(scene,camera);
+}
+animate();
 </script></body></html>
