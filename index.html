@@ -1179,23 +1179,23 @@ function drawPlayer(p,a){
   if(p.rf===undefined)p.rf=p.face;const dr=angd(p.face,p.rf);p.rf+=dr*0.3;
   const Q=animInfo(p),sk=SKIN[p.skin],sp=Math.hypot(p.vx,p.vy),gait=clamp(sp/50,0,1);
   let du=0;if(dv){if(!(p.dvMax>=p.dive))p.dvMax=p.dive;du=clamp(1-p.dive/p.dvMax,0,1);}else p.dvMax=0;
-  const ds=Math.sin(clamp(du*1.7,0,1)*Math.PI/2),dl=dv?Math.sin(du*Math.PI)*5:0;
+  const ds=Math.sin(clamp(du*1.7,0,1)*Math.PI/2),dl=dv?Math.sin(du*Math.PI)*5:0,diveArc=dv?Math.sin(du*Math.PI)*9:0;
   const sl=p.sd?clamp(p.sd.t/(TUNING.df.sl.dur||.6),0,1):0,sdes=Math.sin(clamp(sl*3,0,1)*Math.PI/2)*(1-clamp((sl-.78)*4.5,0,1));
   const lean=Math.sin(Q.rot)*6,side=clamp(dr*6,-2.2,2.2)*gait,lf=(Q.lift||0)+dl;
   const shirt=gk?k.gk:k.shirt,shorts=gk?'#222':k.shorts,hair=p.role%3?'#1b1209':'#6b4a22';
   ctx.save();ctx.translate(x,y);
   ctx.fillStyle='rgba(0,0,0,'+(.3/(1+lf*.06))+')';ctx.beginPath();ctx.ellipse(1.5+lf*.15,2.5,(dv?12:8.6)*(1+lf*.02)*PLAYER_SCALE*1.15,6.8*PLAYER_SCALE*1.15,0,0,TAU);ctx.fill();
   {const ic=indCol(p);if(ic){ctx.fillStyle=ic==='#00e5ff'?'rgba(0,229,255,.22)':'rgba(255,230,0,.16)';ctx.strokeStyle=ic;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,7,0,TAU);ctx.fill();ctx.stroke();}}
-  ctx.translate(0,-lf*.8);
+  ctx.translate(0,-lf*.8-diveArc-(dv?2.5*ds:0));
   ctx.rotate(dv?p.diveAng:p.down?1.3:p.rf);
-  if(dv)ctx.scale(1+.7*ds,1-.12*ds);else if(p.sd)ctx.scale(1+.3*sdes,1-.12*sdes);
+  if(dv)ctx.scale(1+1.05*ds,1-.18*ds);else if(p.sd)ctx.scale(1+.3*sdes,1-.12*sdes);
   ctx.scale(PLAYER_SCALE,PLAYER_SCALE);
   if(Q.wob)ctx.rotate(Q.wob*0.35);
   const bs=Q.scale*(1+Q.bob*.022+lf*.025);ctx.scale(bs,bs);
   let lx=Math.sin(Q.L.hip)*8,lly=-Math.abs(Q.L.knee)*4.5,rx=Math.sin(Q.R.hip)*8,ry=-Math.abs(Q.R.knee)*4.5;
   if(Q.ak===1||Q.ak===2){rx=Q.u<.45?-5+14*(Q.u/.45):9-4*((Q.u-.45)/.55);ry=0;}
   else if(Q.ak===3){rx=p.sd?7+7*sdes:10;lx=p.sd?-5-3*sdes:-3;lly=ry=0;}
-  else if(dv){lx=-5-4*ds;rx=-6-5*ds;lly=ry=0;}
+  else if(dv){lx=-7-5*ds;rx=7+5*ds;lly=ry=0;}
   else if(Q.down){lx=rx=-3;lly=ry=0;}
   const fl=[lx,lly-3.2,Math.abs(Q.L.knee)],fr=[rx,ry+3.2,Math.abs(Q.R.knee)];
   for(const [fx,fy,kn,sd] of [[fl[0],fl[1],fl[2],-1],[fr[0],fr[1],fr[2],1]]){      // leg: sock line + boot
@@ -1209,7 +1209,7 @@ function drawPlayer(p,a){
   ctx.save();ctx.rotate((Q.L.hip-Q.R.hip)*.06);                                     // shoulders counter-rotate against the stride
   let hl=.8+Math.sin(Q.arms.L.sh)*7,hr=.8-Math.sin(Q.arms.R.sh)*7,hy=7.6,hs=gk?2.7:2.1;
   if(Q.ak===1||Q.ak===2){hl=4;hr=-3;hy=8.6;}else if(Q.ak===3||Q.lift>0){hl=hr=Q.ak===3?(p.sd?-3:4):-2;hy=9.4;}else if(Q.ak===5){hl=hr=-1;hy=11.5;hs=2.9;}
-  else if(dv){hl=hr=3+8*ds;hy=7-3.4*ds;}else if(p.hold===1){hl=hr=6;hy=3.6;}else if(p.hold===2){hl=hr=0;hy=4.8;}else if(Q.down){hl=hr=-2;hy=7;}
+  else if(dv){hl=5+12*ds;hr=-5-12*ds;hy=7.2-2.8*ds;hs=gk?3.5:2.1;}else if(p.hold===1){hl=hr=6;hy=3.6;}else if(p.hold===2){hl=hr=0;hy=4.8;}else if(Q.down){hl=hr=-2;hy=7;}
   const sx=.5+lean;
   ctx.strokeStyle=gk?k.gk:shirt;ctx.lineWidth=2.6;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(sx,-6.2);ctx.lineTo(hl,-hy);ctx.moveTo(sx,6.2);ctx.lineTo(hr,hy);ctx.stroke();ctx.lineCap='butt';
