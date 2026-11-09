@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#07110c">
-<title>PITCH 11 — Graphics 2.0</title>
+<title>PITCH 11 — Stadium Graphics 2.4</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}#stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
@@ -23,9 +23,9 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 @media(max-width:600px){#drone-hud{left:10px;bottom:12px;gap:7px}.drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}.drone-pad button,.drone-alt button{width:38px;height:38px}#drone-help{right:9px;bottom:12px;max-width:145px;font-size:9px}.controls{max-width:70vw}}
 @media(max-width:600px){.hud{align-items:flex-start}.controls{max-width:58vw}button{padding:9px 10px;font-size:9px}#status{bottom:10px;font-size:9px}}
 </style></head><body>
-<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.0 · REAL-TIME 3D</span></div>
+<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.4 · STADIUM REALISM</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button data-view="drone">DRONE CAM · DEV</button><button id="back">BACK TO GAME</button></div></div>
-<div id="status">STADIUM ARCHITECTURE 2.3 · DEVELOPER PREVIEW</div>
+<div id="status">STADIUM REALISM 2.4 · ARCHITECTURE / LIGHT / ATMOSPHERE</div>
 <div id="drone-hud"><div class="drone-pad"><button data-move="forward" aria-label="Move forward">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="back" aria-label="Move backward">▼</button><button data-move="right" aria-label="Move right">▶</button></div><div class="drone-alt"><button data-move="up" aria-label="Rise">＋</button><button data-move="down" aria-label="Descend">−</button></div></div><div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: use directional controls</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 <script>
@@ -122,7 +122,10 @@ for(const side of [-1,1]){buildLongStand(side);buildEndStand(side);}
 const seatBases=new THREE.InstancedMesh(seatBaseGeo,seatMats[0],seatBaseInstances.length);
 const seatBacks=new THREE.InstancedMesh(seatBackGeo,seatMats[1],seatBackInstances.length);
 seatBaseInstances.forEach((m,i)=>seatBases.setMatrixAt(i,m));seatBackInstances.forEach((m,i)=>seatBacks.setMatrixAt(i,m));
-seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=true;seatBases.castShadow=true;seatBacks.castShadow=true;scene.add(seatBases,seatBacks);
+seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=true;seatBases.castShadow=true;seatBacks.castShadow=true;
+for(let i=0;i<seatBaseInstances.length;i++){const v=((i*9301+49297)%233280)/233280;const shade=.78+v*.34;seatBases.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));seatBacks.setColorAt(i,new THREE.Color().setRGB(shade*.92,shade,shade*.94));}
+if(seatBases.instanceColor)seatBases.instanceColor.needsUpdate=true;if(seatBacks.instanceColor)seatBacks.instanceColor.needsUpdate=true;
+scene.add(seatBases,seatBacks);
 for(let palette=0;palette<crowdPalette.length;palette++){
  const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),heads=new THREE.InstancedMesh(crowdHeadGeo,crowdPalette[palette],entries.length);
  entries.forEach((p,i)=>{bodies.setMatrixAt(i,p.matrix);const m=new THREE.Matrix4().copy(p.matrix);m.multiply(new THREE.Matrix4().makeTranslation(0,.52,0));heads.setMatrixAt(i,m);});
@@ -214,6 +217,47 @@ for(const side of [-1,1]){
  }
 }
 
+
+/* GRAPHICS 2.4 — atmospheric sky, enclosed concourse shell and architectural scale. */
+const skyCanvas=document.createElement('canvas');skyCanvas.width=2048;skyCanvas.height=1024;const skyCtx=skyCanvas.getContext('2d');
+const skyGrad=skyCtx.createLinearGradient(0,0,0,1024);skyGrad.addColorStop(0,'#263f58');skyGrad.addColorStop(.38,'#7697aa');skyGrad.addColorStop(.72,'#c4c9bd');skyGrad.addColorStop(1,'#e2d8c4');skyCtx.fillStyle=skyGrad;skyCtx.fillRect(0,0,2048,1024);
+let cloudSeed=771102;const cloudRand=()=>{cloudSeed=(cloudSeed*1664525+1013904223)>>>0;return cloudSeed/4294967296;};
+for(let i=0;i<210;i++){const x=cloudRand()*2048,y=90+cloudRand()*560,rx=35+cloudRand()*150,ry=8+cloudRand()*24;const g=skyCtx.createRadialGradient(x,y,2,x,y,rx);g.addColorStop(0,'rgba(244,246,239,.20)');g.addColorStop(1,'rgba(244,246,239,0)');skyCtx.fillStyle=g;skyCtx.save();skyCtx.translate(x,y);skyCtx.scale(1,ry/rx);skyCtx.beginPath();skyCtx.arc(0,0,rx,0,Math.PI*2);skyCtx.fill();skyCtx.restore();}
+const skyTexture=new THREE.CanvasTexture(skyCanvas);skyTexture.colorSpace=THREE.SRGBColorSpace;
+const skyDome=new THREE.Mesh(new THREE.SphereGeometry(295,48,32),new THREE.MeshBasicMaterial({map:skyTexture,side:THREE.BackSide,depthWrite:false,fog:false}));skyDome.position.y=8;scene.add(skyDome);scene.background=null;
+// Continuous enclosed upper-bowl façade: glazed concourses, concrete piers and service bands.
+const facadeConcrete=mat(0x59636a,.82,.12),facadeDark=mat(0x172329,.56,.28),facadeGlass=new THREE.MeshPhysicalMaterial({color:0x91b6c2,metalness:.22,roughness:.2,transparent:true,opacity:.42,side:THREE.DoubleSide});
+const facadeGlow=new THREE.MeshStandardMaterial({color:0xc8e4dc,emissive:0x729b91,emissiveIntensity:.42,roughness:.4});
+function facadeRun(axis,side){const long=axis==='long',length=long?146:112;
+ const wall=new THREE.Mesh(long?new THREE.BoxGeometry(length,8,1.1):new THREE.BoxGeometry(1.1,8,length),facadeConcrete);wall.position.set(long?0:side*82,12.5,long?side*82:0);wall.castShadow=true;wall.receiveShadow=true;scene.add(wall);
+ const glazing=new THREE.Mesh(long?new THREE.BoxGeometry(length-3,3.7,.16):new THREE.BoxGeometry(.16,3.7,length-3),facadeGlass);glazing.position.set(long?0:side*81.38,13.1,long?side*81.38:0);scene.add(glazing);
+ const upperBand=new THREE.Mesh(long?new THREE.BoxGeometry(length,1.1,1.45):new THREE.BoxGeometry(1.45,1.1,length),facadeDark);upperBand.position.set(long?0:side*82,17.2,long?side*82:0);scene.add(upperBand);
+ const lowerBand=new THREE.Mesh(long?new THREE.BoxGeometry(length,.42,1.5):new THREE.BoxGeometry(1.5,.42,length),facadeDark);lowerBand.position.set(long?0:side*82,8.2,long?side*82:0);scene.add(lowerBand);
+ for(let i=0;i<=Math.floor(length/5);i++){const along=-length/2+i*5;const mullion=new THREE.Mesh(long?new THREE.BoxGeometry(.13,3.9,.24):new THREE.BoxGeometry(.24,3.9,.13),facadeDark);mullion.position.set(long?along:side*81.28,13.1,long?side*81.28:along);scene.add(mullion);}
+ for(let i=0;i<=Math.floor(length/10);i++){const along=-length/2+i*10;const pier=new THREE.Mesh(long?new THREE.BoxGeometry(.62,10,1.6):new THREE.BoxGeometry(1.6,10,.62),facadeDark);pier.position.set(long?along:side*82,12.1,long?side*82:along);pier.castShadow=true;scene.add(pier);}
+}
+for(const side of [-1,1]){facadeRun('long',side);facadeRun('end',side);}
+// Upper concourse handrails and support posts.
+const railMat=mat(0x9aa7a8,.34,.72);
+function rail(axis,side,y,offset,length){const horizontal=axis==='long';const bar=new THREE.Mesh(horizontal?new THREE.BoxGeometry(length,.07,.07):new THREE.BoxGeometry(.07,.07,length),railMat);bar.position.set(horizontal?0:side*offset,y,horizontal?side*offset:0);scene.add(bar);
+ for(let i=0;i<=Math.floor(length/2);i++){const p=-length/2+i*2;const post=new THREE.Mesh(new THREE.CylinderGeometry(.035,.035,.9,6),railMat);post.position.set(horizontal?p:side*offset,y-.46,horizontal?side*offset:p);scene.add(post);}}
+for(const side of [-1,1]){rail('long',side,8.2,52.2,136);rail('end',side,8.2,52.2,104);}
+// Recessed stair aisle safety lights, repeated at realistic step intervals.
+const stairGlow=new THREE.MeshStandardMaterial({color:0xffd99b,emissive:0xffb45f,emissiveIntensity:1.35});
+for(const side of [-1,1]){for(const along of [-32,-16,0,16,32])for(let step=0;step<12;step++){const z=side*(40+step*1.05),y=.95+step*.34;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.42,.045,.08),stairGlow);lamp.position.set(along,y,z);scene.add(lamp);}
+ for(const along of [-24,-8,8,24])for(let step=0;step<12;step++){const x=side*(40+step*1.05),y=.95+step*.34;const lamp=new THREE.Mesh(new THREE.BoxGeometry(.08,.045,.42),stairGlow);lamp.position.set(x,y,along);scene.add(lamp);}}
+/* Fine goal net cords: a repeated grid instead of a single wireframe box. */
+const netThread=new THREE.LineBasicMaterial({color:0xe8eee9,transparent:true,opacity:.3});
+function addNetGrid(gx,side){const pts=[],backX=gx-side*2.08,frontX=gx+side*.12;
+ for(let i=0;i<=24;i++){const z=-3.66+i*7.32/24;pts.push(new THREE.Vector3(backX,0,z),new THREE.Vector3(backX,2.44,z));}
+ for(let j=0;j<=10;j++){const y=j*2.44/10;pts.push(new THREE.Vector3(backX,y,-3.66),new THREE.Vector3(backX,y,3.66));}
+ for(const z of [-3.66,3.66])for(let i=0;i<=10;i++){const x=backX+(frontX-backX)*i/10;pts.push(new THREE.Vector3(x,0,z),new THREE.Vector3(x,2.44,z));}
+ const geo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.LineSegments(geo,netThread));}
+for(const side of [-1,1])addNetGrid(side*52.5,side);
+// Corner flags, with slender metal poles and cloth triangles.
+const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55);
+for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.8,8),flagPole);pole.position.set(x,.9,z);scene.add(pole);
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([0,1.65,0,.72,1.5,0,0,1.22,0],3));geo.setIndex([0,1,2]);geo.computeVertexNormals();const flag=new THREE.Mesh(geo,flagCloth);flag.position.set(x,0,z);scene.add(flag);}
 const ballGroup=new THREE.Group();ballGroup.position.set(0,.22,0);scene.add(ballGroup);const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),mat(0xf5f5ed,.32));ballMesh.castShadow=true;ballGroup.add(ballMesh);
 const ballSeams=new THREE.Mesh(new THREE.TorusGeometry(.145,.009,5,40),mat(0x20252a,.6));ballSeams.rotation.x=Math.PI/2;ballGroup.add(ballSeams);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.35,24),new THREE.MeshBasicMaterial({color:0x061009,transparent:true,opacity:.3}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;ballGroup.add(shadow);
