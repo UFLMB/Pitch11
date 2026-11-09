@@ -23,9 +23,9 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 @media(max-width:600px){#drone-hud{left:10px;bottom:12px;gap:7px}.drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}.drone-pad button,.drone-alt button{width:38px;height:38px}#drone-help{right:9px;bottom:12px;max-width:145px;font-size:9px}.controls{max-width:70vw}}
 @media(max-width:600px){.hud{align-items:flex-start}.controls{max-width:58vw}button{padding:9px 10px;font-size:9px}#status{bottom:10px;font-size:9px}}
 </style></head><body>
-<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.4 · STADIUM REALISM</span></div>
+<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.5 · MATCHDAY ENVIRONMENT</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button data-view="drone">DRONE CAM · DEV</button><button id="back">BACK TO GAME</button></div></div>
-<div id="status">STADIUM REALISM 2.4 · ARCHITECTURE / LIGHT / ATMOSPHERE</div>
+<div id="status">MATCHDAY ENVIRONMENT 2.5 · CROWD / LED / STADIUM DETAIL</div>
 <div id="drone-hud"><div class="drone-pad"><button data-move="forward" aria-label="Move forward">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="back" aria-label="Move backward">▼</button><button data-move="right" aria-label="Move right">▶</button></div><div class="drone-alt"><button data-move="up" aria-label="Rise">＋</button><button data-move="down" aria-label="Descend">−</button></div></div><div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: use directional controls</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 <script>
@@ -77,21 +77,19 @@ const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,o
 // Multi-tier grandstands: structural bowls, seating decks, human-shaped crowd and canopy roofs.
 const concreteMat=mat(0x465057,.9),fasciaMat=mat(0x182329,.58,.24),seatMats=[0x263b36,0x30443d,0x354c43,0x253a34].map(c=>mat(c,.72));
 const seatBaseGeo=new THREE.BoxGeometry(.72,.13,.72),seatBackGeo=new THREE.BoxGeometry(.72,.58,.12);
-const crowdBodyGeo=new THREE.CylinderGeometry(.16,.2,.68,7),crowdHeadGeo=new THREE.SphereGeometry(.17,8,6);
-const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61].map(c=>mat(c,.94));
+const crowdBodyGeo=new THREE.CapsuleGeometry(.145,.34,4,8),crowdHeadGeo=new THREE.SphereGeometry(.125,10,8),crowdArmGeo=new THREE.CapsuleGeometry(.055,.28,3,6);
+const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61,0x9a6b45,0x5c6268,0xc3c1b4].map(c=>mat(c,.94));
 const crowdData=[];
 function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
  const seats=Math.floor(length/spacing),rowZ=axis==='long'?side*offset:0,rowX=axis==='end'?side*offset:0;
  for(let i=0;i<seats;i++){
-  const along=(i-(seats-1)/2)*spacing;
-  const p=axis==='long'?[along,y,rowZ]:[rowX,y,along];
-  const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();
-  seatBaseInstances.push(dummy.matrix.clone());
+  const along=(i-(seats-1)/2)*spacing,p=axis==='long'?[along,y,rowZ]:[rowX,y,along];
+  const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();seatBaseInstances.push(dummy.matrix.clone());
   const back=new THREE.Object3D();back.position.set(p[0],p[1]+.32,p[2]);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
-  const person=new THREE.Object3D();person.position.set(p[0],p[1]+.88,p[2]+(axis==='long'?side*.34:0));person.rotation.y=rotation;person.scale.set(.85,.9,.85);person.updateMatrix();crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length});
+  const person=new THREE.Object3D();person.position.set(p[0],p[1]+.87,p[2]+side*.30);person.rotation.y=rotation;person.scale.set(.9,.88,.9);person.updateMatrix();
+  crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length,cheer:(i*17+deckIndex*11)%23===0,phase:(i*1.71+deckIndex*.43)%Math.PI*2});
  }
 }
-const seatBaseInstances=[],seatBackInstances=[];
 function buildLongStand(side){
  const tiers=[{rows:13,z:39.5,y:.72,dz:1.05,dy:.34},{rows:10,z:55.2,y:6.1,dz:1.12,dy:.39},{rows:9,z:67.1,y:11.2,dz:1.18,dy:.43}];
  tiers.forEach((tier,deck)=>{
@@ -123,13 +121,16 @@ const seatBases=new THREE.InstancedMesh(seatBaseGeo,seatMats[0],seatBaseInstance
 const seatBacks=new THREE.InstancedMesh(seatBackGeo,seatMats[1],seatBackInstances.length);
 seatBaseInstances.forEach((m,i)=>seatBases.setMatrixAt(i,m));seatBackInstances.forEach((m,i)=>seatBacks.setMatrixAt(i,m));
 seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=true;seatBases.castShadow=true;seatBacks.castShadow=true;
-for(let i=0;i<seatBaseInstances.length;i++){const v=((i*9301+49297)%233280)/233280;const shade=.78+v*.34;seatBases.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));seatBacks.setColorAt(i,new THREE.Color().setRGB(shade*.92,shade,shade*.94));}
-if(seatBases.instanceColor)seatBases.instanceColor.needsUpdate=true;if(seatBacks.instanceColor)seatBacks.instanceColor.needsUpdate=true;
-scene.add(seatBases,seatBacks);
+for(let i=0;i<seatBaseInstances.length;i++){const v=((i*9301+49297)%233280)/233280;const shade=.82+v*.28;seatBases.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));seatBacks.setColorAt(i,new THREE.Color().setRGB(shade*.92,shade,shade*.94));}
+if(seatBases.instanceColor)seatBases.instanceColor.needsUpdate=true;if(seatBacks.instanceColor)seatBacks.instanceColor.needsUpdate=true;scene.add(seatBases,seatBacks);
+const crowdArmMeshes=[];
 for(let palette=0;palette<crowdPalette.length;palette++){
- const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),heads=new THREE.InstancedMesh(crowdHeadGeo,crowdPalette[palette],entries.length);
- entries.forEach((p,i)=>{bodies.setMatrixAt(i,p.matrix);const m=new THREE.Matrix4().copy(p.matrix);m.multiply(new THREE.Matrix4().makeTranslation(0,.52,0));heads.setMatrixAt(i,m);});
- bodies.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;scene.add(bodies,heads);
+ const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),heads=new THREE.InstancedMesh(crowdHeadGeo,crowdPalette[palette],entries.length),arms=new THREE.InstancedMesh(crowdArmGeo,crowdPalette[palette],entries.length*2);
+ entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix);bodies.setMatrixAt(i,base);
+  const head=new THREE.Matrix4().compose(new THREE.Vector3(0,.43,0),new THREE.Quaternion(),new THREE.Vector3(1,1,1));heads.setMatrixAt(i,base.clone().multiply(head));
+  for(let a=0;a<2;a++){const side=a===0?-1:1;const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*.28)),new THREE.Vector3(1,1,1));arms.setMatrixAt(i*2+a,base.clone().multiply(local));}
+ });
+ bodies.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;arms.instanceMatrix.needsUpdate=true;bodies.castShadow=true;heads.castShadow=true;arms.castShadow=true;scene.add(bodies,heads,arms);crowdArmMeshes.push({mesh:arms,entries});
 }
 // Continuous cantilevered roof canopies with radial steel trusses.
 const roofSurface=new THREE.MeshStandardMaterial({color:0x172126,roughness:.48,metalness:.42,side:THREE.DoubleSide});
@@ -164,14 +165,15 @@ for(const side of [-1,1]){makeCanopy('long',side);makeCanopy('end',side);}
 // GRAPHICS 2.3 — stadium interior architecture and matchday infrastructure.
 const ledMat=new THREE.MeshStandardMaterial({color:0xd9f3e6,emissive:0x79dca2,emissiveIntensity:1.8,roughness:.42});
 const ledDark=mat(0x10191d,.55,.2);
-function ribbonBoard(axis,side){
- const length=axis==='long'?105:68;
- const board=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,1.05,.34):new THREE.BoxGeometry(.34,1.05,length),ledDark);
- board.position.set(axis==='long'?0:side*53.45,.72,axis==='long'?side*35.15:0);scene.add(board);
- const face=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length-.4,.72,.035):new THREE.BoxGeometry(.035,.72,length-.4),ledMat);
- face.position.set(axis==='long'?0:side*53.26,.74,axis==='long'?side*34.96:0);scene.add(face);
- const trim=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.08,.38):new THREE.BoxGeometry(.38,.08,length),fasciaMat);
- trim.position.set(axis==='long'?0:side*53.45,1.28,axis==='long'?side*35.15:0);scene.add(trim);
+const adCanvas=document.createElement('canvas');adCanvas.width=2048;adCanvas.height=128;const adCtx=adCanvas.getContext('2d');adCtx.fillStyle='#07151a';adCtx.fillRect(0,0,2048,128);
+const adPanels=[['PITCH 11','#d9e8d7'],['PLAY WITH PURPOSE','#b9d9c6'],['THE BEAUTIFUL GAME','#f0eee2'],['MATCHDAY','#d8e5ee'],['PITCH 11','#d9e8d7'],['FOOTBALL. REIMAGINED.','#c5d4ca']];
+for(let i=0;i<adPanels.length;i++){const x=i*2048/adPanels.length;adCtx.fillStyle=i%2?'#10242a':'#0a1c20';adCtx.fillRect(x+3,3,2048/adPanels.length-6,122);adCtx.fillStyle=adPanels[i][1];adCtx.font='800 37px Arial';adCtx.textAlign='center';adCtx.textBaseline='middle';adCtx.fillText(adPanels[i][0],x+2048/adPanels.length/2,64);adCtx.fillStyle='#8fbf9b';adCtx.fillRect(x+22,108,2048/adPanels.length-44,3);}
+const adTexture=new THREE.CanvasTexture(adCanvas);adTexture.colorSpace=THREE.SRGBColorSpace;adTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+const adFaceMat=new THREE.MeshBasicMaterial({map:adTexture,side:THREE.DoubleSide});
+function ribbonBoard(axis,side){const length=axis==='long'?105:68;
+ const board=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,1.05,.34):new THREE.BoxGeometry(.34,1.05,length),ledDark);board.position.set(axis==='long'?0:side*53.45,.72,axis==='long'?side*35.15:0);scene.add(board);
+ const face=new THREE.Mesh(new THREE.PlaneGeometry(length-.4,.72),adFaceMat);face.rotation.y=axis==='long'?(side>0?0:Math.PI):side>0?Math.PI/2:-Math.PI/2;face.position.set(axis==='long'?0:side*53.26,.74,axis==='long'?side*34.96:0);scene.add(face);
+ const trim=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.08,.38):new THREE.BoxGeometry(.38,.08,length),fasciaMat);trim.position.set(axis==='long'?0:side*53.45,1.28,axis==='long'?side*35.15:0);scene.add(trim);
 }
 for(const side of [-1,1]){ribbonBoard('long',side);ribbonBoard('end',side);}
 // Stadium vomitories: dark access portals, concrete reveals and illuminated aisle edges.
@@ -258,10 +260,7 @@ for(const side of [-1,1])addNetGrid(side*52.5,side);
 const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55);
 for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.8,8),flagPole);pole.position.set(x,.9,z);scene.add(pole);
  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([0,1.65,0,.72,1.5,0,0,1.22,0],3));geo.setIndex([0,1,2]);geo.computeVertexNormals();const flag=new THREE.Mesh(geo,flagCloth);flag.position.set(x,0,z);scene.add(flag);}
-const ballGroup=new THREE.Group();ballGroup.position.set(0,.22,0);scene.add(ballGroup);const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),mat(0xf5f5ed,.32));ballMesh.castShadow=true;ballGroup.add(ballMesh);
-const ballSeams=new THREE.Mesh(new THREE.TorusGeometry(.145,.009,5,40),mat(0x20252a,.6));ballSeams.rotation.x=Math.PI/2;ballGroup.add(ballSeams);
-const shadow=new THREE.Mesh(new THREE.CircleGeometry(.35,24),new THREE.MeshBasicMaterial({color:0x061009,transparent:true,opacity:.3}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;ballGroup.add(shadow);
-const haze=new THREE.Mesh(new THREE.PlaneGeometry(300,80),new THREE.MeshBasicMaterial({color:0x9eb5bd,transparent:true,opacity:.06,depthWrite:false}));haze.position.set(0,30,-115);scene.add(haze);
+// Stadium-only preview: no decorative static ball or artificial floating haze.
 function setView(name){const v=views[name]||views.broadcast;drone.active=name==='drone';document.querySelector('#drone-hud').classList.toggle('visible',drone.active);document.querySelector('#drone-help').classList.toggle('visible',drone.active);controls.enabled=name==='tactical';if(drone.active){camera.position.set(0,48,82);drone.yaw=0;drone.pitch=-.43;camera.fov=62;camera.updateProjectionMatrix();updateDroneLook();}else{camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();controls.target.set(...v.target);controls.update();}document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));}
 function updateDroneLook(){const cp=Math.cos(drone.pitch),dir=new THREE.Vector3(Math.sin(drone.yaw)*cp,Math.sin(drone.pitch),-Math.cos(drone.yaw)*cp);camera.lookAt(camera.position.clone().add(dir));}
 const keyMap={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',q:'down',e:'up'};
@@ -275,5 +274,7 @@ renderer.domElement.addEventListener('wheel',e=>{if(!drone.active)return;e.preve
 function updateDrone(dt){if(!drone.active)return;const active=new Set([...drone.keys,...drone.move]);const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));const step=drone.speed*dt;if(active.has('forward'))camera.position.addScaledVector(forward,step);if(active.has('back'))camera.position.addScaledVector(forward,-step);if(active.has('left'))camera.position.addScaledVector(right,-step);if(active.has('right'))camera.position.addScaledVector(right,step);if(active.has('up'))camera.position.y+=step;if(active.has('down'))camera.position.y-=step;camera.position.y=Math.max(6,Math.min(130,camera.position.y));updateDroneLook();}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));document.querySelector('#back').addEventListener('click',()=>location.href='./');
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);});
-let previous=performance.now();function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);renderer.render(scene,camera);}loading.style.display='none';animate();
+let previous=performance.now();function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);const time=now*.001;
+ for(const group of crowdArmMeshes){const {mesh,entries}=group;for(let i=0;i<entries.length;i++){const p=entries[i];if(!p.cheer)continue;for(let a=0;a<2;a++){const side=a===0?-1:1,raise=.55+.45*Math.sin(time*2.2+p.phase);const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*(.25+raise*.92)));const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),rot,new THREE.Vector3(1,1,1));mesh.setMatrixAt(i*2+a,new THREE.Matrix4().copy(p.matrix).multiply(local));}}mesh.instanceMatrix.needsUpdate=true;}
+ renderer.render(scene,camera);}loading.style.display='none';animate();
 </script></body></html>
