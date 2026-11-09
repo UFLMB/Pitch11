@@ -4457,7 +4457,47 @@ drawBall=function(a){
   ctx.save();ctx.translate(x,y-z*0.55);ctx.scale(s,s);ctx.translate(-x,-(y-z*0.55));
   _ballPerspective2D(a);ctx.restore();
 };
+
+/* ===================== PITCH 11 - GAMEPLAY 3.0 =====================
+   Safe integration layer:
+   - adaptive dribble touch based on pace, control, stamina, turn and pressure
+   - prevent a second keeper-save reaction while the keeper is already diving
+   Existing team tactics, collision response, ball physics and animation rigs remain
+   the source of truth; this layer only refines their hand-off points.
+   ================================================================== */
+const _gkReact30=gkReact;
+gkReact=function(p){
+  if(p.dive>0)return;                         // one save decision per dive; no overlapping reaction
+  _gkReact30(p);
+};
+const _stepBall30=stepBall;
+stepBall=function(){
+  const carrier=ball.owner;
+  _stepBall30();
+  if(!carrier||ball.owner!==carrier||carrier.gk||carrier.out||carrier.down||
+     S.mode!=='play'||(S.rs&&S.rs.p===carrier))return;
+  const speed=Math.hypot(carrier.vx,carrier.vy);
+  const control=clamp(carrier.st&&carrier.st.drib!==undefined?carrier.st.drib:0.5,0,1);
+  const sprint=carrier.sp&&!carrier.winded;
+  const turn=clamp(Math.abs(carrier.turn||0)/12,0,1);
+  const pressure=nearestOpp(carrier);
+  const tight=clamp((48-pressure)/48,0,1);
+  const stamina=clamp(carrier.stam===undefined?1:carrier.stam,0,1);
+  const lead=clamp(
+    1.2+(speed/100)*(sprint?2.5:0.9)+(1-control)*1.8+
+    turn*(1.1+1.2*(1-control))+tight*(1.0+1.5*(1-control))+
+    (1-stamina)*0.8,
+    1.0,7.2
+  );
+  const side=Math.sin(carrier.anim*0.5)*(0.25+turn*0.55);
+  ball.x+=Math.cos(carrier.face)*lead-Math.sin(carrier.face)*side;
+  ball.y+=Math.sin(carrier.face)*lead+Math.cos(carrier.face)*side;
+};
+/* Existing AI already includes support runs, width, cover, pressing, marking and
+   onside-aware movement. Existing separate()/bodyCollide() already resolve
+   player spacing and ball-body impacts; do not stack a second collision solver. */
 /* ===================== BOOT ===================== */
+
 addEventListener('resize',resize);
 resize();
 load();fixX();applyX();fixRf();applyConfig();M.opp=nextOpp();newMatch();S.mode='menu';S.t=0;
