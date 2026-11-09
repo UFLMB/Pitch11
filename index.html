@@ -767,7 +767,7 @@ function aiGK(p){
     const D=gx-b.x,k=b.z>2?KA:KG,r=D*k/b.vx;
     if(r>0&&r<0.97){
       const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D,zp=b.z+b.vz*tt-0.5*BALL_GRAV*tt*tt;
-      if(Math.abs(yp-CY)<GOALH+28&&tt<1&&zp<GOALZ+25){
+      if(Math.abs(yp-CY)<GOALH+BR+5&&tt<1&&zp>=-8&&zp<GOALZ+BR+8){
         if(p.seenShot!==b.shotId){                         // handling stat: better keepers react faster and misjudge less
           p.seenShot=b.shotId;p.react=(b.pen?rnd(0,0.08):rnd(GK_REACT[0],GK_REACT[1]))*(1.5-st.def)*(p.team?DIF[G.diff].gk:1);
           p.err=rnd(-GK_ERR,GK_ERR)*(b.pen?1.6:1)*(1.6-st.def)*(p.team?DIF[G.diff].gk:1);
