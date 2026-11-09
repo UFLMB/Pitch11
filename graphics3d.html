@@ -79,6 +79,7 @@ const concreteMat=mat(0x465057,.9),fasciaMat=mat(0x182329,.58,.24),seatMats=[0x2
 const seatBaseGeo=new THREE.BoxGeometry(.72,.13,.72),seatBackGeo=new THREE.BoxGeometry(.72,.58,.12);
 const crowdBodyGeo=new THREE.CapsuleGeometry(.145,.34,4,8),crowdHeadGeo=new THREE.SphereGeometry(.125,10,8),crowdArmGeo=new THREE.CapsuleGeometry(.055,.28,3,6);
 const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61,0x9a6b45,0x5c6268,0xc3c1b4].map(c=>mat(c,.94));
+const skinPalette=[0xe0b99a,0xb98260,0x87583f,0x583b31].map(c=>mat(c,.92));
 const crowdData=[];
 function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
  const seats=Math.floor(length/spacing),rowZ=axis==='long'?side*offset:0,rowX=axis==='end'?side*offset:0;
@@ -87,7 +88,7 @@ function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
   const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();seatBaseInstances.push(dummy.matrix.clone());
   const back=new THREE.Object3D();back.position.set(p[0],p[1]+.32,p[2]);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
   const person=new THREE.Object3D();person.position.set(p[0],p[1]+.87,p[2]+side*.30);person.rotation.y=rotation;person.scale.set(.9,.88,.9);person.updateMatrix();
-  crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length,cheer:(i*17+deckIndex*11)%23===0,phase:(i*1.71+deckIndex*.43)%Math.PI*2});
+  crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length,skin:(i*7+deckIndex*3+Math.floor(offset))%4,cheer:(i*17+deckIndex*11)%23===0,phase:(i*1.71+deckIndex*.43)%Math.PI*2});
  }
 }
 function buildLongStand(side){
@@ -124,13 +125,16 @@ seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=t
 for(let i=0;i<seatBaseInstances.length;i++){const v=((i*9301+49297)%233280)/233280;const shade=.82+v*.28;seatBases.setColorAt(i,new THREE.Color().setRGB(shade,shade,shade));seatBacks.setColorAt(i,new THREE.Color().setRGB(shade*.92,shade,shade*.94));}
 if(seatBases.instanceColor)seatBases.instanceColor.needsUpdate=true;if(seatBacks.instanceColor)seatBacks.instanceColor.needsUpdate=true;scene.add(seatBases,seatBacks);
 const crowdArmMeshes=[];
+for(let skin=0;skin<skinPalette.length;skin++){const entries=crowdData.filter(p=>p.skin===skin),heads=new THREE.InstancedMesh(crowdHeadGeo,skinPalette[skin],entries.length);
+ entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix),head=new THREE.Matrix4().compose(new THREE.Vector3(0,.43,0),new THREE.Quaternion(),new THREE.Vector3(1,1,1));heads.setMatrixAt(i,base.multiply(head));});
+ heads.instanceMatrix.needsUpdate=true;scene.add(heads);
+}
 for(let palette=0;palette<crowdPalette.length;palette++){
- const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),heads=new THREE.InstancedMesh(crowdHeadGeo,crowdPalette[palette],entries.length),arms=new THREE.InstancedMesh(crowdArmGeo,crowdPalette[palette],entries.length*2);
+ const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),arms=new THREE.InstancedMesh(crowdArmGeo,crowdPalette[palette],entries.length*2);
  entries.forEach((p,i)=>{const base=new THREE.Matrix4().copy(p.matrix);bodies.setMatrixAt(i,base);
-  const head=new THREE.Matrix4().compose(new THREE.Vector3(0,.43,0),new THREE.Quaternion(),new THREE.Vector3(1,1,1));heads.setMatrixAt(i,base.clone().multiply(head));
   for(let a=0;a<2;a++){const side=a===0?-1:1;const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*.28)),new THREE.Vector3(1,1,1));arms.setMatrixAt(i*2+a,base.clone().multiply(local));}
  });
- bodies.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;arms.instanceMatrix.needsUpdate=true;bodies.castShadow=true;heads.castShadow=true;arms.castShadow=true;scene.add(bodies,heads,arms);crowdArmMeshes.push({mesh:arms,entries});
+ bodies.instanceMatrix.needsUpdate=true;arms.instanceMatrix.needsUpdate=true;scene.add(bodies,arms);crowdArmMeshes.push({mesh:arms,entries});
 }
 // Continuous cantilevered roof canopies with radial steel trusses.
 const roofSurface=new THREE.MeshStandardMaterial({color:0x172126,roughness:.48,metalness:.42,side:THREE.DoubleSide});
@@ -274,7 +278,7 @@ renderer.domElement.addEventListener('wheel',e=>{if(!drone.active)return;e.preve
 function updateDrone(dt){if(!drone.active)return;const active=new Set([...drone.keys,...drone.move]);const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));const step=drone.speed*dt;if(active.has('forward'))camera.position.addScaledVector(forward,step);if(active.has('back'))camera.position.addScaledVector(forward,-step);if(active.has('left'))camera.position.addScaledVector(right,-step);if(active.has('right'))camera.position.addScaledVector(right,step);if(active.has('up'))camera.position.y+=step;if(active.has('down'))camera.position.y-=step;camera.position.y=Math.max(6,Math.min(130,camera.position.y));updateDroneLook();}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));document.querySelector('#back').addEventListener('click',()=>location.href='./');
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);});
-let previous=performance.now();function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);const time=now*.001;
- for(const group of crowdArmMeshes){const {mesh,entries}=group;for(let i=0;i<entries.length;i++){const p=entries[i];if(!p.cheer)continue;for(let a=0;a<2;a++){const side=a===0?-1:1,raise=.55+.45*Math.sin(time*2.2+p.phase);const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*(.25+raise*.92)));const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),rot,new THREE.Vector3(1,1,1));mesh.setMatrixAt(i*2+a,new THREE.Matrix4().copy(p.matrix).multiply(local));}}mesh.instanceMatrix.needsUpdate=true;}
+let previous=performance.now(),crowdAccumulator=0;function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);crowdAccumulator+=dt;const time=now*.001;
+ if(crowdAccumulator>=.12){crowdAccumulator=0;for(const group of crowdArmMeshes){const {mesh,entries}=group;for(let i=0;i<entries.length;i++){const p=entries[i];if(!p.cheer)continue;for(let a=0;a<2;a++){const side=a===0?-1:1,raise=.55+.45*Math.sin(time*2.2+p.phase);const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*(.25+raise*.92)));const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),rot,new THREE.Vector3(1,1,1));mesh.setMatrixAt(i*2+a,new THREE.Matrix4().copy(p.matrix).multiply(local));}}mesh.instanceMatrix.needsUpdate=true;}}
  renderer.render(scene,camera);}loading.style.display='none';animate();
 </script></body></html>
