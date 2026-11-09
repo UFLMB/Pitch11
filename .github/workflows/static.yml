@@ -39,6 +39,12 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://www.innerscene.com/api/library/football-stadium-f7b93967/download" --output assets/football-stadium.glb
           test "$(stat -c%s assets/football-stadium.glb)" -gt 1000000
           test "$(head -c 4 assets/football-stadium.glb)" = "glTF"
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://cdn.3dassets.dev/assets/19110/v1/model.glb" --output assets/team-dugout.glb
+          test "$(stat -c%s assets/team-dugout.glb)" -gt 10000
+          test "$(head -c 4 assets/team-dugout.glb)" = "glTF"
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://cdn.3dassets.dev/assets/19077/v1/model.glb" --output assets/corner-flag.glb
+          test "$(stat -c%s assets/corner-flag.glb)" -gt 3000
+          test "$(head -c 4 assets/corner-flag.glb)" = "glTF"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
