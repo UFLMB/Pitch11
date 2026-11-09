@@ -531,19 +531,26 @@ function headShot(p){                                      // aimed so the ball 
   const vz=clamp((rnd(3,24)-b.z+0.5*BALL_GRAV*tt*tt)/tt,-130,130);
   kick(p,dx/dist*v,dy/dist*v,vz,0,null,0,0,'shot');b.shotId++;b.pen=false;
 }
-function gkReact(p){                                       // save / catch / spill / parry
-  const b=ball;if(b.owner||p.kcd>0)return;
-  const gs=GOALH/36.6,dv=p.dive>0,reach=((dv?28:12)*gs+(p.st.phys-0.7)*4*(0.8+0.4*gs)+(p.claim?3:0))*(p.team?0.95:1.05);
+function gkReact(p){                                       // save only a genuine threat to this keeper's own goal
+  const b=ball;if(b.owner||p.kcd>0||p.out||S.mode!=='play')return;
+  const d=dirOf(p.team),gx=ownGX(p),closing=-d*b.vx;
+  if(closing<70)return;                                // ball must be travelling towards this keeper's goal
+  const D=gx-b.x,k=b.z>2?KA:KG,r=D*k/b.vx;
+  if(!(D/b.vx>0&&r>0&&r<0.95))return;                  // no forward intersection with the own goal line
+  const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D;
+  const zp=b.z+b.vz*tt-0.5*BALL_GRAV*tt*tt;
+  if(tt>2.2||Math.abs(yp-CY)>GOALH+BR+5||zp<-8||zp>GOALZ+BR+8)return; // wide or over/under the frame: do not dive
+  const gs=GOALH/36.6,dv=p.dive>0,reach=((dv?28:12)*gs+(p.st.phys-0.7)*4*(0.8+0.4*gs))*(p.team?0.95:1.05);
   if(b.z>(dv?50:38))return;
-  const sx=b.px,sy=b.py,ex=b.x-sx,ey=b.y-sy,L=ex*ex+ey*ey,u=L>0?clamp(((p.x-sx)*ex+(p.y-sy)*ey)/L,0,1):1,cx=sx+ex*u,cy=sy+ey*u;   // closest point on this tick's path: fast shots can't pass through him
+  const sx=b.px,sy=b.py,ex=b.x-sx,ey=b.y-sy,L=ex*ex+ey*ey,u=L>0?clamp(((p.x-sx)*ex+(p.y-sy)*ey)/L,0,1):1,cx=sx+ex*u,cy=sy+ey*u;
   const dx=cx-p.x,dy=cy-p.y,dd=Math.hypot(dx,dy);if(dd>reach)return;
-  const sp=Math.hypot(b.vx,b.vy),d=dirOf(p.team),hd=0.8+0.4*p.st.def,q=dd/reach;   // q: 0 = in the gloves, 1 = fingertips
-  if(sp>340&&q>0.5&&Math.random()<0.35*(2-p.st.def))return;                   // powerful, well-placed shot beats him
+  const sp=Math.hypot(b.vx,b.vy),hd=0.8+0.4*p.st.def,q=dd/reach;
+  if(sp>340&&q>0.5&&Math.random()<0.35*(2-p.st.def))return;
   b.x=cx;b.y=cy;
   const hold=sp<(175-q*52)*hd||(sp<(335-q*95)*hd&&Math.random()<0.36*hd);
   if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
-  else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;clearOff();}   // spill: drops loose in front
-  else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);   // parry: pushed wide, not back into the middle
+  else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;clearOff();}
+  else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);
     b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;clearOff();}
 }
 
@@ -768,10 +775,11 @@ function aiGK(p){
         if(p.react>0)return;                               // reaction delay: keeper is frozen
         if(p.divedShot!==b.shotId){
           p.divedShot=b.shotId;
-          const dy=clamp(yp+p.err,CY-GOALH-4,CY+GOALH+4)-p.y;
-          p.dive=clamp(tt+0.15,0.3,0.7);p.vx=0;
-          p.vy=Math.abs(dy)>6?Math.sign(dy)*Math.min(GK_DIVE*(0.85+0.3*st.pace)*(GOALH/36.6),Math.abs(dy)/Math.max(tt,0.12)+25):0;
-          p.diveAng=dy>0?Math.PI/2:-Math.PI/2;
+          const tx=gx+d*4,ty=clamp(yp+p.err,CY-GOALH+BR,CY+GOALH-BR);
+          const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy),tm=clamp(tt+0.15,0.3,0.7);
+          const speed=dist>2?Math.min(GK_DIVE*(0.85+0.3*st.pace)*(GOALH/36.6),dist/Math.max(tt,0.12)+25):0;
+          p.dive=tm;p.vx=dist>2?dx/dist*speed:0;p.vy=dist>2?dy/dist*speed:0;
+          p.diveAng=dist>2?Math.atan2(dy,dx):0;
           return;
         }
       }
