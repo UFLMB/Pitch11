@@ -30,7 +30,7 @@ const PEN_DEPTH=165,PEN_WIDTH=403,SIX_DEPTH=55,SIX_WIDTH=183,SPOT=110,ARC_R=91.5
 let PREFS={pitch:1,goal:1,ball:1,player:1};
 let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,WW=PW+120,WH=PH+120;
 let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
-const GRAV=700,KG=0.9,KA=0.12,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // gravity, ground drag, air drag
+const BALL_GRAV=98.1,KG=0.12,KA=0.08,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // ball gravity (9.81 m/s²), rolling drag, aerodynamic drag; 1 unit = 10 cm
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
 const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
 // 4-3-3: [depth 0..1 from own goal, width 0..1]; index 0 = GK
@@ -264,8 +264,8 @@ function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
 function doShoot(p,power,ang,lift,em){
   const pen=!!(S.rs&&S.rs.kind==='pen');
   ang+=rnd(-.5,.5)*(0.06+power*0.16)*(1.5-p.st.shoot)*(1+0.5*p.fat)*(em||1)*SHV.acc*(1+clamp((45-nearestOpp(p))/45,0,1)*0.7)*(1+Math.max(0,power-0.85)*1.6);   // harder, pressured or over-hit = less accurate
-  const v=SHV.vf>0?SHV.vf:(330+400*power)*(0.9+0.2*p.st.shoot)*SHV.v,spin=SHV.sp!==null?SHV.sp:clamp(p.turn*0.2,-1.2,1.2)*(0.4+power*0.6); // turning while shooting bends the ball
-  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,SHV.vz>=0?SHV.vz:Math.min(150,15+power*power*120*rnd(0.5,1.2)+(lift||0)),spin,null,0,0,'shot');
+  const v=SHV.vf>0?SHV.vf:(175+165*power)*(0.9+0.2*p.st.shoot)*SHV.v,spin=SHV.sp!==null?SHV.sp:clamp(p.turn*0.2,-1.2,1.2)*(0.4+power*0.6); // turning while shooting bends the ball
+  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,SHV.vz>=0?SHV.vz:Math.min(105,4+power*power*48*rnd(0.5,1.2)+(lift||0)),spin,null,0,0,'shot');
   if(power>0.75)FX.shake=Math.max(FX.shake,3+power*4);
   ball.shotId++;ball.pen=pen;
   SHV.acc=SHV.v=1;SHV.vf=0;SHV.vz=-1;SHV.sp=null;   // variant parameters apply to one shot only
@@ -281,11 +281,11 @@ function doPass(p,t,mode){
   tx=clamp(tx,PX0+8,PX1-8);ty=clamp(ty,PY0+8,PY1-8);
   const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy)||1;
   let v,vz=0;
-  if(mode==='lob'){vz=GRAV*T/2;v=dist/T*1.07;}
+  if(mode==='lob'){vz=BALL_GRAV*T/2;v=KA*dist/Math.max(0.08,1-Math.exp(-KA*T))*1.04;}
   else{
     T=clamp(dist/520+0.5,0.5,1.3);
     const denom=1-Math.exp(-KG*T);
-    v=clamp(KG*dist/Math.max(0.2,denom)*(mode==='thru'?1.2:1.0)+30,170,540)*PSV.v;
+    v=clamp(KG*dist/Math.max(0.2,denom)*(mode==='thru'?1.2:1.0)+12,150,400)*PSV.v;
   }
   const real=t.team!==undefined;
   const ps=p.st.pass,a0=Math.atan2(dy,dx)+rnd(-1,1)*(1.35-ps)*0.08*(0.4+dist/400)*(1+0.5*p.fat)*PSV.err*(1+passPress(p))*(p.team?1.4:1)-PSV.curl*0.5,vv=v*(1+rnd(-1,1)*(1-ps)*0.08);
@@ -430,13 +430,13 @@ function stepBall(){
   }
   if(b.spin){                                              // curve: rotate the velocity vector
     const c=Math.cos(b.spin*DT),s=Math.sin(b.spin*DT),vx=b.vx*c-b.vy*s;
-    b.vy=b.vx*s+b.vy*c;b.vx=vx;b.spin*=b.z>1?0.992:0.95;if(Math.abs(b.spin)<0.02)b.spin=0;
+    b.vy=b.vx*s+b.vy*c;b.vx=vx;b.spin*=b.z>1?0.996:0.96;if(Math.abs(b.spin)<0.02)b.spin=0;
   }
   const f=b.z>1?FA:FG;b.vx*=f;b.vy*=f;
   if(b.z===0&&b.vz===0&&b.vx*b.vx+b.vy*b.vy<9)b.vx=b.vy=0;
   if(b.z>0||b.vz!==0){
-    b.vz-=GRAV*DT;b.z+=b.vz*DT;
-    if(b.z<=0){b.z=0;if(b.vz<-70){AU.bounce(-b.vz);b.vz=-b.vz*0.55;b.vx*=0.85;b.vy*=0.85;}else b.vz=0;}  // bounce
+    b.vz-=BALL_GRAV*DT;b.z+=b.vz*DT;
+    if(b.z<=0){b.z=0;const impact=-b.vz;if(impact>18){AU.bounce(impact);const e=clamp(0.50+impact*0.00055,0.50,0.58);b.vz=impact*e;b.vx*=0.92;b.vy*=0.92;}else b.vz=0;}  // smooth, impact-speed-dependent turf rebound
   }
   const ox=b.x;b.x+=b.vx*DT;b.y+=b.vy*DT;
   goalHit(ox);
@@ -447,7 +447,7 @@ function goalHit(ox){                                      // crossbar + posts
   const b=ball;
   for(const gx of [PX0,PX1]){
     if(ox!==b.x&&(ox-gx)*(b.x-gx)<=0&&Math.abs(b.y-CY)<GOALH&&b.z>GOALZ-BR&&b.z<GOALZ+BR){
-      b.x=ox;b.vx*=-0.45;b.vz=(b.z>GOALZ?1:-1)*Math.abs(b.vz)*0.45+15;hitPost(Math.hypot(b.vx,b.vy)/.45);
+      b.x=ox;b.vx*=-0.52;b.vz=(b.z>GOALZ?1:-1)*Math.abs(b.vz)*0.5+6;hitPost(Math.hypot(b.vx,b.vy)/.52);
     }
     for(const s of [-1,1]){
       const py=CY+s*GOALH,dx=b.x-gx,dy=b.y-py,dd=Math.hypot(dx,dy),R=BR+2.5;
@@ -524,8 +524,8 @@ function airPlay(p){                                       // ball in the air: v
 function headShot(p){                                      // aimed so the ball is at a sensible height when it reaches the line
   const b=ball,t=p.team,d=dirOf(t),gx=d>0?PX1:PX0,gk=GK[1-t],sk=0.5*p.st.shoot+0.5*p.st.phys;
   const ty=CY+(gk.y>CY?-1:1)*rnd(8,GOALH-6)+rnd(-1,1)*(1.5-sk)*14*(1+0.5*p.fat);
-  const dx=gx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy)||1,v=(250+260*sk)*rnd(0.92,1.08),tt=dist/v;
-  const vz=clamp((rnd(3,24)-b.z+0.5*GRAV*tt*tt)/tt,-160,170);
+  const dx=gx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy)||1,v=(180+130*sk)*rnd(0.92,1.08),tt=dist/v;
+  const vz=clamp((rnd(3,24)-b.z+0.5*BALL_GRAV*tt*tt)/tt,-130,130);
   kick(p,dx/dist*v,dy/dist*v,vz,0,null,0,0,'shot');b.shotId++;b.pen=false;
 }
 function gkReact(p){                                       // save / catch / spill / parry
@@ -541,7 +541,7 @@ function gkReact(p){                                       // save / catch / spi
   if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
   else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;clearOff();}   // spill: drops loose in front
   else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);   // parry: pushed wide, not back into the middle
-    b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(60,130);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;clearOff();}
+    b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;clearOff();}
 }
 
 /* ===================== 6. AI ===================== */
@@ -566,7 +566,7 @@ function goTo(p,x,y,spr){
 }
 function interceptTo(p){
   const b=ball;let x=b.x+b.vx*0.42,y=b.y+b.vy*0.42;
-  if(b.z>12){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*GRAV*b.z))/GRAV;x=b.x+b.vx*tl*0.94;y=b.y+b.vy*tl*0.94;}
+  if(b.z>12){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*BALL_GRAV*b.z))/BALL_GRAV;x=b.x+b.vx*tl*0.94;y=b.y+b.vy*tl*0.94;}
   goTo(p,clamp(x,PX0,PX1),clamp(y,PY0,PY1),true);
 }
 function teamInfo(){
@@ -688,7 +688,7 @@ function aiShoot(p,lift,pen,em){
   let ty=CY+far*rnd(14,GOALH-6);                           // usually the far corner
   if(r<0.2)ty=CY-far*rnd(10,GOALH-6);                      // sometimes the near post
   else if(r<0.28)ty=CY+rnd(-10,10);                        // sometimes straight down the middle
-  if(!pen&&!lift&&Math.abs(gk.x-gx)>28&&dist<260&&Math.random()<0.45)lift=95;   // keeper off his line: chip
+  if(!pen&&!lift&&Math.abs(gk.x-gx)>28&&dist<260&&Math.random()<0.45)lift=32;   // keeper off his line: chip
   doShoot(p,pen?rnd(0.7,0.95):clamp(0.5+dist/520,0.55,1),Math.atan2(ty-p.y,gx-p.x),lift,(em||1)*(p.team&&!pen?1.5+dist/450:1));   // the AI side is less accurate, more so from range
   ball.spin+=rnd(-.5,.5)*(1.2-p.st.shoot);
 }
@@ -756,7 +756,7 @@ function aiGK(p){
   if(!o&&b.last&&b.last.team!==p.team&&-d*b.vx>140){       // incoming: predict where it crosses the goal line
     const D=gx-b.x,k=b.z>2?KA:KG,r=D*k/b.vx;
     if(r>0&&r<0.97){
-      const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D,zp=b.z+b.vz*tt-0.5*GRAV*tt*tt;
+      const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D,zp=b.z+b.vz*tt-0.5*BALL_GRAV*tt*tt;
       if(Math.abs(yp-CY)<GOALH+28&&tt<1&&zp<GOALZ+25){
         if(p.seenShot!==b.shotId){                         // handling stat: better keepers react faster and misjudge less
           p.seenShot=b.shotId;p.react=(b.pen?rnd(0,0.08):rnd(GK_REACT[0],GK_REACT[1]))*(1.5-st.def)*(p.team?DIF[G.diff].gk:1);
@@ -791,7 +791,7 @@ function aiGK(p){
   if(!o){                                                  // loose ball: sweep it up or claim a cross if I get there first
     const hv=Math.hypot(b.vx,b.vy),hi=b.z>10;
     let lx=b.x+b.vx*0.25,ly=b.y+b.vy*0.25;
-    if(hi){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*GRAV*b.z))/GRAV;lx=b.x+b.vx*tl*0.94;ly=b.y+b.vy*tl*0.94;}
+    if(hi){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*BALL_GRAV*b.z))/BALL_GRAV;lx=b.x+b.vx*tl*0.94;ly=b.y+b.vy*tl*0.94;}
     if(hv<(hi?600:360)&&Math.abs(b.x-gx)<330&&Math.abs(lx-gx)<(hi?165:250)&&Math.abs(ly-CY)<(hi?190:225)&&firstTo(p,lx,ly)){
       p.claim=hi;goTo(p,lx,ly,true);return;
     }
@@ -2078,7 +2078,7 @@ function kswipe(pid){const dx=(keys.ArrowRight?1:0)-(keys.ArrowLeft?1:0),dy=(key
 function shootGo(p,rs){
   if(W8.p===p)return;
   const k=I.svar,pen=!!(rs&&rs.kind==='pen');
-  if(!k||pen){act8('shot','normal');doShoot(p,clamp(I.chargeT/0.85,0.18,1),aimAng(p),rs&&rs.kind==='fk'?150:0);return;}
+  if(!k||pen){act8('shot','normal');doShoot(p,clamp(I.chargeT/0.85,0.18,1),aimAng(p),rs&&rs.kind==='fk'?35:0);return;}
   if(k==='ft'){if(ball.owner===p)shotVar(p,'ft');else{FT8.p=p;FT8.t=TUNING.sh.ft.arm;}return;}   // no ball yet: armed, fires when it arrives
   const w=TUNING.sh[k].w;
   if(w>0){W8.p=p;W8.t=W8.w=w;W8.k=k;setAct(p,1,0);return;}                   // longer wind-up shots
@@ -2090,12 +2090,12 @@ function shotVar(p,k){
   if(k==='low')SHV.vz=2;                                                    // driven: hugs the grass
   else if(k==='chip'){                                                      // lands just inside the goal line, dropping over a keeper off his line
     const cs=Math.cos(ang);let L=cs*d>0.15?Math.abs((gx-d*2-p.x)/cs):c.L;L=clamp(L,50,420);
-    const T=clamp(L/c.spd,0.5,1.15);SHV.vz=GRAV*T/2;SHV.vf=L/T*1.06;
+    const T=clamp(L/c.spd,0.5,1.15);SHV.vz=BALL_GRAV*T/2;SHV.vf=L/T*1.06;
   }else if(k==='fin'){                                                      // curled to the far corner
     const sy=p.y>CY+4?-1:p.y<CY-4?1:(Math.random()<.5?1:-1),ty=CY+sy*(GOALH-c.in),aT=Math.atan2(ty-p.y,gx-p.x);
     if(Math.cos(aT)*d>0.2){
-      const L=Math.hypot(gx-p.x,ty-p.y),v=(330+400*c.pw)*(0.9+0.2*p.st.shoot)*SHV.v,tf=L/v*1.05,n=Math.max(4,tf/DT),sg=(1-Math.pow(0.992,n))/0.008,s=sy*d>0?1:-1;
-      SHV.sp=s*c.curl/(DT*sg);ang=aT-s*c.curl/2;SHV.vz=Math.min(GRAV*tf*0.475,150);
+      const L=Math.hypot(gx-p.x,ty-p.y),v=(175+165*c.pw)*(0.9+0.2*p.st.shoot)*SHV.v,tf=L/v*1.05,n=Math.max(4,tf/DT),sg=(1-Math.pow(0.992,n))/0.008,s=sy*d>0?1:-1;
+      SHV.sp=s*c.curl/(DT*sg);ang=aT-s*c.curl/2;SHV.vz=Math.min(BALL_GRAV*tf*0.475,105);
     }
   }
   pop8(c.n);act8('shot',k);
@@ -2450,7 +2450,7 @@ function gkStep(p){                                         // true = the keeper
     tx=o.x+o.vx*0.25;ty=o.y+o.vy*0.25;
   }else{
     tx=b.x+b.vx*0.3;ty=b.y+b.vy*0.3;
-    if(b.z>10){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*GRAV*b.z))/GRAV;tx=b.x+b.vx*tl*0.94;ty=b.y+b.vy*tl*0.94;}
+    if(b.z>10){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*BALL_GRAV*b.z))/BALL_GRAV;tx=b.x+b.vx*tl*0.94;ty=b.y+b.vy*tl*0.94;}
   }
   tx=gx+d*clamp((tx-gx)*d,2,K.maxOut);ty=clamp(ty,PY0+10,PY1-10);   // never further than maxOut from his line
   p.ix=p.iy=0;goTo(p,tx,ty,true);return true;
@@ -2549,7 +2549,7 @@ const rcvOn=()=>S.mode==='play'&&!ball.owner&&ball.receiver&&!ball.receiver.gk&&
 function rcvPoint(p){                                      // earliest point on the ball's path this player can reach (ground balls use drag, lobs use the landing spot)
   const b=ball,spd=RUN*(0.9+0.2*p.st.pace)*SPRINT*TUNING.rcv.lead;
   let x=b.x,y=b.y,vx=b.vx,vy=b.vy;
-  if(b.z>12||b.vz>40){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*GRAV*b.z))/GRAV;x=b.x+b.vx*tl*0.94;y=b.y+b.vy*tl*0.94;return[clamp(x,PX0,PX1),clamp(y,PY0,PY1)];}
+  if(b.z>12||b.vz>40){const tl=(b.vz+Math.sqrt(b.vz*b.vz+2*BALL_GRAV*b.z))/BALL_GRAV;x=b.x+b.vx*tl*0.94;y=b.y+b.vy*tl*0.94;return[clamp(x,PX0,PX1),clamp(y,PY0,PY1)];}
   for(let k=1;k<=150;k++){
     vx*=FG;vy*=FG;x+=vx*DT;y+=vy*DT;
     if(Math.hypot(x-p.x,y-p.y)<=spd*k*DT+8)return[clamp(x,PX0+6,PX1-6),clamp(y,PY0+6,PY1-6)];   // he gets there first
@@ -2955,9 +2955,9 @@ function bodyCollide(){                                    // the ball bounces o
     if(d>=R||d<0.01)continue;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
-    const e=0.42;b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
+    const e=0.48;b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
     b.x=p.x+nx*R;b.y=p.y+ny*R;
-    if(-vn>180&&b.vz<40)b.vz=40+(-vn)*0.08;
+    if(-vn>220&&b.z<4&&b.vz<25)b.vz=Math.min(55,18+(-vn-220)*0.035);
     b.spin+=rnd(-.4,.4);b.last=p;if(b.receiver!==p)b.receiver=null;clearOff();
     if(-vn>220&&typeof AU!=='undefined'&&AU.kick)AU.kick(-vn*0.5);
   }
@@ -2988,9 +2988,10 @@ const TRJ={pts:[],col:'#fff',t:0,T:1,mode:''};
 function simTraj(){
   const b=ball,pts=[];let x=b.x,y=b.y,z=b.z,vx=b.vx,vy=b.vy,vz=b.vz,sp=b.spin;
   for(let i=0;i<110;i++){
-    if(sp){const c=Math.cos(sp*DT),s=Math.sin(sp*DT),nv=vx*c-vy*s;vy=vx*s+vy*c;vx=nv;sp*=z>1?0.992:0.95;}
+    if(sp){const c=Math.cos(sp*DT),s=Math.sin(sp*DT),nv=vx*c-vy*s;vy=vx*s+vy*c;vx=nv;sp*=z>1?0.996:0.96;}
     const f=z>1?FA:FG;vx*=f;vy*=f;
-    if(z>0||vz!==0){vz-=GRAV*DT;z+=vz*DT;if(z<=0){z=0;if(vz<-70){vz=-vz*.55;vx*=.85;vy*=.85;}else vz=0;}}
+    if(z>0||vz!==0){vz-=BALL_GRAV*DT;z+=vz*DT;if(z<=0){z=0;const impact=-vz;if(impact>18){const e=clamp(0.50+impact*0.00055,0.50,0.58);vz=impact*e;vx*=0.92;vy*=0.92;}else vz=0;}}
+    if(z<=1){const surface=FRIC[Math.min(2,X().ball)]*(X().wx===1?0.999:1);vx*=surface;vy*=surface;}
     x+=vx*DT;y+=vy*DT;
     if(i%2===0)pts.push(x,y,z);
     if(vx*vx+vy*vy<80&&z===0)break;
@@ -3052,7 +3053,7 @@ update=function(){
 /* ===================== 21. STAGE 15: CUSTOMISE hub - match rules, gameplay feel, looks & weather, kit editor ===================== */
 const DX={len:1,win:0,offside:1,fouls:2,cards:1,inj:2,spd:2,spr:1,stam:1,ball:1,aitk:1,gk:1,sbar:1,pitch:0,mow:0,wx:0,kit:[null,null,null]};
 G.x=Object.assign({},DX,{kit:[null,null,null]});
-const SPD=[.85,.93,1,1.08,1.18],SPR=[.9,1,1.12],LENS=[90,180,300,480],FRIC=[1.006,1,.992];
+const SPD=[.85,.93,1,1.08,1.18],SPR=[.9,1,1.12],LENS=[90,180,300,480],FRIC=[1.001,1,.998];
 const X=()=>G.x;
 function fixX(){const x=G.x&&typeof G.x==='object'?G.x:{};const o={};
   for(const k in DX){if(k==='kit')o.kit=Array.isArray(x.kit)&&x.kit.length===3?x.kit.map(v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)?v:null):[null,null,null];
@@ -3084,7 +3085,7 @@ const _inX=integrate;integrate=function(p){_inX(p);if(p.out)return;const x=X();
   if(p.dive>0)return;
   const e=SPD[x.spd]*(p.sp&&!p.winded?SPR[x.spr]:1)-1;
   if(e){p.x+=p.vx*DT*e;p.y+=p.vy*DT*e;clampPos(p);}};
-const _sbX=stepBall;stepBall=function(){_sbX();if(!ball.owner&&ball.z<=1){const f=FRIC[Math.min(2,X().ball)]*(X().wx===1?.996:1);ball.vx*=f;ball.vy*=f;}};
+const _sbX=stepBall;stepBall=function(){_sbX();if(!ball.owner&&ball.z<=1){const f=FRIC[Math.min(2,X().ball)]*(X().wx===1?.999:1);ball.vx*=f;ball.vy*=f;}};
 
 /* --- kit editor: own team colours override the club's --- */
 const _atX=applyTeam;applyTeam=function(t,ci){_atX(t,ci);if(t===0){const k=X().kit,K=KIT[0];if(k[0])K.shirt=k[0];if(k[1])K.shorts=k[1];if(k[2])K.gk=k[2];}};
@@ -3208,7 +3209,7 @@ function refTick(){const R=REF,b=ball;if(!G.rf.show||S.mode==='menu'||S.mode==='
   const fa=(R.pose==='point'||R.pose==='pointC'||R.pose==='card'||R.pose==='wave')?R.pa:spd>10?Math.atan2(R.vy,R.vx):Math.atan2(b.y-R.y,b.x-R.x);
   R.face+=angd(fa,R.face)*Math.min(1,DT*(R.pose==='point'?9:6));
   if(G.rf.hit&&!b.owner&&b.z<16&&R.hop<=0){const e=Math.hypot(b.x-R.x,b.y-R.y),sp=Math.hypot(b.vx,b.vy);
-    if(e<BR+4&&sp>90){const an=rnd(-.9,.9),c=Math.cos(an),s=Math.sin(an),nx=b.vx*c-b.vy*s;b.vy=(b.vx*s+b.vy*c)*.5;b.vx=nx*.5;b.vz=Math.max(b.vz,60);R.hop=.4;cm('The ball hits the referee!');}}
+    if(e<BR+4&&sp>90){const an=rnd(-.9,.9),c=Math.cos(an),s=Math.sin(an),nx=b.vx*c-b.vy*s;b.vy=(b.vx*s+b.vy*c)*.5;b.vx=nx*.5;b.vz=Math.max(b.vz,35);R.hop=.4;cm('The ball hits the referee!');}}
   if(!G.rf.adv&&S.adv&&S.mode==='play'){const ad=S.adv;S.adv=null;whistleStop(1.4,'FOUL','',ad.fn);}
   if(SPRAY.l){const l=SPRAY.l;l.t+=DT;if(S.rs!==l.rs){l.fade-=DT*1.3;if(l.fade<=0)SPRAY.l=null;}}
   if(G.rf.ar)arTick();}
@@ -3294,7 +3295,7 @@ function crossManual(p){if(SPA.on&&S.rs&&(S.rs.kind==='throw'||S.rs.kind==='gk')
   if(low){doPass(p,cand||{x:tx,y:ty,vx:0,vy:0},'thru');pop8('CUT-BACK');return;}
   const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy)||1,base=Math.atan2(dy,dx),T=clamp(dist/430,.8,1.55),f=(1-Math.exp(-.482*T))/.482;
   const cz=-Math.cos(base)*side,sgn=cz>=0?1:-1,spin=sgn*(SPA.on&&SPA.curl===2?-1:1)*.55*(.6+.4*p.st.pass),ang=base-spin*f*.5,v=dist/T/.94;
-  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,GRAV*T/2,spin,cand,tx,ty,'lob');try{setAct(p,2,0);}catch(_){}pop8('CROSS');}
+  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,BALL_GRAV*T/2,spin,cand,tx,ty,'lob');try{setAct(p,2,0);}catch(_){}pop8('CROSS');}
 function doCross(){if(canCross()){crossManual(ctrl);try{buzz(18);}catch(_){}}}
 function cycleCurl(){SPA.curl=(SPA.curl+1)%3;pop8('CURL: '+['AUTO','IN','OUT'][SPA.curl]);}
 const _haS=humanAct;humanAct=function(p){_haS(p);
@@ -3378,7 +3379,7 @@ function restKick(p){const rs=S.rs,gk=rs.kind==='gk';let tx=SPA.x,ty=SPA.y;const
   let cand=null,bd=1e9;for(let i=p.team*11;i<p.team*11+11;i++){const q=P[i];if(q===p||q.out)continue;const dd=Math.hypot(q.x-tx,q.y-ty);if(dd<bd){bd=dd;cand=q;}}
   if(bd>(gk?90:60))cand=null;
   const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy)||1,ang=Math.atan2(dy,dx),T=gk?clamp(dist/520,.9,1.9):clamp(dist/300,.45,1),v=dist/T/(gk?.93:.99);
-  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,GRAV*T/2,0,cand,tx,ty,'lob');try{setAct(p,2,0);}catch(_){}pop8(gk?'GOAL KICK':'THROW-IN');}
+  kick(p,Math.cos(ang)*v,Math.sin(ang)*v,BALL_GRAV*T/2,0,cand,tx,ty,'lob');try{setAct(p,2,0);}catch(_){}pop8(gk?'GOAL KICK':'THROW-IN');}
 
 /* ---------- assists: last pass by a team-mate before the shot ---------- */
 CAR.clk=0;CAR.ag={};CAR.lt=null;
