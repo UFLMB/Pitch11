@@ -63,6 +63,7 @@ for(const side of [-1,1]){const gx=side*52.5;rect(side<0?-52.5:36,-20.16,16.5,40
  const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx+side*.1,goalH,0);bar.castShadow=true;goal.add(bar);
  for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx-side*depth,goalH/2,z);goal.add(back);line(gx+side*.1,z,gx-side*depth,z,.045,goalH);}
  const net=new THREE.Mesh(new THREE.BoxGeometry(depth,goalH,goalW),new THREE.MeshBasicMaterial({color:0xe6eee9,wireframe:true,transparent:true,opacity:.19}));net.position.set(gx-side*depth/2,goalH/2,0);goal.add(net);}
+const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,opacity:.22,roughness:.12,metalness:.15,side:THREE.DoubleSide});
 // Multi-tier grandstands: structural bowls, seating decks, human-shaped crowd and canopy roofs.
 const concreteMat=mat(0x465057,.9),fasciaMat=mat(0x182329,.58,.24),seatMats=[0x263b36,0x30443d,0x354c43,0x253a34].map(c=>mat(c,.72));
 const seatBaseGeo=new THREE.BoxGeometry(.72,.13,.72),seatBackGeo=new THREE.BoxGeometry(.72,.58,.12);
