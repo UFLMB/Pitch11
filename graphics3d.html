@@ -17,7 +17,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 </style></head><body>
 <div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.0 · REAL-TIME 3D</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button id="back">BACK TO GAME</button></div></div>
-<div id="status">STADIUM ENVIRONMENT 2.1 · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
+<div id="status">STADIUM ARCHITECTURE 2.2 · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 <script>
 function show3DError(message){const panel=document.querySelector("#loading");if(!panel)return;panel.style.display="grid";panel.style.padding="28px";panel.style.textAlign="center";panel.style.lineHeight="1.6";panel.innerHTML="<div><strong style=\"color:#ffb4a8\">3D SCENE COULD NOT START</strong><small style=\"display:block;max-width:560px;margin:12px auto;color:#d5dcd5\"></small><button onclick=\"location.reload()\">RETRY</button><small style=\"display:block;margin-top:12px\">If this repeats, check WebGL and the network connection.</small></div>";panel.querySelector("small").textContent=message;}
@@ -63,44 +63,89 @@ for(const side of [-1,1]){const gx=side*52.5;rect(side<0?-52.5:36,-20.16,16.5,40
  const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx+side*.1,goalH,0);bar.castShadow=true;goal.add(bar);
  for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx-side*depth,goalH/2,z);goal.add(back);line(gx+side*.1,z,gx-side*depth,z,.045,goalH);}
  const net=new THREE.Mesh(new THREE.BoxGeometry(depth,goalH,goalW),new THREE.MeshBasicMaterial({color:0xe6eee9,wireframe:true,transparent:true,opacity:.19}));net.position.set(gx-side*depth/2,goalH/2,0);goal.add(net);}
-function standBlock(w,h,d,x,y,z,material=standMat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;scene.add(m);}
-for(const side of [-1,1]){const z=side*49;for(let row=0;row<10;row++){const h=1.05+row*.18,y=1.1+row*.58;standBlock(132,h,2.2,0,y,z+side*row*1.7);}
- standBlock(134,1.1,3,0,8.3,z+side*19,roofMat);for(const x of [-58,0,58]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.65,17,.65),roofMat);beam.position.set(x,8.5,z+side*12);beam.castShadow=true;scene.add(beam);}
- const lamps=new THREE.Mesh(new THREE.BoxGeometry(118,.35,1.8),new THREE.MeshStandardMaterial({color:0xe9f2ff,emissive:0xc8ddff,emissiveIntensity:1.5}));lamps.position.set(0,17,z+side*11);scene.add(lamps);const glow=new THREE.PointLight(0xdceaff,75,90,2);glow.position.set(0,16,z+side*10);scene.add(glow);}
-for(const side of [-1,1]){const x=side*66;for(let row=0;row<9;row++){const h=1.05+row*.18,y=1.1+row*.58;standBlock(2.2,h,105,x+side*row*1.7,y,0);}
- standBlock(3,1.1,108,x+side*17,8.3,0,roofMat);for(const z of [-34,0,34]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.65,17,.65),roofMat);beam.position.set(x+side*12,8.5,z);beam.castShadow=true;scene.add(beam);}
- const lamps=new THREE.Mesh(new THREE.BoxGeometry(1.8,.35,96),new THREE.MeshStandardMaterial({color:0xe9f2ff,emissive:0xc8ddff,emissiveIntensity:1.5}));lamps.position.set(x+side*11,17,0);scene.add(lamps);const glow=new THREE.PointLight(0xdceaff,65,90,2);glow.position.set(x+side*10,16,0);scene.add(glow);}
-const crowdGeo=new THREE.BoxGeometry(.34,.62,.28),crowdMats=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d].map(c=>mat(c,.9));
-let seed=81273;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};const crowdCount=4600;
-for(let group=0;group<crowdMats.length;group++){const mesh=new THREE.InstancedMesh(crowdGeo,crowdMats[group],Math.ceil(crowdCount/crowdMats.length));const dummy=new THREE.Object3D();let n=0;
- for(let i=0;i<crowdCount;i++){if(i%crowdMats.length!==group)continue;const edge=Math.floor(rand()*4),t=rand(),row=rand();let x,z,y=2.1+row*6.1;
- if(edge<2){x=(t-.5)*126;z=(edge===0?-1:1)*(51+row*18);}else{z=(t-.5)*102;x=(edge===2?-1:1)*(68+row*18);}
- dummy.position.set(x,y,z);dummy.rotation.y=(rand()-.5)*.35;const s=.7+rand()*.6;dummy.scale.set(s,s,s);dummy.updateMatrix();mesh.setMatrixAt(n++,dummy.matrix);}
- mesh.count=n;mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);}
-for(const x of [-75,75])for(const z of [-62,62]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.22,.38,25,10),roofMat);pole.position.set(x,12.5,z);pole.castShadow=true;scene.add(pole);const head=new THREE.Mesh(new THREE.BoxGeometry(4,.6,2),new THREE.MeshStandardMaterial({color:0xeaf4ff,emissive:0xdceaff,emissiveIntensity:1.7}));head.position.set(x,25,z);scene.add(head);}
-// Stadium dressing: LED advertising, technical areas, corner flags and scoreboard.
-const adCanvas=document.createElement('canvas');adCanvas.width=1024;adCanvas.height=128;const adCtx=adCanvas.getContext('2d');
-const adGradient=adCtx.createLinearGradient(0,0,1024,0);adGradient.addColorStop(0,'#071a14');adGradient.addColorStop(.5,'#153b2a');adGradient.addColorStop(1,'#071a14');adCtx.fillStyle=adGradient;adCtx.fillRect(0,0,1024,128);
-adCtx.strokeStyle='#a3e635';adCtx.lineWidth=5;adCtx.strokeRect(4,4,1016,120);adCtx.fillStyle='#f4ffe8';adCtx.font='900 54px Arial';adCtx.textAlign='center';adCtx.textBaseline='middle';adCtx.fillText('PITCH 11  •  EVERY MATCH MATTERS',512,66);
-const adTexture=new THREE.CanvasTexture(adCanvas);adTexture.colorSpace=THREE.SRGBColorSpace;
-const adMaterial=new THREE.MeshStandardMaterial({map:adTexture,emissive:0x315c25,emissiveMap:adTexture,emissiveIntensity:.42,roughness:.55,side:THREE.DoubleSide});
-const adGeo=new THREE.BoxGeometry(7.4,1.05,.24);
-for(const side of [-1,1])for(let i=0;i<14;i++){const board=new THREE.Mesh(adGeo,adMaterial);board.position.set(-48.1+i*7.4,.58,side*36.15);board.castShadow=true;scene.add(board);}
-for(const side of [-1,1])for(let i=0;i<9;i++){const board=new THREE.Mesh(new THREE.BoxGeometry(.24,1.05,7.4),adMaterial);board.position.set(side*53.55,.58,-29.6+i*7.4);board.castShadow=true;scene.add(board);}
-const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,opacity:.22,roughness:.12,metalness:.15,side:THREE.DoubleSide});
-const dugoutMat=mat(0x101c1c,.38,.42),seatMat=mat(0x9ab3a0,.72);
-for(const side of [-1,1])for(const x of [-29,29]){
- const z=side*41.1,dugout=new THREE.Group();scene.add(dugout);
- const base=new THREE.Mesh(new THREE.BoxGeometry(13,.22,2.5),dugoutMat);base.position.set(x,.18,z);dugout.add(base);
- const roof=new THREE.Mesh(new THREE.BoxGeometry(13,.18,3.1),roofMat);roof.position.set(x,2.55,z);roof.castShadow=true;dugout.add(roof);
- for(const dx of [-6.35,6.35]){const post=new THREE.Mesh(new THREE.BoxGeometry(.14,2.3,.14),dugoutMat);post.position.set(x+dx,1.35,z);dugout.add(post);}
- const glass=new THREE.Mesh(new THREE.BoxGeometry(12.5,1.95,.055),glassMat);glass.position.set(x,1.35,z-side*1.12);dugout.add(glass);
- for(let n=0;n<7;n++){const seat=new THREE.Mesh(new THREE.BoxGeometry(1.25,.28,.75),seatMat);seat.position.set(x-5.25+n*1.75,.9,z+side*.35);dugout.add(seat);}
+// Multi-tier grandstands: structural bowls, seating decks, human-shaped crowd and canopy roofs.
+const concreteMat=mat(0x465057,.9),fasciaMat=mat(0x182329,.58,.24),seatMats=[0x263b36,0x30443d,0x354c43,0x253a34].map(c=>mat(c,.72));
+const seatBaseGeo=new THREE.BoxGeometry(.72,.13,.72),seatBackGeo=new THREE.BoxGeometry(.72,.58,.12);
+const crowdBodyGeo=new THREE.CylinderGeometry(.16,.2,.68,7),crowdHeadGeo=new THREE.SphereGeometry(.17,8,6);
+const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61].map(c=>mat(c,.94));
+const crowdData=[];
+function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
+ const seats=Math.floor(length/spacing),rowZ=axis==='long'?side*offset:0,rowX=axis==='end'?side*offset:0;
+ for(let i=0;i<seats;i++){
+  const along=(i-(seats-1)/2)*spacing;
+  const p=axis==='long'?[along,y,rowZ]:[rowX,y,along];
+  const dummy=new THREE.Object3D();dummy.position.set(...p);dummy.rotation.y=rotation;dummy.updateMatrix();
+  seatBaseInstances.push(dummy.matrix.clone());
+  const back=new THREE.Object3D();back.position.set(p[0],p[1]+.32,p[2]);back.rotation.y=rotation;back.updateMatrix();seatBackInstances.push(back.matrix.clone());
+  const person=new THREE.Object3D();person.position.set(p[0],p[1]+.88,p[2]+(axis==='long'?side*.34:0));person.rotation.y=rotation;person.scale.set(.85,.9,.85);person.updateMatrix();crowdData.push({matrix:person.matrix.clone(),palette:(i*13+deckIndex*7+Math.floor(offset*3))%crowdPalette.length});
+ }
 }
-const flagMat=new THREE.MeshStandardMaterial({color:0xa3e635,side:THREE.DoubleSide,roughness:.8});
-for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.65,8),mat(0xf0f1e8,.45,.1));pole.position.set(x,.82,z);pole.castShadow=true;scene.add(pole);const shape=new THREE.Shape();shape.moveTo(0,0);shape.lineTo(.72,-.18);shape.lineTo(0,-.48);shape.closePath();const flag=new THREE.Mesh(new THREE.ShapeGeometry(shape),flagMat);flag.position.set(x,.98,z);scene.add(flag);}
-const screenFrame=mat(0x10191b,.35,.55),screenMat=new THREE.MeshStandardMaterial({color:0x152d28,emissive:0x245c43,emissiveIntensity:.85});
-for(const side of [-1,1]){const frame=new THREE.Mesh(new THREE.BoxGeometry(16,5,.8),screenFrame);frame.position.set(0,20,side*67);scene.add(frame);const screen=new THREE.Mesh(new THREE.PlaneGeometry(14.8,3.8),screenMat);screen.position.set(0,20.05,side*66.55);screen.rotation.y=side>0?Math.PI:0;scene.add(screen);}
+const seatBaseInstances=[],seatBackInstances=[];
+function buildLongStand(side){
+ const tiers=[{rows:13,z:39.5,y:.72,dz:1.05,dy:.34},{rows:10,z:55.2,y:6.1,dz:1.12,dy:.39},{rows:9,z:67.1,y:11.2,dz:1.18,dy:.43}];
+ tiers.forEach((tier,deck)=>{
+  for(let r=0;r<tier.rows;r++){
+   const z=side*(tier.z+r*tier.dz),y=tier.y+r*tier.dy;
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(133,.28,1.05),concreteMat);slab.position.set(0,y-.18,z);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
+   addSeatRow('long',side,Math.abs(z),y,127,1.02,side>0?0:Math.PI,deck*100+r);
+  }
+  const frontZ=side*(tier.z-.7),fascia=new THREE.Mesh(new THREE.BoxGeometry(135,1.25,.8),fasciaMat);fascia.position.set(0,tier.y+1.25,frontZ);scene.add(fascia);
+ });
+ const concourse=new THREE.Mesh(new THREE.BoxGeometry(138,1.25,3.5),concreteMat);concourse.position.set(0,6.25,side*54.1);scene.add(concourse);
+ const glassRail=new THREE.Mesh(new THREE.BoxGeometry(136,1.1,.12),glassMat);glassRail.position.set(0,7.05,side*52.25);scene.add(glassRail);
+}
+function buildEndStand(side){
+ const tiers=[{rows:13,x:39.5,y:.72,dx:1.05,dy:.34},{rows:10,x:55.2,y:6.1,dx:1.12,dy:.39},{rows:9,x:67.1,y:11.2,dx:1.18,dy:.43}];
+ tiers.forEach((tier,deck)=>{
+  for(let r=0;r<tier.rows;r++){
+   const x=side*(tier.x+r*tier.dx),y=tier.y+r*tier.dy;
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.05,.28,101),concreteMat);slab.position.set(x,y-.18,0);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
+   addSeatRow('end',side,Math.abs(x),y,97,1.02,side>0?Math.PI/2:-Math.PI/2,deck*100+r);
+  }
+  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.8,1.25,103),fasciaMat);fascia.position.set(side*(tier.x-.7),tier.y+1.25,0);scene.add(fascia);
+ });
+ const concourse=new THREE.Mesh(new THREE.BoxGeometry(3.5,1.25,106),concreteMat);concourse.position.set(side*54.1,6.25,0);scene.add(concourse);
+ const glassRail=new THREE.Mesh(new THREE.BoxGeometry(.12,1.1,104),glassMat);glassRail.position.set(side*52.25,7.05,0);scene.add(glassRail);
+}
+for(const side of [-1,1]){buildLongStand(side);buildEndStand(side);}
+const seatBases=new THREE.InstancedMesh(seatBaseGeo,seatMats[0],seatBaseInstances.length);
+const seatBacks=new THREE.InstancedMesh(seatBackGeo,seatMats[1],seatBackInstances.length);
+seatBaseInstances.forEach((m,i)=>seatBases.setMatrixAt(i,m));seatBackInstances.forEach((m,i)=>seatBacks.setMatrixAt(i,m));
+seatBases.instanceMatrix.needsUpdate=true;seatBacks.instanceMatrix.needsUpdate=true;seatBases.castShadow=true;seatBacks.castShadow=true;scene.add(seatBases,seatBacks);
+for(let palette=0;palette<crowdPalette.length;palette++){
+ const entries=crowdData.filter(p=>p.palette===palette),bodies=new THREE.InstancedMesh(crowdBodyGeo,crowdPalette[palette],entries.length),heads=new THREE.InstancedMesh(crowdHeadGeo,crowdPalette[palette],entries.length);
+ entries.forEach((p,i)=>{bodies.setMatrixAt(i,p.matrix);const m=new THREE.Matrix4().copy(p.matrix);m.multiply(new THREE.Matrix4().makeTranslation(0,.52,0));heads.setMatrixAt(i,m);});
+ bodies.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;scene.add(bodies,heads);
+}
+// Continuous cantilevered roof canopies with radial steel trusses.
+const roofSurface=new THREE.MeshStandardMaterial({color:0x172126,roughness:.48,metalness:.42,side:THREE.DoubleSide});
+const roofUnderside=mat(0x303d40,.72,.2);
+function makeCanopy(axis,side){
+ const length=axis==='long'?138:108,segments=36,depth=37,verts=[],indices=[];
+ for(let i=0;i<=segments;i++){
+  const along=-length/2+length*i/segments;
+  for(let j=0;j<=12;j++){
+   const u=j/12,radial=depth*u;
+   const y=20+5.4*Math.sin(u*Math.PI*.92)-2.4*u+.65*Math.sin(along/length*Math.PI*2);
+   if(axis==='long')verts.push(along,y,side*(39+radial));else verts.push(side*(39+radial),y,along);
+  }
+ }
+ for(let i=0;i<segments;i++)for(let j=0;j<12;j++){const a=i*13+j,b=a+13;indices.push(a,b,a+1,b,b+1,a+1);}
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setIndex(indices);geo.computeVertexNormals();
+ const canopy=new THREE.Mesh(geo,roofSurface);canopy.receiveShadow=true;canopy.castShadow=true;scene.add(canopy);
+ for(let k=0;k<9;k++){
+  const along=-length*.46+k*length*.115;
+  const pts=[];
+  for(let j=0;j<=8;j++){const u=j/8,y=20+5.4*Math.sin(u*Math.PI*.92)-2.4*u+.65*Math.sin(along/length*Math.PI*2);pts.push(axis==='long'?new THREE.Vector3(along,y,side*(39+depth*u)):new THREE.Vector3(side*(39+depth*u),y,along));}
+  const trussGeo=new THREE.BufferGeometry().setFromPoints(pts);const truss=new THREE.Line(trussGeo,new THREE.LineBasicMaterial({color:0x718087,transparent:true,opacity:.7}));scene.add(truss);
+ }
+ const fascia=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.75,1.2):new THREE.BoxGeometry(1.2,.75,length),fasciaMat);
+ fascia.position.set(axis==='long'?0:side*76,18.3,axis==='long'?side*76:0);scene.add(fascia);
+ // Continuous luminous roof-edge strip.
+ const strip=new THREE.Mesh(axis==='long'?new THREE.BoxGeometry(length,.12,.3):new THREE.BoxGeometry(.3,.12,length),new THREE.MeshStandardMaterial({color:0xe8f3ff,emissive:0xc7ddff,emissiveIntensity:1.25}));
+ strip.position.set(axis==='long'?0:side*75.3,18.75,axis==='long'?side*75.3:0);scene.add(strip);
+}
+for(const side of [-1,1]){makeCanopy('long',side);makeCanopy('end',side);}
 const ballGroup=new THREE.Group();ballGroup.position.set(0,.22,0);scene.add(ballGroup);const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),mat(0xf5f5ed,.32));ballMesh.castShadow=true;ballGroup.add(ballMesh);
 const ballSeams=new THREE.Mesh(new THREE.TorusGeometry(.145,.009,5,40),mat(0x20252a,.6));ballSeams.rotation.x=Math.PI/2;ballGroup.add(ballSeams);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.35,24),new THREE.MeshBasicMaterial({color:0x061009,transparent:true,opacity:.3}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;ballGroup.add(shadow);
