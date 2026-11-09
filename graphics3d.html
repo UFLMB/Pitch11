@@ -18,6 +18,12 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 <div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.0 · REAL-TIME 3D</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button id="back">BACK TO GAME</button></div></div>
 <div id="status">3D STADIUM FOUNDATION · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
+<script>
+function show3DError(message){const panel=document.querySelector("#loading");if(!panel)return;panel.style.display="grid";panel.style.padding="28px";panel.style.textAlign="center";panel.style.lineHeight="1.6";panel.innerHTML="<div><strong style=\"color:#ffb4a8\">3D SCENE COULD NOT START</strong><small style=\"display:block;max-width:560px;margin:12px auto;color:#d5dcd5\"></small><button onclick=\"location.reload()\">RETRY</button><small style=\"display:block;margin-top:12px\">If this repeats, check WebGL and the network connection.</small></div>";panel.querySelector("small").textContent=message;}
+window.addEventListener("error",event=>show3DError(event.message||"A script or WebGL error occurred."));
+window.addEventListener("unhandledrejection",event=>show3DError(event.reason?.message||String(event.reason||"A module failed to load.")));
+</script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
