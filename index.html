@@ -222,10 +222,11 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
 const KEYACT={KeyL:0,KeyK:1,KeyJ:2,ShiftLeft:3,ShiftRight:3,Space:3};   // key -> diamond slot (TL,TR,BL,BR): same context logic as touch
 addEventListener('keydown',e=>{
   if(keys[e.code])return;keys[e.code]=true;if(S.mode==='replay'){RP.skip=1;return;}
-  if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter'||e.code==='KeyU')e.preventDefault();
+  if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter'||e.code==='KeyU'||e.code==='KeyG')e.preventDefault();
   if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){if((e.code==='Enter'||e.code==='Space')&&UI.def)UI.def();else if(e.code==='Escape'&&S.mode==='menu')back();return;}
   if(e.code==='KeyP'){openSubs(S.mode);return;}
   if(e.code==='KeyC'){cycleCam();return;}
+  if(e.code==='KeyG'){gkCharge(0,false);return;}
   if(e.code==='KeyU'){I.skill=true;I.skd=8;return;}
   if(e.code in KEYACT)press(KEYACT[e.code],e.code);
   else if(e.code.startsWith('Arrow')){for(const q of GS.s)if(q.on&&typeof q.pid==='string')kswipe(q.pid);}   // tap an arrow while holding an action key = swipe that way
@@ -1434,7 +1435,7 @@ function drawHud(){
   else if(m==='half'){endScreen(0);
   }else if(m==='full'){endScreen(1);
   }else if(m==='menu'){
-    panel('PITCH 11',['11 v 11  -  3 min halves','Fouls, cards, offside, advantage, injuries, 5 subs','Hold SHOOT to charge   -   PASS / THRU / LOB aim with the stick','II button (or P key): pause, substitutions and player stats','SKILL (U) dodges a defender  -  SHOOT on a high ball: header / volley']);
+    panel('PITCH 11',['11 v 11  -  3 min halves','Fouls, cards, offside, advantage, injuries, 5 subs','Hold SHOOT to charge   -   PASS / THRU / LOB aim with the stick','II button (or P key): pause, substitutions and player stats','SKILL (U) dodges a defender  -  KEEPER CHARGE (G)  -  SHOOT on a high ball: header / volley']);
     ubtn(W*0.17,H*0.72,W*0.3,H*0.13,'KNOCKOUT: '+(S.ko?'ON':'OFF'),()=>{S.ko=!S.ko;});
     ubtn(W*0.53,H*0.72,W*0.3,H*0.13,'KICK OFF',startGame,'rgba(255,230,0,.35)');UI.def=startGame;
   }
