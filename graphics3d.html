@@ -117,7 +117,7 @@ function updateDroneLook(){
 const loader=new GLTFLoader();
 loader.setCrossOrigin('anonymous');
 loader.load(
- 'https://www.innerscene.com/api/library/football-stadium-f7b93967/download',
+ './assets/football-stadium.glb',
  gltf=>{
   stadium=gltf.scene;
   stadium.traverse(obj=>{
