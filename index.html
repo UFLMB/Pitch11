@@ -4496,7 +4496,47 @@ stepBall=function(){
 /* Existing AI already includes support runs, width, cover, pressing, marking and
    onside-aware movement. Existing separate()/bodyCollide() already resolve
    player spacing and ball-body impacts; do not stack a second collision solver. */
+
+/* Gameplay 3.0 contact response: small, mass-aware momentum transfer on closing
+   player contacts. Position separation remains owned by the existing solver. */
+const _separate30=separate;
+separate=function(){
+  const contacts=[];
+  for(let i=0;i<22;i++){
+    const a=P[i];if(a.out||a.dive>0)continue;
+    for(let j=i+1;j<22;j++){
+      const b=P[j];if(b.out||b.dive>0)continue;
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+      if(d<12&&d>0.1){
+        const nx=dx/d,ny=dy/d,closing=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+        if(closing< -8)contacts.push({a,b,nx,ny,closing:-closing});
+      }
+    }
+  }
+  _separate30();
+  for(const c of contacts){
+    const {a,b,nx,ny,closing}=c;
+    if(a.out||b.out||a.dive>0||b.dive>0)continue;
+    const ma=0.75+clamp(a.st.phys,0,1),mb=0.75+clamp(b.st.phys,0,1);
+    const impulse=clamp(closing*0.10,0,14);
+    a.vx-=nx*impulse*mb/(ma+mb);a.vy-=ny*impulse*mb/(ma+mb);
+    b.vx+=nx*impulse*ma/(ma+mb);b.vy+=ny*impulse*ma/(ma+mb);
+  }
+};
+/* Match the existing stun slowdown with a restrained visual balance reaction;
+   the original kick, pass, tackle and goalkeeper dive poses remain authoritative. */
+const _animInfo30=animInfo;
+animInfo=function(p){
+  const q=_animInfo30(p);
+  if(p&&q&&!q.dive&&!q.down&&p.stun>0){
+    const f=clamp(p.stun/0.5,0,1);
+    q.wob=(q.wob||0)+Math.sin(S.t*17+p.role)*0.12*f;
+    q.bob+=(0.35*f);
+  }
+  return q;
+};
 /* ===================== BOOT ===================== */
+
 
 addEventListener('resize',resize);
 resize();
