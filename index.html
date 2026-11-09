@@ -4422,6 +4422,29 @@ MS.opt=function(){mt('SOUND & VISUALS');mbk();
   const y=H*(.15+9*.077),h=H*.062,step=d=>{G.mbg=((Number.isInteger(G.mbg)?G.mbg:0)+d+21)%21;save();};
   lbl('MENU BACKGROUND',W*.08,y+H*.031);ubtn(W*.34,y,W*.1,h,'\u2039',()=>step(-1));ubtn(W*.84,y,W*.1,h,'\u203a',()=>step(1));
   txt(G.mbg>=1&&G.mbg<=20?G.mbg+'. '+BG27[G.mbg-1][0]:'AUTO (CYCLES)',W*.64,y+h/2,H*.034,'#fff',800);};
+/* ===================== PERSPECTIVE BALL SCALE ===================== */
+/* Top-down renderer: scale the ball by its ground-plane depth and airborne height.
+   The perspective renderers already use pj()/V.s, so they are deliberately untouched. */
+const ballPerspective2D=(y,z=0)=>{
+  const depth=clamp((y-PY0)/PH,0,1);
+  const ground=0.78+depth*0.44;             // far touchline -> near touchline
+  const height=1/(1+Math.max(0,z)/650);     // higher flight -> smaller projected ball
+  return ground*height;
+};
+const _ballShadowPerspective2D=drawBallShadow;
+drawBallShadow=function(a){
+  const z=ball.pz+(ball.z-ball.pz)*a,y=ball.py+(ball.y-ball.py)*a;
+  const x=ball.px+(ball.x-ball.px)*a,s=0.78+clamp((y-PY0)/PH,0,1)*0.44;
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);ctx.translate(-x,-y);
+  _ballShadowPerspective2D(a);ctx.restore();
+};
+const _ballPerspective2D=drawBall;
+drawBall=function(a){
+  const z=ball.pz+(ball.z-ball.pz)*a,y=ball.py+(ball.y-ball.py)*a;
+  const x=ball.px+(ball.x-ball.px)*a,s=ballPerspective2D(y,z);
+  ctx.save();ctx.translate(x,y-z*0.55);ctx.scale(s,s);ctx.translate(-x,-(y-z*0.55));
+  _ballPerspective2D(a);ctx.restore();
+};
 /* ===================== BOOT ===================== */
 addEventListener('resize',resize);
 resize();
