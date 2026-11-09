@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#07110c">
+<title>PITCH 11 — Graphics 2.0</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}#stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;z-index:3;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(12px,2.2vw,28px);pointer-events:none;gap:12px}
+.brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000}.brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}.brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
+.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end}
+button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 11px inherit;letter-spacing:.08em;cursor:pointer;backdrop-filter:blur(12px)}
+button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
+#status{position:fixed;z-index:3;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.08em;white-space:nowrap;backdrop-filter:blur(12px)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:5;color:#d9f3d5;font-size:12px;letter-spacing:.16em}
+#loading small{display:block;margin-top:10px;color:#819884;text-align:center;letter-spacing:.05em}
+@media(max-width:600px){.hud{align-items:flex-start}.controls{max-width:58vw}button{padding:9px 10px;font-size:9px}#status{bottom:10px;font-size:9px}}
+</style></head><body>
+<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.0 · REAL-TIME 3D</span></div>
+<div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button id="back">BACK TO GAME</button></div></div>
+<div id="status">3D STADIUM FOUNDATION · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
+const host=document.querySelector('#stage'),loading=document.querySelector('#loading');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x91a9b5);scene.fog=new THREE.Fog(0x91a9b5,145,310);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;host.appendChild(renderer.domElement);
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,600);
+const views={broadcast:{p:[0,76,112],target:[0,0,0],fov:48},tactical:{p:[0,142,12],target:[0,0,0],fov:43},low:{p:[-4,22,72],target:[0,1,0],fov:58}};
+camera.position.set(...views.broadcast.p);camera.fov=views.broadcast.fov;camera.updateProjectionMatrix();
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(...views.broadcast.target);controls.enableDamping=true;controls.dampingFactor=.055;controls.minDistance=22;controls.maxDistance=230;controls.maxPolarAngle=Math.PI*.48;controls.enabled=false;
+scene.add(new THREE.HemisphereLight(0xdcecff,0x203322,1.7));
+const sun=new THREE.DirectionalLight(0xfff1d7,3.1);sun.position.set(-42,95,48);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.camera.left=-95;sun.shadow.camera.right=95;sun.shadow.camera.top=90;sun.shadow.camera.bottom=-90;sun.shadow.bias=-.00018;sun.shadow.normalBias=.025;scene.add(sun);
+const fill=new THREE.DirectionalLight(0x9dc7ff,.85);fill.position.set(55,42,-65);scene.add(fill);
+const mat=(color,roughness=.82,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+const turfMat=mat(0x286c36,.94),apronMat=mat(0x17251d,1),standMat=mat(0x27323a,.88),roofMat=mat(0x121b20,.65,.28);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(330,260),mat(0x26362e,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
+const apron=new THREE.Mesh(new THREE.PlaneGeometry(118,82),apronMat);apron.rotation.x=-Math.PI/2;apron.position.y=-.08;apron.receiveShadow=true;scene.add(apron);
+const pitch=new THREE.Mesh(new THREE.PlaneGeometry(105,68),turfMat);pitch.rotation.x=-Math.PI/2;pitch.position.y=0;pitch.receiveShadow=true;scene.add(pitch);
+for(let i=0;i<14;i++){const lane=new THREE.Mesh(new THREE.PlaneGeometry(105/14,68),new THREE.MeshStandardMaterial({color:i%2?0x286c36:0x317b3e,roughness:1}));lane.rotation.x=-Math.PI/2;lane.position.set(-52.5+(i+.5)*105,.012,0);lane.receiveShadow=true;scene.add(lane);}
+const lineMat=new THREE.MeshStandardMaterial({color:0xf2f4e9,roughness:.7});
+function line(x1,z1,x2,z2,w=.12,y=.035){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=new THREE.Mesh(new THREE.BoxGeometry(len,w,.035),lineMat);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);scene.add(m);return m;}
+function rect(x,z,w,d,t=.12){line(x,z,x+w,z,t);line(x+w,z,x+w,z+d,t);line(x+w,z+d,x,z+d,t);line(x,z+d,x,z,t);}
+rect(-52.5,-34,105,68);line(0,-34,0,34);const circle=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,96),lineMat);circle.rotation.x=Math.PI/2;circle.position.y=.045;scene.add(circle);
+const spotMat=mat(0xf2f4e9,.8);function spot(x,z,r=.13){const m=new THREE.Mesh(new THREE.CircleGeometry(r,16),spotMat);m.rotation.x=-Math.PI/2;m.position.set(x,.05,z);scene.add(m);}spot(0,0);spot(-41.5,0);spot(41.5,0);
+for(const side of [-1,1]){const gx=side*52.5;rect(side<0?-52.5:36,-20.16,16.5,40.32);rect(side<0?-52.5:47,-9.16,5.5,18.32);
+ const arc=new THREE.Mesh(new THREE.TorusGeometry(9.15,.065,8,64,Math.PI),lineMat);arc.rotation.x=Math.PI/2;arc.rotation.z=side<0?Math.PI/2:-Math.PI/2;arc.position.set(side*41,0,0);scene.add(arc);
+ const goal=new THREE.Group();scene.add(goal);const postMat=mat(0xf7f7ef,.36,.12),postR=.12,goalW=7.32,goalH=2.44,depth=2.1;
+ for(const z of [-goalW/2,goalW/2]){const p=new THREE.Mesh(new THREE.CylinderGeometry(postR,postR,goalH,12),postMat);p.position.set(gx+side*.1,goalH/2,z);p.castShadow=true;goal.add(p);}
+ const bar=new THREE.Mesh(new THREE.BoxGeometry(.22,.22,goalW+.2),postMat);bar.position.set(gx+side*.1,goalH,0);bar.castShadow=true;goal.add(bar);
+ for(const z of [-goalW/2,goalW/2]){const back=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,goalH,8),postMat);back.position.set(gx-side*depth,goalH/2,z);goal.add(back);line(gx+side*.1,z,gx-side*depth,z,.045,goalH);}
+ const net=new THREE.Mesh(new THREE.BoxGeometry(depth,goalH,goalW),new THREE.MeshBasicMaterial({color:0xe6eee9,wireframe:true,transparent:true,opacity:.19}));net.position.set(gx-side*depth/2,goalH/2,0);goal.add(net);}
+function standBlock(w,h,d,x,y,z,material=standMat){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.receiveShadow=true;m.castShadow=true;scene.add(m);}
+for(const side of [-1,1]){const z=side*49;for(let row=0;row<10;row++){const h=1.05+row*.18,y=1.1+row*.58;standBlock(132,h,2.2,0,y,z+side*row*1.7);}
+ standBlock(134,1.1,3,0,8.3,z+side*19,roofMat);for(const x of [-58,0,58]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.65,17,.65),roofMat);beam.position.set(x,8.5,z+side*12);beam.castShadow=true;scene.add(beam);}
+ const lamps=new THREE.Mesh(new THREE.BoxGeometry(118,.35,1.8),new THREE.MeshStandardMaterial({color:0xe9f2ff,emissive:0xc8ddff,emissiveIntensity:1.5}));lamps.position.set(0,17,z+side*11);scene.add(lamps);const glow=new THREE.PointLight(0xdceaff,75,90,2);glow.position.set(0,16,z+side*10);scene.add(glow);}
+for(const side of [-1,1]){const x=side*66;for(let row=0;row<9;row++){const h=1.05+row*.18,y=1.1+row*.58;standBlock(2.2,h,105,x+side*row*1.7,y,0);}
+ standBlock(3,1.1,108,x+side*17,8.3,0,roofMat);for(const z of [-34,0,34]){const beam=new THREE.Mesh(new THREE.BoxGeometry(.65,17,.65),roofMat);beam.position.set(x+side*12,8.5,z);beam.castShadow=true;scene.add(beam);}
+ const lamps=new THREE.Mesh(new THREE.BoxGeometry(1.8,.35,96),new THREE.MeshStandardMaterial({color:0xe9f2ff,emissive:0xc8ddff,emissiveIntensity:1.5}));lamps.position.set(x+side*11,17,0);scene.add(lamps);const glow=new THREE.PointLight(0xdceaff,65,90,2);glow.position.set(x+side*10,16,0);scene.add(glow);}
+const crowdGeo=new THREE.BoxGeometry(.34,.62,.28),crowdMats=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d].map(c=>mat(c,.9));
+let seed=81273;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};const crowdCount=4600;
+for(let group=0;group<crowdMats.length;group++){const mesh=new THREE.InstancedMesh(crowdGeo,crowdMats[group],Math.ceil(crowdCount/crowdMats.length));const dummy=new THREE.Object3D();let n=0;
+ for(let i=0;i<crowdCount;i++){if(i%crowdMats.length!==group)continue;const edge=Math.floor(rand()*4),t=rand(),row=rand();let x,z,y=2.1+row*6.1;
+ if(edge<2){x=(t-.5)*126;z=(edge===0?-1:1)*(51+row*18);}else{z=(t-.5)*102;x=(edge===2?-1:1)*(68+row*18);}
+ dummy.position.set(x,y,z);dummy.rotation.y=(rand()-.5)*.35;const s=.7+rand()*.6;dummy.scale.set(s,s,s);dummy.updateMatrix();mesh.setMatrixAt(n++,dummy.matrix);}
+ mesh.count=n;mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);}
+for(const x of [-75,75])for(const z of [-62,62]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.22,.38,25,10),roofMat);pole.position.set(x,12.5,z);pole.castShadow=true;scene.add(pole);const head=new THREE.Mesh(new THREE.BoxGeometry(4,.6,2),new THREE.MeshStandardMaterial({color:0xeaf4ff,emissive:0xdceaff,emissiveIntensity:1.7}));head.position.set(x,25,z);scene.add(head);}
+const ballGroup=new THREE.Group();ballGroup.position.set(0,.22,0);scene.add(ballGroup);const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),mat(0xf5f5ed,.32));ballMesh.castShadow=true;ballGroup.add(ballMesh);
+const ballSeams=new THREE.Mesh(new THREE.TorusGeometry(.145,.009,5,40),mat(0x20252a,.6));ballSeams.rotation.x=Math.PI/2;ballGroup.add(ballSeams);
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(.35,24),new THREE.MeshBasicMaterial({color:0x061009,transparent:true,opacity:.3}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;ballGroup.add(shadow);
+const haze=new THREE.Mesh(new THREE.PlaneGeometry(300,80),new THREE.MeshBasicMaterial({color:0x9eb5bd,transparent:true,opacity:.06,depthWrite:false}));haze.position.set(0,30,-115);scene.add(haze);
+function setView(name){const v=views[name]||views.broadcast;camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();controls.target.set(...v.target);controls.enabled=name==='tactical';controls.update();document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));document.querySelector('#back').addEventListener('click',()=>location.href='./');
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);});
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera);}loading.style.display='none';animate();
+</script></body></html>
