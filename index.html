@@ -4535,7 +4535,39 @@ animInfo=function(p){
   }
   return q;
 };
+
+/* Gameplay 3.0 completion: coordinated counter-press and forward-line movement.
+   The existing tactical AI remains authoritative; these are targeted extensions. */
+const _defendGameplay30=defend22;
+defend22=function(p,o,c){
+  const t=p.team,ba=clamp(al22(p,ball.x),0,PW),dist=Math.hypot(o.x-p.x,o.y-p.y);
+  if(T22.lost[t]>0&&ba>PW*0.3&&dist<125&&p.line===2){
+    const gx=ownGX(p),d=dirOf(t),dx=o.x-p.x,dy=o.y-p.y,L=Math.hypot(dx,dy)||1;
+    const tx=o.x+o.vx*0.18+(gx-o.x)/Math.max(1,Math.hypot(gx-o.x,CY-o.y))*16;
+    const ty=o.y+o.vy*0.18+(CY-o.y)/Math.max(1,Math.hypot(gx-o.x,CY-o.y))*16;
+    go22(p,tx,ty,true);
+    if(dist<42)closeIn(p,o);
+    tackleTry(p,TUNING.df.auto.chance*(t?0.85*DIF[G.diff].tk:1),1);
+    return;
+  }
+  _defendGameplay30(p,o,c);
+};
+const _attackGameplay30=attack22;
+attack22=function(p,o,c){
+  _attackGameplay30(p,o,c);
+  if(p.line<3||p.role<8||p.role>10)return;
+  const d=dirOf(p.team),gx=ownGX(p),off=TI[p.team].off,ba=clamp(al22(p,ball.x),0,PW);
+  const lead=clamp(85+ba*0.12+(p.st.pace-0.7)*35,65,175);
+  let ahead=clamp(ba+lead,70,PW-22);
+  if(p.role===9)ahead=clamp(ba+lead*0.82,65,PW-35);       // central striker: offer a diagonal passing lane
+  let tx=gx+d*ahead,ty;
+  if(p.role===9)ty=clamp(CY+(o.y-CY)*0.22+(p.y-CY)*0.12,PY0+45,PY1-45);
+  else ty=clamp(p.y+(o.y-p.y)*0.18+(p.y<CY?-18:18),PY0+35,PY1-35);
+  if(tx*d>off-8&&ball.x*d<=off)tx=(off-8)*d;             // preserve the offside line
+  go22(p,tx,ty,Math.hypot(tx-p.x,ty-p.y)>65);
+};
 /* ===================== BOOT ===================== */
+
 
 
 addEventListener('resize',resize);
