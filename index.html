@@ -7,11 +7,13 @@
 <title>Pitch 11</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
-canvas{position:fixed;left:0;top:0;width:100%;height:100%;display:block;touch-action:none}
+#stadium3d{position:fixed;inset:0;z-index:0;pointer-events:none}
+#stadium3d canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:block;touch-action:none;background:transparent}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <script>
 'use strict';
 /* =====================================================================
@@ -70,7 +72,7 @@ const TI=[{c1:null,c2:null,att:false,off:0},{c1:null,c2:null,att:false,off:0}]; 
 const parts=[];
 const cam={x:CX,y:CY,v:410,px:CX,py:CY,pv:410};
 const ORD=P.slice();
-const cv=document.getElementById('c'),ctx=cv.getContext('2d',{alpha:false});
+const cv=document.getElementById('c'),ctx=cv.getContext('2d',{alpha:true});
 let W=0,H=0,dpr=1,lowRes=false;
 function resize(){W=innerWidth;H=innerHeight;dpr=lowRes?1:Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
 
@@ -1793,7 +1795,7 @@ function camSet(a){                                        // camera on a rail a
   let x=cam.px+(cam.x-cam.px)*a;x=hw*2<PW?clamp(x,PX0+hw,PX1-hw):CX;
   V.cx=x;V.Cy=Cy;V.hz=c.hz;V.fy=dy/L;V.fz=c.hz/L;V.K=H*c.fm;
 }
-function pj(x,y,z){let dy,lx;if(V.yw){const rx=x-V.ex,ry=y-V.ey;dy=rx*V.ch+ry*V.sh;lx=-rx*V.sh+ry*V.ch;}else{dy=V.Cy-y;lx=x-V.cx;}   // yw: free camera with a heading (goal-to-goal, set pieces)
+function pj(x,y,z){if(window.P11Stadium&&window.P11Stadium.ready){const q=window.P11Stadium.project(x,y,z);V.s=q.s;V.sx=q.x;V.sy=q.y;return;}let dy,lx;if(V.yw){const rx=x-V.ex,ry=y-V.ey;dy=rx*V.ch+ry*V.sh;lx=-rx*V.sh+ry*V.ch;}else{dy=V.Cy-y;lx=x-V.cx;}   // yw: free camera with a heading (goal-to-goal, set pieces)
   const dz=V.hz-z,dp=Math.max(30,dy*V.fy+dz*V.fz),k=V.K/dp;V.s=k;V.sx=W/2+lx*k;V.sy=H/2-(dy*V.fz-dz*V.fy)*k;}
 function path3(p,st){ctx.beginPath();for(let i=0;i<p.length;i+=st){pj(p[i],p[i+1],st>2?p[i+2]:0);if(i)ctx.lineTo(V.sx,V.sy);else ctx.moveTo(V.sx,V.sy);}}
 const PLN=[],CROWD=[],CC=['#d33','#eee','#36c','#fc3','#4a4','#888'];
@@ -1895,6 +1897,15 @@ function drawPlayer3(p,a){                                 // standing figure, 1
 }
 function render3D(a){
   ctx.setTransform(dpr,0,0,dpr,0,0);camSet(a);
+  if(window.P11Stadium&&window.P11Stadium.ready){
+    window.P11Stadium.render(V,W,H);ctx.clearRect(0,0,W,H);ctx.save();
+    if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
+    sortOrd();drawBallShadow3(a);let stadiumBallDrawn=false;
+    for(const p of ORD){if(p.out)continue;if(!stadiumBallDrawn&&ballBehind(p)){drawBall3(a);stadiumBallDrawn=true;}drawPlayer3(p,a);}
+    if(!stadiumBallDrawn)drawBall3(a);
+    for(const q of parts){pj(q.x,q.y,4+(1.6-q.l)*8);const z=Math.max(1.5,V.s*1.8);ctx.fillStyle=q.c;ctx.fillRect(V.sx-z/2,V.sy-z/2,z,z);}
+    drawRet3();drawHud();ctx.restore();return;
+  }
   const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0b1422');sky.addColorStop(.55,'#1b2b3b');sky.addColorStop(1,'#263b42');
   ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
   if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
@@ -4627,5 +4638,6 @@ resize();
 load();fixX();applyX();fixRf();applyConfig();M.opp=nextOpp();newMatch();S.mode='menu';S.t=0;
 requestAnimationFrame(frame);
 </script>
+<script type="module" src="./stadium-runtime.js"></script>
 </body>
 </html>
