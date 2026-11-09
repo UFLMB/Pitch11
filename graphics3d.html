@@ -39,18 +39,21 @@ import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/exampl
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
 
 const host=document.querySelector('#stage'),loading=document.querySelector('#loading');
+const lowPower=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
+const crowdSpacing=lowPower ? .68 : .52;
+const renderPixelRatio=lowPower ? 1 : 1.25;
+const targetFrameMs=lowPower ? 1000/30 : 1000/60;
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x15263a);
 scene.fog=new THREE.Fog(0x15263a,320,720);
 
-const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
+const renderer=new THREE.WebGLRenderer({antialias:!lowPower,powerPreference:'high-performance',stencil:false,depth:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,renderPixelRatio));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure=1.15;
-renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled=false;
 host.appendChild(renderer.domElement);
 
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1200);
@@ -65,11 +68,7 @@ controls.target.set(0,10,0);
 const ambientSky=new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.45);scene.add(ambientSky);
 const sun=new THREE.DirectionalLight(0xffd9ae,1.65);
 sun.position.set(-100,180,110);
-sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-150;sun.shadow.camera.right=150;
-sun.shadow.camera.top=150;sun.shadow.camera.bottom=-150;
-sun.shadow.bias=-.00015;
+sun.castShadow=false;
 scene.add(sun);
 const fill=new THREE.DirectionalLight(0x8dbbff,.85);
 fill.position.set(120,90,-140);scene.add(fill);
@@ -153,10 +152,10 @@ function buildCrowd(){
   const offset=26+r*.8,points=roundedRectPolyline(60+offset,40+offset,12+offset*.35);
   rows.push({points,y:18.0+r*.34});
  }
- const samples=rows.map(row=>crowdRowSamples(row.points,.47));
+ const samples=rows.map(row=>crowdRowSamples(row.points,crowdSpacing));
  const count=samples.reduce((sum,row)=>sum+row.length,0);
- const torsoGeo=new THREE.CylinderGeometry(.135,.17,.48,6,1);
- const headGeo=new THREE.SphereGeometry(.105,6,5);
+ const torsoGeo=new THREE.CylinderGeometry(.135,.17,.48,5,1);
+ const headGeo=new THREE.SphereGeometry(.105,5,4);
  const torsoMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
  const headMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9,metalness:0});
  const torsos=new THREE.InstancedMesh(torsoGeo,torsoMat,count);
@@ -166,7 +165,7 @@ function buildCrowd(){
  torsos.frustumCulled=false;heads.frustumCulled=false;
  const bodyPalette=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637];
  const skinPalette=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
- const dummy=new THREE.Object3D();
+ const dummy=new THREE.Object3D(),instanceColor=new THREE.Color();
  let index=0,seed=7411;
  const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  rows.forEach((row,rowIndex)=>{
@@ -177,10 +176,10 @@ function buildCrowd(){
    const scale=.88+rand()*.22;
    dummy.position.set(x,row.y+.31*scale,z);dummy.rotation.set(0,yaw,0);dummy.scale.set(scale,scale,scale);dummy.updateMatrix();
    torsos.setMatrixAt(index,dummy.matrix);
-   torsos.setColorAt(index,new THREE.Color(bodyPalette[Math.floor(rand()*bodyPalette.length)]));
+   instanceColor.setHex(bodyPalette[Math.floor(rand()*bodyPalette.length)]);torsos.setColorAt(index,instanceColor);
    dummy.position.set(x,row.y+.69*scale,z);dummy.rotation.set(0,yaw,0);dummy.scale.setScalar(scale);dummy.updateMatrix();
    heads.setMatrixAt(index,dummy.matrix);
-   heads.setColorAt(index,new THREE.Color(skinPalette[Math.floor(rand()*skinPalette.length)]));
+   instanceColor.setHex(skinPalette[Math.floor(rand()*skinPalette.length)]);heads.setColorAt(index,instanceColor);
    index++;
   }
  });
@@ -223,7 +222,8 @@ function addLedBoard(length,x,z,rotation){
 function addFloodlights(){
  const positions=[[-91,34,-70],[-30,37,-78],[30,37,-78],[91,34,-70],[-91,34,70],[-30,37,78],[30,37,78],[91,34,70]];
  positions.forEach((p,i)=>{
-  const light=new THREE.SpotLight(0xe5f1ff,175,190,.48,.62,1.35);
+  if(lowPower&&i%2===1){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,6,4),new THREE.MeshBasicMaterial({color:0xeaf4ff}));lamp.position.set(p[0],p[1],p[2]);scene.add(lamp);return;}
+  const light=new THREE.SpotLight(0xe5f1ff,lowPower?70:105,160,.52,.72,1.5);
   light.position.set(p[0],p[1],p[2]);light.target.position.set(0,0,0);light.castShadow=false;
   scene.add(light,light.target);
   const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),new THREE.MeshBasicMaterial({color:0xeaf4ff}));
@@ -262,7 +262,7 @@ function addBroadcastCameras(){
 function loadSidelineAssets(){
  loader.load('./assets/team-dugout.glb',gltf=>{
   [[-12.5,36.5],[12.5,36.5]].forEach(([x,z])=>{
-   const dugout=gltf.scene.clone(true);dugout.position.set(x,.04,z);dugout.rotation.y=Math.PI;dugout.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;}});scene.add(dugout);
+   const dugout=gltf.scene.clone(true);dugout.position.set(x,.04,z);dugout.rotation.y=Math.PI;dugout.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});scene.add(dugout);
   });
  },undefined,err=>console.warn('Dugout asset unavailable',err));
  loader.load('./assets/corner-flag.glb',gltf=>{
@@ -293,7 +293,7 @@ loader.load(
   stadium=gltf.scene;
   stadium.traverse(obj=>{
    if(!obj.isMesh)return;
-   obj.castShadow=true;obj.receiveShadow=true;
+   obj.castShadow=false;obj.receiveShadow=false;
    if(obj.material){const mats=Array.isArray(obj.material)?obj.material:[obj.material];for(const m of mats){if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}}
   });
   const bounds=new THREE.Box3().setFromObject(stadium);
@@ -361,11 +361,13 @@ document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',(
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 window.addEventListener('resize',()=>{
  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,renderPixelRatio));renderer.setSize(innerWidth,innerHeight);
 });
-let previous=performance.now();
+let previous=performance.now(),lastRender=0;
 function animate(now=performance.now()){
  requestAnimationFrame(animate);
+ if(now-lastRender<targetFrameMs)return;
+ lastRender=now;
  const dt=Math.min(.05,(now-previous)/1000);previous=now;
  if(controls.enabled)controls.update();
  updateDrone(dt);
