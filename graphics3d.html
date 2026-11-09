@@ -96,10 +96,11 @@ function buildLongStand(side){
  tiers.forEach((tier,deck)=>{
   for(let r=0;r<tier.rows;r++){
    const z=side*(tier.z+r*tier.dz),y=tier.y+r*tier.dy;
-   const slab=new THREE.Mesh(new THREE.BoxGeometry(133,.28,1.05),concreteMat);slab.position.set(0,y-.18,z);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
-   addSeatRow('long',side,Math.abs(z),y,127,1.02,side>0?Math.PI:0,deck*100+r);
+   const rowLength=Math.abs(z)<50.5?78:133,seatLength=rowLength-6;
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(rowLength,.28,1.05),concreteMat);slab.position.set(0,y-.18,z);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
+   addSeatRow('long',side,Math.abs(z),y,seatLength,1.02,side>0?Math.PI:0,deck*100+r);
   }
-  const frontZ=side*(tier.z-.7),fascia=new THREE.Mesh(new THREE.BoxGeometry(135,1.25,.8),fasciaMat);fascia.position.set(0,tier.y+1.25,frontZ);scene.add(fascia);
+  const frontZ=side*(tier.z-.7),fascia=new THREE.Mesh(new THREE.BoxGeometry(tier.z<50.5?80:135,1.25,.8),fasciaMat);fascia.position.set(0,tier.y+1.25,frontZ);scene.add(fascia);
  });
  const concourse=new THREE.Mesh(new THREE.BoxGeometry(138,1.25,3.5),concreteMat);concourse.position.set(0,6.25,side*54.1);scene.add(concourse);
  const glassRail=new THREE.Mesh(new THREE.BoxGeometry(136,1.1,.12),glassMat);glassRail.position.set(0,7.05,side*52.25);scene.add(glassRail);
@@ -109,10 +110,11 @@ function buildEndStand(side){
  tiers.forEach((tier,deck)=>{
   for(let r=0;r<tier.rows;r++){
    const x=side*(tier.x+r*tier.dx),y=tier.y+r*tier.dy;
-   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.05,.28,101),concreteMat);slab.position.set(x,y-.18,0);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
-   addSeatRow('end',side,Math.abs(x),y,97,1.02,side>0?-Math.PI/2:Math.PI/2,deck*100+r);
+   const rowDepth=Math.abs(x)<66.5?68:101,seatDepth=rowDepth-6;
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.05,.28,rowDepth),concreteMat);slab.position.set(x,y-.18,0);slab.receiveShadow=true;slab.castShadow=true;scene.add(slab);
+   addSeatRow('end',side,Math.abs(x),y,seatDepth,1.02,side>0?-Math.PI/2:Math.PI/2,deck*100+r);
   }
-  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.8,1.25,103),fasciaMat);fascia.position.set(side*(tier.x-.7),tier.y+1.25,0);scene.add(fascia);
+  const fascia=new THREE.Mesh(new THREE.BoxGeometry(.8,1.25,tier.x<66.5?70:103),fasciaMat);fascia.position.set(side*(tier.x-.7),tier.y+1.25,0);scene.add(fascia);
  });
  const concourse=new THREE.Mesh(new THREE.BoxGeometry(3.5,1.25,106),concreteMat);concourse.position.set(side*54.1,6.25,0);scene.add(concourse);
  const glassRail=new THREE.Mesh(new THREE.BoxGeometry(.12,1.1,104),glassMat);glassRail.position.set(side*52.25,7.05,0);scene.add(glassRail);
@@ -261,9 +263,9 @@ function addNetGrid(gx,side){const pts=[],backX=gx-side*2.08,frontX=gx+side*.12;
  const geo=new THREE.BufferGeometry().setFromPoints(pts);scene.add(new THREE.LineSegments(geo,netThread));}
 for(const side of [-1,1])addNetGrid(side*52.5,side);
 // Corner flags, with slender metal poles and cloth triangles.
-const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55);
+const flagCloth=mat(0xe8e8df,.7),flagPole=mat(0xe1e5df,.38,.55),flags=[];
 for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.8,8),flagPole);pole.position.set(x,.9,z);scene.add(pole);
- const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([0,1.65,0,.72,1.5,0,0,1.22,0],3));geo.setIndex([0,1,2]);geo.computeVertexNormals();const flag=new THREE.Mesh(geo,flagCloth);flag.position.set(x,0,z);scene.add(flag);}
+ const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute([0,1.65,0,.72,1.5,0,0,1.22,0],3));geo.setIndex([0,1,2]);geo.computeVertexNormals();const flag=new THREE.Mesh(geo,flagCloth);flag.position.set(x,0,z);scene.add(flag);flags.push(flag);}
 // Stadium-only preview: no decorative static ball or artificial floating haze.
 function setView(name){const v=views[name]||views.broadcast;drone.active=name==='drone';document.querySelector('#drone-hud').classList.toggle('visible',drone.active);document.querySelector('#drone-help').classList.toggle('visible',drone.active);controls.enabled=name==='tactical';if(drone.active){camera.position.set(0,48,82);drone.yaw=0;drone.pitch=-.43;camera.fov=62;camera.updateProjectionMatrix();updateDroneLook();}else{camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();controls.target.set(...v.target);controls.update();}document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));}
 function updateDroneLook(){const cp=Math.cos(drone.pitch),dir=new THREE.Vector3(Math.sin(drone.yaw)*cp,Math.sin(drone.pitch),-Math.cos(drone.yaw)*cp);camera.lookAt(camera.position.clone().add(dir));}
@@ -278,7 +280,7 @@ renderer.domElement.addEventListener('wheel',e=>{if(!drone.active)return;e.preve
 function updateDrone(dt){if(!drone.active)return;const active=new Set([...drone.keys,...drone.move]);const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));const step=drone.speed*dt;if(active.has('forward'))camera.position.addScaledVector(forward,step);if(active.has('back'))camera.position.addScaledVector(forward,-step);if(active.has('left'))camera.position.addScaledVector(right,-step);if(active.has('right'))camera.position.addScaledVector(right,step);if(active.has('up'))camera.position.y+=step;if(active.has('down'))camera.position.y-=step;camera.position.y=Math.max(6,Math.min(130,camera.position.y));updateDroneLook();}
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));document.querySelector('#back').addEventListener('click',()=>location.href='./');
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);});
-let previous=performance.now(),crowdAccumulator=0;function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);crowdAccumulator+=dt;const time=now*.001;
+let previous=performance.now(),crowdAccumulator=0;function animate(now=performance.now()){requestAnimationFrame(animate);const dt=Math.min(.05,(now-previous)/1000);previous=now;controls.update();updateDrone(dt);crowdAccumulator+=dt;const time=now*.001;flags.forEach((flag,i)=>{flag.rotation.y=Math.sin(time*1.7+i*1.9)*.10;});
  if(crowdAccumulator>=.12){crowdAccumulator=0;for(const group of crowdArmMeshes){const {mesh,entries}=group;for(let i=0;i<entries.length;i++){const p=entries[i];if(!p.cheer)continue;for(let a=0;a<2;a++){const side=a===0?-1:1,raise=.55+.45*Math.sin(time*2.2+p.phase);const rot=new THREE.Quaternion().setFromEuler(new THREE.Euler(0,0,side*(.25+raise*.92)));const local=new THREE.Matrix4().compose(new THREE.Vector3(side*.205,.02,0),rot,new THREE.Vector3(1,1,1));mesh.setMatrixAt(i*2+a,new THREE.Matrix4().copy(p.matrix).multiply(local));}}mesh.instanceMatrix.needsUpdate=true;}}
  renderer.render(scene,camera);}loading.style.display='none';animate();
 </script></body></html>
