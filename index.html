@@ -30,7 +30,7 @@ const PEN_DEPTH=165,PEN_WIDTH=403,SIX_DEPTH=55,SIX_WIDTH=183,SPOT=110,ARC_R=91.5
 let PREFS={pitch:1,goal:1,ball:1,player:1};
 let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,WW=PW+120,WH=PH+120;
 let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
-const BALL_GRAV=98.1,KG=0.12,KA=0.08,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // ball gravity (9.81 m/s²), rolling drag, aerodynamic drag; 1 unit = 10 cm
+const BALL_GRAV=98.1,KG=0.12,KA=0.08,ROLL_DECEL=24,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // 1 unit = 10 cm; rolling resistance is 2.4 m/s²
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
 const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
 // 4-3-3: [depth 0..1 from own goal, width 0..1]; index 0 = GK
@@ -41,6 +41,7 @@ const NUM=[1,3,5,4,2,8,6,10,11,9,7],POS=['GK','DEF','DEF','DEF','DEF','MID','MID
 // index = S.half: 1st/2nd half, 3rd/4th = extra-time halves, 5 = penalty shootout
 const PERIOD={len:[0,180,180,90,90,0],mins:[0,45,45,15,15,0],base:[0,0,45,90,105,0]};
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+function rollResistance(vx,vy){const sp=Math.hypot(vx,vy);if(sp<=0)return[0,0];const next=Math.max(0,sp-ROLL_DECEL*DT),k=next/sp;return[vx*k,vy*k];}
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const angd=(a,b)=>{let d=a-b;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;return d;};
 const dirOf=t=>S.half%2?(t?-1:1):(t?1:-1);              // +1 = team attacks towards the right goal (halves 1,3,5 vs 2,4)
@@ -432,7 +433,7 @@ function stepBall(){
     const c=Math.cos(b.spin*DT),s=Math.sin(b.spin*DT),vx=b.vx*c-b.vy*s;
     b.vy=b.vx*s+b.vy*c;b.vx=vx;b.spin*=b.z>1?0.996:0.96;if(Math.abs(b.spin)<0.02)b.spin=0;
   }
-  const f=b.z>1?FA:FG;b.vx*=f;b.vy*=f;
+  if(b.z>1){b.vx*=FA;b.vy*=FA;}else{b.vx*=FG;b.vy*=FG;if(b.z===0&&b.vz===0){const rv=rollResistance(b.vx,b.vy);b.vx=rv[0];b.vy=rv[1];}}
   if(b.z===0&&b.vz===0&&b.vx*b.vx+b.vy*b.vy<9)b.vx=b.vy=0;
   if(b.z>0||b.vz!==0){
     b.vz-=BALL_GRAV*DT;b.z+=b.vz*DT;
@@ -2989,9 +2990,9 @@ function simTraj(){
   const b=ball,pts=[];let x=b.x,y=b.y,z=b.z,vx=b.vx,vy=b.vy,vz=b.vz,sp=b.spin;
   for(let i=0;i<110;i++){
     if(sp){const c=Math.cos(sp*DT),s=Math.sin(sp*DT),nv=vx*c-vy*s;vy=vx*s+vy*c;vx=nv;sp*=z>1?0.996:0.96;}
-    const f=z>1?FA:FG;vx*=f;vy*=f;
+    if(z>1){vx*=FA;vy*=FA;}else{vx*=FG;vy*=FG;}
     if(z>0||vz!==0){vz-=BALL_GRAV*DT;z+=vz*DT;if(z<=0){z=0;const impact=-vz;if(impact>18){const e=clamp(0.53+impact*0.0004,0.53,0.58);vz=impact*e;vx*=0.92;vy*=0.92;}else vz=0;}}
-    if(z<=1){const surface=FRIC[Math.min(2,X().ball)]*(X().wx===1?0.999:1);vx*=surface;vy*=surface;}
+    if(z===0&&vz===0){const rv=rollResistance(vx,vy);vx=rv[0];vy=rv[1];}
     x+=vx*DT;y+=vy*DT;
     if(i%2===0)pts.push(x,y,z);
     if(vx*vx+vy*vy<80&&z===0)break;
