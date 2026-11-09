@@ -82,6 +82,7 @@ const crowdBodyGeo=new THREE.CapsuleGeometry(.145,.34,4,8),crowdHeadGeo=new THRE
 const crowdPalette=[0x9eacb0,0x687b87,0xb9a17a,0x4f7964,0x8e5960,0x52658d,0xb8b7a8,0x394b61,0x9a6b45,0x5c6268,0xc3c1b4].map(c=>mat(c,.94));
 const skinPalette=[0xe0b99a,0xb98260,0x87583f,0x583b31].map(c=>mat(c,.92));
 const hairPalette=[0x201b18,0x3a2a21,0x75604a,0xb39a72].map(c=>mat(c,.9));
+const seatBaseInstances=[],seatBackInstances=[];
 const crowdData=[];
 function addSeatRow(axis,side,offset,y,length,spacing,rotation,deckIndex){
  const seats=Math.floor(length/spacing),rowZ=axis==='long'?side*offset:0,rowX=axis==='end'?side*offset:0;
