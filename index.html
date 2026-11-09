@@ -436,7 +436,7 @@ function stepBall(){
   if(b.z===0&&b.vz===0&&b.vx*b.vx+b.vy*b.vy<9)b.vx=b.vy=0;
   if(b.z>0||b.vz!==0){
     b.vz-=BALL_GRAV*DT;b.z+=b.vz*DT;
-    if(b.z<=0){b.z=0;const impact=-b.vz;if(impact>18){AU.bounce(impact);const e=clamp(0.50+impact*0.00055,0.50,0.58);b.vz=impact*e;b.vx*=0.92;b.vy*=0.92;}else b.vz=0;}  // smooth, impact-speed-dependent turf rebound
+    if(b.z<=0){b.z=0;const impact=-b.vz;if(impact>18){AU.bounce(impact);const e=clamp(0.53+impact*0.0004,0.53,0.58);b.vz=impact*e;b.vx*=0.92;b.vy*=0.92;}else b.vz=0;}  // smooth, impact-speed-dependent turf rebound
   }
   const ox=b.x;b.x+=b.vx*DT;b.y+=b.vy*DT;
   goalHit(ox);
@@ -2058,7 +2058,7 @@ const _u7=update;update=function(){
     if(p.wd&&!p.down&&!p.dive&&!p.out)setAct(p,6,0);
     p.wd=p.down;
   }
-  if(ball.sq>0)ball.sq-=DT;if(ball.z===0&&ball.vz>0&&pv<-70)ball.sq=.1;
+  if(ball.sq>0)ball.sq-=DT;if(ball.z===0&&ball.vz>0&&pv<-18)ball.sq=.1;
 };
 
 
@@ -2990,7 +2990,7 @@ function simTraj(){
   for(let i=0;i<110;i++){
     if(sp){const c=Math.cos(sp*DT),s=Math.sin(sp*DT),nv=vx*c-vy*s;vy=vx*s+vy*c;vx=nv;sp*=z>1?0.996:0.96;}
     const f=z>1?FA:FG;vx*=f;vy*=f;
-    if(z>0||vz!==0){vz-=BALL_GRAV*DT;z+=vz*DT;if(z<=0){z=0;const impact=-vz;if(impact>18){const e=clamp(0.50+impact*0.00055,0.50,0.58);vz=impact*e;vx*=0.92;vy*=0.92;}else vz=0;}}
+    if(z>0||vz!==0){vz-=BALL_GRAV*DT;z+=vz*DT;if(z<=0){z=0;const impact=-vz;if(impact>18){const e=clamp(0.53+impact*0.0004,0.53,0.58);vz=impact*e;vx*=0.92;vy*=0.92;}else vz=0;}}
     if(z<=1){const surface=FRIC[Math.min(2,X().ball)]*(X().wx===1?0.999:1);vx*=surface;vy*=surface;}
     x+=vx*DT;y+=vy*DT;
     if(i%2===0)pts.push(x,y,z);
