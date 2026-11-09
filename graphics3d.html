@@ -17,7 +17,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 </style></head><body>
 <div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 2.0 · REAL-TIME 3D</span></div>
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button id="back">BACK TO GAME</button></div></div>
-<div id="status">3D STADIUM FOUNDATION · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
+<div id="status">STADIUM ENVIRONMENT 2.1 · PLAYER ASSETS NEXT</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
 <script>
 function show3DError(message){const panel=document.querySelector("#loading");if(!panel)return;panel.style.display="grid";panel.style.padding="28px";panel.style.textAlign="center";panel.style.lineHeight="1.6";panel.innerHTML="<div><strong style=\"color:#ffb4a8\">3D SCENE COULD NOT START</strong><small style=\"display:block;max-width:560px;margin:12px auto;color:#d5dcd5\"></small><button onclick=\"location.reload()\">RETRY</button><small style=\"display:block;margin-top:12px\">If this repeats, check WebGL and the network connection.</small></div>";panel.querySelector("small").textContent=message;}
@@ -42,8 +42,15 @@ const mat=(color,roughness=.82,metalness=0)=>new THREE.MeshStandardMaterial({col
 const turfMat=mat(0x286c36,.94),apronMat=mat(0x17251d,1),standMat=mat(0x27323a,.88),roofMat=mat(0x121b20,.65,.28);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(330,260),mat(0x26362e,1));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
 const apron=new THREE.Mesh(new THREE.PlaneGeometry(118,82),apronMat);apron.rotation.x=-Math.PI/2;apron.position.y=-.08;apron.receiveShadow=true;scene.add(apron);
+// High-resolution procedural turf: mowing bands, fine blades and subtle wear.
+const grassCanvas=document.createElement('canvas');grassCanvas.width=1024;grassCanvas.height=680;
+const grassCtx=grassCanvas.getContext('2d');grassCtx.fillStyle='#286d37';grassCtx.fillRect(0,0,1024,680);
+for(let i=0;i<14;i++){grassCtx.fillStyle=i%2?'rgba(7,35,13,.10)':'rgba(145,190,105,.09)';grassCtx.fillRect(i*1024/14,0,1024/14,680);}
+let grassSeed=197711;const grassRand=()=>{grassSeed=(grassSeed*1664525+1013904223)>>>0;return grassSeed/4294967296;};
+for(let i=0;i<42000;i++){const x=grassRand()*1024,y=grassRand()*680;grassCtx.strokeStyle=grassRand()>.5?'rgba(190,220,150,.11)':'rgba(4,38,12,.13)';grassCtx.lineWidth=.35+grassRand()*.65;grassCtx.beginPath();grassCtx.moveTo(x,y);grassCtx.lineTo(x+(grassRand()-.5)*2,y-1-grassRand()*4);grassCtx.stroke();}
+const grassTexture=new THREE.CanvasTexture(grassCanvas);grassTexture.colorSpace=THREE.SRGBColorSpace;grassTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+turfMat.map=grassTexture;turfMat.color.set(0xffffff);turfMat.needsUpdate=true;
 const pitch=new THREE.Mesh(new THREE.PlaneGeometry(105,68),turfMat);pitch.rotation.x=-Math.PI/2;pitch.position.y=0;pitch.receiveShadow=true;scene.add(pitch);
-for(let i=0;i<14;i++){const lane=new THREE.Mesh(new THREE.PlaneGeometry(105/14,68),new THREE.MeshStandardMaterial({color:i%2?0x286c36:0x317b3e,roughness:1}));lane.rotation.x=-Math.PI/2;lane.position.set(-52.5+(i+.5)*105,.012,0);lane.receiveShadow=true;scene.add(lane);}
 const lineMat=new THREE.MeshStandardMaterial({color:0xf2f4e9,roughness:.7});
 function line(x1,z1,x2,z2,w=.12,y=.035){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const m=new THREE.Mesh(new THREE.BoxGeometry(len,.035,w),lineMat);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);scene.add(m);return m;}
 function rect(x,z,w,d,t=.12){line(x,z,x+w,z,t);line(x+w,z,x+w,z+d,t);line(x+w,z+d,x,z+d,t);line(x,z+d,x,z,t);}
@@ -71,6 +78,29 @@ for(let group=0;group<crowdMats.length;group++){const mesh=new THREE.InstancedMe
  dummy.position.set(x,y,z);dummy.rotation.y=(rand()-.5)*.35;const s=.7+rand()*.6;dummy.scale.set(s,s,s);dummy.updateMatrix();mesh.setMatrixAt(n++,dummy.matrix);}
  mesh.count=n;mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);}
 for(const x of [-75,75])for(const z of [-62,62]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.22,.38,25,10),roofMat);pole.position.set(x,12.5,z);pole.castShadow=true;scene.add(pole);const head=new THREE.Mesh(new THREE.BoxGeometry(4,.6,2),new THREE.MeshStandardMaterial({color:0xeaf4ff,emissive:0xdceaff,emissiveIntensity:1.7}));head.position.set(x,25,z);scene.add(head);}
+// Stadium dressing: LED advertising, technical areas, corner flags and scoreboard.
+const adCanvas=document.createElement('canvas');adCanvas.width=1024;adCanvas.height=128;const adCtx=adCanvas.getContext('2d');
+const adGradient=adCtx.createLinearGradient(0,0,1024,0);adGradient.addColorStop(0,'#071a14');adGradient.addColorStop(.5,'#153b2a');adGradient.addColorStop(1,'#071a14');adCtx.fillStyle=adGradient;adCtx.fillRect(0,0,1024,128);
+adCtx.strokeStyle='#a3e635';adCtx.lineWidth=5;adCtx.strokeRect(4,4,1016,120);adCtx.fillStyle='#f4ffe8';adCtx.font='900 54px Arial';adCtx.textAlign='center';adCtx.textBaseline='middle';adCtx.fillText('PITCH 11  •  EVERY MATCH MATTERS',512,66);
+const adTexture=new THREE.CanvasTexture(adCanvas);adTexture.colorSpace=THREE.SRGBColorSpace;
+const adMaterial=new THREE.MeshStandardMaterial({map:adTexture,emissive:0x315c25,emissiveMap:adTexture,emissiveIntensity:.42,roughness:.55,side:THREE.DoubleSide});
+const adGeo=new THREE.BoxGeometry(7.4,1.05,.24);
+for(const side of [-1,1])for(let i=0;i<14;i++){const board=new THREE.Mesh(adGeo,adMaterial);board.position.set(-48.1+i*7.4,.58,side*36.15);board.castShadow=true;scene.add(board);}
+for(const side of [-1,1])for(let i=0;i<9;i++){const board=new THREE.Mesh(new THREE.BoxGeometry(.24,1.05,7.4),adMaterial);board.position.set(side*53.55,.58,-29.6+i*7.4);board.castShadow=true;scene.add(board);}
+const glassMat=new THREE.MeshPhysicalMaterial({color:0x9fc4c7,transparent:true,opacity:.22,roughness:.12,metalness:.15,side:THREE.DoubleSide});
+const dugoutMat=mat(0x101c1c,.38,.42),seatMat=mat(0x9ab3a0,.72);
+for(const side of [-1,1])for(const x of [-29,29]){
+ const z=side*41.1,dugout=new THREE.Group();scene.add(dugout);
+ const base=new THREE.Mesh(new THREE.BoxGeometry(13,.22,2.5),dugoutMat);base.position.set(x,.18,z);dugout.add(base);
+ const roof=new THREE.Mesh(new THREE.BoxGeometry(13,.18,3.1),roofMat);roof.position.set(x,2.55,z);roof.castShadow=true;dugout.add(roof);
+ for(const dx of [-6.35,6.35]){const post=new THREE.Mesh(new THREE.BoxGeometry(.14,2.3,.14),dugoutMat);post.position.set(x+dx,1.35,z);dugout.add(post);}
+ const glass=new THREE.Mesh(new THREE.BoxGeometry(12.5,1.95,.055),glassMat);glass.position.set(x,1.35,z-side*1.12);dugout.add(glass);
+ for(let n=0;n<7;n++){const seat=new THREE.Mesh(new THREE.BoxGeometry(1.25,.28,.75),seatMat);seat.position.set(x-5.25+n*1.75,.9,z+side*.35);dugout.add(seat);}
+}
+const flagMat=new THREE.MeshStandardMaterial({color:0xa3e635,side:THREE.DoubleSide,roughness:.8});
+for(const x of [-52.5,52.5])for(const z of [-34,34]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.035,.045,1.65,8),mat(0xf0f1e8,.45,.1));pole.position.set(x,.82,z);pole.castShadow=true;scene.add(pole);const shape=new THREE.Shape();shape.moveTo(0,0);shape.lineTo(.72,-.18);shape.lineTo(0,-.48);shape.closePath();const flag=new THREE.Mesh(new THREE.ShapeGeometry(shape),flagMat);flag.position.set(x,.98,z);scene.add(flag);}
+const screenFrame=mat(0x10191b,.35,.55),screenMat=new THREE.MeshStandardMaterial({color:0x152d28,emissive:0x245c43,emissiveIntensity:.85});
+for(const side of [-1,1]){const frame=new THREE.Mesh(new THREE.BoxGeometry(16,5,.8),screenFrame);frame.position.set(0,20,side*67);scene.add(frame);const screen=new THREE.Mesh(new THREE.PlaneGeometry(14.8,3.8),screenMat);screen.position.set(0,20.05,side*66.55);screen.rotation.y=side>0?Math.PI:0;scene.add(screen);}
 const ballGroup=new THREE.Group();ballGroup.position.set(0,.22,0);scene.add(ballGroup);const ballMesh=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),mat(0xf5f5ed,.32));ballMesh.castShadow=true;ballGroup.add(ballMesh);
 const ballSeams=new THREE.Mesh(new THREE.TorusGeometry(.145,.009,5,40),mat(0x20252a,.6));ballSeams.rotation.x=Math.PI/2;ballGroup.add(ballSeams);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(.35,24),new THREE.MeshBasicMaterial({color:0x061009,transparent:true,opacity:.3}));shadow.rotation.x=-Math.PI/2;shadow.position.y=.012;ballGroup.add(shadow);
