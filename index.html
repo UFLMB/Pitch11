@@ -4467,7 +4467,8 @@ drawBall=function(a){
    ================================================================== */
 const _gkReact30=gkReact;
 gkReact=function(p){
-  if(p.dive>0)return;                         // one save decision per dive; no overlapping reaction
+  // Keep checking the ball during an active dive: the base save solver uses its
+  // larger dive reach to catch/parry the shot. Only aiGK owns dive initiation.
   _gkReact30(p);
 };
 const _stepBall30=stepBall;
