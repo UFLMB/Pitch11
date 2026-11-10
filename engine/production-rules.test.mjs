@@ -67,7 +67,7 @@ test("a restart taker's second-touch restriction ends on any other player's cont
 test("penalty shootouts use the isolated whole-ball law decision helper", () => {
   assert.match(source, /PITCH11Law\.shootoutDecision\(/);
   assert.match(source, /goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR/);
-  assert.match(source, /function ballBeyondLine/);
+  assert.match(source, /const ballBeyondLine=/);
 });
 
 test("goal-line versus touchline restarts are classified after full crossing", () => {
