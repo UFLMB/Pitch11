@@ -112,3 +112,12 @@ test("goalkeeper hand control is limited to eight seconds and awards a corner ki
   assert.ok(source.includes("b.gkHoldActive=false"));
   assert.ok(source.includes("b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false"));
 });
+
+
+test("dropped balls use the defending goalkeeper inside a penalty area and preserve the restart position", () => {
+  assert.ok(source.includes("PITCH11Law.droppedBallRecipient("));
+  assert.ok(source.includes("penaltyHalfWidth:PEN_WIDTH/2"));
+  assert.ok(source.includes("lastTouchedTeam:t"));
+  assert.ok(source.includes("spot(recipient.team,x,y,!!useKeeper"));
+  assert.ok(source.includes("PX0+BR+0.1"));
+});
