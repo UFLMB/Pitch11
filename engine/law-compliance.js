@@ -102,6 +102,20 @@
       Math.abs(s.attackDirection) === 1 && s.vx * s.attackDirection > 0;
   }
 
+  function penaltyShotOnTarget(state) {
+    const s = state || {};
+    const fields = [s.x, s.y, s.z, s.vx, s.vy, s.vz, s.goalLine, s.attackDirection,
+      s.centerY, s.goalHalfWidth, s.goalHeight, s.radius, s.gravity, s.maxTime];
+    if (!fields.every(Number.isFinite) || Math.abs(s.attackDirection) !== 1 ||
+        s.vx * s.attackDirection <= 0) return false;
+    const time = (s.goalLine - s.x) / s.vx;
+    if (time <= 0 || time > s.maxTime) return false;
+    const projectedY = s.y + s.vy * time;
+    const projectedZ = s.z + s.vz * time - 0.5 * s.gravity * time * time;
+    return Math.abs(projectedY - s.centerY) <= s.goalHalfWidth - s.radius &&
+      projectedZ <= s.goalHeight - s.radius;
+  }
+
   function penaltyKeeperDecision(state) {
     const s = state || {};
     if (!s.keeperOffLine) return 'continue';
@@ -178,5 +192,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
