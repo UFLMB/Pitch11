@@ -9,7 +9,7 @@
     return 'rgb('+Math.round(clamp(r*k,0,255))+','+Math.round(clamp(g*k,0,255))+','+Math.round(clamp(b*k,0,255))+')';
   };
   function humanDetail(p, x, y, angle, scale, kit, projected, flip=1) {
-    if (!window.ctx || !Number.isFinite(x+y+angle+scale) || scale<.001) return;
+    if (typeof ctx==='undefined' || !Number.isFinite(x+y+angle+scale) || scale<.001) return;
     const c=ctx, skin=(typeof SKIN!=='undefined'&&SKIN[p.skin])||'#c68642';
     const shirt=(p.gk?kit.gk:kit.shirt)||'#333', shorts=(p.gk?'#242424':kit.shorts)||'#222';
     const dark=shade(shirt,.58), light=shade(shirt,1.24);
