@@ -85,6 +85,7 @@ export class FootballSimulation {
     this.ball = makeBall();
     this.humanTeam = options.humanTeam ?? 0;
     this.selectedPlayer = this.humanTeam * 11 + 9;
+    this.manualSwitchUntil = 0;
     this.players[this.selectedPlayer].selected = true;
     this.commands = [];
     this.events = [];
@@ -187,6 +188,7 @@ export class FootballSimulation {
     return true;
   }
   updateAutoPlayerSelection() {
+    if (this.time < this.manualSwitchUntil) return false;
     const current = this.players[this.selectedPlayer];
     const owner = this.players[this.ball.owner];
     const outfield = this.players.filter(p => p.team === this.humanTeam && !p.out && p.role !== "GK");
@@ -269,7 +271,7 @@ export class FootballSimulation {
         const candidates = this.players.filter(q => q.team === this.humanTeam && !q.out && q.role !== "GK");
         candidates.sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
         const next = candidates.find(q => q.id !== this.selectedPlayer) || candidates[0];
-        if (next) this.selectPlayer(next.id);
+        if (next) { this.selectPlayer(next.id); this.manualSwitchUntil = this.time + 2; }
       } else if (c.type === "pass" && p.team === this.humanTeam && this.ball.owner === p.id) {
         this.passBall(p, c.targetId);
       } else if (c.type === "shoot" && p.team === this.humanTeam && this.ball.owner === p.id) {
