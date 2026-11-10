@@ -2036,7 +2036,7 @@ const _stadiumKeeper=gkReact;gkReact=function(p){
 };
 const _stadiumTackle=tryTackle;tryTackle=function(p,c){
   const cd=p.tcd,r=_stadiumTackle(p,c);
-  if(p.tcd>cd+.5)emitStadiumEvent(r?'tackleWon':'tackleMissed');
+  if(p.tcd>cd+.5&&S.mode==='play')emitStadiumEvent(r?'tackleWon':'tackleMissed');
   return r;
 };
 const _stadiumFoul=foul;foul=function(p,o,b){_stadiumFoul(p,o,b);emitStadiumEvent('foul');};
