@@ -92,13 +92,20 @@ test('substitution eligibility enforces five players and three stoppage opportun
     { allowed: true, consumesWindow: false, reason: 'halftime' });
   assert.deepEqual(check({ used: 5, windows: 0, inStoppage: true, halftime: true, windowUsed: false }),
     { allowed: false, consumesWindow: false, reason: 'limit' });
+  assert.deepEqual(check({ used: 5, windows: 3, inStoppage: true, halftime: false, windowUsed: false, extraTime: true }),
+    { allowed: true, consumesWindow: true, reason: 'new-window' });
+  assert.deepEqual(check({ used: 6, windows: 3, inStoppage: true, halftime: false, windowUsed: false, extraTime: true }),
+    { allowed: false, consumesWindow: false, reason: 'limit' });
+  assert.deepEqual(check({ used: 5, windows: 4, inStoppage: true, halftime: false, windowUsed: false, extraTime: true }),
+    { allowed: false, consumesWindow: false, reason: 'windows' });
 });
 
 
 test('goalkeeper hand control expires at eight seconds, not before', () => {
   assert.equal(law.goalkeeperHoldExpired(0), false);
   assert.equal(law.goalkeeperHoldExpired(7.999), false);
-  assert.equal(law.goalkeeperHoldExpired(8), true);
+  assert.equal(law.goalkeeperHoldExpired(8), false);
+  assert.equal(law.goalkeeperHoldExpired(8.01), true);
   assert.equal(law.goalkeeperHoldExpired(8.5), true);
   assert.equal(law.goalkeeperHoldExpired(NaN), false);
 });
@@ -119,4 +126,17 @@ test('goal-kick opponents are moved outside the penalty area, while players outs
   assert.deepEqual(place({ x: 120, y: 80, goalLine: 0, direction: 1, penaltyDepth: 165, halfWidth: 100, centerY: 0, clearance: 12 }), { x: 177, y: 80 });
   assert.deepEqual(place({ x: 190, y: 0, goalLine: 0, direction: 1, penaltyDepth: 165, halfWidth: 100, centerY: 0, clearance: 12 }), { x: 190, y: 0 });
   assert.deepEqual(place({ x: 920, y: 0, goalLine: 1000, direction: -1, penaltyDepth: 165, halfWidth: 100, centerY: 0, clearance: 12 }), { x: 823, y: 0 });
+});
+
+
+test('offside line uses the ball and the second-last active opponent in either direction', () => {
+  const right = [
+    { team: 1, x: 950, out: false },
+    { team: 1, x: 900, out: false },
+    { team: 1, x: 700, out: false }
+  ];
+  assert.equal(law.offsideLine(right, 0, 1, 800, 1110), 900);
+  assert.equal(law.offsideLine(right, 0, 1, 930, 1110), 930);
+  const left = right.map(p => ({ ...p, team: 0, x: 1200 - p.x }));
+  assert.equal(law.offsideLine(left, 1, -1, -400, -60), -300);
 });
