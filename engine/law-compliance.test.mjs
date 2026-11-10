@@ -66,3 +66,13 @@ test('shootout order includes every eligible player, including the goalkeeper, e
   assert.equal(order.some(p => p.out), false);
   assert.equal(law.shootoutOrder(players, 1).length, 11);
 });
+
+
+test('Law 3 requires at least seven eligible players; dismissed players do not count', () => {
+  const players = Array.from({ length: 11 }, (_, role) => ({ team: 0, role, out: false, inj: role === 6 }));
+  assert.equal(law.hasMinimumPlayers(players, 0), true);
+  for (const p of players.slice(0, 5)) p.out = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), false);
+  assert.equal(law.hasMinimumPlayers(players, 1), false);
+  assert.equal(law.hasMinimumPlayers(players, 0, 6), true);
+});
