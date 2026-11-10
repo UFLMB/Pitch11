@@ -161,6 +161,6 @@ test("goalkeeper handball boundary is evaluated at the ball contact point", () =
 
 test("kick-off keeps every non-kicker, including teammates and goalkeepers, outside the centre circle and in their own half", () => {
   assert.ok(source.includes("rs.kind!=='ko'&&(p.team===rs.team||p.gk)"));
-  assert.ok(source.includes("const ownEdge=dirOf(p.team)>0?CX-1:CX+1"));
+  assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
   assert.ok(source.includes("Math.sqrt(Math.max(0,R*R-(p.x-CX)*(p.x-CX)))"));
 });
