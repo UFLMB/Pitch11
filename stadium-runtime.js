@@ -151,7 +151,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const replacements=source.map(original=>{
     if(!original)return original;
     const hsl={h:0,s:0,l:0};if(original.color)original.color.getHSL(hsl);
-    if(hsl.h<.19||hsl.h>.48||hsl.s<.18)return original;
+    const green=hsl.h>=.19&&hsl.h<=.48&&hsl.s>=.18;
+    if(!green&&!original.map)return original;
     const m=original.clone();
     if(!m.map){m.map=textures.albedo;m.color.set(0xffffff);}
     if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
