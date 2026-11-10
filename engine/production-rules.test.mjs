@@ -257,7 +257,7 @@ test("Law 14 rejects a backward penalty kick and awards an indirect free kick", 
 test("Law 14 does not retake for an off-line goalkeeper touching a penalty that was going wide or high", () => {
   assert.match(source, /PITCH11Law\.penaltyShotOnTarget\(/);
   assert.match(source, /const onTarget=!!\(ball\.pen&&ball\.penaltyKeeperOffLine/);
-  assert.match(source, /if\(onTarget&&ball\.pen&&ball\.penaltyKeeperOffLine/);
+  assert.match(source, /if\(onTarget&&ball\.penaltyKeeperOffLine&&keeperTouched\)/);
 });
 
 test("Law 14 additional time waits for penalty completion and honours retakes", () => {
