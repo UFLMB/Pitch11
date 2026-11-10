@@ -492,7 +492,7 @@ function touches(){                                        // a free ball is pic
   }
   if(!best)return;
   if(best!==b.dbl)b.dbl=null;if(best!==b.indBy)clearIndirect(); // a different player releases the direct-goal restriction
-  if(!S.prac&&best.off&&b.last&&b.last.team===best.team&&b.last!==best){callOffside(best);return;}
+  if(!S.prac&&best.off){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;
     b.vx=vx*c-b.vy*0.45*s;b.vy=vx*s+b.vy*0.45*c;best.kcd=0.35;b.last=best;b.receiver=null;if(best!==b.indBy)clearIndirect();
