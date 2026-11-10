@@ -1641,7 +1641,7 @@ function applyTeam(t,ci){                                  // kit, formation, ta
 const nextOpp=()=>{let o;do o=Math.floor(Math.random()*CL.length);while(o===G.club||!clubOK(o));return o;};
 function launch(){const k=M.kind;S.prac=k==='prac';S.ko=k==='cup'||(k==='quick'&&M.ko);M.of=Math.floor(Math.random()*5);goFullscreen();newMatch();if(k==='pens')startShootout();}
 function rematch(){newMatch();if(M.kind==='pens')startShootout();}
-function result(){const a=S.score[0],b=S.score[1],so=S.so?[S.so.k[0].filter(Boolean).length,S.so.k[1].filter(Boolean).length]:null;return{s:[a,b],p:so,w:a!==b?(a>b?0:1):so?(so[0]>so[1]?0:1):-1};}
+function result(){const a=S.score[0],b=S.score[1],so=S.so?[S.so.k[0].filter(Boolean).length,S.so.k[1].filter(Boolean).length]:null,w=S.abandoned!==null?1-S.abandoned:a!==b?(a>b?0:1):so?(so[0]>so[1]?0:1):-1;return{s:[a,b],p:so,w};}
 function toMenu(scr,hist){M.instr=0;S.mode='menu';S.t=0;S.prac=false;S.so=null;S.rs=null;S.adv=null;I.shoot=false;releaseAll();M.scr=scr;M.hist=hist||[];M.conf=0;}
 const quitMatch=()=>toMenu('main');
 function finishMatch(){
