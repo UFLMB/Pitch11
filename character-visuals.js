@@ -8,12 +8,12 @@
     const n=parseInt(String(hex).replace('#',''),16),r=(n>>16)&255,g=(n>>8)&255,b=n&255;
     return 'rgb('+Math.round(clamp(r*k,0,255))+','+Math.round(clamp(g*k,0,255))+','+Math.round(clamp(b*k,0,255))+')';
   };
-  function humanDetail(p, x, y, angle, scale, kit, projected) {
+  function humanDetail(p, x, y, angle, scale, kit, projected, flip=1) {
     if (!window.ctx || !Number.isFinite(x+y+angle+scale) || scale<.001) return;
     const c=ctx, skin=(typeof SKIN!=='undefined'&&SKIN[p.skin])||'#c68642';
     const shirt=(p.gk?kit.gk:kit.shirt)||'#333', shorts=(p.gk?'#242424':kit.shorts)||'#222';
     const dark=shade(shirt,.58), light=shade(shirt,1.24);
-    c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+    c.save();c.translate(x,y);if(projected)c.scale(scale*flip,scale);else{c.rotate(angle);c.scale(scale,scale);}
     if (!projected) {
       // Top-down broadcast view: keep the face on the leading edge of the existing silhouette.
       c.fillStyle=shade(skin,.7);c.beginPath();c.ellipse(2.1,0,2.35,3.05,0,0,TAU);c.fill();
@@ -53,7 +53,7 @@
     c.fillStyle=light;c.globalAlpha=.45;c.beginPath();c.moveTo(-.35,-18.8);c.lineTo(.15,-18.8);c.lineTo(.15,-13.8);c.lineTo(-.35,-13.8);c.closePath();c.fill();c.globalAlpha=1;
     // Small club crest and shirt number; no external club branding.
     c.fillStyle='rgba(255,255,255,.88)';c.beginPath();c.roundRect(-2.9,-17.4,1.05,1.35,.2);c.fill();
-    c.fillStyle=dark;c.font='bold 1px sans-serif';c.textAlign='center';c.fillText(p.team===0?'11':'11',-2.38,-16.45);
+    c.fillStyle=dark;c.font='bold 1px sans-serif';c.textAlign='center';c.fillText(String(p.num||''),-2.38,-16.45);
     c.fillStyle='rgba(255,255,255,.8)';c.font='bold 2.1px sans-serif';c.textAlign='center';c.fillText(String(p.num||''),.7,-14.9);
     // Shorts hem and two subtle fabric highlights.
     c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=.48;c.beginPath();c.moveTo(-4.5,3.1);c.quadraticCurveTo(-1,4.1,3.6,3);c.stroke();
@@ -69,11 +69,11 @@
   }
   if (typeof drawPlayer3==='function') {
     const old=drawPlayer3;
-    drawPlayer3=function(p,a){old(p,a);const x=p.px+(p.x-p.px)*a,y=p.py+(p.y-p.py)*a;pj(x,y,0);const fc=typeof faceSide==='function'?faceSide(p.rf===undefined?p.face:p.rf):1;humanDetail(p,V.sx,V.sy,p.rf===undefined?p.face:p.rf,V.s*PLAYER_SCALE*fc,KIT[p.team],true);};
+    drawPlayer3=function(p,a){old(p,a);const x=p.px+(p.x-p.px)*a,y=p.py+(p.y-p.py)*a;pj(x,y,0);const fc=typeof faceSide==='function'?faceSide(p.rf===undefined?p.face:p.rf):1;humanDetail(p,V.sx,V.sy,p.rf===undefined?p.face:p.rf,V.s*PLAYER_SCALE,KIT[p.team],true,fc);};
   }
-  function officialDetail(o,x,y,angle,scale,threeD) {
+  function officialDetail(o,x,y,angle,scale,threeD,flip=1) {
     const c=ctx,k=o.kit||{s:'#f0e000',sh:'#111',t:'#222'},skin=o.sk||'#c68642';
-    c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+    c.save();c.translate(x,y);if(threeD)c.scale(scale*flip,scale);else{c.rotate(angle);c.scale(scale,scale);}
     if (!threeD) {
       c.fillStyle=k.s;c.beginPath();c.ellipse(-1,0,4.8,6.6,0,0,TAU);c.fill();
       c.strokeStyle=k.t||'#222';c.lineWidth=.85;c.beginPath();c.moveTo(-3.8,-3.8);c.lineTo(2.8,-3.8);c.moveTo(-3.8,3.8);c.lineTo(2.8,3.8);c.stroke();
@@ -100,7 +100,7 @@
     const old=drawFig2;drawFig2=function(o){old(o);officialDetail(o,o.x,o.y,o.face||0,PLAYER_SCALE,false);};
   }
   if (typeof drawFig3==='function') {
-    const old=drawFig3;drawFig3=function(o){old(o);pj(o.x,o.y,0);const fc=Math.cos(o.face)>=0?1:-1;officialDetail(o,V.sx,V.sy,o.face||0,V.s*PLAYER_SCALE*fc,true);};
+    const old=drawFig3;drawFig3=function(o){old(o);pj(o.x,o.y,0);const fc=Math.cos(o.face)>=0?1:-1;officialDetail(o,V.sx,V.sy,o.face||0,V.s*PLAYER_SCALE,true,fc);};
   }
   window.P11CharacterVisuals={version:'1.0.0',style:'procedural-2.5D',scope:'players-goalkeepers-referee-assistants'};
 })();
