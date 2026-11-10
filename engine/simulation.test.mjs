@@ -289,3 +289,21 @@ test("match clock pauses at half-time and resumes into full-time", () => {
   assert.equal(sim.phase, "fullTime");
   assert.ok(Math.abs(sim.matchSeconds - .1) < 1e-9);
 });
+
+test("player separation prevents overlapping player capsules", () => {
+  const sim = new FootballSimulation();
+  const a = sim.players[5], b = sim.players[16];
+  a.x = 50; a.y = 34; b.x = 50; b.y = 34;
+  sim.resolvePlayerSeparation();
+  assert.ok(Math.hypot(a.x-b.x,a.y-b.y) >= .61);
+});
+
+test("AI defender schedules a pressure tackle near an opponent", () => {
+  const sim = new FootballSimulation();
+  const defender = sim.players[8], attacker = sim.players[15];
+  sim.ball.owner = attacker.id;
+  defender.x = attacker.x; defender.y = attacker.y;
+  sim.updateAI(FIXED_DT);
+  assert.ok(defender.tackleUntil > sim.time);
+  assert.ok(defender.tackleCooldown > 0);
+});
