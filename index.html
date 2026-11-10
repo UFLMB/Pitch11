@@ -1787,6 +1787,7 @@ function applyConfig(){                                   // recompute all pitch
   const s=PITCH_SIZES[PREFS.pitch],g=GOAL_SIZES[PREFS.goal];
   PW=s[0];PH=s[1];PX0=60;PY0=60;PX1=PX0+PW;PY1=PY0+PH;CX=PX0+PW/2;CY=PY0+PH/2;WW=PW+120;WH=PH+120;
   GOALH=g.h;GOALD=g.d;GOALZ=g.z;
+  if(window.P11Stadium&&window.P11Stadium.setGoalDimensions)window.P11Stadium.setGoalDimensions({halfWidth:GOALH/10,height:GOALZ/10,depth:GOALD/10});
   BALL_SCALE=[0.8,1,1.3][PREFS.ball];BR=2.6*BALL_SCALE;BVR=BR*0.65; // physics radius stays BR; visual diameter ~34 cm at default, calibrated to the in-game player model
   PLAYER_SCALE=[0.66,0.8,0.95][PREFS.player];
   calcCams();rebuildLines();rebuildPLN();
@@ -4634,7 +4635,7 @@ aiGK=function(p){
 };
 /* ===================== BOOT ===================== */
 
-
+addEventListener('p11stadiumready',()=>{if(window.P11Stadium&&window.P11Stadium.setGoalDimensions)window.P11Stadium.setGoalDimensions({halfWidth:GOALH/10,height:GOALZ/10,depth:GOALD/10});});
 
 addEventListener('resize',resize);
 resize();
