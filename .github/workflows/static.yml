@@ -14,7 +14,9 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  # PR validation must never cancel a production Pages deployment.
+  # New main/manual deployments may supersede stale main deployments.
+  group: ${{ github.event_name == 'pull_request' && format('pages-pr-{0}', github.event.pull_request.number) || 'pages-main' }}
   cancel-in-progress: true
 
 jobs:
