@@ -260,7 +260,7 @@ function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const b=ball,a=Math.atan2(vy,vx),rs=S.rs;
   if(mode==='pass'||mode==='thru'||mode==='lob'){if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);}
   else clearOff();
-  if(rs&&rs.ind)b.ind=true;                                // indirect free kick: cannot score untouched
+  if(rs&&(rs.ind||rs.kind==='throw'||rs.kind==='drop'))b.ind=true; // indirect kicks, throw-ins and dropped balls cannot score untouched
   b.protect=0;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';
   b.x=p.x+Math.cos(a)*9;b.y=p.y+Math.sin(a)*9;
@@ -487,6 +487,7 @@ function touches(){                                        // a free ball is pic
     if(s>bs){bs=s;best=p;}
   }
   if(!best)return;
+  if(best!==b.dbl)b.dbl=null;                              // any touch by another player ends the restart taker's second-touch restriction
   if(!S.prac&&best.off&&b.last&&b.last.team===best.team&&b.last!==best){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;
@@ -866,7 +867,7 @@ const ballInsideGoalFrame=b=>Math.abs(b.y-CY)<=GOALH-BR&&b.z<=GOALZ-BR;
 function soRules(){
   const so=S.so,b=ball;so.t+=DT;
   if(ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){soResult(true);return;}
-  if(!S.rs&&(b.owner||(b.last&&b.last.team!==so.team)||b.x<PX0||b.x>PX1||b.y<PY0||b.y>PY1||(b.z===0&&!b.vx&&!b.vy)||so.t>8))soResult(false);
+  if(!S.rs&&(b.owner||(b.last&&b.last.team!==so.team)||ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)||(b.z===0&&!b.vx&&!b.vy)||so.t>8))soResult(false);
 }
 function soResult(ok){
   const so=S.so;so.live=false;so.k[so.team].push(ok);
