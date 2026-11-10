@@ -304,10 +304,12 @@ export class FootballSimulation {
       return;
     }
     const forward = p.attack;
-    const options = this.players.filter(q => q.team === p.team && q.id !== p.id && q.role !== "GK" && !this.isOffside(q, p.team))
+    const tactics = this.tactics[p.team];
+    const options = this.players.filter(q => q.team === p.team && !q.out && q.id !== p.id && q.role !== "GK" && !this.isOffside(q, p.team))
       .map(q => ({ p:q, score: forward*(q.x-p.x) - Math.abs(q.y-p.y)*.28 - this.players.filter(o=>o.team!==p.team).filter(o=>this.distanceToSegment(o,p,q)<3.2).length*9 }))
-      .filter(o => o.score > 4).sort((a,b)=>b.score-a.score);
-    if (pressure < 3.5 && options.length && this.random() < .045) {
+      .filter(o => o.score > 3 + (1 - tactics.directness) * 5).sort((a,b)=>b.score-a.score);
+    const passChance = .015 + tactics.directness * .09 + clamp((3.5 - pressure) / 3.5, 0, .08);
+    if (pressure < 3.5 && options.length && this.random() < passChance) {
       this.passBall(p, options[0].p.id);
       return;
     }
