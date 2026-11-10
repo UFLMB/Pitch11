@@ -1001,12 +1001,15 @@ function restartClamp(){                                   // defenders keep 9.1
   }
 }
 /* --- fouls, cards, advantage --- */
-function foul(p,o,behind){
+function foul(p,o,behind,context){
   const b=ball,t=o.team,x=b.x,y=b.y,own=dirOf(p.team)>0?PX0:PX1;
   const pen=Math.abs(x-own)<165&&Math.abs(y-CY)<201.5;
-  const sev=(behind?0.5:0.15)+(p.sp?0.15:0)+(pen?0.1:0),r=Math.random();
-  let card=0;
-  if(r<sev*0.08)card=2;else if(r<sev*0.5){card=1;if(++p.yc>=2)card=3;}   // 1 yellow, 2 straight red, 3 second yellow
+  const card=PITCH11Law.foulCardDecision({
+    seriousFoulPlay:!!(context&&context.seriousFoulPlay),
+    reckless:!!(context&&context.reckless),
+    alreadyBooked:p.yc>0
+  });
+  if(card===1||card===3)p.yc++;
   const hurt=Math.random()<0.12?o:null,dt=dirOf(t),prog=((x-(dt>0?PX0:PX1))*dt)/PW;
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
@@ -2467,7 +2470,7 @@ function slideInjury(o,tq,behind){                          // a hard foul can i
   D9.n.si[o.team===0?1:0]++;act8('slide','injury');
 }
 function slideFoul(p,q,tq,behind){
-  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp;p.sp=true;foul(p,q,behind);p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind);
+  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp;p.sp=true;foul(p,q,behind,{reckless:behind||tq<0.55});p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind);
 }
 function slideHit(p,sd){
   const K=TUNING.df.sl,b=ball,o=b.owner,def=p.st.def,rch=K.reach+K.rd*def,tq=1-clamp(Math.abs(sd.t-K.ideal)/0.25,0,1);   // tq: timing quality, 1 = contact at the ideal moment
