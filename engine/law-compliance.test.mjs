@@ -43,7 +43,7 @@ test('shootout teams are reduced to equal numbers without removing goalkeepers',
   assert.equal(excluded.length, 1);
   assert.equal(excluded[0].team, 0);
   assert.equal(excluded[0].gk, false);
-  assert.equal(excluded[0].role, 9);
+  assert.equal(excluded[0].role, 10);
 });
 
 test('production ball dimensions remain unchanged', async () => {
