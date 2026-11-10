@@ -177,3 +177,10 @@ test("goalkeeper cannot handle the ball again after releasing it until another p
   assert.ok(source.includes("secondTouch?'SECOND TOUCH':'BACK-PASS / THROW-IN'"));
   assert.ok(source.includes("b.gkReleasedBy=null;b.gkHold=0"));
 });
+
+
+test("kick-off keeps every non-kicker, including teammates and goalkeepers, outside the centre circle and in their own half", () => {
+  assert.ok(source.includes("rs.kind!=='ko'&&(p.team===rs.team||p.gk)"));
+  assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
+  assert.ok(source.includes("radius:R,pitchTop:PY0,pitchBottom:PY1"));
+});

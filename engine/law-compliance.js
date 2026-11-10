@@ -46,6 +46,29 @@
     return { team, goalkeeper };
   }
 
+  function kickoffPlayerPosition(state) {
+    let x = state.x;
+    let y = state.y;
+    const dx = x - state.centerX;
+    const dy = y - state.centerY;
+    const distance = Math.hypot(dx, dy) || 0.1;
+    if (distance < state.radius) {
+      x = state.centerX + dx / distance * state.radius;
+      y = state.centerY + dy / distance * state.radius;
+    }
+    const ownEdge = state.direction > 0 ? state.centerX - 1 : state.centerX + 1;
+    if ((state.direction > 0 && x > ownEdge) || (state.direction < 0 && x < ownEdge)) {
+      x = ownEdge;
+      const edgeDx = x - state.centerX;
+      if (edgeDx * edgeDx + (y - state.centerY) ** 2 < state.radius * state.radius) {
+        const side = Math.sign(y - state.centerY) || state.side || 1;
+        y = state.centerY + side * Math.sqrt(Math.max(0, state.radius * state.radius - edgeDx * edgeDx));
+      }
+      y = Math.max(state.pitchTop + 4, Math.min(state.pitchBottom - 4, y));
+    }
+    return { x, y };
+  }
+
   function goalKickOpponentPosition(state) {
     const x = state.x;
     const y = state.y;
@@ -110,5 +133,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, droppedBallRecipient, goalKickOpponentPosition, kickoffPlayerPosition });
 })(globalThis);
