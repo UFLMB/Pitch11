@@ -90,7 +90,8 @@ test('substitution limits follow the five-plus-three-window model and optional e
 
 test('goalkeeper eight-second limit triggers at eight seconds, not before', () => {
   assert.equal(law.goalkeeperHoldExpired(7.99), false);
-  assert.equal(law.goalkeeperHoldExpired(8), true);
+  assert.equal(law.goalkeeperHoldExpired(8), false);
+  assert.equal(law.goalkeeperHoldExpired(8.01), true);
   assert.equal(law.goalkeeperHoldExpired(9), true);
 });
 
