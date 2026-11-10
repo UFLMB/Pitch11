@@ -4374,12 +4374,12 @@ function CUT_ICO(ic,ix,iy,ph){ctx.save();ctx.translate(ix,iy);const s=ph*.26;ctx
   else{ctx.beginPath();ctx.arc(0,0,s,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(0,-s*.6);ctx.lineTo(0,0);ctx.lineTo(s*.5,s*.3);ctx.stroke();}
   ctx.restore();}
 /* --- cameras (fcam = same projection the set-piece and celebration cameras use) --- */
-const camKO=u=>{const e=u*u*(3-2*u),d0=dirOf(0);return fcam(CX-d0*(560-300*e),CY+125*(1-e),CX,CY,185-95*e,0,1.12,1.05);};
+const camKO=u=>{const e=u*u*(3-2*u),d0=dirOf(0);return fcam(CX-d0*(470-235*e),CY+100*(1-e),CX,CY,155-75*e,0,1.12,1.05);};
 const camFoul=u=>{const sg=SC.y<CY?-1:1,dd=dirOf(0);return fcam(SC.x-dd*(170-45*u),SC.y+sg*(115-20*u),SC.x,SC.y,62,6,1.45,1);};
 const camPen=u=>{const sg=SC.y<CY?-1:1;return fcam(SC.gx-SC.dd*(210-35*u),CY+sg*(300-35*u),SC.gx-SC.dd*90,CY,90,8,1.0,1);};
 const camOff=u=>{const sg=SC.y<CY?-1:1,dd=dirOf(0);return fcam(SC.x-dd*(200-60*u),SC.y+sg*130,SC.x,(SC.y+CY)/2,90,0,1.25,1);};
 const camInj=u=>{const q=SC.q,a=SC.a0+u*.9;return fcam(q.x+Math.cos(a)*135,q.y+Math.sin(a)*135,q.x,q.y,58,4,1.7,1);};
-const camHT=u=>fcam(CX-190+380*u,PY0-82,CX,PY1-70,150,0,1.22,1.0);
+const camHT=u=>fcam(CX-145+290*u,PY1+190,CX,PY1+58,82,0,1.22,1.0);
 /* --- choreography --- */
 function mvFoul(){const x=SC.x,y=SC.y,rx=G.rf.show?REF.x:x,ry=G.rf.show?REF.y:y;       // fouled side gathers round the spot, the fouling side walks over to appeal to the referee
   for(let i=0;i<22;i++){const p=P[i];if(p.out||p.gk)continue;const h=SC.h[i];if(Math.hypot(h[0]-x,h[1]-y)>190)continue;
@@ -4397,7 +4397,7 @@ function mvHT(){for(let i=0;i<22;i++){const p=P[i];if(p.out)continue;const k=i%1
 function winner26(){const a=S.score[0],b=S.score[1];if(a!==b)return a>b?0:1;if(S.so){const x=S.so.k[0].filter(Boolean).length,y=S.so.k[1].filter(Boolean).length;if(x!==y)return x>y?0:1;}return -1;}
 const camCorner=u=>{const e=u*u*(3-2*u),tx=SC.gx-SC.dd*70,ty=CY,dx=tx-SC.x,dy=ty-SC.y,m=Math.hypot(dx,dy)||1,k=200-80*e;return fcam(SC.x-dx/m*k,SC.y-dy/m*k,tx,ty,105-45*e,0,1.0,1.1);};
 const camFK=u=>{const dx=SC.gx-SC.x,dy=CY-SC.y,m=Math.hypot(dx,dy)||1,k=160-45*u;return fcam(SC.x-dx/m*k-dy/m*40,SC.y-dy/m*k+dx/m*40,SC.gx,CY,55,8,1.0,1.05);};
-const camFTS=u=>{const a=.4+u*1.1;return fcam(CX+Math.cos(a)*160,CY+Math.sin(a)*160,CX,CY,38,5,1.9,1);};
+const camFTS=u=>{const a=.4+u*1.1;return fcam(CX+Math.cos(a)*128,CY+Math.sin(a)*128,CX,CY,30,5,1.85,1);};
 function inPlace(side){for(let i=0;i<22;i++){const p=P[i];if(p.out)continue;const h=SC.h[i];let sx,sy;
   if(side){sx=h[0];sy=PY1+34;}
   else{const pr=(SC.pre&&SC.pre[i])||h,d=Math.hypot(pr[0]-h[0],pr[1]-h[1])||1,k=Math.min(1,150/d);sx=h[0]+(pr[0]-h[0])*k;sy=h[1]+(pr[1]-h[1])*k;}
@@ -4463,7 +4463,7 @@ const _kk40=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk
    a goal slow-mo, cinematic letterbox + vignette, a scorer lower-third and a match-intro card. All of it obeys the CUTSCENES setting. */
 const ez27=u=>u*u*(3-2*u),lp27=(a,b,t)=>a+(b-a)*t;
 const camThrow=u=>{const d=SC.dd,e=ez27(u);return fcam(SC.x-d*(175-55*e),SC.y+(CY-SC.y)*.4,SC.x+d*160,CY,52+14*e,6,1.2,1);};
-const camGKick=u=>{const d=SC.dd,e=ez27(u);return fcam(SC.x-d*(65+45*e),CY+(SC.y-CY)*.2+32-18*e,SC.x+d*225,CY,28+22*e,7,1.38,1);};
+const camGKick=u=>{const d=SC.dd,e=ez27(u);return fcam(SC.x-d*(52+32*e),CY+(SC.y-CY)*.2+22-10*e,SC.x+d*185,CY,18+12*e,7,1.32,1);};
 const camPen2=u=>{const e=ez27(u),d=SC.dd,gx=SC.gx;
   return fcam(lp27(gx+d*190,gx+d*165,e),lp27(CY+70,CY+50,e),lp27(SC.x-d*35,gx-d*75,e),CY,lp27(85,75,e),lp27(10,8,e),lp27(.95,.9,e),1);};   // from behind the keeper's net, sweeping back over the taker's shoulder
 const camCard=u=>{const a=SC.a0+ez27(u)*.7,r=92-22*u;return fcam(SC.cx+Math.cos(a)*r,SC.cy+Math.sin(a)*r,SC.cx,SC.cy,25,15,2.3,1);};
