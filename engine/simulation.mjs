@@ -13,18 +13,33 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const hypot = (x, y) => Math.hypot(x, y);
 const dist = (a, b) => hypot(a.x - b.x, a.y - b.y);
 const norm = (x, y) => { const n = hypot(x, y) || 1; return { x: x / n, y: y / n }; };
-const FORMATION = [
-  [0.055, .50], [0.19, .10], [0.17, .36], [0.17, .64], [0.19, .90],
-  [0.39, .24], [0.36, .50], [0.39, .76], [0.64, .15], [0.67, .50], [0.64, .85]
-];
+const FORMATIONS = {
+  "4-3-3": [
+    [0.055, .50], [0.19, .10], [0.17, .36], [0.17, .64], [0.19, .90],
+    [0.39, .24], [0.36, .50], [0.39, .76], [0.64, .15], [0.67, .50], [0.64, .85]
+  ],
+  "4-4-2": [
+    [0.055, .50], [0.19, .10], [0.17, .36], [0.17, .64], [0.19, .90],
+    [0.40, .10], [0.38, .36], [0.38, .64], [0.40, .90], [0.68, .36], [0.68, .64]
+  ],
+  "4-2-3-1": [
+    [0.055, .50], [0.19, .10], [0.17, .36], [0.17, .64], [0.19, .90],
+    [0.35, .36], [0.35, .64], [0.55, .15], [0.60, .50], [0.55, .85], [0.72, .50]
+  ]
+};
+const formationRole = (name, slot) => slot === 0 ? "GK" :
+  slot < 5 ? "DEF" :
+  name === "4-4-2" ? (slot < 9 ? "MID" : "FWD") :
+  name === "4-2-3-1" ? (slot < 10 ? "MID" : "FWD") :
+  (slot < 8 ? "MID" : "FWD");
 const DEFAULT_STATS = { pace: .68, pass: .68, shoot: .62, dribble: .66, defend: .62, strength: .65, stamina: .82 };
 
-function makePlayer(team, slot) {
-  const [depth, lane] = FORMATION[slot];
+function makePlayer(team, slot, formation = "4-3-3") {
+  const [depth, lane] = FORMATIONS[formation][slot];
   const attack = team === 0 ? 1 : -1;
   const x = team === 0 ? 2 + depth * 101 : 103 - depth * 101;
   const y = 3 + lane * 62;
-  const role = slot === 0 ? "GK" : slot < 5 ? "DEF" : slot < 8 ? "MID" : "FWD";
+  const role = formationRole(formation, slot);
   return {
     id: team * 11 + slot, team, slot, role, x, y, vx: 0, vy: 0,
     homeX: x, homeY: y, attack, facing: attack > 0 ? 0 : Math.PI,
@@ -42,6 +57,8 @@ function copyPlayer(p) {
 
 export class FootballSimulation {
   constructor(options = {}) {
+    this.formations = [options.homeFormation ?? "4-3-3", options.awayFormation ?? "4-3-3"];
+    for (const name of this.formations) if (!FORMATIONS[name]) throw new RangeError("Unsupported formation: " + name);
     this.seed = options.seed ?? 11;
     this.weather = { windX: options.windX ?? 0, windY: options.windY ?? 0, wetness: clamp(Number(options.wetness) || 0, 0, 1) };
     this.rngState = (this.seed >>> 0) || 1;
@@ -54,7 +71,7 @@ export class FootballSimulation {
     this.score = [0, 0];
     this.phase = "kickoff";
     this.restart = null;
-    this.players = Array.from({ length: 22 }, (_, i) => makePlayer(i < 11 ? 0 : 1, i % 11));
+    this.players = Array.from({ length: 22 }, (_, i) => makePlayer(i < 11 ? 0 : 1, i % 11, this.formations[i < 11 ? 0 : 1]));
     this.ball = makeBall();
     this.humanTeam = options.humanTeam ?? 0;
     this.selectedPlayer = this.humanTeam * 11 + 9;
@@ -74,7 +91,8 @@ export class FootballSimulation {
   resetKickoff() {
     for (const p of this.players) {
       if (p.out) continue;
-      const [depth, lane] = FORMATION[p.slot];
+      const [depth, lane] = FORMATIONS[this.formations[p.team]][p.slot];
+      p.role = formationRole(this.formations[p.team], p.slot);
       p.x = p.team === 0 ? 2 + depth * 101 : 103 - depth * 101;
       p.y = 3 + lane * 62;
       p.homeX = p.x; p.homeY = p.y; p.vx = 0; p.vy = 0;
@@ -86,6 +104,19 @@ export class FootballSimulation {
     kickoff.x = 51.2; kickoff.y = 34; kickoff.hasBall = true;
     this.ball.owner = kickoff.id; this.ball.lastTouchTeam = this.humanTeam;
     this.phase = "playing";
+  }
+  setFormation(team, name) {
+    if (team !== 0 && team !== 1) return false;
+    if (!FORMATIONS[name]) return false;
+    this.formations[team] = name;
+    for (const p of this.players) if (p.team === team && !p.out) {
+      const [depth, lane] = FORMATIONS[name][p.slot];
+      p.role = formationRole(name, p.slot);
+      p.homeX = team === 0 ? 2 + depth * 101 : 103 - depth * 101;
+      p.homeY = 3 + lane * 62;
+      p.targetX = p.homeX; p.targetY = p.homeY;
+    }
+    return true;
   }
   setWeather(windX = 0, windY = 0, wetness = 0) {
     this.weather = { windX: Number(windX) || 0, windY: Number(windY) || 0, wetness: clamp(Number(wetness) || 0, 0, 1) };
@@ -560,7 +591,7 @@ export class FootballSimulation {
     }
   }
   getSnapshot() {
-    const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,period:this.period,
+    const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,period:this.period,formations:[...this.formations],
       phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
       ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
     this.lastSnapshot=snapshot;
