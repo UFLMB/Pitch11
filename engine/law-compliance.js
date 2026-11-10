@@ -132,10 +132,13 @@
   }
 
   function foulCardDecision(state) {
-    // Law 12: only reckless challenges require a caution; serious foul play requires
-    // an explicit excessive-force / endangering-safety assessment by the event caller.
-    if (state && state.seriousFoulPlay) return 2;
-    if (state && state.reckless) return state.alreadyBooked ? 3 : 1;
+    const s = state || {};
+    const dogsoPenaltyException = !!(s.dogso && s.penaltyArea && s.attemptToPlayBall);
+    if (s.seriousFoulPlay) return 2;
+    if (s.dogso && !dogsoPenaltyException) return 2;
+    const caution = !!(s.reckless || s.stopsPromisingAttack || dogsoPenaltyException);
+    if (s.alreadyBooked && caution) return 3;
+    if (caution) return 1;
     return 0;
   }
 
