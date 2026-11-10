@@ -63,6 +63,11 @@
     return goalkeeperHoldExpired(seconds) ? 'corner' : 'continue';
   }
 
+  function goalkeeperIllegalHandlingRestart(insidePenaltyArea, prohibitedPass) {
+    if (!insidePenaltyArea) return 'direct-free-kick';
+    return prohibitedPass ? 'indirect-free-kick' : null;
+  }
+
   function substitutionEligibility(state) {
     const used = Number.isFinite(state.used) ? state.used : 0;
     const windows = Number.isFinite(state.windows) ? state.windows : 0;
@@ -105,5 +110,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

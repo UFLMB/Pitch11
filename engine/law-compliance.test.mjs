@@ -127,3 +127,11 @@ test('goalkeeper hand control outside the penalty area is a direct free kick; in
   assert.equal(law.goalkeeperHandControlDecision(true, 7.999), 'continue');
   assert.equal(law.goalkeeperHandControlDecision(true, 8), 'corner');
 });
+
+
+test('goalkeeper illegal handling uses a direct free kick outside the area and an indirect free kick for a prohibited pass inside', () => {
+  assert.equal(law.goalkeeperIllegalHandlingRestart(false, false), 'direct-free-kick');
+  assert.equal(law.goalkeeperIllegalHandlingRestart(false, true), 'direct-free-kick');
+  assert.equal(law.goalkeeperIllegalHandlingRestart(true, true), 'indirect-free-kick');
+  assert.equal(law.goalkeeperIllegalHandlingRestart(true, false), null);
+});
