@@ -24,8 +24,7 @@ humanAct=function(p){
     const saved={shoot:I.shoot,shootUp:I.shootUp,pass:I.pass,thru:I.thru,lob:I.lob,skill:I.skill,sw:I.sw,tackle:I.tackle,swp:I.swp};
     I.shoot=I.shootUp=I.pass=I.thru=I.lob=I.skill=I.sw=I.tackle=I.swp=false;
     I.chargeT=0;
-    _humanThrowLaw(p);
-    Object.assign(I,saved);
+    try{_humanThrowLaw(p);}finally{Object.assign(I,saved);}
     return;
   }
   _humanThrowLaw(p);
