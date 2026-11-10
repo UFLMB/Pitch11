@@ -86,7 +86,7 @@ let stadium=null,stadiumBounds=null;
 
 function showLoadError(message){
  loading.style.display='grid';
- loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM MODEL COULD NOT LOAD</strong><small style="display:block;max-width:560px;margin:12px auto;color:#d5dcd5"></small><button id="retry">RETRY</button><small style="display:block;margin-top:12px">The model is hosted externally; check the connection and CORS access.</small></div>';
+ loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM MODEL COULD NOT LOAD</strong><small style="display:block;max-width:560px;margin:12px auto;color:#d5dcd5"></small><button id="retry">RETRY</button><small style="display:block;margin-top:12px">The local stadium model could not be loaded; check the packaged asset and retry.</small></div>';
  loading.querySelector('small').textContent=message;
  loading.querySelector('#retry').addEventListener('click',()=>location.reload());
 }
