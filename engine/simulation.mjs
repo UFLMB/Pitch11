@@ -29,7 +29,7 @@ function makePlayer(team, slot) {
     id: team * 11 + slot, team, slot, role, x, y, vx: 0, vy: 0,
     homeX: x, homeY: y, attack, facing: attack > 0 ? 0 : Math.PI,
     stamina: 1, stats: { ...DEFAULT_STATS }, cooldown: 0, action: "idle",
-    selected: false, hasBall: false, out: false, tackleUntil: 0, tackleCooldown: 0, targetX: x, targetY: y, intent: "shape"
+    selected: false, hasBall: false, out: false, fouls: 0, yellowCards: 0, redCard: false, tackleUntil: 0, tackleCooldown: 0, targetX: x, targetY: y, intent: "shape"
   };
 }
 function makeBall() {
@@ -37,7 +37,7 @@ function makeBall() {
 }
 function copyPlayer(p) {
   return { id:p.id,team:p.team,slot:p.slot,role:p.role,x:p.x,y:p.y,vx:p.vx,vy:p.vy,
-    facing:p.facing,stamina:p.stamina,hasBall:p.hasBall,selected:p.selected,action:p.action,intent:p.intent,out:p.out };
+    facing:p.facing,stamina:p.stamina,hasBall:p.hasBall,selected:p.selected,action:p.action,intent:p.intent,out:p.out,fouls:p.fouls,yellowCards:p.yellowCards,redCard:p.redCard };
 }
 
 export class FootballSimulation {
@@ -73,6 +73,7 @@ export class FootballSimulation {
   }
   resetKickoff() {
     for (const p of this.players) {
+      if (p.out) continue;
       const [depth, lane] = FORMATION[p.slot];
       p.x = p.team === 0 ? 2 + depth * 101 : 103 - depth * 101;
       p.y = 3 + lane * 62;
@@ -357,8 +358,37 @@ export class FootballSimulation {
       } else {
         tackler.action = "tackle-missed";
         this.events.push({ type: "tackleMissed", player: tackler.id });
+        if (separation < 1.05 && this.random() < .18) {
+          this.callFoul(tackler, owner, { card: this.random() < .08 });
+          break;
+        }
       }
     }
+  }
+  callFoul(tackler, victim, options = {}) {
+    if (!tackler || !victim || tackler.team === victim.team || tackler.out) return false;
+    tackler.fouls++;
+    let cardEvent = null;
+    if (options.card) {
+      tackler.yellowCards++;
+      cardEvent = { type: "yellowCard", player: tackler.id, count: tackler.yellowCards };
+      if (tackler.yellowCards >= 2) {
+        tackler.redCard = true;
+        tackler.out = true;
+        tackler.hasBall = false;
+        cardEvent = { type: "redCard", player: tackler.id, reason: "secondYellow" };
+      }
+    }
+    const inPenaltyArea = victim.team === 0
+      ? victim.x > 88.5 && victim.y > 13.8 && victim.y < 54.2
+      : victim.x < 16.5 && victim.y > 13.8 && victim.y < 54.2;
+    const restartType = inPenaltyArea ? "penalty" : "freeKick";
+    const restartX = inPenaltyArea ? (victim.team === 0 ? 94 : 11) : this.ball.x;
+    const restartY = inPenaltyArea ? 34 : this.ball.y;
+    this.events.push({ type: "foul", player: tackler.id, victim: victim.id, team: victim.team });
+    if (cardEvent) this.events.push(cardEvent);
+    this.awardRestart(victim.team, restartType, restartX, restartY);
+    return true;
   }
   resolveGoalkeeperSaves() {
     const b = this.ball;
