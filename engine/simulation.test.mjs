@@ -71,7 +71,7 @@ test("ball physics applies gravity and ground bounce without NaN", () => {
 test("score changes only when ball crosses the goal plane inside the frame", () => {
   const sim = new FootballSimulation();
   sim.ball.owner = -1;
-  sim.players[11].y = 60;
+  sim.players[11].x = 80;
   sim.ball.x = 104.9; sim.ball.y = 34; sim.ball.z = 1;
   sim.ball.vx = 20; sim.ball.vy = 0; sim.ball.vz = 0;
   sim.update(FIXED_DT);
