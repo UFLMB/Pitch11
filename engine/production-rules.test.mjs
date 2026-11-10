@@ -95,6 +95,7 @@ test("a restart taker's physical second touch is whistled; a shootout second tou
   assert.match(source, /function secondTouch\(p\)\{/);
   assert.match(source, /if\(S\.so&&S\.so\.live\)\{soResult\(false\);return;\}/);
   assert.match(source, /if\(p===b\.dbl\)\{secondTouch\(p\);return;\}/);
+  assert.match(source, /if\(p===b\.dbl\)\{\s*const d=Math\.hypot\(b\.x-p\.x,b\.y-p\.y\)/);
 });
 
 test("shootout rotation includes the goalkeeper and keeps the shooter's goalkeeper in the centre circle", () => {
