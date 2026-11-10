@@ -179,7 +179,7 @@ test("goalkeeper cannot handle the ball again after releasing it until another p
 });
 
 
-test("kick-off keeps every player in their own half and only opponents 9.15m from the ball", () => {
+test("kick-off applies own-half limits to all players and 9.15m only to opponents", () => {
   assert.ok(source.includes("if(rs.kind==='ko')for(const p of P)"));
   assert.ok(source.includes("rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk)"));
   assert.doesNotMatch(source, /kickoffPlayerPosition/);
