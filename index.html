@@ -959,7 +959,8 @@ function setupPen(t,sh,so){                                // everyone else wait
     p.vx=p.vy=p.ix=p.iy=0;p.dive=0;p.stun=p.kcd=p.freeze=0;p.force=false;p.down=false;
     if(p.out||p===sh)continue;
     if(p.gk){p.x=p.px=p.team===t?(d>0?PX0+28:PX1-28):gx-d*4;p.y=p.py=CY;continue;}
-    p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;
+    if(so){const a=(k++/20)*TAU;p.x=p.px=CX+Math.cos(a)*66;p.y=p.py=CY+Math.sin(a)*66;}
+    else{p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;}
   }
   sh.x=sh.px=sx-d*10;sh.y=sh.py=CY;sh.face=d>0?0:Math.PI;sh.poss=0;sh.freeze=1.2;
   const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.protect=99;clearOff();
