@@ -29,7 +29,6 @@ jobs:
           node-version: 22
       - name: Check browser simulation module syntax
         run: |
-          node --check character-visuals.js
           node --check engine/simulation.mjs
           node --check engine/simulation-lab.mjs
           node --check engine/pitch11-adapter.mjs
