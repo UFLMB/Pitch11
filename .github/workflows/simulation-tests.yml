@@ -20,3 +20,14 @@ jobs:
         run: node --check engine/simulation-lab.mjs
       - name: Run simulation regression tests
         run: node --test engine/*.test.mjs
+      - name: Package standalone browser lab
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitch11-simulation-lab-preview
+          path: |
+            simulation-lab.html
+            engine/simulation.mjs
+            engine/league-soccer-ballphysics.mjs
+            engine/simulation-lab.mjs
+          if-no-files-found: error
+          retention-days: 7
