@@ -83,10 +83,10 @@ test('a match cannot continue with fewer than seven active players', () => {
   const players = [];
   for (let team = 0; team < 2; team++) {
     for (let role = 0; role < 11; role++) {
-      players.push({ team, out: team === 1 ? role >= 6 : role >= 7 });
+      players.push({ team, role, out: team === 1 ? role >= 6 : role >= 7 });
     }
   }
   assert.equal(law.abandoningTeam(players), 1);
-  assert.equal(law.abandoningTeam(players.map(p => ({ ...p, out: p.team === 0 ? p.out : p.role >= 5 }))), 0);
+  assert.equal(law.abandoningTeam(players.map(p => ({ ...p, out: p.team === 0 ? p.role >= 5 : false }))), 0);
   assert.equal(law.abandoningTeam(players.map(p => ({ ...p, out: false }))), null);
 });
