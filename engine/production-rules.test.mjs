@@ -187,7 +187,8 @@ test("kick-off keeps every non-kicker, including teammates and goalkeepers, outs
 
 
 test("attacking players are kept one metre from a three-player free-kick wall", () => {
-  assert.ok(source.includes("rs.kind==='fk'&&rs.wall&&p.team===rs.team&&!p.gk"));
+  assert.ok(source.includes("const attackerWall=rs.kind==='fk'&&rs.wall&&p.team===rs.team&&!p.gk"));
+  assert.ok(source.includes("!attackerWall&&rs.kind!=='ko'&&(p.team===rs.team||p.gk)"));
   assert.ok(source.includes("PITCH11Law.freeKickWallClearancePosition("));
   assert.ok(source.includes("halfLength:15,clearance:10"));
 });
