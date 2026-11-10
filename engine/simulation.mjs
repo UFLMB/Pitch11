@@ -48,6 +48,9 @@ export class FootballSimulation {
     this.accumulator = 0;
     this.time = 0;
     this.tick = 0;
+    this.period = 1;
+    this.halfLengthSeconds = options.halfLengthSeconds ?? 2700;
+    this.matchTimeScale = options.matchTimeScale ?? 1;
     this.score = [0, 0];
     this.phase = "kickoff";
     this.restart = null;
@@ -120,11 +123,11 @@ export class FootballSimulation {
   step(dt) {
     this.tick++;
     this.time += dt;
-    this.matchSeconds += dt;
     this.events.length = 0;
     for (const p of this.players) p.cooldown = Math.max(0, p.cooldown - dt);
     this.applyCommands();
     if (this.phase !== "playing") return;
+    this.matchSeconds += dt * this.matchTimeScale;
     this.updateAI(dt);
     this.movePlayers(dt);
     this.resolveTackles();
@@ -132,10 +135,17 @@ export class FootballSimulation {
     this.updateBall(dt);
     this.resolvePlayerBallContacts();
     this.resolveBoundaries();
+    this.updateMatchPhase();
   }
   applyCommands() {
     const cmds = this.commands.splice(0);
     for (const c of cmds) {
+      if (c.type === "continue" && this.phase === "halfTime" && this.period === 1) {
+        this.period = 2;
+        this.resetKickoff();
+        this.events.push({ type: "secondHalfStarted" });
+        continue;
+      }
       if (c.type === "restart") { this.takeRestart(); continue; }
       const p = this.players[this.selectedPlayer];
       if (!p) continue;
@@ -416,6 +426,15 @@ export class FootballSimulation {
       }
     }
   }
+  updateMatchPhase() {
+    if (this.period === 1 && this.matchSeconds >= this.halfLengthSeconds) {
+      this.phase = "halfTime";
+      this.events.push({ type: "halfTime", score: [...this.score] });
+    } else if (this.period === 2 && this.matchSeconds >= this.halfLengthSeconds * 2) {
+      this.phase = "fullTime";
+      this.events.push({ type: "fullTime", score: [...this.score] });
+    }
+  }
   isOffside(target, attackingTeam) {
     if (!target || target.team !== attackingTeam) return false;
     const opponents = this.players.filter(p => p.team !== attackingTeam).map(p => p.x);
@@ -481,7 +500,7 @@ export class FootballSimulation {
     }
   }
   getSnapshot() {
-    const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,
+    const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,period:this.period,
       phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
       ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
     this.lastSnapshot=snapshot;
