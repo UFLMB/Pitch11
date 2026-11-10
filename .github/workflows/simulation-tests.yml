@@ -16,5 +16,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check browser lab module syntax
+        run: node --check engine/simulation-lab.mjs
       - name: Run simulation regression tests
         run: node --test engine/*.test.mjs
