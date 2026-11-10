@@ -100,7 +100,19 @@ export class FootballSimulation {
     }
     this.ball = makeBall();
     this.restart = null;
-    const kickoff = this.players[this.humanTeam * 11 + 9];
+    let kickoff = this.players[this.humanTeam * 11 + 9];
+    if (!kickoff || kickoff.out) {
+      kickoff = this.players.filter(p => p.team === this.humanTeam && !p.out && p.role !== "GK")
+        .sort((a,b) => Math.abs(a.x-52.5)-Math.abs(b.x-52.5))[0];
+    }
+    if (this.players[this.selectedPlayer]?.out) {
+      this.players[this.selectedPlayer].selected = false;
+      const replacement = this.players.filter(p => p.team === this.humanTeam && !p.out && p.role !== "GK")
+        .sort((a,b) => dist(a,this.ball)-dist(b,this.ball))[0];
+      if (replacement) { this.selectedPlayer = replacement.id; replacement.selected = true; }
+    }
+    if (!kickoff) kickoff = this.players.find(p => p.team === this.humanTeam && !p.out);
+    if (!kickoff) throw new Error("No active player available for kickoff.");
     kickoff.x = 51.2; kickoff.y = 34; kickoff.hasBall = true;
     this.ball.owner = kickoff.id; this.ball.lastTouchTeam = this.humanTeam;
     this.phase = "playing";
@@ -407,6 +419,12 @@ export class FootballSimulation {
         tackler.redCard = true;
         tackler.out = true;
         tackler.hasBall = false;
+        if (tackler.id === this.selectedPlayer && tackler.team === this.humanTeam) {
+          tackler.selected = false;
+          const replacement = this.players.filter(p => p.team === this.humanTeam && !p.out && p.role !== "GK")
+            .sort((a,b) => dist(a,this.ball)-dist(b,this.ball))[0];
+          if (replacement) { this.selectedPlayer = replacement.id; replacement.selected = true; }
+        }
         cardEvent = { type: "redCard", player: tackler.id, reason: "secondYellow" };
       }
     }
