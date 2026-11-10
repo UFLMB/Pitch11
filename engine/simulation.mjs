@@ -395,6 +395,7 @@ export class FootballSimulation {
   awardRestart(team, type, x, y) {
     for (const p of this.players) p.hasBall = false;
     this.ball.owner = -1;
+    this.ball.offsidePlayerId = -1; this.ball.offsideExempt = false;
     this.ball.vx = 0; this.ball.vy = 0; this.ball.vz = 0;
     this.ball.x = clamp(x, 0, 105); this.ball.y = clamp(y, 0, 68);
     this.phase = "restart";
