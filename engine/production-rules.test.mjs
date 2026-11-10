@@ -118,6 +118,10 @@ test("offside line is recalculated from the live second-last opponent", () => {
   assert.match(source, /PITCH11Law\.offsideLine\(P,t,d,ball\.x\*d/);
 });
 
+test("a deliberate controlled touch starts a fresh offside snapshot", () => {
+  assert.match(source, /function take\(p\)\{const keepIndirect=ball\.ind&&ball\.indBy===p;[\s\S]*?markOff\(p\);\}/);
+});
+
 test("turning off offside does not disable indirect restart goal restrictions", () => {
   assert.match(source, /if\(!X\(\)\.offside\)\{clearOffside\(\);return;\}/);
   assert.doesNotMatch(source, /if\(!X\(\)\.offside\)\{clearOff\(\);return;\}/);
