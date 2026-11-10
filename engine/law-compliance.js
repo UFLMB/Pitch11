@@ -46,6 +46,14 @@
     return { team, goalkeeper };
   }
 
+  function goalKickOpponentPosition(state) {
+    const x = state.x;
+    const y = state.y;
+    const inPenaltyArea = (x - state.goalLine) * state.direction < state.penaltyDepth + state.clearance &&
+      Math.abs(y - state.centerY) < state.halfWidth + state.clearance;
+    return { x: inPenaltyArea ? state.goalLine + state.direction * (state.penaltyDepth + state.clearance) : x, y };
+  }
+
   function goalkeeperHoldExpired(seconds) {
     return Number.isFinite(seconds) && seconds >= 8;
   }
@@ -92,5 +100,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, droppedBallRecipient });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
