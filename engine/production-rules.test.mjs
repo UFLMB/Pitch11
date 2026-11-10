@@ -130,6 +130,11 @@ test("keeper saves and accidental deflections preserve offside status", () => {
   assert.match(source, /b\.spin\+=rnd\(-\.4,\.4\);b\.last=p;if\(b\.receiver!==p\)b\.receiver=null;if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
 });
 
+test("an offside attacker remains offside after a goalkeeper save or deflection", () => {
+  assert.match(source, /if\(!S\.prac&&best\.off\)\{callOffside\(best\);return;\}/);
+  assert.doesNotMatch(source, /best\.off&&b\.last&&b\.last\.team===best\.team/);
+});
+
 test("restart taker second touch is caught on ground and aerial balls", () => {
   assert.match(source, /function secondTouch\(p\)\{/);
   assert.match(source, /if\(p===b\.dbl\)\{secondTouch\(p\);return;\}/);
