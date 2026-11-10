@@ -118,7 +118,6 @@ export class FootballSimulation {
     return this.getSnapshot();
   }
   step(dt) {
-    if (this.phase !== "playing") return;
     this.tick++;
     this.time += dt;
     this.matchSeconds += dt;
