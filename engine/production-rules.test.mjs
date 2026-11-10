@@ -134,7 +134,7 @@ test("goalkeeper handling is restricted to the penalty area and the eight-second
 });
 
 test("all restart placements clear the previous taker's second-touch lock", () => {
-  assert.match(source, /b\.owner=tk;b\.last=tk;b\.receiver=null;b\.dbl=null;b\.protect=3/);
+  assert.match(source, /b\.owner=tk;b\.last=tk;b\.receiver=null;b\.dbl=null;b\.indBy=null;b\.protect=3/);
 });
 
 test("a dropped ball allows the same player to play again but cannot score until another player touches", () => {
