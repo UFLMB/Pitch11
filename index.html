@@ -261,8 +261,8 @@ function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const b=ball,a=Math.atan2(vy,vx),rs=S.rs;
   if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);
   if(rs&&(rs.ind||rs.kind==='throw'||rs.kind==='drop'))b.ind=true; // indirect kicks, throw-ins and dropped balls cannot score untouched
-  b.protect=0;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;
-  b.gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?p.team:null);b.gkNoHandsFrom=b.gkNoHands===null?null:p;b.gkReleasedBy=p.gk?p:null;
+  b.protect=0;b.gkHold=0;b.gkReleasedBy=PITCH11Law.goalkeeperReleaseMarker(p,b.gkHoldActive);b.gkHoldActive=false;b.gkHoldWarned=false;
+  b.gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?p.team:null);b.gkNoHandsFrom=b.gkNoHands===null?null:p;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';
   b.x=p.x+Math.cos(a)*9;b.y=p.y+Math.sin(a)*9;
   p.face=a;p.kcd=0.35;p.poss=0;
