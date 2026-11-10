@@ -168,14 +168,18 @@ for (let i = 0; i < crowdCount; i++) {
   const row = local % rowCount;
   const seat = Math.floor(local / rowCount);
   const centeredSeat = seat - (seatsPerRow - 1) / 2;
-  const aisleOffset = (seat >= seatsPerRow * .25 ? 1.15 : 0) + (seat >= seatsPerRow * .5 ? 1.15 : 0) + (seat >= seatsPerRow * .75 ? 1.15 : 0);
+  const aisleOffset = (seat >= seatsPerRow * .25 ? 1.25 : 0) + (seat >= seatsPerRow * .5 ? 1.25 : 0) + (seat >= seatsPerRow * .75 ? 1.25 : 0);
+  const aisleCoordinate = centeredSeat + aisleOffset;
+  const aisleCenter = 1.875;
+  const aisleHalfSpan = Math.max(1, (seatsPerRow - 1) / 2 + 1.875);
+  const normalizedSeat = (aisleCoordinate - aisleCenter) / aisleHalfSpan;
   let x, z;
   if (side < 2) {
-    x = centeredSeat * 1.62 + aisleOffset;
+    x = normalizedSeat * (57 - row * .42);
     z = (side === 0 ? 1 : -1) * (47 + row * .78);
   } else {
     x = (side === 2 ? 1 : -1) * (64 + row * .7);
-    z = centeredSeat * 1.34 + aisleOffset * .72;
+    z = normalizedSeat * (40 - row * .38);
   }
   const platformTop = 2.8 + row * 1.15;
   const scale = .86 + random() * .25;
@@ -510,7 +514,11 @@ for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) window.
 function syncMeshes(snapshot, dt) {
   if (snapshot.tick !== crowdEventTick) {
     crowdEventTick = snapshot.tick;
-    for (const event of snapshot.events) triggerCrowdReaction(event.type, snapshot.time);
+    const strongest = snapshot.events
+      .map(event => ({ event, profile: crowdReactionProfile(event.type) }))
+      .filter(entry => entry.profile)
+      .sort((a, b) => b.profile.intensity - a.profile.intensity)[0];
+    if (strongest) triggerCrowdReaction(strongest.event.type, snapshot.time);
   }
   updateCrowdAnimation(snapshot.time);
   for (const p of snapshot.players) {
