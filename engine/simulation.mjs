@@ -119,6 +119,7 @@ export class FootballSimulation {
     this.applyCommands();
     this.updateAI(dt);
     this.movePlayers(dt);
+    this.resolveTackles();
     this.updateBall(dt);
     this.resolvePlayerBallContacts();
     this.resolveBoundaries();
@@ -281,6 +282,30 @@ export class FootballSimulation {
     this.ball.vx=vx; this.ball.vy=vy; this.ball.vz=vz;
     this.ball.ignorePlayerId=p.id; this.ball.ignoreUntil=this.time+.22;
   }
+  resolveTackles() {
+    const owner = this.players[this.ball.owner];
+    if (!owner) return;
+    for (const tackler of this.players) {
+      if (tackler.team === owner.team || (tackler.tackleUntil || 0) < this.time) continue;
+      const separation = dist(tackler, owner);
+      if (separation > 1.45) continue;
+      const chance = separation < .65 ? 1 : clamp(.28 + tackler.stats.defend * .42 + tackler.stats.strength * .22, .28, .92);
+      tackler.tackleUntil = 0;
+      if (this.random() <= chance) {
+        owner.hasBall = false;
+        tackler.hasBall = true;
+        tackler.action = "tackle-win";
+        this.ball.owner = tackler.id;
+        this.ball.lastTouchTeam = tackler.team;
+        this.ball.vx = 0; this.ball.vy = 0; this.ball.vz = 0;
+        this.events.push({ type: "tackleWon", player: tackler.id, dispossessed: owner.id });
+        break;
+      } else {
+        tackler.action = "tackle-missed";
+        this.events.push({ type: "tackleMissed", player: tackler.id });
+      }
+    }
+  }
   updateBall(dt) {
     const owner=this.players[this.ball.owner];
     if(owner) {
@@ -313,8 +338,8 @@ export class FootballSimulation {
     const p=nearby[0].p;
     const opponent=this.players.filter(q=>q.team!==p.team).some(q=>dist(q,p)<1.35);
     if(opponent&&p.team!==b.lastTouchTeam&&this.random()>.38)return;
-    b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action="control";
-    this.events.push({type:"possession",player:p.id,team:p.team});
+    b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action=p.role==="GK"?"keeper-claim":"control";
+    this.events.push({type:p.role==="GK"?"keeperSave":"possession",player:p.id,team:p.team});
   }
   resolveBoundaries() {
     const b=this.ball;
