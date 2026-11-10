@@ -4936,10 +4936,16 @@ newMatch=function(){S.penaltyExtraTime=false;for(const p of P)p.penaltyLineOffen
 const _updatePenaltyLine=update;
 update=function(){
   _updatePenaltyLine();
-  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&!ball.penaltyRetakePending){
-    const stopped=ball.owner===ball.penaltyKeeper||
-      (!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3);
-    if(stopped)ball.penaltyRetakePending=true;
+  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&S.penaltyExtraTime&&ball.penaltyOtherPlayerTouched&&!ball.penaltyRetakePending)
+    ball.penaltyRetakePending=true;
+  if(ball.pen&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
+  if(ball.pen&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3){
+    const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
+    if(decision==='retake')ball.penaltyRetakePending=true;else clearPenaltyLineState();
+  }
+  if(ball.pen&&ball.penaltyOtherPlayerTouched){
+    const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
+    if(decision!=='retake')clearPenaltyLineState();
   }
   if(ball.penaltyRetakePending&&S.mode==='play')retakePenaltyForKeeperOffence();
 };
@@ -4955,6 +4961,45 @@ doShoot=function(p,power,ang,lift,em){
     ball.owner=null;ball.receiver=null;ball.last=p;ball.protect=0;
     whistleStop(1.4,'INDIRECT FREE KICK','The penalty kick must be taken forward',()=>freeKick(1-team,x,y,true));
   }
+};
+
+function notePenaltyOtherTouch(previousLast){
+  if(ball.pen&&ball.last&&ball.last!==previousLast&&ball.last!==ball.penaltyKeeper)
+    ball.penaltyOtherPlayerTouched=true;
+}
+const _takePenaltyAddedTime=take;
+take=function(p,byHand=false){
+  const penaltyTouch=ball.pen&&p!==ball.penaltyKeeper;
+  _takePenaltyAddedTime(p,byHand);
+  if(penaltyTouch)ball.penaltyOtherPlayerTouched=true;
+};
+const _touchesPenaltyAddedTime=touches;
+touches=function(){const previousLast=ball.last;_touchesPenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
+const _bodyCollidePenaltyAddedTime=bodyCollide;
+bodyCollide=function(){const previousLast=ball.last;_bodyCollidePenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
+const _slideHitPenaltyAddedTime=slideHit;
+slideHit=function(p,sd){const previousLast=ball.last;_slideHitPenaltyAddedTime(p,sd);notePenaltyOtherTouch(previousLast);};
+const _kickPenaltyAddedTime=kick;
+kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
+  const penaltyTouch=ball.pen&&p!==ball.penaltyKeeper;
+  _kickPenaltyAddedTime(p,vx,vy,vz,spin,rcv,tx,ty,mode);
+  if(penaltyTouch)ball.penaltyOtherPlayerTouched=true;
+};
+const _endHalfPenaltyAddedTime=endHalf;
+endHalf=function(){
+  const keeperRetake=!!(ball.pen&&PITCH11Law.penaltyKeeperDecision({
+    keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,
+    impactedKicker:ball.penaltyKeeperImpactedKicker
+  })==='retake');
+  const decision=PITCH11Law.penaltyAdditionalTimeDecision({
+    penaltyRestart:!!(S.rs&&S.rs.kind==='pen'),
+    retakePending:!!(S.penaltyRetake||ball.penaltyRetakePending),
+    keeperRetake,penaltyInFlight:!!ball.pen,
+    otherPlayerTouched:!!ball.penaltyOtherPlayerTouched
+  });
+  if(decision==='defer'){S.penaltyExtraTime=true;S.clock=plen();return;}
+  if(S.penaltyExtraTime){S.penaltyExtraTime=false;S.clock=plen();}
+  _endHalfPenaltyAddedTime();
 };
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
