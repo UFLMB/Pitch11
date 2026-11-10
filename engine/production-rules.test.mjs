@@ -168,3 +168,9 @@ test("goalkeeper cannot handle a deliberate teammate back-pass or a direct teamm
   assert.ok(source.includes("b.gkNoHands=null"));
   assert.ok(source.includes("b.gkNoHands=null;clearOff()"));
 });
+
+
+test("kick-off production integration uses the tested all-player positioning helper", () => {
+  assert.ok(source.includes("rs.kind!=='ko'&&(p.team===rs.team||p.gk)"));
+  assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
+});
