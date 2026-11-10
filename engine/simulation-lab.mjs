@@ -1,7 +1,9 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+import * as THREE from "../vendor/three/build/three.module.js";
 import { FootballSimulation } from "./simulation.mjs";
 import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera.mjs";
 import { markRoofForCameraExclusion, configureStadiumCameraLayers } from "./stadium-visibility.mjs";
+import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { computeStadiumPlacement } from "./stadium-model.mjs";
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
@@ -15,6 +17,9 @@ renderer.shadowMap.enabled = false;
 host.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
+const stadiumFallback = new THREE.Group();
+stadiumFallback.name = "PITCH 11 procedural stadium fallback";
+scene.add(stadiumFallback);
 scene.background = new THREE.Color(0x101e2a);
 scene.fog = new THREE.Fog(0x101e2a, 180, 360);
 scene.add(new THREE.HemisphereLight(0xc9e0ff, 0x1a241c, 1.65));
@@ -118,21 +123,21 @@ const standMat = mat(0x26333a, .92), seatMat = mat(0x17252c, .85), roofMat = mat
 for (let row = 0; row < 17; row++) {
   const y = 2.2 + row * 1.15, offset = row * .72;
   const z = 47 + row * .78;
-  addBox(132 - offset * 1.4, 1.2, 1.35, 0, y, z, row % 3 ? standMat : seatMat);
-  addBox(132 - offset * 1.4, 1.2, 1.35, 0, y, -z, row % 3 ? standMat : seatMat);
+  addBox(132 - offset * 1.4, 1.2, 1.35, 0, y, z, row % 3 ? standMat : seatMat, stadiumFallback);
+  addBox(132 - offset * 1.4, 1.2, 1.35, 0, y, -z, row % 3 ? standMat : seatMat, stadiumFallback);
   const x = 64 + row * .7;
-  addBox(1.35, 1.2, 96 - offset * 1.4, x, y, 0, row % 3 ? standMat : seatMat);
-  addBox(1.35, 1.2, 96 - offset * 1.4, -x, y, 0, row % 3 ? standMat : seatMat);
+  addBox(1.35, 1.2, 96 - offset * 1.4, x, y, 0, row % 3 ? standMat : seatMat, stadiumFallback);
+  addBox(1.35, 1.2, 96 - offset * 1.4, -x, y, 0, row % 3 ? standMat : seatMat, stadiumFallback);
 }
-markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, 59, roofMat));
-markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, -59, roofMat));
-markRoofForCameraExclusion(addBox(30, 2.2, 105, 70, 22.8, 0, roofMat));
-markRoofForCameraExclusion(addBox(30, 2.2, 105, -70, 22.8, 0, roofMat));
+markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, 59, roofMat, stadiumFallback));
+markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, -59, roofMat, stadiumFallback));
+markRoofForCameraExclusion(addBox(30, 2.2, 105, 70, 22.8, 0, roofMat, stadiumFallback));
+markRoofForCameraExclusion(addBox(30, 2.2, 105, -70, 22.8, 0, roofMat, stadiumFallback));
 for (const z of [-74, 74]) {
-  markRoofForCameraExclusion(addBox(136, .35, .6, 0, 19.5, z, mat(0xa3e635, .35, .15)));
-  markRoofForCameraExclusion(addBox(136, .18, .6, 0, 20.1, z, mat(0x9ccf58, .3, .1)));
+  markRoofForCameraExclusion(addBox(136, .35, .6, 0, 19.5, z, mat(0xa3e635, .35, .15), stadiumFallback));
+  markRoofForCameraExclusion(addBox(136, .18, .6, 0, 20.1, z, mat(0x9ccf58, .3, .1), stadiumFallback));
 }
-for (const x of [-82, 82]) markRoofForCameraExclusion(addBox(.6, .35, 100, x, 19.5, 0, mat(0xa3e635, .35, .15)));
+for (const x of [-82, 82]) markRoofForCameraExclusion(addBox(.6, .35, 100, x, 19.5, 0, mat(0xa3e635, .35, .15), stadiumFallback));
 
 const crowdColors = [0x31506a, 0x9c3f3b, 0xddd8c8, 0x365f47, 0x9c824b, 0x202b3a, 0x758b98, 0x5e344c];
 const crowdCount = mobile ? 1900 : 4400;
@@ -156,20 +161,20 @@ for (let i = 0; i < crowdCount; i++) {
   headMesh.setMatrixAt(i, dummy.matrix); color.setHex([0xc98e6a, 0x9b674e, 0xe1b18b, 0x704a38][Math.floor(random() * 4)]); headMesh.setColorAt(i, color);
 }
 torsoMesh.instanceMatrix.needsUpdate = true; headMesh.instanceMatrix.needsUpdate = true;
-scene.add(torsoMesh, headMesh);
+stadiumFallback.add(torsoMesh, headMesh);
 
 const boardMat = mat(0x07131b, .45, .55);
 for (const z of [-38, 38]) {
-  addBox(118, 1.1, .6, 0, .7, z, boardMat);
-  addBox(116, .06, .04, 0, 1.28, z + (z < 0 ? .33 : -.33), mat(0xb5e65b, .35, .2));
+  addBox(118, 1.1, .6, 0, .7, z, boardMat, stadiumFallback);
+  addBox(116, .06, .04, 0, 1.28, z + (z < 0 ? .33 : -.33), mat(0xb5e65b, .35, .2), stadiumFallback);
 }
-for (const x of [-59, 59]) addBox(.6, 1.1, 78, x, .7, 0, boardMat);
+for (const x of [-59, 59]) addBox(.6, 1.1, 78, x, .7, 0, boardMat, stadiumFallback);
 for (const x of [-91, 91]) for (const z of [-79, 79]) {
-  addCylinder(.25, .38, 39, x, 19.5, z, mat(0x36434a, .5, .55), scene, 8);
+  addCylinder(.25, .38, 39, x, 19.5, z, mat(0x36434a, .5, .55), stadiumFallback, 8);
   const lamp = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 1.2), new THREE.MeshBasicMaterial({ color: 0xe9f2ff }));
-  lamp.position.set(x, 39.3, z); scene.add(lamp);
+  lamp.position.set(x, 39.3, z); stadiumFallback.add(lamp);
   const glow = new THREE.PointLight(0xdbeaff, mobile ? 110 : 170, 120, 1.8);
-  glow.position.set(x, 38, z); scene.add(glow);
+  glow.position.set(x, 38, z); stadiumFallback.add(glow);
 }
 
 // Dugouts and technical-area details.
@@ -178,8 +183,40 @@ for (const sign of [-1, 1]) {
   addBox(16, .25, 2.1, 0, .9, 0, mat(0x18232a), bench);
   addBox(16, 2.1, .15, 0, 2.0, -sign * .9, mat(0x263c46, .35, .3), bench);
   for (let i = 0; i < 10; i++) addBox(1.2, .8, .75, -7 + i * 1.55, .55, .1, mat(0x52636a), bench);
-  bench.position.set(0, 0, sign * 39.5); scene.add(bench);
+  bench.position.set(0, 0, sign * 39.5); stadiumFallback.add(bench);
 }
+
+
+// Graphics 3.0 stadium is packaged locally by the Pages workflow. The
+// simulation's pitch markings, goals, players and ball remain authoritative.
+const stadiumStatus = document.querySelector("#status");
+const stadiumLoader = new GLTFLoader();
+stadiumLoader.load(new URL("../assets/football-stadium.glb", import.meta.url).href, (gltf) => {
+  const root = gltf.scene;
+  root.name = "PITCH 11 Graphics 3.0 stadium";
+  root.traverse((object) => {
+    if (!object.isMesh) return;
+    object.castShadow = false;
+    object.receiveShadow = false;
+    const materials = Array.isArray(object.material) ? object.material : [object.material];
+    for (const material of materials) if (material?.map) material.map.colorSpace = THREE.SRGBColorSpace;
+    if (/roof|canopy|cover|upper.?truss/i.test(object.name || "")) object.layers.set(1);
+  });
+  root.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(root);
+  const placement = computeStadiumPlacement({
+    min: { x: bounds.min.x, y: bounds.min.y, z: bounds.min.z },
+    max: { x: bounds.max.x, y: bounds.max.y, z: bounds.max.z }
+  });
+  root.scale.setScalar(placement.scale);
+  root.position.set(placement.position.x, placement.position.y, placement.position.z);
+  scene.add(root);
+  stadiumFallback.visible = false;
+  stadiumStatus.textContent = "MATCHDAY LIVE · GRAPHICS 3.0 STADIUM · 11V11";
+}, undefined, (error) => {
+  console.warn("Stadium GLB unavailable; retaining procedural fallback.", error);
+  stadiumStatus.textContent = "MATCH ENGINE LIVE · PROCEDURAL STADIUM FALLBACK";
+});
 
 // Match state and animated player meshes.
 const simulation = new FootballSimulation({ seed: 11, halfLengthSeconds: 2700, matchTimeScale: 60 });
