@@ -214,3 +214,14 @@ test("VAR checks are event-driven for goals, penalties, red cards and immediate 
   assert.match(source, /varCheck\('red-card',p&&p\.varIncident\|\|\{\}\)/);
   assert.match(source, /varCheck\('corner',evidence\)/);
 });
+
+test("Law 14 checks the goalkeeper's goal-line position at the kick and retakes an illegal save", () => {
+  assert.match(source, /PITCH11Law\.goalkeeperPenaltyLineOffence\(/);
+  assert.match(source, /ball\.penaltyKeeperOffLine=incident\.offLine/);
+  assert.match(source, /PITCH11Law\.penaltyKeeperDecision\(/);
+  assert.match(source, /ball\.penaltyKeeperSaved=true/);
+  assert.match(source, /PENALTY RETAKE/);
+  assert.match(source, /First offence: goalkeeper warned/);
+  assert.match(source, /Repeated offence: goalkeeper cautioned/);
+  assert.match(source, /GK\[keeper\.team\]=replacement/);
+});
