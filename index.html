@@ -1061,12 +1061,12 @@ function aiSubs(t,max,q){                                  // swap injured / tir
   }
 }
 function injured(q){                                       // after the stoppage: sub him, or he plays on limping
-  const t=q.team;q.down=false;
-  if(S.subs[t]>=substitutionLimits().substitutions||!BENCH[t].length){q.limp=true;return false;}
+  const t=q.team,lim=substitutionLimits(),exempt=S.mode==='half'||S.ret==='half',windowBlocked=!exempt&&!S.subWindowActive[t]&&S.subWindows[t]>=lim.windows;q.down=false;
+  if(S.subs[t]>=lim.substitutions||windowBlocked||!BENCH[t].length){q.limp=true;return false;}
   if(t===1){aiSubs(1,1,q);return false;}
   S.sel=q;openSubs('whistle');return true;
 }
-function openSubs(ret){S.ret=ret;S.mode='subs';M.conf=0;S.subWindowActive=[false,false];}
+function openSubs(ret){S.ret=ret;S.mode='subs';M.conf=0;if(ret!=='whistle'&&ret!=='half')S.subWindowActive=[false,false];}
 function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out)p.limp=true;S.sel=null;S.pv=null;S.mode=S.ret;}
 function rules(){
   const b=ball;
