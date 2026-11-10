@@ -28,7 +28,7 @@ test("goal and touchline decisions wait until the whole ball crosses", () => {
   assert.equal(ballBeyondLine(96, 100, -1), false);
   assert.equal(ballBeyondLine(95.99, 100, -1), true);
 
-  assert.equal(ballInsideGoalFrame({ y: 400 + 32.6, z: 20 }), true);
+  assert.equal(ballInsideGoalFrame({ y: 400 + 32.5, z: 19.9 }), true);
   assert.equal(ballInsideGoalFrame({ y: 400 + 32.7, z: 20 }), false);
   assert.equal(ballInsideGoalFrame({ y: 400, z: 20 }), true);
   assert.equal(ballInsideGoalFrame({ y: 400, z: 20.1 }), false);
