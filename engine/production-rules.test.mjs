@@ -118,6 +118,11 @@ test("offside line is recalculated from the live second-last opponent", () => {
   assert.match(source, /PITCH11Law\.offsideLine\(P,t,d,ball\.x\*d/);
 });
 
+test("turning off offside does not disable indirect restart goal restrictions", () => {
+  assert.match(source, /if\(!X\(\)\.offside\)\{clearOffside\(\);return;\}/);
+  assert.doesNotMatch(source, /if\(!X\(\)\.offside\)\{clearOff\(\);return;\}/);
+});
+
 test("keeper saves and accidental deflections preserve offside status", () => {
   assert.match(source, /best\.kcd=0\.35;b\.last=best;b\.receiver=null;if\(best!==b\.indBy\)clearIndirect\(\);/);
   assert.match(source, /p\.kcd=0\.35;if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
