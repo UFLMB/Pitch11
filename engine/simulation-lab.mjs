@@ -3,6 +3,8 @@ import { FootballSimulation } from "./simulation.mjs";
 import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera.mjs";
 import { markRoofForCameraExclusion, configureStadiumCameraLayers } from "./stadium-visibility.mjs";
 import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
+import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
 import { computeStadiumPlacement } from "./stadium-model.mjs";
 import { computeLocomotionPose } from "./player-animation.mjs";
 
@@ -235,7 +237,44 @@ const playerBadgeMat = mat(0xe4c36c, .55, .18);
 const playerHairMat = mat(0x241d19, .96);
 const playerBootMat = mat(0x111820, .48);
 const playerSoleMat = mat(0x303840, .62);
+let playerAssetTemplate = null;
+let playerAssetAnimations = [];
+
+function createSkinnedPlayerMesh(p) {
+  if (!playerAssetTemplate) return null;
+  const group = new THREE.Group();
+  const model = cloneSkeleton(playerAssetTemplate);
+  model.updateMatrixWorld(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const height = bounds.max.y - bounds.min.y;
+  if (!Number.isFinite(height) || height < .5) return null;
+  const scale = 1.8 / height;
+  model.scale.setScalar(scale);
+  model.position.y = -bounds.min.y * scale;
+  group.add(model);
+  const mixer = new THREE.AnimationMixer(model);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .045, 6, 28), new THREE.MeshBasicMaterial({ color: 0xf4d36d }));
+  ring.rotation.x = Math.PI / 2; ring.position.y = .09; ring.visible = false; group.add(ring);
+  group.userData.ring = ring;
+  group.userData.rig = { mixer, activeAction: null, activeClipName: "" };
+  scene.add(group);
+  playerMeshes.set(p.id, group);
+  return group;
+}
+
+function replaceWithSkinnedPlayerMeshes() {
+  for (const p of simulation.players) {
+    const old = playerMeshes.get(p.id);
+    const replacement = createSkinnedPlayerMesh(p);
+    if (replacement && old) scene.remove(old);
+  }
+}
+
 function createPlayerMesh(p) {
+  if (playerAssetTemplate) {
+    const skinned = createSkinnedPlayerMesh(p);
+    if (skinned) return skinned;
+  }
   const group = new THREE.Group();
   const kit = p.role === "GK" ? keeperMats[p.team] : kitMats[p.team];
   const skin = playerSkinMats[p.id % playerSkinMats.length];
@@ -299,6 +338,19 @@ function createPlayerMesh(p) {
   scene.add(group); playerMeshes.set(p.id, group); return group;
 }
 for (const p of simulation.players) createPlayerMesh(p);
+
+// The final skinned player asset is optional. The articulated procedural rigs
+// remain active until a compatible, textured GLB is supplied.
+const playerAssetLoader = new GLTFLoader();
+playerAssetLoader.load(new URL("../assets/players/player.glb", import.meta.url).href, (gltf) => {
+  playerAssetTemplate = gltf.scene;
+  playerAssetAnimations = gltf.animations || [];
+  replaceWithSkinnedPlayerMeshes();
+  console.info("PITCH 11 skinned player asset loaded", playerAssetAnimations.map(clip => clip.name));
+}, undefined, () => {
+  console.info("PITCH 11 player.glb not present; using articulated procedural rigs.");
+});
+
 const ball = new THREE.Mesh(new THREE.SphereGeometry(.22, 16, 12), mat(0xf4f5ee, .32));
 scene.add(ball);
 const ballShadow = new THREE.Mesh(new THREE.CircleGeometry(.32, 16), new THREE.MeshBasicMaterial({ color: 0x030806, transparent: true, opacity: .42 }));
@@ -357,7 +409,7 @@ stick.addEventListener("pointerup", releaseStick); stick.addEventListener("point
 document.querySelector("#sprint").addEventListener("pointerdown", e => { e.preventDefault(); joystick.sprint = true; });
 for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) window.addEventListener(name, () => { joystick.sprint = false; });
 
-function syncMeshes(snapshot) {
+function syncMeshes(snapshot, dt) {
   for (const p of snapshot.players) {
     let group = playerMeshes.get(p.id);
     if (!group && !p.out) group = createPlayerMesh(p);
@@ -368,18 +420,32 @@ function syncMeshes(snapshot) {
       group.rotation.y = -p.facing - Math.PI / 2;
       group.userData.ring.visible = p.selected;
       const speed = Math.hypot(p.vx, p.vy);
-      const pose = computeLocomotionPose(speed, snapshot.time, p.id);
       const rig = group.userData.rig;
-      rig.legs[0].rotation.x = pose.stride;
-      rig.legs[1].rotation.x = -pose.stride;
-      rig.knees[0].rotation.x = pose.leftKnee;
-      rig.knees[1].rotation.x = pose.rightKnee;
-      rig.arms[0].rotation.x = -pose.stride * .72 - .08;
-      rig.arms[1].rotation.x = pose.stride * .72 - .08;
-      rig.elbows[0].rotation.x = -.12 - pose.leftKnee * .22;
-      rig.elbows[1].rotation.x = -.12 - pose.rightKnee * .22;
-      rig.torso.rotation.x = -Math.min(.1, speed * .012);
-      group.position.y = pose.bob;
+      if (rig?.mixer) {
+        const state = resolvePlayerAnimationState(p, speed);
+        const clip = resolvePlayerClip(playerAssetAnimations, state);
+        if (clip && rig.activeClipName !== clip.name) {
+          const nextAction = rig.mixer.clipAction(clip);
+          nextAction.reset().fadeIn(.18).play();
+          if (rig.activeAction) rig.activeAction.crossFadeTo(nextAction, .18, false);
+          rig.activeAction = nextAction;
+          rig.activeClipName = clip.name;
+        }
+        rig.mixer.update(dt);
+        group.position.y = 0;
+      } else {
+        const pose = computeLocomotionPose(speed, snapshot.time, p.id);
+        rig.legs[0].rotation.x = pose.stride;
+        rig.legs[1].rotation.x = -pose.stride;
+        rig.knees[0].rotation.x = pose.leftKnee;
+        rig.knees[1].rotation.x = pose.rightKnee;
+        rig.arms[0].rotation.x = -pose.stride * .72 - .08;
+        rig.arms[1].rotation.x = pose.stride * .72 - .08;
+        rig.elbows[0].rotation.x = -.12 - pose.leftKnee * .22;
+        rig.elbows[1].rotation.x = -.12 - pose.rightKnee * .22;
+        rig.torso.rotation.x = -Math.min(.1, speed * .012);
+        group.position.y = pose.bob;
+      }
     }
   }
   const b = snapshot.ball;
@@ -402,7 +468,7 @@ function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; lastRender = now;
   if (!paused) { updateInput(); simulation.update(dt); }
   const snapshot = simulation.getSnapshot();
-  syncMeshes(snapshot);
+  syncMeshes(snapshot, dt);
   updateBroadcastCamera(camera, broadcastCamera, snapshot, dt);
   renderer.render(scene, camera);
 }
