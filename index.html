@@ -4814,7 +4814,7 @@ humanAct=function(p){
 /* IFAB Law 14: goalkeeper line position is checked at the instant of the penalty kick. */
 function clearPenaltyLineState(){
   ball.penaltyTeam=null;ball.penaltyKicker=null;ball.penaltyKeeper=null;
-  ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;ball.penaltyKeeperSaveTimer=0;
+  ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;
   ball.penaltyKeeperImpactedKicker=false;ball.penaltyRetakePending=false;
   ball.penaltyWasShootout=false;ball.pen=false;
 }
@@ -4843,7 +4843,7 @@ kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   if(incident){
     ball.penaltyTeam=incident.team;ball.penaltyKicker=incident.kicker;
     ball.penaltyKeeper=incident.keeper;ball.penaltyKeeperOffLine=incident.offLine;
-    ball.penaltyKeeperSaved=false;ball.penaltyKeeperSaveTimer=0;ball.penaltyKeeperImpactedKicker=false;
+    ball.penaltyKeeperSaved=false;ball.penaltyKeeperImpactedKicker=false;
     ball.penaltyRetakePending=false;ball.penaltyWasShootout=incident.shootout;
   }
 };
@@ -4914,10 +4914,9 @@ const _updatePenaltyLine=update;
 update=function(){
   _updatePenaltyLine();
   if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&!ball.penaltyRetakePending){
-    ball.penaltyKeeperSaveTimer=(ball.penaltyKeeperSaveTimer||0)+DT;
     const stopped=ball.owner===ball.penaltyKeeper||
       (!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3);
-    if(stopped||ball.penaltyKeeperSaveTimer>=1.5)ball.penaltyRetakePending=true;
+    if(stopped)ball.penaltyRetakePending=true;
   }
   if(ball.penaltyRetakePending&&S.mode==='play')retakePenaltyForKeeperOffence();
 };
