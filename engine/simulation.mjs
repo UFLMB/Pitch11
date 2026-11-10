@@ -139,9 +139,11 @@ export class FootballSimulation {
       const p = this.players[this.selectedPlayer];
       if (!p) continue;
       if (c.type === "move") {
-        const d = norm(clamp(Number(c.x) || 0, -1, 1), clamp(Number(c.y) || 0, -1, 1));
-        p.inputX = Math.abs(c.x) < .001 ? 0 : d.x;
-        p.inputY = Math.abs(c.y) < .001 ? 0 : d.y;
+        let ix = clamp(Number(c.x) || 0, -1, 1), iy = clamp(Number(c.y) || 0, -1, 1);
+        const inputMagnitude = hypot(ix, iy);
+        if (inputMagnitude > 1) { ix /= inputMagnitude; iy /= inputMagnitude; }
+        p.inputX = Math.abs(ix) < .001 ? 0 : ix;
+        p.inputY = Math.abs(iy) < .001 ? 0 : iy;
         p.sprinting = !!c.sprint;
       } else if (c.type === "releaseMove") {
         p.inputX = 0; p.inputY = 0; p.sprinting = false;
@@ -220,7 +222,7 @@ export class FootballSimulation {
       return;
     }
     const forward = p.attack;
-    const options = this.players.filter(q => q.team === p.team && q.id !== p.id && q.role !== "GK")
+    const options = this.players.filter(q => q.team === p.team && q.id !== p.id && q.role !== "GK" && !this.isOffside(q, p.team))
       .map(q => ({ p:q, score: forward*(q.x-p.x) - Math.abs(q.y-p.y)*.28 - this.players.filter(o=>o.team!==p.team).filter(o=>this.distanceToSegment(o,p,q)<3.2).length*9 }))
       .filter(o => o.score > 4).sort((a,b)=>b.score-a.score);
     if (pressure < 3.5 && options.length && this.random() < .045) {
