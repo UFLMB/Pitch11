@@ -186,6 +186,27 @@ export class FootballSimulation {
     p.selected = true;
     return true;
   }
+  updateAutoPlayerSelection() {
+    const current = this.players[this.selectedPlayer];
+    const owner = this.players[this.ball.owner];
+    const outfield = this.players.filter(p => p.team === this.humanTeam && !p.out && p.role !== "GK");
+    if (!outfield.length) return false;
+
+    if (owner && owner.team === this.humanTeam && owner.role !== "GK") {
+      return owner.id === this.selectedPlayer || this.selectPlayer(owner.id);
+    }
+
+    const reference = owner && owner.team !== this.humanTeam ? owner : this.ball;
+    const nearest = outfield.reduce((best, p) =>
+      !best || dist(p, reference) < dist(best, reference) ? p : best, null);
+    if (!nearest) return false;
+    const currentDistance = current && !current.out && current.role !== "GK" ? dist(current, reference) : Infinity;
+    const nearestDistance = dist(nearest, reference);
+    if (!current || current.out || current.role === "GK" || currentDistance > 7.5 || nearestDistance + 2 < currentDistance) {
+      return this.selectPlayer(nearest.id);
+    }
+    return false;
+  }
   command(command) {
     if (!command || typeof command.type !== "string") return false;
     this.commands.push({ ...command });
@@ -219,6 +240,7 @@ export class FootballSimulation {
     this.updateBall(dt);
     this.resolvePlayerBallContacts();
     this.resolveBoundaries();
+    this.updateAutoPlayerSelection();
     this.updateMatchPhase();
   }
   applyCommands() {
