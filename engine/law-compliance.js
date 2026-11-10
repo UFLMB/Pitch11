@@ -131,11 +131,22 @@
     return 'continue';
   }
 
+  function dogsoOpportunity(state) {
+    const s = state || {};
+    return Number.isFinite(s.distanceToGoal) && s.distanceToGoal > 0 && s.distanceToGoal <= 380 &&
+      Number.isFinite(s.lateralDistance) && s.lateralDistance <= 250 &&
+      Number.isFinite(s.defendersAhead) && s.defendersAhead <= 1 &&
+      s.ballControl === true && s.towardGoal === true;
+  }
+
   function foulCardDecision(state) {
-    // Law 12: only reckless challenges require a caution; serious foul play requires
-    // an explicit excessive-force / endangering-safety assessment by the event caller.
-    if (state && state.seriousFoulPlay) return 2;
-    if (state && state.reckless) return state.alreadyBooked ? 3 : 1;
+    const s = state || {};
+    const dogsoPenaltyException = !!(s.dogso && s.penaltyArea && s.attemptToPlayBall);
+    if (s.seriousFoulPlay) return 2;
+    if (s.dogso && !dogsoPenaltyException) return 2;
+    const caution = !!(s.reckless || s.stopsPromisingAttack || dogsoPenaltyException);
+    if (s.alreadyBooked && caution) return 3;
+    if (caution) return 1;
     return 0;
   }
 
@@ -199,5 +210,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

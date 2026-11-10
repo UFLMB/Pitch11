@@ -234,3 +234,22 @@ test('Law 14 additional time continues only until the penalty kick is completed'
   assert.equal(law.penaltyAdditionalTimeDecision({ retakePending: true }), 'defer');
   assert.equal(law.penaltyAdditionalTimeDecision({}), 'end');
 });
+
+test('Law 12 distinguishes DOGSO, the penalty-area exception, SPA and serious foul play', () => {
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: false, attemptToPlayBall: true }), 2);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: true }), 1);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: false }), 2);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: true, alreadyBooked: true }), 3);
+  assert.equal(law.foulCardDecision({ stopsPromisingAttack: true }), 1);
+  assert.equal(law.foulCardDecision({ stopsPromisingAttack: true, alreadyBooked: true }), 3);
+  assert.equal(law.foulCardDecision({ seriousFoulPlay: true, alreadyBooked: true }), 2);
+});
+
+test('DOGSO requires proximity, control, forward direction and no more than one defender ahead', () => {
+  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 1, ballControl: true, towardGoal: true };
+  assert.equal(law.dogsoOpportunity(base), true);
+  assert.equal(law.dogsoOpportunity({ ...base, defendersAhead: 2 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, distanceToGoal: 420 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, ballControl: false }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, towardGoal: false }), false);
+});
