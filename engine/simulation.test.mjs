@@ -454,3 +454,42 @@ test("pass contact point follows the kick direction instead of team attack direc
   assert.ok(Math.abs(sim.ball.y - (kicker.y + .42)) < .001);
   assert.equal(sim.ball.z, PITCH.ballRadius);
 });
+
+
+test("goalkeeper only triggers a directional dive for a ball on target", () => {
+  const sim = new FootballSimulation({ seed: 31 });
+  const keeper = sim.players[0];
+  keeper.x = 5; keeper.y = 34;
+  keeper.targetX = 5; keeper.targetY = 34; keeper.intent = "goalkeeper";
+  sim.ball.owner = -1;
+  Object.assign(sim.ball, { x: 10, y: 34, z: 2.5, vx: -15, vy: -2, vz: 2, lastTouchTeam: 1 });
+  sim.resolveGoalkeeperSaves();
+  assert.equal(keeper.action, "keeper-dive-left");
+  assert.ok(keeper.actionUntil > sim.time);
+});
+
+test("goalkeeper save action survives locomotion updates until its animation window expires", () => {
+  const sim = new FootballSimulation({ seed: 32 });
+  const keeper = sim.players[0];
+  keeper.x = 5; keeper.y = 34;
+  keeper.targetX = 5; keeper.targetY = 34; keeper.intent = "goalkeeper";
+  sim.ball.owner = -1;
+  Object.assign(sim.ball, { x: 10, y: 34, z: 2.5, vx: -15, vy: -2, vz: 2, lastTouchTeam: 1 });
+  sim.resolveGoalkeeperSaves();
+  const saveAction = keeper.action;
+  sim.movePlayers(FIXED_DT);
+  assert.equal(keeper.action, saveAction);
+  sim.time = keeper.actionUntil + .01;
+  sim.movePlayers(FIXED_DT);
+  assert.equal(keeper.action, "goalkeeper");
+});
+
+test("goalkeeper does not dive for a shot that misses the goal mouth", () => {
+  const sim = new FootballSimulation({ seed: 33 });
+  const keeper = sim.players[0];
+  sim.ball.owner = -1;
+  Object.assign(sim.ball, { x: 10, y: 10, z: 2.5, vx: -15, vy: 0, vz: 2, lastTouchTeam: 1 });
+  sim.resolveGoalkeeperSaves();
+  assert.notEqual(keeper.action, "keeper-dive-left");
+  assert.notEqual(keeper.action, "keeper-dive-right");
+});
