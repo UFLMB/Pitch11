@@ -159,7 +159,7 @@ test("goalkeeper handball boundary is evaluated at the ball contact point", () =
 });
 
 
-test("kick-off keeps every non-kicker, including teammates and goalkeepers, outside the centre circle and in their own half", () => {
+test("kick-off production integration uses the tested all-player positioning helper", () => {
   assert.ok(source.includes("rs.kind!=='ko'&&(p.team===rs.team||p.gk)"));
   assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
   assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
