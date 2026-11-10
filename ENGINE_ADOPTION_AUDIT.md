@@ -69,15 +69,23 @@ The simulation should expose data, not draw anything. The renderer should interp
 
 ## Staged implementation plan
 
-### Stage 0 — Safe baseline (completed for this audit)
+### Stage 0 — Safe baseline (completed)
+- Created branch `engine-adaptation` from `main`.
+- Opened draft PR #1 for review only; it is not merged.
+- Confirmed the live `main` branch and its match files were not edited.
 - Create isolated `engine-adaptation` branch from current `main`.
 - Do not edit `main`.
 - Record compatibility and licensing constraints.
 
-### Stage 1 — Simulation contract
-- Define player, team, ball, match, input-command, event, and snapshot types.
-- Define fixed timestep, deterministic update ordering, and coordinate conversion.
-- Add automated tests for 22-player initialization, pitch bounds, possession, ball movement, and match-clock progression.
+### Stage 1 — Simulation contract (initial slice implemented; still expanding)
+- Added dependency-free browser ES module at `engine/simulation.mjs`.
+- Added 22-player / two-team state, 4-3-3 formation data, ball state, input commands, snapshots, and events.
+- Defined metres-based 105 × 68 m coordinates and a fixed 1/60 s timestep with a bounded accumulator.
+- Added seeded pseudo-random decisions for repeatable test scenarios.
+- Added initial movement, AI shape/support/press intents, passing, shooting, ball physics, possession, goalkeeper positioning/claims, tackle resolution, and goal detection.
+- Added Node.js regression tests and GitHub Actions workflow.
+- First CI run passed; the expanded tests for tackling and long-run AI stability also passed.
+- The simulation remains isolated and is not connected to the current gameplay renderer.
 
 ### Stage 2 — Physics extraction
 - Reproduce the upstream ball-physics behavior in a standalone browser-safe module.
@@ -112,6 +120,18 @@ The simulation should expose data, not draw anything. The renderer should interp
 - No claim of Android/browser compatibility until actually tested.
 - No merge until all regression tests pass and the prototype can complete a playable 11v11 match.
 
+## Current implementation status
+
+- Draft PR: https://github.com/UFLMB/Pitch11/pull/1
+- Branch: `engine-adaptation`
+- Core: `engine/simulation.mjs`
+- Tests: `engine/simulation.test.mjs`
+- Test workflow: `.github/workflows/simulation-tests.yml`
+- Test command: `node --test engine/simulation.test.mjs`
+- Latest confirmed test jobs: successful.
+- Production gameplay integration: deliberately not started.
+- Main branch / live deployment: unchanged by this prototype.
+
 ## Current conclusion
 
-Proceed with a **simulation-core adaptation**, not a wholesale engine replacement. League-Soccer can supply valuable algorithms, rules, data structures, and regression references, but the browser/mobile runtime boundary must be designed and validated in PITCH 11 itself.
+Proceed with a **simulation-core adaptation**, not a wholesale engine replacement. League-Soccer can supply valuable algorithms, rules, data structures, and regression references, but the browser/mobile runtime boundary must be designed and validated in PITCH 11 itself. The current module is only the first playable-simulation slice; it is not yet a complete match engine and must not replace production gameplay.
