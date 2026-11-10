@@ -346,3 +346,17 @@ test("formation can change independently for either team", () => {
   assert.equal(sim.setFormation(0, "invalid"), false);
   assert.deepEqual(sim.getSnapshot().formations, ["4-4-2", "4-2-3-1"]);
 });
+
+test("dismissed controlled player is switched out and never takes kickoff", () => {
+  const sim = new FootballSimulation();
+  const offender = sim.players[sim.selectedPlayer];
+  const victim = sim.players[15];
+  sim.callFoul(offender, victim, { card: true });
+  sim.callFoul(offender, victim, { card: true });
+  assert.equal(offender.out, true);
+  assert.notEqual(sim.selectedPlayer, offender.id);
+  assert.equal(sim.players[sim.selectedPlayer].selected, true);
+  sim.resetKickoff();
+  assert.notEqual(sim.ball.owner, offender.id);
+  assert.equal(sim.players[sim.ball.owner].out, false);
+});
