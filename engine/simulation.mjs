@@ -31,7 +31,7 @@ function makePlayer(team, slot) {
   };
 }
 function makeBall() {
-  return { x: 52.5, y: 34, z: PITCH.ballRadius, vx: 0, vy: 0, vz: 0, owner: -1, lastTouchTeam: -1, spin: 0 };
+  return { x: 52.5, y: 34, z: PITCH.ballRadius, vx: 0, vy: 0, vz: 0, owner: -1, lastTouchTeam: -1, spin: 0, ignorePlayerId: -1, ignoreUntil: 0 };
 }
 function copyPlayer(p) {
   return { id:p.id,team:p.team,slot:p.slot,role:p.role,x:p.x,y:p.y,vx:p.vx,vy:p.vy,
@@ -279,6 +279,7 @@ export class FootballSimulation {
     this.ball.owner=-1; this.ball.lastTouchTeam=p.team;
     this.ball.x=p.x+p.attack*.55; this.ball.y=p.y;
     this.ball.vx=vx; this.ball.vy=vy; this.ball.vz=vz;
+    this.ball.ignorePlayerId=p.id; this.ball.ignoreUntil=this.time+.22;
   }
   updateBall(dt) {
     const owner=this.players[this.ball.owner];
@@ -305,6 +306,7 @@ export class FootballSimulation {
     if(this.ball.owner>=0)return;
     const b=this.ball;
     const nearby=this.players.filter(p=>p.role!=="GK"||b.x<12||b.x>93)
+      .filter(p=>p.id!==b.ignorePlayerId||this.time>=b.ignoreUntil)
       .map(p=>({p,d:dist(p,b)})).filter(v=>v.d<1.15&&b.z<1.5)
       .sort((a,c)=>a.d-c.d);
     if(!nearby.length)return;
