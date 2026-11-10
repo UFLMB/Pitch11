@@ -987,11 +987,16 @@ function restartClamp(){                                   // defenders keep 9.1
     return;
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // everyone stays in their own half until the kick-off is taken
-  const R=rs.r||({ko:91.5,throw:20})[rs.kind];if(!R)return;     // kick-off: centre circle, throw-in: opponents stay 2 m away
+  const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // kick-off: centre circle, throw-in: opponents stay 2 m away
   for(const p of P){
     if(p.team===rs.team||p.gk||p.out||(rs.wall&&rs.wall.includes(p)))continue;
     const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
     if(d<R){p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;}
+    if(rs.kind==='gk'){
+      const gx=dirOf(rs.team)>0?PX0:PX1,dir=dirOf(rs.team);
+      const legal=PITCH11Law.goalKickOpponentPosition({x:p.x,y:p.y,goalLine:gx,direction:dir,penaltyDepth:PEN_DEPTH,halfWidth:PEN_WIDTH/2,centerY:CY,clearance:12});
+      if(legal.x!==p.x){p.x=legal.x;p.vx=0;}
+    }
   }
 }
 /* --- fouls, cards, advantage --- */
