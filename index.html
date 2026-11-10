@@ -828,7 +828,7 @@ const tag=p=>KIT[p.team].name+' '+(p.nm||'#'+p.num);
 function firstIn(t){for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out)return p;}return P[t*11+1];}
 function setupKickoff(team){
   const b=ball;
-  b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.dbl=null;b.ind=false;b.pen=false;b.hcd=0;
+  b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.dbl=null;b.ind=false;b.pen=false;b.hcd=0;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;
   S.rs=null;S.adv=null;clearOff();
   for(const p of P){
     if(p.out)continue;
@@ -970,7 +970,7 @@ function setupPen(t,sh,so){                                // everyone else wait
     else{p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;}
   }
   sh.x=sh.px=sx-d*10;sh.y=sh.py=CY;sh.face=d>0?0:Math.PI;sh.poss=0;sh.freeze=1.2;
-  const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.dbl=null;b.protect=99;clearOff();
+  const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.dbl=null;b.protect=99;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;clearOff();
   S.rs={kind:'pen',team:t,p:sh,x:sx,y:CY};S.adv=null;
   cam.x=cam.px=sx;cam.y=cam.py=CY;
   ctrl=t===0?sh:firstIn(0);
