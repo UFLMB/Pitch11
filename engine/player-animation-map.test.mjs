@@ -28,3 +28,10 @@ test("falls back to the nearest supported locomotion clip", () => {
   assert.equal(resolvePlayerClip(clips, "keeperSet"), clips[1]);
   assert.equal(resolvePlayerClip([], "shot"), null);
 });
+
+
+test("resolves clips with exporter and armature prefixes", () => {
+  const clips = [{ name: "Armature|mixamo.com|Idle" }, { name: "Armature|GK_Dive_Left" }];
+  assert.equal(resolvePlayerClip(clips, "idle"), clips[0]);
+  assert.equal(resolvePlayerClip(clips, "keeperDiveLeft"), clips[1]);
+});
