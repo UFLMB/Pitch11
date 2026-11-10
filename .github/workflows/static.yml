@@ -62,6 +62,7 @@ jobs:
           mv vendor/package vendor/three
           test -s vendor/three/build/three.module.js
           test -s vendor/three/examples/jsm/loaders/GLTFLoader.js
+          test -s vendor/three/examples/jsm/utils/SkeletonUtils.js
           test -s vendor/three/LICENSE
       - name: Download and validate stadium assets into the Pages artifact
         run: |
