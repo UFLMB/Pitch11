@@ -50,6 +50,7 @@ export class FootballSimulation {
     this.tick = 0;
     this.score = [0, 0];
     this.phase = "kickoff";
+    this.restart = null;
     this.players = Array.from({ length: 22 }, (_, i) => makePlayer(i < 11 ? 0 : 1, i % 11));
     this.ball = makeBall();
     this.humanTeam = options.humanTeam ?? 0;
@@ -76,6 +77,7 @@ export class FootballSimulation {
       p.hasBall = false; p.action = "idle"; p.intent = "shape";
     }
     this.ball = makeBall();
+    this.restart = null;
     const kickoff = this.players[this.humanTeam * 11 + 9];
     kickoff.x = 51.2; kickoff.y = 34; kickoff.hasBall = true;
     this.ball.owner = kickoff.id; this.ball.lastTouchTeam = this.humanTeam;
@@ -123,6 +125,7 @@ export class FootballSimulation {
     this.events.length = 0;
     for (const p of this.players) p.cooldown = Math.max(0, p.cooldown - dt);
     this.applyCommands();
+    if (this.phase !== "playing") return;
     this.updateAI(dt);
     this.movePlayers(dt);
     this.resolveTackles();
@@ -268,6 +271,7 @@ export class FootballSimulation {
       target=candidates[0];
     }
     if(!target)return false;
+    this.ball.offsidePlayerId = this.isOffside(target, p.team) ? target.id : -1;
     const d=norm(target.x-p.x,target.y-p.y);
     const lead=Math.min(3,dist(p,target)*.07);
     this.releaseBall(p,d.x*(15+p.stats.pass*7)+target.vx*.35,d.y*(15+p.stats.pass*7)+target.vy*.35,2.1+lead*.15);
@@ -335,6 +339,13 @@ export class FootballSimulation {
       .sort((a,c)=>a.d-c.d);
     if(!nearby.length)return;
     const p=nearby[0].p;
+    if (this.ball.offsidePlayerId === p.id && this.ball.lastTouchTeam === p.team) {
+      this.events.push({ type: "offside", player: p.id, team: p.team });
+      this.awardRestart(1 - p.team, "freeKick", this.ball.x, this.ball.y);
+      this.ball.offsidePlayerId = -1;
+      return;
+    }
+    if (p.team !== this.ball.lastTouchTeam) this.ball.offsidePlayerId = -1;
     const opponent=this.players.filter(q=>q.team!==p.team).some(q=>dist(q,p)<1.35);
     if(opponent&&p.team!==b.lastTouchTeam&&this.random()>.38)return;
     b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action=p.role==="GK"?"keeper-claim":"control";
@@ -368,19 +379,69 @@ export class FootballSimulation {
       }
     }
   }
+  isOffside(target, attackingTeam) {
+    if (!target || target.team !== attackingTeam) return false;
+    const opponents = this.players.filter(p => p.team !== attackingTeam).map(p => p.x);
+    opponents.sort((a,b) => attackingTeam === 0 ? b-a : a-b);
+    const secondLast = opponents[1] ?? (attackingTeam === 0 ? 105 : 0);
+    if (attackingTeam === 0) return target.x > 52.5 && target.x > this.ball.x && target.x > secondLast;
+    return target.x < 52.5 && target.x < this.ball.x && target.x < secondLast;
+  }
+  awardRestart(team, type, x, y) {
+    for (const p of this.players) p.hasBall = false;
+    this.ball.owner = -1;
+    this.ball.vx = 0; this.ball.vy = 0; this.ball.vz = 0;
+    this.ball.x = clamp(x, 0, 105); this.ball.y = clamp(y, 0, 68);
+    this.phase = "restart";
+    this.restart = { team, type, x: this.ball.x, y: this.ball.y };
+    this.events.push({ type: "restartAwarded", restartType: type, team, x: this.ball.x, y: this.ball.y });
+  }
+  takeRestart() {
+    if (this.phase !== "restart" || !this.restart) return false;
+    const r = this.restart;
+    const candidates = this.players.filter(p => p.team === r.team && p.role !== "GK");
+    candidates.sort((a,b) => dist(a,r)-dist(b,r));
+    const taker = candidates[0];
+    if (!taker) return false;
+    taker.x = clamp(r.x - taker.attack * .65, .5, 104.5);
+    taker.y = clamp(r.y, .5, 67.5);
+    taker.vx = 0; taker.vy = 0;
+    taker.hasBall = true; taker.action = "restart";
+    this.ball.owner = taker.id;
+    this.ball.lastTouchTeam = r.team;
+    this.ball.x = r.x; this.ball.y = r.y; this.ball.z = PITCH.ballRadius;
+    this.ball.offsidePlayerId = -1;
+    this.restart = null;
+    this.phase = "playing";
+    this.events.push({ type: "restartTaken", player: taker.id, team: taker.team, restartType: r.type });
+    return true;
+  }
   resolveBoundaries() {
     const b=this.ball;
     this.resolveGoalFrameCollisions();
     if(b.x<0||b.x>105) {
-      const inGoal=Math.abs(b.y-34)<PITCH.goalWidth/2&&b.z<PITCH.goalHeight;
-      if(inGoal){const scoring=b.x>105?0:1;this.score[scoring]++;this.events.push({type:"goal",team:scoring,score:[...this.score]});this.resetKickoff();}
-      else {b.x=clamp(b.x,0,105);b.vx*=-.35;this.events.push({type:"ballOut",side:"goalLine"});}
+      const attackingTeam = b.x > 105 ? 0 : 1;
+      const inGoal = Math.abs(b.y-34) < PITCH.goalWidth/2 && b.z < PITCH.goalHeight;
+      if(inGoal) {
+        const scoring = attackingTeam;
+        this.score[scoring]++;
+        this.events.push({type:"goal",team:scoring,score:[...this.score]});
+        this.resetKickoff();
+      } else if (b.lastTouchTeam === attackingTeam) {
+        this.awardRestart(1-attackingTeam, "goalKick", attackingTeam===0?99:6, 34);
+      } else {
+        this.awardRestart(attackingTeam, "corner", b.x < 0 ? 0 : 105, b.y < 34 ? 0 : 68);
+      }
+      return;
     }
-    if(b.y<0||b.y>68){b.y=clamp(b.y,0,68);b.vy*=-.35;this.events.push({type:"ballOut",side:"touchline"});}
+    if(b.y<0||b.y>68) {
+      const team = b.lastTouchTeam < 0 ? 1 : 1-b.lastTouchTeam;
+      this.awardRestart(team, "throwIn", b.x, b.y < 0 ? 0 : 68);
+    }
   }
   getSnapshot() {
     const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,
-      phase:this.phase,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
+      phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
       ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
     this.lastSnapshot=snapshot;
     return snapshot;
