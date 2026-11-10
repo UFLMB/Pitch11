@@ -151,3 +151,14 @@ test('kick-off positioning keeps every player outside the centre circle and in t
   assert.ok(far.x < base.centerX);
   assert.equal(far.y, 20);
 });
+
+
+test('free-kick attackers stay at least one metre from a three-player defensive wall', () => {
+  const place = state => ({ ...law.freeKickWallClearancePosition(state) });
+  const base = { wallX: 50, wallY: 50, tangentX: 0, tangentY: 1, halfLength: 15, clearance: 10, ballX: 0, ballY: 50 };
+  const centre = place({ ...base, x: 50, y: 50 });
+  assert.ok(Math.hypot(centre.x - 50, centre.y - 50) >= 10 - 1e-9);
+  const endpoint = place({ ...base, x: 50, y: 64 });
+  assert.ok(Math.hypot(endpoint.x - 50, endpoint.y - 65) >= 10 - 1e-9);
+  assert.deepEqual(place({ ...base, x: 50, y: 80 }), { x: 50, y: 80 });
+});
