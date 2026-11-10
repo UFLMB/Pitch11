@@ -1067,16 +1067,19 @@ function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
   if(b.gkHoldActive&&b.owner&&b.owner.gk){
-    const keeper=b.owner,d=dirOf(keeper.team),gx=d>0?PX0:PX1,insideArea=(keeper.x-gx)*d>=0&&(keeper.x-gx)*d<=PEN_DEPTH&&Math.abs(keeper.y-CY)<=PEN_WIDTH/2;
-    if(insideArea){
-      b.gkHold+=DT;
-      if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;msg('GOALKEEPER 5-SECOND COUNTDOWN','Release the ball',5);}
-      if(PITCH11Law.goalkeeperHoldExpired(b.gkHold)){
-        const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
-        spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
-        msg('8-SECOND VIOLATION','CORNER KICK',2);return;
-      }
-    }else{b.gkHold=0;b.gkHoldWarned=false;}
+    const keeper=b.owner,d=dirOf(keeper.team),gx=d>0?PX0:PX1;
+    const insideArea=(b.x-gx)*d>=0&&(b.x-gx)*d<=PEN_DEPTH&&Math.abs(b.y-CY)<=PEN_WIDTH/2;
+    if(!insideArea){
+      const x=b.x,y=b.y;b.gkHold=0;b.gkHoldWarned=false;
+      whistleStop(1.4,'HANDBALL','Goalkeeper handled outside the penalty area',()=>freeKick(1-keeper.team,x,y,false));return;
+    }
+    b.gkHold+=DT;
+    if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;msg('GOALKEEPER 5-SECOND COUNTDOWN','Release the ball',5);}
+    if(PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'){
+      const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
+      spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
+      msg('8-SECOND VIOLATION','CORNER KICK',2);return;
+    }
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;}
   if(!b.ind&&ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){goal(b.x>PX1?1:-1);return;}
   if(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)){outOfPlay();return;}
