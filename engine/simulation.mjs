@@ -58,6 +58,7 @@ function copyPlayer(p) {
 export class FootballSimulation {
   constructor(options = {}) {
     this.formations = [options.homeFormation ?? "4-3-3", options.awayFormation ?? "4-3-3"];
+    this.tactics = [0,1].map(() => ({ width: 1, depth: 1, pressing: .55, directness: .5 }));
     for (const name of this.formations) if (!FORMATIONS[name]) throw new RangeError("Unsupported formation: " + name);
     this.seed = options.seed ?? 11;
     this.weather = { windX: options.windX ?? 0, windY: options.windY ?? 0, wetness: clamp(Number(options.wetness) || 0, 0, 1) };
@@ -127,6 +128,14 @@ export class FootballSimulation {
       p.homeX = team === 0 ? 2 + depth * 101 : 103 - depth * 101;
       p.homeY = 3 + lane * 62;
       p.targetX = p.homeX; p.targetY = p.homeY;
+    }
+    return true;
+  }
+  setTactics(team, settings = {}) {
+    if (team !== 0 && team !== 1) return false;
+    const current = this.tactics[team];
+    for (const key of ["width", "depth", "pressing", "directness"]) {
+      if (Number.isFinite(settings[key])) current[key] = clamp(settings[key], .2, 1.4);
     }
     return true;
   }
@@ -239,16 +248,24 @@ export class FootballSimulation {
       }
       const nearestOpponent = this.players.filter(q => q.team !== p.team && !q.out).sort((a,b) => dist(a,p)-dist(b,p))[0];
       const ballDistance = dist(p, this.ball);
-      if (!attacking && (!owner || owner.team !== p.team) && ballDistance < 24 && p.role !== "GK") {
-        const nearest = this.players.filter(q => q.team === p.team && q.role !== "GK").sort((a,b) => dist(a,this.ball)-dist(b,this.ball))[0];
-        if (nearest && nearest.id === p.id) {
-          p.targetX = this.ball.x; p.targetY = this.ball.y; p.intent = "press";
+      if (!attacking && (!owner || owner.team !== p.team) && p.role !== "GK") {
+        const tactics = this.tactics[p.team];
+        const pressers = this.players.filter(q => q.team === p.team && !q.out && q.role !== "GK")
+          .sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
+        const rank = pressers.findIndex(q => q.id === p.id);
+        const maxPressers = Math.max(1, Math.round(1 + tactics.pressing * 2));
+        const pressRange = 12 + tactics.pressing * 20;
+        if (ballDistance < pressRange && rank >= 0 && rank < maxPressers) {
+          p.targetX = this.ball.x - p.attack * rank * 1.1;
+          p.targetY = clamp(this.ball.y + (p.y < this.ball.y ? -1 : 1) * rank * 1.4, 2, 66);
+          p.intent = "press";
         } else this.setShapeTarget(p, owner);
       } else if (attacking) {
         const forward = p.attack;
-        const laneOffset = (p.homeY - 34) * .35;
-        p.targetX = clamp(p.homeX + forward * (p.role === "FWD" ? 9 : 4), 3, 102);
-        p.targetY = clamp(p.homeY + laneOffset * .18, 3, 65);
+        const tactics = this.tactics[p.team];
+        const laneOffset = (p.homeY - 34) * .35 * tactics.width;
+        p.targetX = clamp(p.homeX + forward * (p.role === "FWD" ? 9 : 4) * tactics.depth, 3, 102);
+        p.targetY = clamp(34 + (p.homeY - 34) * tactics.width + laneOffset * .18, 3, 65);
         if (nearestOpponent && dist(nearestOpponent,p) < 7) p.targetY = clamp(p.targetY + (p.y < 34 ? -5 : 5), 2, 66);
         p.intent = "support";
       } else this.setShapeTarget(p, owner);
@@ -270,8 +287,9 @@ export class FootballSimulation {
     }
   }
   setShapeTarget(p, owner) {
-    const shiftX = owner ? clamp((owner.x - 52.5) * .18, -8, 8) : 0;
-    const shiftY = owner ? clamp((owner.y - 34) * .12, -5, 5) : 0;
+    const tactics = this.tactics[p.team];
+    const shiftX = owner ? clamp((owner.x - 52.5) * .18 * tactics.depth, -8, 8) : 0;
+    const shiftY = owner ? clamp((owner.y - 34) * .12 * tactics.width, -5, 5) : 0;
     p.targetX = p.homeX + shiftX;
     p.targetY = p.homeY + shiftY;
     p.intent = "shape";
@@ -610,7 +628,7 @@ export class FootballSimulation {
   }
   getSnapshot() {
     const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,period:this.period,formations:[...this.formations],
-      phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
+      phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],tactics:this.tactics.map(t=>({...t})),humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
       ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
     this.lastSnapshot=snapshot;
     return snapshot;
