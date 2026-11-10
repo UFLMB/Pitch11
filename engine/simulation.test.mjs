@@ -204,3 +204,32 @@ test("analog input produces slower movement than full joystick deflection", () =
   for (let i = 0; i < 30; i++) { low.update(FIXED_DT); full.update(FIXED_DT); }
   assert.ok(low.players[low.selectedPlayer].x - lx < full.players[full.selectedPlayer].x - fx);
 });
+
+test("defending last touch awards a corner to the attacking team", () => {
+  const sim = new FootballSimulation();
+  sim.ball.x = 105.2; sim.ball.y = 20; sim.ball.z = 1;
+  sim.ball.lastTouchTeam = 1; sim.ball.owner = -1;
+  sim.resolveBoundaries();
+  assert.equal(sim.phase, "restart");
+  assert.equal(sim.restart.type, "corner");
+  assert.equal(sim.restart.team, 0);
+});
+
+test("attacking last touch awards a goal kick to the defending team", () => {
+  const sim = new FootballSimulation();
+  sim.ball.x = 105.2; sim.ball.y = 20; sim.ball.z = 1;
+  sim.ball.lastTouchTeam = 0; sim.ball.owner = -1;
+  sim.resolveBoundaries();
+  assert.equal(sim.restart.type, "goalKick");
+  assert.equal(sim.restart.team, 1);
+});
+
+test("crossbar collision changes the ball trajectory", () => {
+  const sim = new FootballSimulation();
+  sim.ball.owner = -1;
+  sim.ball.x = .12; sim.ball.y = 34; sim.ball.z = PITCH.goalHeight;
+  sim.ball.vx = -2; sim.ball.vy = 0; sim.ball.vz = 0;
+  sim.update(FIXED_DT);
+  assert.ok(sim.ball.vx > 0);
+  assert.ok(sim.getSnapshot().events.some(e => e.type === "crossbarHit"));
+});
