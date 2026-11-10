@@ -4784,6 +4784,21 @@ addEventListener('resize',resize);
 resize();
 load();fixX();applyX();fixRf();applyConfig();M.opp=nextOpp();newMatch();S.mode='menu';S.t=0;
 requestAnimationFrame(frame);
+
+/* Law 15: a throw-in must use the dedicated two-handed overhead delivery.
+   Do not let pass / shot / skill inputs turn the restart into a foot kick. */
+const _humanThrowLaw=humanAct;
+humanAct=function(p){
+  const rs=S.rs;
+  if(rs&&rs.kind==='throw'&&rs.p===p&&ball.owner===p){
+    const saved={shoot:I.shoot,shootUp:I.shootUp,pass:I.pass,thru:I.thru,lob:I.lob,skill:I.skill,sw:I.sw,tackle:I.tackle,swp:I.swp};
+    I.shoot=I.shootUp=I.pass=I.thru=I.lob=I.skill=I.sw=I.tackle=I.swp=false;
+    I.chargeT=0;
+    try{_humanThrowLaw(p);}finally{Object.assign(I,saved);}
+    return;
+  }
+  _humanThrowLaw(p);
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>
