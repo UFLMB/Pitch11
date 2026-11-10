@@ -161,7 +161,7 @@ export class FootballSimulation {
       } else if (c.type === "releaseMove") {
         p.inputX = 0; p.inputY = 0; p.sprinting = false;
       } else if (c.type === "switch") {
-        const candidates = this.players.filter(q => q.team === this.humanTeam && q.role !== "GK");
+        const candidates = this.players.filter(q => q.team === this.humanTeam && !q.out && q.role !== "GK");
         candidates.sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
         const next = candidates.find(q => q.id !== this.selectedPlayer) || candidates[0];
         if (next) this.selectPlayer(next.id);
@@ -193,7 +193,7 @@ export class FootballSimulation {
         p.tackleCooldown = 1.1;
         p.action = "press-tackle";
       }
-      const nearestOpponent = this.players.filter(q => q.team !== p.team).sort((a,b) => dist(a,p)-dist(b,p))[0];
+      const nearestOpponent = this.players.filter(q => q.team !== p.team && !q.out).sort((a,b) => dist(a,p)-dist(b,p))[0];
       const ballDistance = dist(p, this.ball);
       if (!attacking && (!owner || owner.team !== p.team) && ballDistance < 24 && p.role !== "GK") {
         const nearest = this.players.filter(q => q.team === p.team && q.role !== "GK").sort((a,b) => dist(a,this.ball)-dist(b,this.ball))[0];
@@ -236,7 +236,7 @@ export class FootballSimulation {
     const goalX = p.team === 0 ? 105 : 0;
     const goalDist = Math.abs(goalX - p.x);
     const goalLane = Math.abs(p.y - 34);
-    const pressure = this.players.filter(q => q.team !== p.team).reduce((best,q) => Math.min(best,dist(q,p)),99);
+    const pressure = this.players.filter(q => q.team !== p.team && !q.out).reduce((best,q) => Math.min(best,dist(q,p)),99);
     if (goalDist < 22 && goalLane < 18 && pressure > 2.5) {
       this.shootBall(p, .72 + p.stats.shoot * .25);
       return;
@@ -421,7 +421,7 @@ export class FootballSimulation {
       return;
     }
     if (p.team !== this.ball.lastTouchTeam) this.ball.offsidePlayerId = -1;
-    const opponent=this.players.filter(q=>q.team!==p.team).some(q=>dist(q,p)<1.35);
+    const opponent=this.players.filter(q=>q.team!==p.team&&!q.out).some(q=>dist(q,p)<1.35);
     if(opponent&&p.team!==b.lastTouchTeam&&this.random()>.38)return;
     b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action=p.role==="GK"?"keeper-claim":"control";
     this.events.push({type:p.role==="GK"?"keeperSave":"possession",player:p.id,team:p.team});
