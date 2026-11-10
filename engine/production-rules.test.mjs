@@ -111,6 +111,8 @@ test("substitutions enforce the total limit and three/four substitution windows"
 test("the seven-player minimum is enforced after sending-offs and at stoppages", () => {
   assert.match(source, /PITCH11Law\.abandoningTeam\(P\)/);
   assert.match(source, /S\.abandoned=short/);
+  assert.match(source, /w=S\.abandoned!==null\?1-S\.abandoned/);
+  assert.match(source, /if\(S\.abandoned!==null\)return 1-S\.abandoned/);
   assert.match(source, /MATCH ABANDONED/);
 });
 
