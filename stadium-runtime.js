@@ -128,6 +128,20 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    staffActors.push(actor);scene.add(actor);
   }
  }
+ function updateCrowd(now){
+  const meshes=crowdFans.meshes;if(!meshes||!crowdFans.length)return;
+  const step=Math.max(1,Math.ceil(crowdFans.length/900)),start=Math.floor(now/32)%step,o=new THREE.Object3D();
+  for(let i=start;i<crowdFans.length;i+=step){
+   const f=crowdFans[i],wave=Math.sin(now*.0042+f.phase+f.delay*3)*f.response,bob=f.raised?Math.max(0,wave)*.035:Math.abs(wave)*.008;
+   o.position.set(f.x,f.y+.36*f.scale+bob,f.z);o.rotation.set(0,f.yaw,0);o.scale.setScalar(f.scale);o.updateMatrix();meshes.torso.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.77*f.scale+bob,f.z);o.updateMatrix();meshes.head.setMatrixAt(i,o.matrix);
+   for(let side=-1;side<=1;side+=2){
+    const ai=i*2+(side===1?1:0),sway=f.raised?Math.sin(now*.005+f.phase+side)*.24:wave*.055;
+    o.position.set(f.x+side*.15*f.scale,f.y+.51*f.scale+bob,f.z);o.rotation.set(0,f.yaw,side*(f.raised?.18+sway:.82+sway));o.scale.setScalar(f.scale);o.updateMatrix();meshes.arms.setMatrixAt(ai,o.matrix);
+   }
+  }
+  meshes.torso.instanceMatrix.needsUpdate=true;meshes.head.instanceMatrix.needsUpdate=true;meshes.arms.instanceMatrix.needsUpdate=true;
+ }
  function updateStaff(now){
   const t=now*.00055;
   for(const a of staffActors){a.rotation.y=a.userData.base+Math.sin(t+a.userData.phase)*.045;}
@@ -227,7 +241,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  },undefined,e=>console.warn('PITCH 11 stadium unavailable; keeping original renderer.',e));
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*innerWidth,sy=(-v3.y*.5+.5)*innerHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*innerWidth,sy2=(-v4.y*.5+.5)*innerHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
- function render(V,w,h){setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
+ function render(V,w,h){setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
  function renderTopDown(cx,cy,vw,vh,w,h){const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
  window.P11Stadium={get ready(){return ready;},render,renderTopDown,project,setGoalDimensions};
  addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
