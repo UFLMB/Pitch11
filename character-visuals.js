@@ -14,6 +14,21 @@
     const shirt=(p.gk?kit.gk:kit.shirt)||'#333', shorts=(p.gk?'#242424':kit.shorts)||'#222';
     const dark=shade(shirt,.58), light=shade(shirt,1.24);
     c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+    if (!projected) {
+      // Top-down broadcast view: keep the face on the leading edge of the existing silhouette.
+      c.fillStyle=shade(skin,.7);c.beginPath();c.ellipse(2.1,0,2.35,3.05,0,0,TAU);c.fill();
+      const hg=['#171311','#302017','#4b3324','#17191c','#6a4b2e'][((p.skin||0)+(p.role||0))%5];
+      c.fillStyle=hg;c.beginPath();c.arc(2.05,0,2.45,Math.PI*.55,Math.PI*1.48);c.fill();
+      c.fillStyle=shade(skin,1.18);c.beginPath();c.arc(3.45,-.35,.72,0,TAU);c.fill();
+      c.fillStyle='#171717';c.beginPath();c.arc(3.15,-.85,.3,0,TAU);c.fill();
+      c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.65;c.beginPath();c.ellipse(-1,0,3.4,5.4,0,0,TAU);c.stroke();
+      c.strokeStyle=dark;c.lineWidth=.7;c.beginPath();c.moveTo(-2.6,-3.7);c.lineTo(-2.6,3.7);c.moveTo(2.3,-3.8);c.lineTo(2.3,3.8);c.stroke();
+      c.fillStyle='rgba(255,255,255,.85)';c.beginPath();c.arc(-1.5,-2.4,.7,0,TAU);c.fill();
+      c.fillStyle=light;c.globalAlpha=.65;c.fillRect(-.35,-2.8,.65,5.6);c.globalAlpha=1;
+      c.strokeStyle='rgba(255,255,255,.8)';c.lineWidth=.55;c.beginPath();c.moveTo(-3.3,-6);c.lineTo(-1.1,-6.8);c.moveTo(-3.3,6);c.lineTo(-1.1,6.8);c.stroke();
+      c.fillStyle='#101114';c.beginPath();c.ellipse(-.8,-8.2,2.1,1.15,-.1,0,TAU);c.ellipse(-.8,8.2,2.1,1.15,.1,0,TAU);c.fill();
+      c.restore();return;
+    }
     // Neck and a more readable face profile.
     c.fillStyle=shade(skin,.78);c.beginPath();c.roundRect(-.1,-19.8,2.5,3.2,.8);c.fill();
     const face=c.createRadialGradient(2.1,-22.1,.35,1.7,-21.5,3.5);
@@ -59,6 +74,16 @@
   function officialDetail(o,x,y,angle,scale,threeD) {
     const c=ctx,k=o.kit||{s:'#f0e000',sh:'#111',t:'#222'},skin=o.sk||'#c68642';
     c.save();c.translate(x,y);c.rotate(angle);c.scale(scale,scale);
+    if (!threeD) {
+      c.fillStyle=k.s;c.beginPath();c.ellipse(-1,0,4.8,6.6,0,0,TAU);c.fill();
+      c.strokeStyle=k.t||'#222';c.lineWidth=.85;c.beginPath();c.moveTo(-3.8,-3.8);c.lineTo(2.8,-3.8);c.moveTo(-3.8,3.8);c.lineTo(2.8,3.8);c.stroke();
+      c.fillStyle='#f2d34c';c.fillRect(-1.7,-2.1,1.3,1.5);
+      c.fillStyle=skin;c.beginPath();c.ellipse(1.2,0,2.15,2.35,0,0,TAU);c.fill();
+      c.fillStyle='#171311';c.beginPath();c.arc(1.2,-.9,2.1,Math.PI,TAU);c.fill();
+      c.fillStyle='#111';c.beginPath();c.arc(2.8,-.65,.28,0,TAU);c.fill();
+      c.strokeStyle='#d9d9d9';c.lineWidth=.55;c.beginPath();c.moveTo(3,0);c.lineTo(3.7,1.1);c.stroke();
+      c.restore();return;
+    }
     // Official shirt: contrasting shoulder panels, collar, chest badge and radio earpiece.
     c.fillStyle=k.s;c.beginPath();c.ellipse(-1,0,4.7,6.5,0,0,TAU);c.fill();
     c.fillStyle=k.t||'#222';c.beginPath();c.moveTo(-4.4,-4.8);c.lineTo(-1.1,-6.2);c.lineTo(-.2,-2.8);c.lineTo(-3.2,-1.9);c.closePath();c.fill();
