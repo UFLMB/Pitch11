@@ -73,6 +73,15 @@ export class FootballSimulation {
     this.phase = "kickoff";
     this.restart = null;
     this.players = Array.from({ length: 22 }, (_, i) => makePlayer(i < 11 ? 0 : 1, i % 11, this.formations[i < 11 ? 0 : 1]));
+    this.nextPlayerId = 22;
+    const benchSlots = [0,1,2,5,6,8,10];
+    this.bench = [0,1].map(team => benchSlots.map((slot,index) => {
+      const p = makePlayer(team, slot, this.formations[team]);
+      p.id = -1 - team * benchSlots.length - index;
+      p.out = true; p.hasBall = false; p.selected = false;
+      return p;
+    }));
+    this.substitutionsUsed = [0,0];
     this.ball = makeBall();
     this.humanTeam = options.humanTeam ?? 0;
     this.selectedPlayer = this.humanTeam * 11 + 9;
@@ -129,6 +138,27 @@ export class FootballSimulation {
       p.homeY = 3 + lane * 62;
       p.targetX = p.homeX; p.targetY = p.homeY;
     }
+    return true;
+  }
+  substitute(team, playerOffId, benchIndex) {
+    if ((team !== 0 && team !== 1) || this.phase === "playing") return false;
+    if (this.substitutionsUsed[team] >= 5) return false;
+    const outgoing = this.players[playerOffId];
+    const incoming = this.bench[team]?.[benchIndex];
+    if (!outgoing || outgoing.out || outgoing.team !== team || !incoming) return false;
+    const hadBall = this.ball.owner === outgoing.id;
+    const wasSelected = this.selectedPlayer === outgoing.id;
+    outgoing.out = true; outgoing.hasBall = false; outgoing.selected = false;
+    const replacement = { ...incoming, id: this.nextPlayerId++, team, slot: outgoing.slot,
+      x: outgoing.x, y: outgoing.y, homeX: outgoing.homeX, homeY: outgoing.homeY,
+      targetX: outgoing.x, targetY: outgoing.y, vx: 0, vy: 0,
+      out: false, hasBall: hadBall, selected: wasSelected, action: "substitute" };
+    this.bench[team].splice(benchIndex, 1);
+    this.players.push(replacement);
+    this.substitutionsUsed[team]++;
+    if (hadBall) { this.ball.owner = replacement.id; this.ball.lastTouchTeam = team; }
+    if (wasSelected) this.selectedPlayer = replacement.id;
+    this.events.push({ type: "substitution", team, playerOff: outgoing.id, playerOn: replacement.id });
     return true;
   }
   setTactics(team, settings = {}) {
@@ -630,7 +660,7 @@ export class FootballSimulation {
   }
   getSnapshot() {
     const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,period:this.period,formations:[...this.formations],
-      phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],tactics:this.tactics.map(t=>({...t})),humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
+      phase:this.phase,restart:this.restart?{...this.restart}:null,score:[...this.score],substitutionsUsed:[...this.substitutionsUsed],tactics:this.tactics.map(t=>({...t})),humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
       ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
     this.lastSnapshot=snapshot;
     return snapshot;
