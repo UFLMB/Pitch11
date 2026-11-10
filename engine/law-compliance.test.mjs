@@ -120,3 +120,10 @@ test('goal-kick opponents are moved outside the penalty area, while players outs
   assert.deepEqual(place({ x: 190, y: 0, goalLine: 0, direction: 1, penaltyDepth: 165, halfWidth: 100, centerY: 0, clearance: 12 }), { x: 190, y: 0 });
   assert.deepEqual(place({ x: 920, y: 0, goalLine: 1000, direction: -1, penaltyDepth: 165, halfWidth: 100, centerY: 0, clearance: 12 }), { x: 823, y: 0 });
 });
+
+test('goalkeeper hand control outside the penalty area is a direct free kick; inside follows the eight-second clock', () => {
+  assert.equal(law.goalkeeperHandControlDecision(false, 0), 'direct-free-kick');
+  assert.equal(law.goalkeeperHandControlDecision(false, 8), 'direct-free-kick');
+  assert.equal(law.goalkeeperHandControlDecision(true, 7.999), 'continue');
+  assert.equal(law.goalkeeperHandControlDecision(true, 8), 'corner');
+});
