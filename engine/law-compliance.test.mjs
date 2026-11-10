@@ -225,3 +225,12 @@ test('Law 14 keeper-save retakes require the penalty shot to be on target', () =
   assert.equal(law.penaltyShotOnTarget({ ...base, x: 100, goalLine: 0, vx: -200, attackDirection: -1 }), true);
   assert.equal(law.penaltyShotOnTarget({ ...base, maxTime: 0.2 }), false);
 });
+
+test('Law 14 additional time continues only until the penalty kick is completed', () => {
+  assert.equal(law.penaltyAdditionalTimeDecision({ penaltyRestart: true }), 'defer');
+  assert.equal(law.penaltyAdditionalTimeDecision({ penaltyInFlight: true, otherPlayerTouched: false }), 'defer');
+  assert.equal(law.penaltyAdditionalTimeDecision({ penaltyInFlight: true, otherPlayerTouched: true }), 'end');
+  assert.equal(law.penaltyAdditionalTimeDecision({ penaltyInFlight: true, otherPlayerTouched: true, keeperRetake: true }), 'defer');
+  assert.equal(law.penaltyAdditionalTimeDecision({ retakePending: true }), 'defer');
+  assert.equal(law.penaltyAdditionalTimeDecision({}), 'end');
+});
