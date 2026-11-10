@@ -259,3 +259,15 @@ test("direct reception from a corner is exempt from offside", () => {
   assert.equal(sim.ball.offsidePlayerId, -1);
   assert.equal(sim.ball.offsideExempt, false);
 });
+
+test("goalkeeper parries a shot crossing the goal mouth", () => {
+  const sim = new FootballSimulation();
+  const keeper = sim.players[0];
+  keeper.x = 2; keeper.y = 34;
+  sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
+  sim.ball.x = 5; sim.ball.y = 34; sim.ball.z = 1;
+  sim.ball.vx = -10; sim.ball.vy = 0; sim.ball.vz = 3;
+  sim.resolveGoalkeeperSaves();
+  assert.ok(sim.ball.vx > 0);
+  assert.ok(sim.getSnapshot().events.some(e => e.type === "keeperSave"));
+});
