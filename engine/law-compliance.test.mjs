@@ -127,3 +127,19 @@ test('goalkeeper hand control outside the penalty area is a direct free kick; in
   assert.equal(law.goalkeeperHandControlDecision(true, 7.999), 'continue');
   assert.equal(law.goalkeeperHandControlDecision(true, 8), 'corner');
 });
+
+
+test('kick-off positioning keeps every player outside the centre circle and in their own half', () => {
+  const place = state => ({ ...law.kickoffPlayerPosition(state) });
+  const base = { centerX: 50, centerY: 50, radius: 9.15, pitchTop: 0, pitchBottom: 100, side: -1 };
+  const left = place({ ...base, x: 50, y: 50, direction: 1 });
+  assert.ok(left.x < base.centerX);
+  assert.ok(Math.hypot(left.x - base.centerX, left.y - base.centerY) >= base.radius - 1e-9);
+  const right = place({ ...base, x: 50, y: 50, direction: -1 });
+  assert.ok(right.x > base.centerX);
+  assert.ok(Math.hypot(right.x - base.centerX, right.y - base.centerY) >= base.radius - 1e-9);
+  assert.deepEqual(place({ ...base, x: 20, y: 20, direction: 1 }), { x: 20, y: 20 });
+  const far = place({ ...base, x: 70, y: 20, direction: 1 });
+  assert.ok(far.x < base.centerX);
+  assert.equal(far.y, 20);
+});
