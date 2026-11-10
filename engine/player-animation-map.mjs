@@ -31,8 +31,8 @@ const FALLBACKS = Object.freeze({
   getUp: ["idle"],
   celebrate: ["idle"],
   keeperSet: ["idle"],
-  keeperDiveLeft: ["fall", "keeperSet", "idle"],
-  keeperDiveRight: ["fall", "keeperSet", "idle"],
+  keeperDiveLeft: ["keeperParry", "fall", "keeperSet", "idle"],
+  keeperDiveRight: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperCatch: ["keeperSet", "idle"],
   keeperParry: ["keeperSet", "idle"]
 });
@@ -45,7 +45,7 @@ const ALIAS_TO_STATE = new Map(
 
 export function resolvePlayerAnimationState(player, speed = 0) {
   const action = normalize(player?.action);
-  if (action.includes("keepercatch")) return "keeperCatch";
+  if (action.includes("keepercatch") || action.includes("keeperclaim")) return "keeperCatch";
   if (action.includes("keeperparry")) return "keeperParry";
   if (action.includes("keeperdiveleft")) return "keeperDiveLeft";
   if (action.includes("keeperdiveright")) return "keeperDiveRight";

@@ -106,7 +106,7 @@ export class FootballSimulation {
       p.x = p.team === 0 ? 2 + depth * 101 : 103 - depth * 101;
       p.y = 3 + lane * 62;
       p.homeX = p.x; p.homeY = p.y; p.vx = 0; p.vy = 0;
-      p.hasBall = false; p.action = "idle"; p.intent = "shape";
+      p.hasBall = false; p.action = "idle"; p.actionUntil = 0; p.intent = "shape";
     }
     this.ball = makeBall();
     this.restart = null;
@@ -254,7 +254,7 @@ export class FootballSimulation {
         this.shootBall(p, c.power);
       } else if (c.type === "tackle") {
         p.tackleUntil = this.time + .24;
-        p.action = "tackle";
+        p.action = "tackle"; p.actionUntil = this.time + .28;
       }
     }
   }
@@ -285,7 +285,7 @@ export class FootballSimulation {
       if (owner && owner.team !== p.team && p.role !== "GK" && dist(p, owner) < 1.15 && p.tackleCooldown <= 0) {
         p.tackleUntil = this.time + .12;
         p.tackleCooldown = 1.1;
-        p.action = "press-tackle";
+        p.action = "press-tackle"; p.actionUntil = this.time + .2;
       }
       const nearestOpponent = opponents[p.team].reduce((best, q) =>
         !best || dist(q, p) < dist(best, p) ? q : best, null);
@@ -396,7 +396,10 @@ export class FootballSimulation {
       p.y=clamp(p.y+p.vy*dt, .5, 67.5);
       if (hypot(p.vx,p.vy)>.15) p.facing=Math.atan2(p.vy,p.vx);
       p.stamina=clamp(p.stamina-(sprint?.0008:.00022)*dt*60, .25, 1);
-      p.action = manual && (p.inputX||p.inputY) ? (sprint?"sprint":"run") : p.intent;
+      if ((p.actionUntil || 0) <= this.time) {
+        p.actionUntil = 0;
+        p.action = manual && (p.inputX||p.inputY) ? (sprint?"sprint":"run") : p.intent;
+      }
     }
   }
   passBall(p,targetId) {
@@ -423,7 +426,7 @@ export class FootballSimulation {
     return true;
   }
   releaseBall(p,vx,vy,vz) {
-    p.hasBall=false; p.action="kick";
+    p.hasBall=false; p.action="kick"; p.actionUntil = this.time + .28;
     const kickDirection = norm(vx, vy);
     this.ball.owner=-1; this.ball.lastTouchTeam=p.team;
     this.ball.x=p.x+kickDirection.x*.42; this.ball.y=p.y+kickDirection.y*.42;
@@ -463,14 +466,14 @@ export class FootballSimulation {
       if (this.random() <= chance) {
         owner.hasBall = false;
         tackler.hasBall = true;
-        tackler.action = "tackle-win";
+        tackler.action = "tackle-win"; tackler.actionUntil = this.time + .48;
         this.ball.owner = tackler.id;
         this.ball.lastTouchTeam = tackler.team;
         this.ball.vx = 0; this.ball.vy = 0; this.ball.vz = 0;
         this.events.push({ type: "tackleWon", player: tackler.id, dispossessed: owner.id });
         break;
       } else {
-        tackler.action = "tackle-missed";
+        tackler.action = "tackle-missed"; tackler.actionUntil = this.time + .3;
         this.events.push({ type: "tackleMissed", player: tackler.id });
         if (separation < 1.05 && this.random() < .18) {
           this.callFoul(tackler, owner, { card: this.random() < .08 });
@@ -528,14 +531,15 @@ export class FootballSimulation {
       if (Math.abs(keeper.x - ownGoal) > 10 || Math.abs(predictedY - keeper.y) > reach) continue;
       const speed = Math.hypot(b.vx,b.vy,b.vz);
       if (speed < 10) {
-        b.owner = keeper.id; keeper.hasBall = true; keeper.action = "keeper-catch";
+        b.owner = keeper.id; keeper.hasBall = true; keeper.action = "keeper-catch"; keeper.actionUntil = this.time + .72;
         b.vx = 0; b.vy = 0; b.vz = 0;
       } else {
         b.x = ownGoal === 0 ? .28 : 104.72;
         b.vx = ownGoal === 0 ? Math.abs(b.vx) * .55 : -Math.abs(b.vx) * .55;
         b.vy += clamp((predictedY - keeper.y) * .45, -2.5, 2.5);
         b.vz = Math.max(.8, Math.abs(b.vz) * .35);
-        keeper.action = "keeper-parry";
+        keeper.action = predictedY < keeper.y ? "keeper-dive-left" : "keeper-dive-right";
+        keeper.actionUntil = this.time + .78;
       }
       this.events.push({ type: "keeperSave", keeper: keeper.id, team, caught: b.owner === keeper.id });
       return;
@@ -586,6 +590,7 @@ export class FootballSimulation {
     const opponent=this.players.filter(q=>q.team!==p.team&&!q.out).some(q=>dist(q,p)<1.35);
     if(opponent&&p.team!==b.lastTouchTeam&&this.random()>.38)return;
     b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action=p.role==="GK"?"keeper-claim":"control";
+    if (p.role === "GK") p.actionUntil = this.time + .32;
     this.events.push({type:p.role==="GK"?"keeperSave":"possession",player:p.id,team:p.team});
   }
   resolveGoalFrameCollisions() {
