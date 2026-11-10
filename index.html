@@ -4819,7 +4819,7 @@ function clearPenaltyLineState(){
   ball.penaltyWasShootout=false;ball.pen=false;
 }
 const _setupPenLine=setupPen;
-setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);};
+setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);const keeper=GK[1-t];if(keeper&&!keeper.out)keeper.face=Math.atan2(sh.y-keeper.y,sh.x-keeper.x);};
 const _setupKickoffLine=setupKickoff;
 setupKickoff=function(t){clearPenaltyLineState();_setupKickoffLine(t);};
 const _kickPenaltyLine=kick;
