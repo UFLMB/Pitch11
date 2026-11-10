@@ -111,7 +111,12 @@ test("goalkeeper hand control is limited to eight seconds and awards a corner ki
   assert.ok(keeperSave, "goalkeeper save routine must be present");
   assert.match(keeperSave[0], /take\(p,true\)/, "only a genuine goalkeeper hand catch starts the eight-second clock");
   assert.match(source, /take=function\(p,byHand=false\)[\s\S]*?_take\(p,byHand\)/, "stats wrapper must preserve hand-control state");
-  assert.match(source, /if\(Math.random\(\)<0\.35\+0\.4\*st\.def\)\{take\(p\);o\.stun/, "foot-based keeper smother must not start the hand clock");
+  const aiKeeper = source.match(/function aiGK\(p\)\{[\s\S]*?\n\}/);
+  const chargedKeeper = source.match(/function gkStep\(p\)\{[\s\S]*?\n\}/);
+  assert.ok(aiKeeper && chargedKeeper, "both goalkeeper collection paths must be present");
+  assert.match(aiKeeper[0], /take\(p,true\)/, "AI goalkeeper smothers use hand control");
+  assert.match(chargedKeeper[0], /take\(p,true\)/, "manual goalkeeper smothers use hand control");
+  assert.ok(source.includes("if(p.team===0&&!pw&&!stick){take(p);return;}"), "ordinary outfield foot control must not start the hand clock");
   assert.ok(source.includes("b.gkHold>=3"));
   assert.ok(source.includes("spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner')"));
   assert.ok(source.includes("b.gkHoldActive=false"));
