@@ -161,10 +161,19 @@ test("goalkeeper handball boundary is evaluated at the ball contact point", () =
 
 
 test("goalkeeper cannot handle a deliberate teammate back-pass or a direct teammate throw-in", () => {
-  assert.ok(source.includes("gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?(rs&&rs.kind==='throw'?'throw-in':'back-pass'):null)"));
-  assert.ok(source.includes("if(!p.gk||ball.gkNoHands!==p.team)ball.gkNoHands=null"));
-  assert.ok(source.includes("PITCH11Law.goalkeeperIllegalHandlingRestart(insideArea,b.gkNoHands===keeper.team)"));
+  assert.ok(source.includes("gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?p.team:null)") && source.includes("b.gkNoHandsFrom=b.gkNoHands===null?null:p"));
+  assert.ok(source.includes("if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}"));
+  assert.ok(source.includes("PITCH11Law.goalkeeperIllegalHandlingRestart(insideArea,prohibitedPass||secondTouch)"));
   assert.ok(source.includes("handlingRestart==='indirect-free-kick'"));
   assert.ok(source.includes("b.gkNoHands=null"));
-  assert.ok(source.includes("b.gkNoHands=null;clearOff()"));
+  assert.ok(source.includes("b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff()"));
+});
+
+
+test("goalkeeper cannot handle the ball again after releasing it until another player touches it", () => {
+  assert.ok(source.includes("b.gkReleasedBy=p.gk?p:null"));
+  assert.ok(source.includes("if(b.gkReleasedBy&&b.last!==b.gkReleasedBy)b.gkReleasedBy=null"));
+  assert.ok(source.includes("secondTouch=b.gkReleasedBy===keeper"));
+  assert.ok(source.includes("secondTouch?'SECOND TOUCH':'BACK-PASS / THROW-IN'"));
+  assert.ok(source.includes("b.gkReleasedBy=null;b.gkHold=0"));
 });
