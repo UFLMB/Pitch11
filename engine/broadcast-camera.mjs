@@ -17,7 +17,7 @@ const toWorldX = metres => metres - PITCH_HALF_LENGTH;
 export function createBroadcastCamera(camera, { mobile = false } = {}) {
   const state = {
     x: 0,
-    height: 10,
+    height: 13.5,
     sideZ: 45,
     targetX: 0,
     targetZ: 0,
@@ -25,9 +25,9 @@ export function createBroadcastCamera(camera, { mobile = false } = {}) {
   };
 
   // Broad Tele Broadcast framing is necessary from the lower camera lane.
-  camera.fov = mobile ? 66 : 62;
+  camera.fov = 63;
   camera.near = 0.1;
-  camera.far = 320;
+  camera.far = 420;
   camera.position.set(state.x, state.height, state.sideZ);
   camera.lookAt(state.targetX, 0.6, state.targetZ);
   camera.updateProjectionMatrix();
@@ -51,7 +51,7 @@ export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
   // stands, or goal-end structures while play moves along the field.
   state.targetX = damp(state.targetX, desiredX, 2.6, dt);
   state.x = damp(state.x, state.targetX, 3.0, dt);
-  state.height = damp(state.height, 10, 2.0, dt);
+  state.height = damp(state.height, 13.5, 2.0, dt);
   state.sideZ = damp(state.sideZ, 45, 2.0, dt);
   state.targetZ = damp(state.targetZ, 0, 2.0, dt);
 
