@@ -131,6 +131,14 @@
     return 'continue';
   }
 
+  function dogsoOpportunity(state) {
+    const s = state || {};
+    return Number.isFinite(s.distanceToGoal) && s.distanceToGoal > 0 && s.distanceToGoal <= 380 &&
+      Number.isFinite(s.lateralDistance) && s.lateralDistance <= 250 &&
+      Number.isFinite(s.defendersAhead) && s.defendersAhead <= 1 &&
+      s.ballControl === true && s.towardGoal === true;
+  }
+
   function foulCardDecision(state) {
     const s = state || {};
     const dogsoPenaltyException = !!(s.dogso && s.penaltyArea && s.attemptToPlayBall);
@@ -202,5 +210,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
