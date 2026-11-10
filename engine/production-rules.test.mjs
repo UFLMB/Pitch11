@@ -164,6 +164,10 @@ test("extra time permits one additional substitution and one additional opportun
   assert.match(source, /maxWindows=extraTime\?4:3/);
 });
 
+test("a new period starts with a fresh substitution opportunity", () => {
+  assert.match(source, /function nextPeriod\(n\)\{S\.half=n;S\.clock=0;S\.kick=n%2\?0:1;S\.subWindowUsed=\[false,false\];setupKickoff\(S\.kick\);\}/);
+});
+
 test("forfeit winner is retained in cup and league match results", () => {
   assert.match(source, /w=Number\.isInteger\(S\.forfeitTeam\)\?1-S\.forfeitTeam/);
   assert.match(source, /if\(Number\.isInteger\(S\.forfeitTeam\)\)return 1-S\.forfeitTeam/);
