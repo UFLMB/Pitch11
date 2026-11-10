@@ -1,10 +1,11 @@
 /**
- * PITCH 11 broadcast camera — positioned in the open camera gantry gap
- * between the near touchline and the first stand/roof structure.
+ * PITCH 11 broadcast camera — placed in the open camera lane just pitch-side
+ * of the first seating row and underneath the near-side roof canopy.
  *
- * World coordinates: pitch X=-52.5..52.5, Z=-34..34. The near stand
- * starts at Z=47 and its roof starts at Z=44. Keeping the camera at Z=42
- * places it pitch-side of both structures, not above or behind the roof.
+ * Stadium geometry: near stand begins at Z=47; roof spans Z=44..74 and
+ * Y=21.7..23.9. Camera at (Y=10, Z=45) is in front of the stand and below
+ * the canopy, looking inward across the pitch rather than through the roof.
+ * Rendered pitch coordinates: X=-52.5..52.5, Z=-34..34.
  */
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const damp = (current, target, sharpness, dt) =>
@@ -16,16 +17,15 @@ const toWorldX = metres => metres - PITCH_HALF_LENGTH;
 export function createBroadcastCamera(camera, { mobile = false } = {}) {
   const state = {
     x: 0,
-    height: mobile ? 26 : 25,
-    sideZ: 42,
+    height: 10,
+    sideZ: 45,
     targetX: 0,
-    targetZ: -34,
+    targetZ: 0,
     mobile
   };
 
-  // Wider broadcast lens is required to retain both touchlines from this
-  // lower, pitch-side gantry position, especially on landscape phones.
-  camera.fov = mobile ? 56 : 54;
+  // Broad Tele Broadcast framing is necessary from the lower camera lane.
+  camera.fov = mobile ? 66 : 62;
   camera.near = 0.1;
   camera.far = 320;
   camera.position.set(state.x, state.height, state.sideZ);
@@ -47,17 +47,13 @@ export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
   const simTargetX = clamp(ball.x + velocityLead + attackDirection * 1.5, 6, 99);
   const desiredX = clamp(toWorldX(simTargetX), -45, 45);
 
-  // The camera remains on one fixed gantry. Only its along-pitch position
-  // follows play; it never crosses the roof line or swings behind a goal.
-  const desiredHeight = state.mobile ? 26 : 25;
-  const desiredSideZ = 42;
-  const desiredTargetZ = -34;
-
+  // Fixed gantry and pitch-centre aim prevent the camera entering the roof,
+  // stands, or goal-end structures while play moves along the field.
   state.targetX = damp(state.targetX, desiredX, 2.6, dt);
   state.x = damp(state.x, state.targetX, 3.0, dt);
-  state.height = damp(state.height, desiredHeight, 2.0, dt);
-  state.sideZ = damp(state.sideZ, desiredSideZ, 2.0, dt);
-  state.targetZ = damp(state.targetZ, desiredTargetZ, 2.0, dt);
+  state.height = damp(state.height, 10, 2.0, dt);
+  state.sideZ = damp(state.sideZ, 45, 2.0, dt);
+  state.targetZ = damp(state.targetZ, 0, 2.0, dt);
 
   camera.position.set(state.x, state.height, state.sideZ);
   camera.lookAt(state.targetX, 0.6, state.targetZ);
