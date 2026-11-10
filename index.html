@@ -1040,7 +1040,7 @@ function randInjury(){
 /* --- substitutions: five and three windows; optional sixth/fourth in extra time --- */
 function substitutionLimits(){return PITCH11Law.substitutionLimits(S.half,S.ko);}
 function doSub(p,bn){
-  const t=p.team,lim=substitutionLimits(),exempt=S.mode==='half'||S.ret==='half';
+  const t=p.team,lim=substitutionLimits(),exempt=S.mode==='half'||(S.mode==='subs'&&S.ret==='half');
   if(p.out||S.subs[t]>=lim.substitutions||p.gk!==(bn.pos==='GK'))return false;
   if(!exempt&&!S.subWindowActive[t]&&S.subWindows[t]>=lim.windows)return false;
   if(!exempt&&!S.subWindowActive[t]){S.subWindows[t]++;S.subWindowActive[t]=true;}
@@ -1061,7 +1061,7 @@ function aiSubs(t,max,q){                                  // swap injured / tir
   }
 }
 function injured(q){                                       // after the stoppage: sub him, or he plays on limping
-  const t=q.team,lim=substitutionLimits(),exempt=S.mode==='half'||S.ret==='half',windowBlocked=!exempt&&!S.subWindowActive[t]&&S.subWindows[t]>=lim.windows;q.down=false;
+  const t=q.team,lim=substitutionLimits(),exempt=S.mode==='half'||(S.mode==='subs'&&S.ret==='half'),windowBlocked=!exempt&&!S.subWindowActive[t]&&S.subWindows[t]>=lim.windows;q.down=false;
   if(S.subs[t]>=lim.substitutions||windowBlocked||!BENCH[t].length){q.limp=true;return false;}
   if(t===1){aiSubs(1,1,q);return false;}
   S.sel=q;openSubs('whistle');return true;
