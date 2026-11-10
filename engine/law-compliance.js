@@ -63,7 +63,12 @@
     return goalkeeperHoldExpired(seconds) ? 'corner' : 'continue';
   }
 
-  function goalkeeperIllegalHandlingRestart(insidePenaltyArea, prohibitedPass) {\n    if (!insidePenaltyArea) return 'direct-free-kick';\n    return prohibitedPass ? 'indirect-free-kick' : null;\n  }\n\n  function substitutionEligibility(state) {
+  function goalkeeperIllegalHandlingRestart(insidePenaltyArea, prohibitedPass) {
+    if (!insidePenaltyArea) return 'direct-free-kick';
+    return prohibitedPass ? 'indirect-free-kick' : null;
+  }
+
+  function substitutionEligibility(state) {
     const used = Number.isFinite(state.used) ? state.used : 0;
     const windows = Number.isFinite(state.windows) ? state.windows : 0;
     if (used >= 5) return { allowed: false, consumesWindow: false, reason: 'limit' };
