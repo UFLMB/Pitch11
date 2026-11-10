@@ -111,6 +111,8 @@ test("substitutions enforce the total limit and three/four substitution windows"
   assert.match(source, /PITCH11Law\.substitutionLimits\(S\.half,S\.ko\)/);
   assert.match(source, /S\.subWindowActive\[t\]/);
   assert.match(source, /S\.subWindows\[t\]>=lim\.windows/);
+  assert.match(source, /windowBlocked=!exempt&&!S\.subWindowActive\[t\]&&S\.subWindows\[t\]>=lim\.windows/);
+  assert.match(source, /if\(ret!=='whistle'&&ret!=='half'\)S\.subWindowActive=/);
 });
 
 test("the seven-player minimum is enforced after sending-offs and at stoppages", () => {
