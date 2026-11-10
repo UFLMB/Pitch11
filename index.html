@@ -4168,7 +4168,7 @@ function endScreen(full){
   mtHead(full?(forfeited?'MATCH ABANDONED':'FULL TIME'):S.brk.title);
   glass(W*.1,H*.16,W*.8,H*.47,H*.05,{top:'rgba(255,255,255,.14)',bot:'rgba(255,255,255,.05)'});
   fit(KIT[0].name,W*.27,H*.255,W*.3,H*.05);fit(KIT[1].name,W*.73,H*.255,W*.3,H*.05);txt(sa+' - '+sb,W/2,H*.255,H*.12,'#fff',900);
-    fit(full?(forfeited?KIT[win].name+' WIN BY FORFEIT':(so?'Penalties '+so[0]+' - '+so[1]+'   \\u00b7   ':'')+(win<0?'DRAW':KIT[win].name+' WIN')):'Substitutions used '+S.subs[0]+'/5',W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
+    fit(full?(forfeited?KIT[win].name+' WIN BY FORFEIT':(so?'Penalties '+so[0]+' - '+so[1]+'   ·   ':'')+(win<0?'DRAW':KIT[win].name+' WIN')):'Substitutions used '+S.subs[0]+'/5',W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
   const tp=(ST.pos[0]+ST.pos[1])||1,a=Math.round(ST.pos[0]/tp*100);
   [['POSSESSION',a,100-a,'%'],['SHOTS',ST.sh[0],ST.sh[1],''],['ON TARGET',ST.sot[0],ST.sot[1],'']].forEach((r,i)=>{const y=H*(.43+i*.062),tot=r[1]+r[2]||1;
     txt(r[1]+r[3],W*.2,y,H*.04,'#fff',800);txt(r[2]+r[3],W*.8,y,H*.04,'#fff',800);txt(r[0],W/2,y,H*.028,'#9fb0c0',700);
