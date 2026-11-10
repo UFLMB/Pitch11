@@ -254,7 +254,7 @@ const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=fa
 function clearIndirect(){ball.ind=false;ball.indBy=null;}
 function clearOffside(){for(const q of P)q.off=false;}
 function clearOff(){clearOffside();clearIndirect();}
-function take(p){const keepIndirect=ball.ind&&ball.indBy===p;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!p.gk;ball.gkHoldWarned=false;p.poss=0;p.force=false;clearOffside();if(!keepIndirect)clearIndirect();}
+function take(p){const keepIndirect=ball.ind&&ball.indBy===p;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!p.gk;ball.gkHoldWarned=false;p.poss=0;p.force=false;if(!keepIndirect)clearIndirect();markOff(p);}
 function markOff(p){                                       // freeze the live second-last-opponent line at the moment of the kick
   clearOffside();const t=p.team,d=dirOf(t),line=PITCH11Law.offsideLine(P,t,d,ball.x*d,(d>0?PX1:PX0)*d);
   for(let i=t*11;i<t*11+11;i++){const q=P[i];if(q!==p&&!q.out&&q.x*d>line&&(q.x-CX)*d>0)q.off=true;}
