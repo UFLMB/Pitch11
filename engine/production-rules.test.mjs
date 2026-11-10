@@ -150,3 +150,10 @@ test("goalkeeper handball outside the penalty area awards a direct free kick at 
   assert.ok(source.includes("whistleStop(1.4,'HANDBALL','Goalkeeper handled outside the penalty area',()=>freeKick(1-keeper.team,x,y,false))"));
   assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
 });
+
+
+test("goalkeeper handball boundary is evaluated at the ball contact point", () => {
+  assert.match(source, /const insideArea=\(b\.x-gx\)\*d>=0/);
+  assert.doesNotMatch(source, /insideArea=\(keeper\.x-gx\)/);
+  assert.ok(source.includes("const x=b.x,y=b.y"));
+});
