@@ -4862,8 +4862,13 @@ kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
 const _gkReactPenaltyLine=gkReact;
 gkReact=function(p){
   const previousLast=ball.last;
+  const d=ball.penaltyTeam==null?0:dirOf(ball.penaltyTeam),gx=d>0?PX1:PX0;
+  const onTarget=!!(ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
+    PITCH11Law.penaltyShotOnTarget({x:ball.x,y:ball.y,z:ball.z,vx:ball.vx,vy:ball.vy,vz:ball.vz,
+      goalLine:gx,attackDirection:d,centerY:CY,goalHalfWidth:GOALH,goalHeight:GOALZ,
+      radius:BR,gravity:BALL_GRAV,maxTime:2}));
   _gkReactPenaltyLine(p);
-  if(ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
+  if(onTarget&&ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
      (ball.owner===p||(ball.last===p&&previousLast!==p)))ball.penaltyKeeperSaved=true;
 };
 const _outOfPlayPenaltyLine=outOfPlay;
