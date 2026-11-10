@@ -422,12 +422,12 @@ test("defensive block narrows in its own half and steps out when play moves away
 
 test("forwards make a measured support run as possession advances", () => {
   const advanced = new FootballSimulation({ seed: 71 });
-  const static = new FootballSimulation({ seed: 71 });
+  const slowerBuild = new FootballSimulation({ seed: 71 });
   advanced.players[9].x = 82;
-  static.players[9].x = 20;
-  advanced.players[9].y = static.players[9].y = 34;
-  advanced.ball.owner = static.ball.owner = 9;
+  slowerBuild.players[9].x = 20;
+  advanced.players[9].y = slowerBuild.players[9].y = 34;
+  advanced.ball.owner = slowerBuild.ball.owner = 9;
   advanced.updateAI(FIXED_DT);
-  static.updateAI(FIXED_DT);
-  assert.ok(advanced.players[10].targetX > static.players[10].targetX + 1);
+  slowerBuild.updateAI(FIXED_DT);
+  assert.ok(advanced.players[10].targetX > slowerBuild.players[10].targetX + 1);
 });
