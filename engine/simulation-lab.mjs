@@ -229,11 +229,11 @@ const shortsMats = [mat(0xe8edf2, .7), mat(0x1b2027, .7)];
 const keeperMats = [mat(0xf1c72d, .55), mat(0x49b96e, .55)];
 const sockMat = [mat(0xe9edf2), mat(0x20242a)];
 const playerSkinMats = [0xb98262, 0x8e5b43, 0xd5a47f, 0x704936].map(color => mat(color, .88));
-const playerCollarMat = playerCollarMat;
-const playerBadgeMat = playerBadgeMat;
-const playerHairMat = playerHairMat;
-const playerBootMat = playerBootMat;
-const playerSoleMat = playerSoleMat;
+const playerCollarMat = mat(0xe7e9df, .72);
+const playerBadgeMat = mat(0xe4c36c, .55, .18);
+const playerHairMat = mat(0x241d19, .96);
+const playerBootMat = mat(0x111820, .48);
+const playerSoleMat = mat(0x303840, .62);
 function createPlayerMesh(p) {
   const group = new THREE.Group();
   const kit = p.role === "GK" ? keeperMats[p.team] : kitMats[p.team];
@@ -244,18 +244,18 @@ function createPlayerMesh(p) {
 
   const shirt = new THREE.Mesh(new THREE.CapsuleGeometry(.29, .58, 4, 9), kit);
   shirt.position.y = .12; torso.add(shirt);
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(.105, .025, 5, 14), mat(0xe7e9df, .72));
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(.105, .025, 5, 14), playerCollarMat);
   collar.position.set(0, .39, 0); collar.rotation.x = Math.PI / 2; torso.add(collar);
   const chestStripe = new THREE.Mesh(new THREE.BoxGeometry(.055, .42, .018), mat(0xe8edf2, .62));
   chestStripe.position.set(.12, .1, -.285); torso.add(chestStripe);
-  const badge = new THREE.Mesh(new THREE.BoxGeometry(.09, .11, .025), mat(0xe4c36c, .55, .18));
+  const badge = new THREE.Mesh(new THREE.BoxGeometry(.09, .11, .025), playerBadgeMat);
   badge.position.set(-.16, .24, -.29); torso.add(badge);
 
   const neck = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, .15, 8), skin);
   neck.position.y = .48; torso.add(neck);
   const head = new THREE.Mesh(new THREE.SphereGeometry(.19, 14, 12), skin);
   head.position.y = .72; torso.add(head);
-  const hair = new THREE.Mesh(new THREE.SphereGeometry(.194, 12, 8, 0, Math.PI * 2, 0, Math.PI * .43), mat(0x241d19, .96));
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(.194, 12, 8, 0, Math.PI * 2, 0, Math.PI * .43), playerHairMat);
   hair.position.y = .76; torso.add(hair);
 
   const shorts = new THREE.Mesh(new THREE.BoxGeometry(.49, .27, .34), shortsMats[p.team]);
@@ -271,9 +271,9 @@ function createPlayerMesh(p) {
     knee.position.y = -.34; leg.add(knee);
     const shin = new THREE.Mesh(new THREE.CapsuleGeometry(.073, .27, 3, 7), sockMat[p.team]);
     shin.position.y = -.15; knee.add(shin);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(.145, .105, .29), darkBoot);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(.145, .105, .29), playerBootMat);
     boot.position.set(0, -.31, -.075); knee.add(boot);
-    const sole = new THREE.Mesh(new THREE.BoxGeometry(.15, .025, .29), mat(0x303840, .62));
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(.15, .025, .29), playerSoleMat);
     sole.position.set(0, -.36, -.075); knee.add(sole);
     legs.push(leg); knees.push(knee);
 
