@@ -79,7 +79,7 @@ test('Law 3 requires at least seven eligible players; dismissed players do not c
 
 
 test('substitution eligibility enforces five players and three stoppage opportunities', () => {
-  const check = law.substitutionEligibility;
+  const check = state => ({ ...law.substitutionEligibility(state) });
   assert.deepEqual(check({ used: 0, windows: 0, inStoppage: false, halftime: false, windowUsed: false }),
     { allowed: false, consumesWindow: false, reason: 'stoppage' });
   assert.deepEqual(check({ used: 0, windows: 0, inStoppage: true, halftime: false, windowUsed: false }),
