@@ -42,6 +42,7 @@ The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, nam
 - Goalpost and crossbar collision response
 - Goal-plane detection and kickoff reset
 - First-half, second-half and full-time phases with a pausable match clock
+- Seven-player benches, five-substitution limit, stoppage-only substitutions and possession transfer
 - Detached snapshots and event output
 - A separate adapter mapping metres to the existing PITCH 11 Canvas world (1 m = 10 legacy units)
 - Camera-relative input conversion and render-frame data mapping
@@ -71,4 +72,4 @@ The same test command runs in GitHub Actions on pushes to `engine-adaptation` an
 
 ## Not production-ready yet
 
-Advantage, substitutions, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. `callFoul(tackler, victim, { card })` is available to the referee/rules layer. Advantage and automatic disciplinary thresholds remain incomplete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
+Advantage, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. `callFoul(tackler, victim, { card })` is available to the referee/rules layer. `substitute(team, playerOffId, benchIndex)` allows up to five changes during a stoppage. Advantage and automatic disciplinary thresholds remain incomplete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
