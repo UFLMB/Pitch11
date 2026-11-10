@@ -2483,7 +2483,7 @@ function slideHit(p,sd){
         if(win){
           sd.res=1;sd.rec=K.recHit;o.stun=0.6;o.kcd=0.7;o.vx*=0.2;o.vy*=0.2;D9.n.sw[p.team]++;act8('slide','win');popD(p,'SLIDE TACKLE');
           if(Math.random()<0.62)take(p);
-          else{if(p===b.dbl){secondTouch(p);return;}b.owner=null;b.last=p;b.receiver=null;const a=sd.a+rnd(-.5,.5),v=rnd(130,210);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;if(p!==b.indBy)clearIndirect();}
+          else{if(p===b.dbl){secondTouch(p);return;}b.owner=null;b.last=p;b.receiver=null;const a=sd.a+rnd(-.5,.5),v=rnd(130,210);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;if(p!==b.dbl)b.dbl=null;if(p!==b.indBy)clearIndirect();}
         }else{sd.res=4;sd.rec=K.recMiss+0.45*(1-tq);D9.n.sm[p.team]++;act8('slide','miss');popD(p,'MISSED');}   // he rode it: long recovery
         return;
       }
@@ -2492,7 +2492,7 @@ function slideHit(p,sd){
     if(p===b.dbl){secondTouch(p);return;}
     sd.res=1;sd.rec=K.recHit;act8('slide','ball');                               // loose ball: block or win it
     if(Math.hypot(b.vx,b.vy)<350&&Math.random()<0.7)take(p);
-    else{b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;if(p!==b.indBy)clearIndirect();}
+    else{b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;if(p!==b.dbl)b.dbl=null;if(p!==b.indBy)clearIndirect();}
     return;
   }
   for(let i=(1-p.team)*11+1;i<(1-p.team)*11+11;i++){        // took the man, not the ball
