@@ -370,3 +370,36 @@ test("team tactics are independently configurable and bounded", () => {
   assert.equal(sim.setTactics(2, { width: 1 }), false);
   assert.deepEqual(sim.getSnapshot().tactics, sim.tactics);
 });
+
+test("substitution replaces a selected player during a stoppage", () => {
+  const sim = new FootballSimulation();
+  sim.phase = "halfTime";
+  const outgoing = sim.players[9];
+  assert.equal(sim.substitute(0, outgoing.id, 5), true);
+  const incoming = sim.players[22];
+  assert.equal(outgoing.out, true);
+  assert.equal(incoming.out, false);
+  assert.equal(incoming.team, 0);
+  assert.equal(sim.selectedPlayer, incoming.id);
+  assert.equal(sim.substitutionsUsed[0], 1);
+  assert.equal(sim.getSnapshot().players.length, 23);
+});
+
+test("substitution transfers possession from the outgoing player", () => {
+  const sim = new FootballSimulation();
+  sim.phase = "halfTime";
+  const outgoing = sim.players[9];
+  sim.ball.owner = outgoing.id; outgoing.hasBall = true;
+  assert.equal(sim.substitute(0, outgoing.id, 5), true);
+  assert.equal(sim.ball.owner, 22);
+  assert.equal(sim.players[22].hasBall, true);
+});
+
+test("five-substitution limit is enforced and live substitutions are blocked", () => {
+  const sim = new FootballSimulation();
+  assert.equal(sim.substitute(0, 1, 0), false);
+  sim.phase = "halfTime";
+  for (let i = 1; i <= 5; i++) assert.equal(sim.substitute(0, i, 0), true);
+  assert.equal(sim.substitutionsUsed[0], 5);
+  assert.equal(sim.substitute(0, 6, 0), false);
+});
