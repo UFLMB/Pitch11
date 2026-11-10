@@ -151,7 +151,8 @@ export class FootballSimulation {
       } else if (c.type === "switch") {
         const candidates = this.players.filter(q => q.team === this.humanTeam && q.role !== "GK");
         candidates.sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
-        if (candidates[0]) this.selectPlayer(candidates[0].id);
+        const next = candidates.find(q => q.id !== this.selectedPlayer) || candidates[0];
+        if (next) this.selectPlayer(next.id);
       } else if (c.type === "pass" && p.team === this.humanTeam && this.ball.owner === p.id) {
         this.passBall(p, c.targetId);
       } else if (c.type === "shoot" && p.team === this.humanTeam && this.ball.owner === p.id) {
