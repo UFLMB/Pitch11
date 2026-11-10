@@ -233,3 +233,27 @@ test("crossbar collision changes the ball trajectory", () => {
   assert.ok(sim.ball.vx > 0);
   assert.ok(sim.getSnapshot().events.some(e => e.type === "crossbarHit"));
 });
+
+test("corner restart keeps the ball inside the pitch", () => {
+  const sim = new FootballSimulation();
+  sim.awardRestart(0, "corner", 105, 0);
+  sim.command({ type: "restart" });
+  sim.update(FIXED_DT);
+  assert.equal(sim.phase, "playing");
+  assert.ok(sim.ball.x > 0 && sim.ball.x < 105);
+  assert.ok(sim.ball.y > 0 && sim.ball.y < 68);
+});
+
+test("direct reception from a corner is exempt from offside", () => {
+  const sim = new FootballSimulation();
+  sim.awardRestart(0, "corner", 105, 0);
+  sim.takeRestart();
+  const taker = sim.players[sim.ball.owner];
+  const receiver = sim.players[9];
+  receiver.x = 90; receiver.y = 34;
+  sim.ball.x = taker.x; sim.ball.y = taker.y;
+  assert.equal(sim.ball.offsideExempt, true);
+  sim.passBall(taker, receiver.id);
+  assert.equal(sim.ball.offsidePlayerId, -1);
+  assert.equal(sim.ball.offsideExempt, false);
+});
