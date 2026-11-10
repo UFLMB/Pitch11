@@ -54,6 +54,14 @@
     return { x: inPenaltyArea ? state.goalLine + state.direction * (state.penaltyDepth + state.clearance) : x, y };
   }
 
+  function foulCardDecision(state) {
+    // Law 12: only reckless challenges require a caution; serious foul play requires
+    // an explicit excessive-force / endangering-safety assessment by the event caller.
+    if (state && state.seriousFoulPlay) return 2;
+    if (state && state.reckless) return state.alreadyBooked ? 3 : 1;
+    return 0;
+  }
+
   function goalkeeperHoldExpired(seconds) {
     return Number.isFinite(seconds) && seconds >= 8;
   }
@@ -114,5 +122,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
