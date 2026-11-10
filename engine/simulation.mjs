@@ -29,7 +29,7 @@ function makePlayer(team, slot) {
     id: team * 11 + slot, team, slot, role, x, y, vx: 0, vy: 0,
     homeX: x, homeY: y, attack, facing: attack > 0 ? 0 : Math.PI,
     stamina: 1, stats: { ...DEFAULT_STATS }, cooldown: 0, action: "idle",
-    selected: false, hasBall: false, targetX: x, targetY: y, intent: "shape"
+    selected: false, hasBall: false, out: false, tackleUntil: 0, tackleCooldown: 0, targetX: x, targetY: y, intent: "shape"
   };
 }
 function makeBall() {
@@ -37,7 +37,7 @@ function makeBall() {
 }
 function copyPlayer(p) {
   return { id:p.id,team:p.team,slot:p.slot,role:p.role,x:p.x,y:p.y,vx:p.vx,vy:p.vy,
-    facing:p.facing,stamina:p.stamina,hasBall:p.hasBall,selected:p.selected,action:p.action,intent:p.intent };
+    facing:p.facing,stamina:p.stamina,hasBall:p.hasBall,selected:p.selected,action:p.action,intent:p.intent,out:p.out };
 }
 
 export class FootballSimulation {
@@ -97,7 +97,7 @@ export class FootballSimulation {
   }
   selectPlayer(playerId) {
     const p = this.players[playerId];
-    if (!p || p.team !== this.humanTeam) return false;
+    if (!p || p.out || p.team !== this.humanTeam) return false;
     this.players[this.selectedPlayer].selected = false;
     this.selectedPlayer = playerId;
     p.selected = true;
@@ -124,12 +124,13 @@ export class FootballSimulation {
     this.tick++;
     this.time += dt;
     this.events.length = 0;
-    for (const p of this.players) p.cooldown = Math.max(0, p.cooldown - dt);
+    for (const p of this.players) { p.cooldown = Math.max(0, p.cooldown - dt); p.tackleCooldown = Math.max(0, p.tackleCooldown - dt); }
     this.applyCommands();
     if (this.phase !== "playing") return;
     this.matchSeconds += dt * this.matchTimeScale;
     this.updateAI(dt);
     this.movePlayers(dt);
+    this.resolvePlayerSeparation();
     this.resolveTackles();
     this.resolveGoalkeeperSaves();
     this.updateBall(dt);
@@ -177,6 +178,7 @@ export class FootballSimulation {
   updateAI(dt) {
     const owner = this.players[this.ball.owner];
     for (const p of this.players) {
+      if (p.out) continue;
       if (p.id === this.selectedPlayer && p.team === this.humanTeam) {
         p.intent = "manual";
         continue;
@@ -186,6 +188,11 @@ export class FootballSimulation {
         continue;
       }
       const attacking = owner && owner.team === p.team;
+      if (owner && owner.team !== p.team && p.role !== "GK" && dist(p, owner) < 1.15 && p.tackleCooldown <= 0) {
+        p.tackleUntil = this.time + .12;
+        p.tackleCooldown = 1.1;
+        p.action = "press-tackle";
+      }
       const nearestOpponent = this.players.filter(q => q.team !== p.team).sort((a,b) => dist(a,p)-dist(b,p))[0];
       const ballDistance = dist(p, this.ball);
       if (!attacking && (!owner || owner.team !== p.team) && ballDistance < 24 && p.role !== "GK") {
@@ -253,6 +260,7 @@ export class FootballSimulation {
   }
   movePlayers(dt) {
     for (const p of this.players) {
+      if (p.out) { p.vx = 0; p.vy = 0; continue; }
       const manual = p.id === this.selectedPlayer && p.team === this.humanTeam;
       let tx=p.targetX, ty=p.targetY, sprint=false;
       if (manual) {
@@ -281,7 +289,7 @@ export class FootballSimulation {
   passBall(p,targetId) {
     let target=this.players[targetId];
     if (!target || target.team!==p.team || target.id===p.id) {
-      const candidates=this.players.filter(q=>q.team===p.team&&q.id!==p.id&&q.role!=="GK")
+      const candidates=this.players.filter(q=>q.team===p.team&&!q.out&&q.id!==p.id&&q.role!=="GK")
         .sort((a,b)=> (p.attack*(b.x-p.x)-Math.abs(b.y-p.y)*.2) - (p.attack*(a.x-p.x)-Math.abs(a.y-p.y)*.2));
       target=candidates[0];
     }
@@ -308,11 +316,31 @@ export class FootballSimulation {
     this.ball.vx=vx; this.ball.vy=vy; this.ball.vz=vz;
     this.ball.ignorePlayerId=p.id; this.ball.ignoreUntil=this.time+.22;
   }
+  resolvePlayerSeparation() {
+    const minDistance = .62;
+    for (let i = 0; i < this.players.length; i++) {
+      const a = this.players[i];
+      if (a.out) continue;
+      for (let j = i + 1; j < this.players.length; j++) {
+        const b = this.players[j];
+        if (b.out) continue;
+        const dx = b.x - a.x, dy = b.y - a.y, d = hypot(dx, dy);
+        if (d >= minDistance) continue;
+        const nx = d > 1e-8 ? dx / d : (a.id < b.id ? 1 : -1);
+        const ny = d > 1e-8 ? dy / d : 0;
+        const push = (minDistance - d) * .5;
+        a.x = clamp(a.x - nx * push, .5, 104.5);
+        a.y = clamp(a.y - ny * push, .5, 67.5);
+        b.x = clamp(b.x + nx * push, .5, 104.5);
+        b.y = clamp(b.y + ny * push, .5, 67.5);
+      }
+    }
+  }
   resolveTackles() {
     const owner = this.players[this.ball.owner];
     if (!owner) return;
     for (const tackler of this.players) {
-      if (tackler.team === owner.team || (tackler.tackleUntil || 0) < this.time) continue;
+      if (tackler.out || tackler.team === owner.team || (tackler.tackleUntil || 0) < this.time) continue;
       const separation = dist(tackler, owner);
       if (separation > 1.45) continue;
       const chance = separation < .65 ? 1 : clamp(.28 + tackler.stats.defend * .42 + tackler.stats.strength * .22, .28, .92);
@@ -380,7 +408,7 @@ export class FootballSimulation {
   resolvePlayerBallContacts() {
     if(this.ball.owner>=0)return;
     const b=this.ball;
-    const nearby=this.players.filter(p=>p.role!=="GK"||b.x<12||b.x>93)
+    const nearby=this.players.filter(p=>!p.out&&(p.role!=="GK"||b.x<12||b.x>93))
       .filter(p=>p.id!==b.ignorePlayerId||this.time>=b.ignoreUntil)
       .map(p=>({p,d:dist(p,b)})).filter(v=>v.d<1.15&&b.z<1.5)
       .sort((a,c)=>a.d-c.d);
@@ -458,7 +486,7 @@ export class FootballSimulation {
   takeRestart() {
     if (this.phase !== "restart" || !this.restart) return false;
     const r = this.restart;
-    const candidates = this.players.filter(p => p.team === r.team && p.role !== "GK");
+    const candidates = this.players.filter(p => p.team === r.team && !p.out && p.role !== "GK");
     candidates.sort((a,b) => dist(a,r)-dist(b,r));
     const taker = candidates[0];
     if (!taker) return false;
