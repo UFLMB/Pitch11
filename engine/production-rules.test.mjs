@@ -206,3 +206,11 @@ test("Law 15 throw-ins cannot be taken with a foot pass or shot input", () => {
   assert.match(source, /I\.shoot=I\.shootUp=I\.pass=I\.thru=I\.lob=I\.skill=I\.sw=I\.tackle=I\.swp=false/);
   assert.match(source, /_humanThrowLaw\(p\)/);
 });
+
+test("VAR checks are event-driven for goals, penalties, red cards and immediate corners", () => {
+  assert.match(source, /function varCheck\(category,evidence\)/);
+  assert.match(source, /varCheck\('goal',evidence\)/);
+  assert.match(source, /varCheck\('penalty',evidence\)/);
+  assert.match(source, /varCheck\('red-card',p&&p\.varIncident\|\|\{\}\)/);
+  assert.match(source, /varCheck\('corner',evidence\)/);
+});
