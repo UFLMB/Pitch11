@@ -481,7 +481,13 @@ function touches(){                                        // a free ball is pic
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9;
   for(const p of P){
-    if(p.gk||p.out||p.kcd>0||p.stun>0||p===b.dbl)continue;
+    if(p.out)continue;
+    if(p===b.dbl){
+      const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
+      if(p.kcd<=0&&p.stun<=0&&d<r){secondTouch(p);return;}
+      continue;
+    }
+    if(p.gk||p.kcd>0||p.stun>0)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
