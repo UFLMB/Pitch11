@@ -4376,7 +4376,7 @@ function CUT_ICO(ic,ix,iy,ph){ctx.save();ctx.translate(ix,iy);const s=ph*.26;ctx
 /* --- cameras (fcam = same projection the set-piece and celebration cameras use) --- */
 const camKO=u=>{const e=u*u*(3-2*u),d0=dirOf(0);return fcam(CX-d0*(700-380*e),CY+160*(1-e),CX,CY,250-130*e,0,.9,1.1);};
 const camFoul=u=>{const sg=SC.y<CY?-1:1,dd=dirOf(0);return fcam(SC.x-dd*(170-45*u),SC.y+sg*(115-20*u),SC.x,SC.y,62,6,1.45,1);};
-const camPen=u=>{const sg=SC.y<CY?-1:1;return fcam(SC.gx-SC.dd*(130-30*u),CY+sg*(250-30*u),SC.gx-SC.dd*55,CY,55,8,1.45,1);};
+const camPen=u=>{const sg=SC.y<CY?-1:1;return fcam(SC.gx-SC.dd*(210-35*u),CY+sg*(300-35*u),SC.gx-SC.dd*90,CY,90,8,1.0,1);};
 const camOff=u=>{const sg=SC.y<CY?-1:1,dd=dirOf(0);return fcam(SC.x-dd*(200-60*u),SC.y+sg*130,SC.x,(SC.y+CY)/2,90,0,1.25,1);};
 const camInj=u=>{const q=SC.q,a=SC.a0+u*.9;return fcam(q.x+Math.cos(a)*135,q.y+Math.sin(a)*135,q.x,q.y,58,4,1.7,1);};
 const camHT=u=>fcam(CX-220+440*u,PY0-110,CX,PY1-40,210,0,.95,1.05);
@@ -4465,7 +4465,7 @@ const ez27=u=>u*u*(3-2*u),lp27=(a,b,t)=>a+(b-a)*t;
 const camThrow=u=>{const d=SC.dd,e=ez27(u);return fcam(SC.x-d*(175-55*e),SC.y+(CY-SC.y)*.4,SC.x+d*160,CY,52+14*e,6,1.2,1);};
 const camGKick=u=>{const d=SC.dd,e=ez27(u);return fcam(SC.x-d*(80+70*e),CY+(SC.y-CY)*.2+40-25*e,SC.x+d*270,CY,34+30*e,8,1.15,1);};
 const camPen2=u=>{const e=ez27(u),d=SC.dd,gx=SC.gx;
-  return fcam(lp27(gx+d*52,SC.x-d*135,e),lp27(CY+34,CY+48,e),lp27(SC.x,gx-d*18,e),CY,lp27(15,50,e),lp27(12,8,e),lp27(1.5,1.3,e),1);};   // from behind the keeper's net, sweeping back over the taker's shoulder
+  return fcam(lp27(gx+d*190,gx+d*165,e),lp27(CY+70,CY+50,e),lp27(SC.x-d*35,gx-d*75,e),CY,lp27(85,75,e),lp27(10,8,e),lp27(.95,.9,e),1);};   // from behind the keeper's net, sweeping back over the taker's shoulder
 const camCard=u=>{const a=SC.a0+ez27(u)*.7,r=92-22*u;return fcam(SC.cx+Math.cos(a)*r,SC.cy+Math.sin(a)*r,SC.cx,SC.cy,25,15,2.3,1);};
 function mvCard(){for(let i=0;i<22;i++){const p=P[i];if(p.out||p.gk||p===SC.q)continue;const h=SC.h[i];if(Math.hypot(h[0]-SC.cx,h[1]-SC.cy)>150)continue;   // the others step back into a loose ring and watch
   const a=Math.atan2(h[1]-SC.cy,h[0]-SC.cx),r=44+(i%4)*8;scWalk(p,SC.cx+Math.cos(a)*r,SC.cy+Math.sin(a)*r,30,SC.cx,SC.cy);}
