@@ -4446,7 +4446,7 @@ function mvHT(){for(let i=0;i<22;i++){const p=P[i];if(p.out)continue;const k=i%1
   const tx=CX+(tm?16:-16)+((k%3)-1)*5,ty=PY1+46+(k>>2)*6,sp=clamp(Math.hypot(tx-h[0],ty-h[1])/Math.max(.5,SC.d-dl-.5),40,90);
   scWalk(p,tx,ty,sp,CX,PY1+60);}}
 /* --- stage 26b: corner, free kick, restarts, full-time celebration --- */
-function winner26(){const a=S.score[0],b=S.score[1];if(a!==b)return a>b?0:1;if(S.so){const x=S.so.k[0].filter(Boolean).length,y=S.so.k[1].filter(Boolean).length;if(x!==y)return x>y?0:1;}return -1;}
+function winner26(){if(S.abandoned!==null)return 1-S.abandoned;const a=S.score[0],b=S.score[1];if(a!==b)return a>b?0:1;if(S.so){const x=S.so.k[0].filter(Boolean).length,y=S.so.k[1].filter(Boolean).length;if(x!==y)return x>y?0:1;}return -1;}
 const camCorner=u=>{const e=u*u*(3-2*u),tx=SC.gx-SC.dd*70,ty=CY,dx=tx-SC.x,dy=ty-SC.y,m=Math.hypot(dx,dy)||1,k=200-80*e;return fcam(SC.x-dx/m*k,SC.y-dy/m*k,tx,ty,105-45*e,0,1.0,1.1);};
 const camFK=u=>{const dx=SC.gx-SC.x,dy=CY-SC.y,m=Math.hypot(dx,dy)||1,k=160-45*u;return fcam(SC.x-dx/m*k-dy/m*40,SC.y-dy/m*k+dx/m*40,SC.gx,CY,55,8,1.0,1.05);};
 const camFTS=u=>{const a=.4+u*1.1;return fcam(CX+Math.cos(a)*128,CY+Math.sin(a)*128,CX,CY,30,5,1.85,1);};
