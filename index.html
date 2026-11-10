@@ -840,7 +840,7 @@ function setupKickoff(team){
   S.mode='kickoff';S.t=0;
 }
 function newMatch(){
-  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;
+  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;
   applyTeam(0,G.club);applyTeam(1,M.opp);setupKickoff(0);
 }
 function nextPeriod(n){S.half=n;S.clock=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
@@ -998,6 +998,13 @@ function foul(p,o,behind){
   const hurt=Math.random()<0.12?o:null,dt=dirOf(t),prog=((x-(dt>0?PX0:PX1))*dt)/PW;
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
+  // IFAB Law 3: play cannot continue once a team has fewer than seven players.
+  if(card>1&&!PITCH11Law.hasMinimumPlayers(P,p.team,7)){
+    S.forfeitTeam=p.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
+    for(const q of P){q.ix=q.iy=0;q.sp=false;}
+    msg('MATCH ABANDONED',KIT[p.team].name+' has fewer than seven players',3);
+    return;
+  }
   o.stun=0.5;o.kcd=0.6;
   if(!pen&&!hurt&&card<2&&prog>0.45){S.adv={team:t,t:2.5,fn};msg('ADVANTAGE','',1.3);}   // play on if the fouled side is attacking
   else{whistleStop(hurt?3:1.4,pen?'PENALTY':'FOUL',tag(p),fn,hurt);if(hurt)msg('INJURY',tag(hurt)+' is down',3);}
@@ -4157,11 +4164,11 @@ drawSubs=function(){
 };
 function endScreen(full){
   ctx.fillStyle='rgba(4,8,16,.74)';ctx.fillRect(0,0,W,H);
-  const sa=S.score[0],sb=S.score[1],so=S.so?[S.so.k[0].filter(Boolean).length,S.so.k[1].filter(Boolean).length]:null,win=sa!==sb?(sa>sb?0:1):so?(so[0]>so[1]?0:1):-1;
-  mtHead(full?'FULL TIME':S.brk.title);
+  const sa=S.score[0],sb=S.score[1],so=S.so?[S.so.k[0].filter(Boolean).length,S.so.k[1].filter(Boolean).length]:null,forfeited=full&&Number.isInteger(S.forfeitTeam),win=forfeited?1-S.forfeitTeam:sa!==sb?(sa>sb?0:1):so?(so[0]>so[1]?0:1):-1;
+  mtHead(full?(forfeited?'MATCH ABANDONED':'FULL TIME'):S.brk.title);
   glass(W*.1,H*.16,W*.8,H*.47,H*.05,{top:'rgba(255,255,255,.14)',bot:'rgba(255,255,255,.05)'});
   fit(KIT[0].name,W*.27,H*.255,W*.3,H*.05);fit(KIT[1].name,W*.73,H*.255,W*.3,H*.05);txt(sa+' - '+sb,W/2,H*.255,H*.12,'#fff',900);
-  fit(full?(so?'Penalties '+so[0]+' - '+so[1]+'   \u00b7   ':'')+(win<0?'DRAW':KIT[win].name+' WIN'):'Substitutions used '+S.subs[0]+'/5',W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
+    fit(full?(forfeited?KIT[win].name+' WIN BY FORFEIT':(so?'Penalties '+so[0]+' - '+so[1]+'   \\u00b7   ':'')+(win<0?'DRAW':KIT[win].name+' WIN')):'Substitutions used '+S.subs[0]+'/5',W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
   const tp=(ST.pos[0]+ST.pos[1])||1,a=Math.round(ST.pos[0]/tp*100);
   [['POSSESSION',a,100-a,'%'],['SHOTS',ST.sh[0],ST.sh[1],''],['ON TARGET',ST.sot[0],ST.sot[1],'']].forEach((r,i)=>{const y=H*(.43+i*.062),tot=r[1]+r[2]||1;
     txt(r[1]+r[3],W*.2,y,H*.04,'#fff',800);txt(r[2]+r[3],W*.8,y,H*.04,'#fff',800);txt(r[0],W/2,y,H*.028,'#9fb0c0',700);
