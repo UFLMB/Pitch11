@@ -12,8 +12,8 @@ const CLIP_ALIASES = Object.freeze({
   getUp: ["getup", "standup", "recover"],
   celebrate: ["celebrate", "celebration"],
   keeperSet: ["gkset", "keeperset", "goalkeeperset"],
-  keeperDiveLeft: ["gkdivleft", "keeperdiveleft"],
-  keeperDiveRight: ["gkdivright", "keeperdiveright"],
+  keeperDiveLeft: ["gkdiveleft", "gkdivleft", "keeperdiveleft"],
+  keeperDiveRight: ["gkdiveright", "gkdivright", "keeperdiveright"],
   keeperCatch: ["gkcatch", "keepercatch"],
   keeperParry: ["gkparry", "keeperparry"]
 });
