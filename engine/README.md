@@ -26,7 +26,8 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - Deterministic seeded pseudo-random decisions
 - Fixed-step player movement and basic team/player AI
 - Possession, dribbling intent, passing and shooting
-- Ball gravity, air drag, ground friction and bounce
+- League-Soccer-derived ball gravity, air drag, ground friction, bounce, wind and wet-pitch behavior
+- Goalpost and crossbar collision response
 - Basic goalkeeper positioning and ball claims
 - Contested tackle resolution
 - Goal-plane detection and kickoff reset
@@ -48,7 +49,7 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 Run locally with Node.js 22 or later:
 
 ```sh
-node --test engine/simulation.test.mjs
+node --test engine/*.test.mjs
 ```
 
 The same test command runs in GitHub Actions on pushes to `engine-adaptation` and pull requests targeting `main`.
