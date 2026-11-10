@@ -34,6 +34,10 @@
     return 'live';
   }
 
+  function goalkeeperHoldExpired(seconds) {
+    return Number.isFinite(seconds) && seconds >= 8;
+  }
+
   function substitutionEligibility(state) {
     const used = Number.isFinite(state.used) ? state.used : 0;
     const windows = Number.isFinite(state.windows) ? state.windows : 0;
@@ -76,5 +80,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired });
 })(globalThis);

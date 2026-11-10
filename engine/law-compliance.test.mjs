@@ -93,3 +93,12 @@ test('substitution eligibility enforces five players and three stoppage opportun
   assert.deepEqual(check({ used: 5, windows: 0, inStoppage: true, halftime: true, windowUsed: false }),
     { allowed: false, consumesWindow: false, reason: 'limit' });
 });
+
+
+test('goalkeeper hand control expires at eight seconds, not before', () => {
+  assert.equal(law.goalkeeperHoldExpired(0), false);
+  assert.equal(law.goalkeeperHoldExpired(7.999), false);
+  assert.equal(law.goalkeeperHoldExpired(8), true);
+  assert.equal(law.goalkeeperHoldExpired(8.5), true);
+  assert.equal(law.goalkeeperHoldExpired(NaN), false);
+});
