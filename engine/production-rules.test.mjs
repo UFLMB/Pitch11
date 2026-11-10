@@ -184,3 +184,10 @@ test("kick-off keeps every non-kicker, including teammates and goalkeepers, outs
   assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
   assert.ok(source.includes("radius:R,pitchTop:PY0,pitchBottom:PY1"));
 });
+
+
+test("a goalkeeper foot kick does not start the second-hand-touch restriction", () => {
+  assert.ok(source.includes("b.gkReleasedBy=PITCH11Law.goalkeeperReleaseMarker(p,b.gkHoldActive)"));
+  assert.ok(source.includes("b.gkHoldActive=false;b.gkHoldWarned=false"));
+  assert.doesNotMatch(source, /b\.gkReleasedBy=p\.gk\?p:null/);
+});
