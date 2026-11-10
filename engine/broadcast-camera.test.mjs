@@ -12,40 +12,52 @@ function fakeCamera() {
 }
 const snapshot = (ball, players=[]) => ({ ball, players });
 
-test("broadcast camera starts at a side-line Tele Broadcast angle", () => {
+test("camera is positioned on the stadium broadcast side, not beyond a goal", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera);
-  assert.equal(camera.fov, 41);
-  assert.equal(camera.position.x, 52.5);
-  assert.equal(camera.position.y, 40);
-  assert.equal(camera.position.z, 98);
-  assert.equal(camera.target.z, 0);
+  assert.equal(camera.fov, 44);
+  assert.equal(camera.position.x, 0);
+  assert.equal(camera.position.y, 27);
+  assert.equal(camera.position.z, 68);
+  assert.deepEqual(camera.target, {x:0,y:.6,z:0});
   assert.equal(camera.projectionUpdated, true);
   assert.equal(state.mobile, false);
 });
 
-test("camera smoothly tracks the ball and predicts its travel", () => {
+test("simulation X is converted to centred Three.js world X before tracking", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera);
   updateBroadcastCamera(camera, state, snapshot({
     x: 80, y: 34, z: .11, vx: 12, vy: 0, owner: -1, lastTouchTeam: 0
-  }), 1/30);
-  assert.ok(state.targetX > 52.5 && state.targetX < 80 + 7 + 2.5);
+  }), .08);
+  assert.ok(state.targetX > 0 && state.targetX < 40);
   assert.equal(camera.position.x, state.x);
-  assert.ok(camera.target.x > 52.5);
+  assert.ok(camera.target.x > 0);
+  assert.ok(camera.position.z > 50 && camera.position.z < 70);
 });
 
-test("camera framing remains bounded at both goal lines and touchlines", () => {
+test("camera stays on the same side of the pitch at both goal lines and touchlines", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera, {mobile:true});
   updateBroadcastCamera(camera, state, snapshot({
     x: 105, y: 68, z: .11, vx: 40, vy: 0, owner: -1, lastTouchTeam: 0
-  }), .05);
-  assert.ok(state.targetX <= 98 && state.targetX >= 7);
-  assert.ok(state.targetZ <= 5.2 && state.targetZ >= -5.2);
-  assert.ok(state.z < 104);
-  assert.ok(state.y < 43);
-  assert.equal(camera.fov, 43);
+  }), .08);
+  assert.ok(state.targetX <= 46 && state.targetX >= -46);
+  assert.ok(state.sideZ > 50 && state.sideZ < 71);
+  assert.ok(state.height > 20 && state.height <= 28);
+  assert.ok(camera.position.z > 0);
+  assert.equal(camera.fov, 46);
+});
+
+test("camera converts left-side and right-side play into the pitch's centred coordinates", () => {
+  const camera = fakeCamera();
+  const state = createBroadcastCamera(camera);
+  updateBroadcastCamera(camera, state, snapshot({
+    x: 0, y: 0, z: .11, vx: 0, vy: 0, owner: -1, lastTouchTeam: 1
+  }), .08);
+  assert.ok(state.targetX < 0);
+  assert.ok(state.targetZ < 0);
+  assert.ok(state.sideZ > 0);
 });
 
 test("camera handles missing owner and invalid delta without NaN", () => {
@@ -54,7 +66,7 @@ test("camera handles missing owner and invalid delta without NaN", () => {
   updateBroadcastCamera(camera, state, snapshot({
     x: 0, y: 0, z: .11, vx: 0, vy: 0, owner: -1, lastTouchTeam: 1
   }), NaN);
-  for (const value of [state.x,state.y,state.z,state.targetX,state.targetY,state.targetZ]) {
+  for (const value of [state.x,state.height,state.sideZ,state.targetX,state.targetZ]) {
     assert.ok(Number.isFinite(value));
   }
 });
