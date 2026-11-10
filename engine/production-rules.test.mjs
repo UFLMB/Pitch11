@@ -164,6 +164,8 @@ test("keeper saves and accidental deflections preserve offside status", () => {
   assert.match(source, /p\.kcd=0\.35;if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
   assert.match(source, /p\.kcd=0\.4;if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
   assert.match(source, /b\.spin\+=rnd\(-\.4,\.4\);b\.last=p;if\(b\.receiver!==p\)b\.receiver=null;if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
+  assert.match(source, /const a=sd\.a\+rnd\(-\.5,\.5\)[\s\S]*?if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
+  assert.match(source, /const a=sd\.a\+rnd\(-\.6,\.6\)[\s\S]*?if\(p!==b\.dbl\)b\.dbl=null;if\(p!==b\.indBy\)clearIndirect\(\);/);
 });
 
 test("restart taker second touch is caught on ground and aerial balls", () => {
