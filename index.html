@@ -849,7 +849,7 @@ function newMatch(){
   S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;
   applyTeam(0,G.club);applyTeam(1,M.opp);setupKickoff(0);
 }
-function nextPeriod(n){S.half=n;S.clock=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
+function nextPeriod(n){S.half=n;S.clock=0;S.kick=n%2?0:1;S.subWindowUsed=[false,false];setupKickoff(S.kick);}
 function brk(title,btn,fn){S.mode='half';S.t=0;S.brk={title,btn,fn};aiSubs(1,2);}
 function endHalf(){
   for(const p of P){p.ix=p.iy=0;p.sp=false;}I.shoot=false;I.chargeT=0;S.adv=null;S.rs=null;
