@@ -990,6 +990,11 @@ function restartClamp(){                                   // defenders keep 9.1
   const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // kick-off: every other player stays outside the centre circle
   for(const p of P){
     if(p===rs.p||p.out||(rs.kind!=='ko'&&(p.team===rs.team||p.gk))||(rs.wall&&rs.wall.includes(p)))continue;
+    if(rs.kind==='fk'&&rs.wall&&p.team===rs.team&&!p.gk){
+      const legal=PITCH11Law.freeKickWallClearancePosition({x:p.x,y:p.y,wallX:rs.wx,wallY:rs.wy,tangentX:rs.wnx,tangentY:rs.wny,halfLength:15,clearance:10,ballX:rs.x,ballY:rs.y});
+      if(legal.x!==p.x||legal.y!==p.y){p.x=legal.x;p.y=legal.y;p.vx=p.vy=0;}
+      continue;
+    }
     const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
     if(d<R){p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;}
     if(rs.kind==='ko'){
