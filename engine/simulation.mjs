@@ -128,6 +128,7 @@ export class FootballSimulation {
     this.updateAI(dt);
     this.movePlayers(dt);
     this.resolveTackles();
+    this.resolveGoalkeeperSaves();
     this.updateBall(dt);
     this.resolvePlayerBallContacts();
     this.resolveBoundaries();
@@ -319,6 +320,37 @@ export class FootballSimulation {
         tackler.action = "tackle-missed";
         this.events.push({ type: "tackleMissed", player: tackler.id });
       }
+    }
+  }
+  resolveGoalkeeperSaves() {
+    const b = this.ball;
+    if (b.owner >= 0 || Math.hypot(b.vx, b.vy) < 2) return;
+    for (const team of [0,1]) {
+      const ownGoal = team === 0 ? 0 : 105;
+      const movingTowardGoal = team === 0 ? b.vx < -1 : b.vx > 1;
+      if (!movingTowardGoal || b.lastTouchTeam === team) continue;
+      const t = (ownGoal - b.x) / b.vx;
+      if (t < 0 || t > 1.25) continue;
+      const predictedY = b.y + b.vy * t;
+      const predictedZ = b.z + b.vz * t - 4.905 * t * t;
+      if (predictedZ < .12 || predictedZ > PITCH.goalHeight + .45) continue;
+      const keeper = this.players[team * 11];
+      if (Math.abs(predictedY - keeper.y) > 2.0) continue;
+      const reach = clamp(1.8 - predictedZ * .25, .85, 1.8);
+      if (Math.abs(keeper.x - ownGoal) > 10 || Math.abs(predictedY - keeper.y) > reach) continue;
+      const speed = Math.hypot(b.vx,b.vy,b.vz);
+      if (speed < 10) {
+        b.owner = keeper.id; keeper.hasBall = true; keeper.action = "keeper-catch";
+        b.vx = 0; b.vy = 0; b.vz = 0;
+      } else {
+        b.x = ownGoal === 0 ? .28 : 104.72;
+        b.vx = ownGoal === 0 ? Math.abs(b.vx) * .55 : -Math.abs(b.vx) * .55;
+        b.vy += clamp((predictedY - keeper.y) * .45, -2.5, 2.5);
+        b.vz = Math.max(.8, Math.abs(b.vz) * .35);
+        keeper.action = "keeper-parry";
+      }
+      this.events.push({ type: "keeperSave", keeper: keeper.id, team, caught: b.owner === keeper.id });
+      return;
     }
   }
   updateBall(dt) {
