@@ -6,7 +6,7 @@
  */
 import { applyLeagueSoccerBallPhysics } from "./league-soccer-ballphysics.mjs";
 
-export const SIM_VERSION = "0.2.0";
+export const SIM_VERSION = "0.3.0";
 export const PITCH = Object.freeze({ length: 105, width: 68, goalWidth: 7.32, goalHeight: 2.44, ballRadius: 0.11 });
 export const FIXED_DT = 1 / 60;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
