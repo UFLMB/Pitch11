@@ -23,10 +23,11 @@ test("adapter maps pitch metres into legacy world units", () => {
 test("adapter sends camera-relative movement and exposes render snapshots", () => {
   const sim = new FootballSimulation({ seed: 8 });
   const adapter = new Pitch11SimulationAdapter(sim, { cameraYaw: Math.PI / 2 });
+  const beforeX = sim.players[sim.selectedPlayer].x;
   adapter.move(0, -1, true);
   sim.update(1 / 60);
   const p = sim.players[sim.selectedPlayer];
-  assert.ok(p.x > p.homeX - 1 || Number.isFinite(p.x));
+  assert.ok(p.x > beforeX);
   const result = adapter.update(1 / 60);
   assert.equal(result.snapshot.tick, sim.tick);
   assert.equal(result.renderFrame.players.length, 22);
@@ -35,7 +36,7 @@ test("adapter sends camera-relative movement and exposes render snapshots", () =
   adapter.shoot(.8);
   adapter.tackle();
   adapter.switchPlayer();
-  assert.equal(sim.commands.length, 6);
+  assert.equal(sim.commands.length, 5);
 });
 
 test("long unattended match remains finite and keeps all active players in bounds", () => {
@@ -46,5 +47,5 @@ test("long unattended match remains finite and keeps all active players in bound
     assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y));
     assert.ok(p.x >= 0 && p.x <= 105 && p.y >= 0 && p.y <= 68);
   }
-  for (const value of [...sim.ball ? [sim.ball.x,sim.ball.y,sim.ball.z,sim.ball.vx,sim.ball.vy,sim.ball.vz] : []]) assert.ok(Number.isFinite(value));
+  for (const value of [sim.ball.x,sim.ball.y,sim.ball.z,sim.ball.vx,sim.ball.vy,sim.ball.vz]) assert.ok(Number.isFinite(value));
 });
