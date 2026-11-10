@@ -60,7 +60,7 @@ test("throw-ins and dropped balls cannot score without another touch", () => {
 });
 
 test("a restart taker's second-touch restriction ends on any other player's contact", () => {
-  assert.match(source, /if\(best!==b\.dbl\)b\.dbl=null/);
+  assert.match(source, /if\(best!==b\.dbl\)\{b\.dbl=null;b\.ind=false;\}/);
   assert.match(source, /if\(p!==ball\.dbl\)ball\.dbl=null/);
 });
 
