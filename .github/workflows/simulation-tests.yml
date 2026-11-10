@@ -18,6 +18,7 @@ jobs:
           node-version: 22
       - name: Check browser lab module syntax
         run: node --check engine/simulation-lab.mjs
+          node --check engine/player-animation.mjs
       - name: Run simulation regression tests
         run: node --test engine/*.test.mjs
       - name: Package standalone browser lab
