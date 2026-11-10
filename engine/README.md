@@ -30,10 +30,10 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - Possession, dribbling intent, passing and shooting
 - League-Soccer-derived ball gravity, air drag, ground friction, bounce, wind and wet-pitch behavior
 - Goalpost and crossbar collision response
-- Basic goalkeeper positioning and ball claims
+- Goalkeeper positioning, projected shot interception, catches and parries
 - Contested tackle resolution
 - Offside line check and active offside receiver whistle
-- Throw-in, corner, goal-kick, and free-kick restart state flow
+- Throw-in, corner, goal-kick, and free-kick restart state flow, including restart-specific offside exemptions
 - Goalpost and crossbar collision response
 - Goal-plane detection and kickoff reset
 - Detached snapshots and event output
