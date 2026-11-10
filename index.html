@@ -258,9 +258,9 @@ function markOff(p){                                       // who is in an offsi
 }
 function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const b=ball,a=Math.atan2(vy,vx),rs=S.rs;
-  if(mode==='pass'||mode==='thru'||mode==='lob'){if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'||rs.kind==='drop'||rs.kind==='ko'))clearOff();else markOff(p);}
+  if(mode==='pass'||mode==='thru'||mode==='lob'){if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);}
   else clearOff();
-  if(rs&&rs.ind)b.ind=true;                                // indirect free kick: cannot score untouched
+  if(rs&&(rs.ind||rs.kind==='throw'||rs.kind==='drop'))b.ind=true; // indirect kicks, throw-ins and dropped balls cannot score untouched
   b.protect=0;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';
   b.x=p.x+Math.cos(a)*9;b.y=p.y+Math.sin(a)*9;
@@ -487,6 +487,7 @@ function touches(){                                        // a free ball is pic
     if(s>bs){bs=s;best=p;}
   }
   if(!best)return;
+  if(best!==b.dbl){b.dbl=null;b.ind=false;}              // another player's touch ends the second-touch restriction and allows a goal after a throw-in / drop
   if(!S.prac&&best.off&&b.last&&b.last.team===best.team&&b.last!==best){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;
@@ -861,10 +862,12 @@ function soNext(){
   so.team=t;so.shooter=list[so.k[t].length%list.length];so.live=true;so.t=0;
   setupPen(t,so.shooter,true);S.mode='play';S.t=0;
 }
+const ballBeyondLine=(value,line,direction)=>direction>0?value>line+BR:value<line-BR;
+const ballInsideGoalFrame=b=>Math.abs(b.y-CY)<=GOALH-BR&&b.z<=GOALZ-BR;
 function soRules(){
   const so=S.so,b=ball;so.t+=DT;
-  if(Math.abs(b.y-CY)<GOALH&&b.z<GOALZ&&(b.x<PX0-2||b.x>PX1+2)){soResult(true);return;}
-  if(!S.rs&&(b.owner||(b.last&&b.last.team!==so.team)||b.x<PX0||b.x>PX1||b.y<PY0||b.y>PY1||(b.z===0&&!b.vx&&!b.vy)||so.t>8))soResult(false);
+  if(ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){soResult(true);return;}
+  if(!S.rs&&(b.owner||(b.last&&b.last.team!==so.team)||ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)||(b.z===0&&!b.vx&&!b.vy)||so.t>8))soResult(false);
 }
 function soResult(ok){
   const so=S.so;so.live=false;so.k[so.team].push(ok);
@@ -920,7 +923,7 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
 function outOfPlay(){
   if(S.adv){const a=S.adv;S.adv=null;a.fn();return;}      // ball died during advantage: take the foul
   const b=ball,lt=b.last?b.last.team:0;
-  if(b.x<PX0||b.x>PX1){
+  if(b.x<PX0-BR||b.x>PX1+BR){
     const left=b.x<PX0,def=(dirOf(0)>0)===left?0:1;       // team defending that goal
     if(lt===def){const cx=left?PX0+3:PX1-3,cy=b.y<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=91.5;}
     else spot(def,left?PX0+40:PX1-40,CY,true,left?0:Math.PI,'gk');
@@ -963,7 +966,7 @@ function restartClamp(){                                   // defenders keep 9.1
     return;
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // everyone stays in their own half until the kick-off is taken
-  const R=rs.r||({ko:91.5,throw:55})[rs.kind];if(!R)return;     // kick-off: centre circle, throw-in: 55 units
+  const R=rs.r||({ko:91.5,throw:20})[rs.kind];if(!R)return;     // kick-off: centre circle, throw-in: opponents stay 2 m away
   for(const p of P){
     if(p.team===rs.team||p.gk||p.out||(rs.wall&&rs.wall.includes(p)))continue;
     const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
@@ -1025,8 +1028,8 @@ function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out)p.limp=true;S.
 function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
-  if(!b.ind&&Math.abs(b.y-CY)<GOALH&&b.z<GOALZ&&(b.x<PX0-2||b.x>PX1+2)){goal(b.x>PX1?1:-1);return;}
-  if(b.x<PX0||b.x>PX1||b.y<PY0||b.y>PY1){outOfPlay();return;}
+  if(!b.ind&&ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){goal(b.x>PX1?1:-1);return;}
+  if(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)){outOfPlay();return;}
   if(S.adv){
     const a=S.adv;a.t-=DT;
     if(b.owner&&b.owner.team!==a.team){S.adv=null;whistleStop(1.2,'NO ADVANTAGE','',a.fn);return;}   // lost the ball: call the foul back
@@ -3570,7 +3573,7 @@ const _gl18=goal;goal=function(dr){const a0=ST.ast;_gl18(dr);const sc=S.scorer;i
       if(!done)rate(st,.8);}}};
 const _gc18=giveCard;giveCard=function(p,c){_gc18(p,c);if(p){CUT.px=p.x;CUT.py=p.y;}if(p)cut(c===1?'YELLOW CARD':c===3?'SECOND YELLOW':'RED CARD',(p.nm||'#'+p.num)+'  '+KIT[p.team].name,c===1?'#ffd400':'#e5342b',1,2.6);};
 const _ds18=doSub;doSub=function(p,bn){const o=p.num,ok=_ds18(p,bn);if(ok)cut('SUBSTITUTION','OFF #'+o+'    ON #'+p.num+'   '+KIT[p.team].name,'#5cff8a',2,2.4);return ok;};
-const _sp18=setupPen;setupPen=function(t,sh,so){if(!so&&!S.prac&&Math.random()<.18){cut('PENALTY OVERTURNED','VAR: no foul in the box','#4aa8ff',3,2.6);msg('NO PENALTY','VAR check',1.6);dropBall(1-t);return;}_sp18(t,sh,so);if(!so)cut('VAR CHECK','Penalty confirmed','#4aa8ff',3,1.8);};
+const _sp18=setupPen;setupPen=function(t,sh,so){_sp18(t,sh,so);if(!so)cut('PENALTY AWARDED','Referee decision confirmed','#4aa8ff',3,1.8);};
 const _up18=update;update=function(){_up18();if(CUT.t>0&&S.mode!=='menu')CUT.t-=DT;};
 function cutDraw(){if(CUT.t<=0||H>W)return;const u=CUT.d-CUT.t,a=clamp(Math.min(u*5,CUT.t*4),0,1),e=1-a;
   ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=a;ctx.textBaseline='middle';
@@ -3884,9 +3887,8 @@ const _ha23=humanAct;humanAct=function(p){
   }
 };
 /* set pieces: the taker cannot touch the ball again until someone else has (no dribbling off from a throw-in / kick-off) */
-const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p&&rs.kind!=='pen'){ball.dbl=p;ball.dblT=1.6;}};
+const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p)ball.dbl=p;};
 const _tk23=take;take=function(p){if(p!==ball.dbl)ball.dbl=null;_tk23(p);};
-const _up23=update;update=function(){_up23();if(ball.dbl&&(ball.dblT-=DT)<=0)ball.dbl=null;};
 /* throw-in: the three nearest team-mates come to offer a short, a forward and a safe option along the touchline */
 function throwSup23(p,rs){
   const t=p.team,d=dirOf(t),n=rs.y<CY?1:-1,tk=rs.p,L=[];
