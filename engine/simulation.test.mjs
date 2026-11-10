@@ -431,3 +431,26 @@ test("forwards make a measured support run as possession advances", () => {
   slowerBuild.updateAI(FIXED_DT);
   assert.ok(advanced.players[10].targetX > slowerBuild.players[10].targetX + 1);
 });
+
+
+test("dribble ball stays ahead of the player's actual movement direction", () => {
+  const sim = new FootballSimulation({ seed: 19 });
+  const owner = sim.players[sim.ball.owner];
+  owner.vx = 0;
+  owner.vy = 4;
+  sim.updateBall(FIXED_DT);
+  assert.ok(sim.ball.y > owner.y + .5);
+  assert.ok(Math.abs(sim.ball.x - owner.x) < .2);
+  assert.equal(sim.ball.z, PITCH.ballRadius);
+  assert.ok(Number.isFinite(sim.ball.vx) && Number.isFinite(sim.ball.vy));
+});
+
+test("pass contact point follows the kick direction instead of team attack direction", () => {
+  const sim = new FootballSimulation();
+  const kicker = sim.players[sim.ball.owner];
+  sim.releaseBall(kicker, 0, 20, 2);
+  assert.equal(sim.ball.owner, -1);
+  assert.ok(Math.abs(sim.ball.x - kicker.x) < .001);
+  assert.ok(Math.abs(sim.ball.y - (kicker.y + .42)) < .001);
+  assert.equal(sim.ball.z, PITCH.ballRadius);
+});
