@@ -1,82 +1,31 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07110d"><title>PITCH 11 — Simulation Lab</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#07110c"><title>PITCH 11 — 3D Simulation Lab</title>
 <style>
-:root{color-scheme:dark;font-family:Inter,system-ui,Segoe UI,sans-serif;background:#07110d;color:#f4f7f4}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110d;touch-action:none}
-#app{position:fixed;inset:0;display:flex;flex-direction:column;background:radial-gradient(ellipse at 50% 30%,#173b2a 0,#0b2117 55%,#06100c 100%)}
-header{height:64px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #ffffff18;background:#07130edb;z-index:2}
-.brand{font-weight:900;letter-spacing:.14em;font-style:italic;font-size:18px}.brand span{color:#d9b86c}.sub{font-size:10px;color:#9eafa4;letter-spacing:.18em;margin-top:3px}
-#scoreboard{display:flex;align-items:center;gap:14px;font-variant-numeric:tabular-nums}.team{font-size:11px;color:#c8d3cc;letter-spacing:.12em}.score{font-size:25px;font-weight:850;letter-spacing:.08em}.clock{font-size:12px;color:#e5c778;min-width:52px;text-align:center}
-main{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:10px}
-canvas{display:block;width:100%;height:100%;max-width:1600px;max-height:900px;object-fit:contain}
-#status{position:absolute;top:16px;left:50%;transform:translateX(-50%);padding:7px 13px;border:1px solid #ffffff25;border-radius:99px;background:#06110dcc;color:#dce7df;font-size:11px;letter-spacing:.12em;white-space:nowrap;pointer-events:none}
-#event{position:absolute;top:54px;left:50%;transform:translateX(-50%);color:#f1d58c;font-weight:800;font-size:13px;text-shadow:0 2px 10px #000;pointer-events:none}
-footer{height:68px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#07130ef2;border-top:1px solid #ffffff18;color:#9caea3;font-size:11px;z-index:2}
-#help{line-height:1.5}#actions{display:flex;gap:8px}
-button{border:1px solid #ffffff24;background:linear-gradient(180deg,#1d3428,#102218);color:#f4f7f4;border-radius:12px;padding:11px 15px;font-weight:750;font-size:11px;letter-spacing:.08em;min-width:66px;touch-action:manipulation}
-button.primary{border-color:#d9b86c88;background:linear-gradient(180deg,#725b2c,#44351c);color:#fff0c6}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4;font-family:Inter,system-ui,Segoe UI,sans-serif;touch-action:none;user-select:none}
+#app{position:fixed;inset:0;background:#07110c}#scene{position:absolute;inset:0}#scene canvas{display:block;width:100%;height:100%}
+header{position:absolute;z-index:2;top:0;left:0;right:0;height:66px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:linear-gradient(180deg,#06100de8,#06100d55);pointer-events:none}
+.brand{font-size:18px;font-weight:950;font-style:italic;letter-spacing:.14em}.brand span{color:#d9b86c}.sub{font-size:9px;color:#b1c0b4;letter-spacing:.19em;margin-top:3px}
+#scoreboard{display:flex;align-items:center;gap:13px;font-variant-numeric:tabular-nums}.team{font-size:10px;letter-spacing:.14em;color:#c6d2c8}.score{font-size:26px;font-weight:900;letter-spacing:.1em}.clock{font-size:12px;color:#f1d48a;min-width:46px;text-align:center}
+#status{position:absolute;z-index:2;top:78px;left:50%;transform:translateX(-50%);padding:7px 13px;border:1px solid #ffffff35;border-radius:99px;background:#07130dbb;color:#e5eee7;font-size:10px;letter-spacing:.12em;white-space:nowrap;pointer-events:none}
+#event{position:absolute;z-index:2;top:116px;left:50%;transform:translateX(-50%);font-weight:950;font-size:22px;letter-spacing:.12em;color:#f4d98d;text-shadow:0 2px 18px #000;pointer-events:none}
+footer{position:absolute;z-index:2;bottom:0;left:0;right:0;height:68px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:linear-gradient(0deg,#06100df2,#06100d44);pointer-events:none}
+#help{font-size:10px;color:#d0dbd2;line-height:1.5}#actions{display:flex;gap:8px;pointer-events:auto}
+button{border:1px solid #ffffff45;background:linear-gradient(180deg,#243a2d,#102218);color:#f4f7f4;border-radius:11px;padding:11px 15px;font-weight:800;font-size:10px;letter-spacing:.1em;min-width:68px;touch-action:manipulation}
+button.primary{border-color:#d9b86c;background:linear-gradient(180deg,#765f31,#44351c);color:#fff0c6}
 #mobile{display:none;position:absolute;inset:0;pointer-events:none}
-#stick{position:absolute;left:22px;bottom:22px;width:128px;height:128px;border-radius:50%;background:#08150eb0;border:1px solid #dce8dc55;pointer-events:auto;touch-action:none}
-#nub{position:absolute;width:48px;height:48px;left:39px;top:39px;border-radius:50%;background:linear-gradient(145deg,#d7e5d8,#789783);box-shadow:0 4px 16px #0009;border:1px solid #ffffff88}
+#stick{position:absolute;left:22px;bottom:24px;width:128px;height:128px;border-radius:50%;background:#07140ebc;border:1px solid #e2ece155;pointer-events:auto;touch-action:none}
+#nub{position:absolute;left:39px;top:39px;width:48px;height:48px;border-radius:50%;background:linear-gradient(145deg,#e5eee5,#789783);border:1px solid #ffffffaa;box-shadow:0 4px 18px #000a}
 #mobileActions{position:absolute;right:18px;bottom:22px;display:grid;grid-template-columns:repeat(2,66px);gap:9px;pointer-events:auto}
-#mobileActions button{height:54px;padding:4px;min-width:0;border-radius:50%;background:#0b1a12d9;border-color:#ffffff50}
-#mobileActions .primary{background:linear-gradient(180deg,#725b2c,#44351c)}
-@media(max-width:700px){header{height:54px;padding:0 12px}.brand{font-size:15px}.sub{font-size:8px}#scoreboard{gap:7px}.team{font-size:9px}.score{font-size:21px}.clock{font-size:10px;min-width:40px}main{padding:0}footer{height:46px;padding:0 12px}#help{font-size:9px}#actions{display:none}#mobile{display:block}#status{top:9px;font-size:9px}#event{top:38px;font-size:11px}}
-@media(hover:none) and (pointer:coarse){#help .desktop{display:none}}
-</style></head>
-<body><div id="app">
-<header><div><div class="brand">PITCH <span>11</span></div><div class="sub">SIMULATION LAB · 11V11</div></div>
+#mobileActions button{min-width:0;width:66px;height:54px;padding:3px;border-radius:50%;background:#09170fdc;border-color:#ffffff70;font-size:9px}
+#mobileActions button.primary{background:linear-gradient(180deg,#765f31,#44351c)}
+#rotate{display:none;position:absolute;z-index:5;inset:0;background:#07110c;color:#e8eee8;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:13px;letter-spacing:.1em}
+@media(max-width:760px){header{height:52px;padding:0 12px}.brand{font-size:14px}.sub{font-size:7px}.score{font-size:20px}.team{font-size:8px}.clock{font-size:10px;min-width:35px}#status{top:61px;font-size:8px}#event{top:94px;font-size:16px}footer{height:48px;padding:0 12px}#help{font-size:8px}#actions{display:none}#mobile{display:block}}
+@media(orientation:portrait) and (max-width:760px){#rotate{display:flex}header,footer,#status,#event,#mobile{visibility:hidden}}
+</style></head><body><div id="app"><div id="scene"></div>
+<header><div><div class="brand">PITCH <span>11</span></div><div class="sub">3D SIMULATION LAB · 11V11</div></div>
 <div id="scoreboard"><span class="team">HOME</span><span class="score" id="score">0 — 0</span><span class="team">AWAY</span><span class="clock" id="clock">00:00</span></div></header>
-<main><canvas id="pitch" aria-label="Live football simulation pitch"></canvas><div id="status">MATCH LIVE · 4-3-3</div><div id="event"></div>
-<div id="mobile"><div id="stick"><div id="nub"></div></div><div id="mobileActions"><button data-action="pass">PASS</button><button data-action="shoot" class="primary">SHOOT</button><button data-action="switch">SWITCH</button><button data-action="tackle">TACKLE</button><button data-action="sprint">SPRINT</button><button data-action="restart">PLAY</button></div></div>
-</main>
-<footer><div id="help"><span class="desktop">WASD move · SHIFT sprint · P pass · SPACE shoot · E switch · Q tackle</span><span class="mobileHelp">Touch joystick + action buttons</span></div><div id="actions"><button data-action="pass">PASS · P</button><button data-action="shoot" class="primary">SHOOT · SPACE</button><button data-action="switch">SWITCH · E</button><button data-action="tackle">TACKLE · Q</button><button data-action="restart">RESTART</button></div></footer>
-</div>
-<script type="module">
-import { FootballSimulation } from "./engine/simulation.mjs";
-const canvas=document.querySelector("#pitch"),ctx=canvas.getContext("2d",{alpha:true});
-const scoreEl=document.querySelector("#score"),clockEl=document.querySelector("#clock"),statusEl=document.querySelector("#status"),eventEl=document.querySelector("#event");
-const sim=new FootballSimulation({seed:11,halfLengthSeconds:2700,matchTimeScale:60});
-let last=performance.now(),lastEvent="",eventUntil=0,move={x:0,y:0,sprint:false},keys=new Set(),running=true;
-function resize(){const r=canvas.getBoundingClientRect(),d=Math.min(devicePixelRatio||1,2);canvas.width=Math.max(1,Math.round(r.width*d));canvas.height=Math.max(1,Math.round(r.height*d));ctx.setTransform(d,0,0,d,0,0)}
-new ResizeObserver(resize).observe(canvas);resize();
-const fmt=t=>{const m=Math.floor(t/60),s=Math.floor(t%60);return String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")};
-function act(a){if(a==="pass")sim.command({type:"pass"});if(a==="shoot")sim.command({type:"shoot",power:1});if(a==="switch")sim.command({type:"switch"});if(a==="tackle")sim.command({type:"tackle"});if(a==="restart")sim.command({type:"restart"});if(a==="sprint")move.sprint=!move.sprint}
-document.querySelectorAll("[data-action]").forEach(b=>{b.addEventListener("pointerdown",e=>{e.preventDefault();act(b.dataset.action)})});
-window.addEventListener("keydown",e=>{const k=e.key.toLowerCase();if([" ","arrowup","arrowdown","arrowleft","arrowright"].includes(k))e.preventDefault();keys.add(k);if(e.repeat)return;if(k==="p")act("pass");if(k===" "||k==="enter")act("shoot");if(k==="e")act("switch");if(k==="q")act("tackle");if(k==="r")act("restart")});
-window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
-function updateInput(){let x=(keys.has("d")||keys.has("arrowright")?1:0)-(keys.has("a")||keys.has("arrowleft")?1:0)+move.x;let y=(keys.has("s")||keys.has("arrowdown")?1:0)-(keys.has("w")||keys.has("arrowup")?1:0)+move.y;const n=Math.hypot(x,y);if(n>1){x/=n;y/=n}sim.command({type:n>.01?"move":"releaseMove",x,y,sprint:keys.has("shift")||move.sprint})}
-const stick=document.querySelector("#stick"),nub=document.querySelector("#nub");let pointer=null;
-function stickMove(e){const r=stick.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=r.width*.34,n=Math.hypot(dx,dy),f=n>max?max/n:1;move.x=dx*f/max;move.y=dy*f/max;nub.style.transform=`translate(${move.x*max}px,${move.y*max}px)`}
-stick.addEventListener("pointerdown",e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);stickMove(e)});
-stick.addEventListener("pointermove",e=>{if(e.pointerId===pointer)stickMove(e)});
-function release(e){if(e.pointerId!==pointer)return;pointer=null;move.x=0;move.y=0;nub.style.transform="translate(0,0)"}
-stick.addEventListener("pointerup",release);stick.addEventListener("pointercancel",release);
-function roundedRect(x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r)}
-function draw(){
- const w=canvas.clientWidth,h=canvas.clientHeight;ctx.clearRect(0,0,w,h);
- const pad=Math.max(20,Math.min(w,h)*.055),aspect=105/68;let pw=Math.min(w-pad*2,(h-pad*2)*aspect),ph=pw/aspect;if(ph>h-pad*2){ph=h-pad*2;pw=ph*aspect}
- const x=(w-pw)/2,y=(h-ph)/2,sx=pw/105,sy=ph/68;
- ctx.save();ctx.shadowColor="#000a";ctx.shadowBlur=28;ctx.fillStyle="#17452b";roundedRect(x,y,pw,ph,7);ctx.fill();ctx.shadowBlur=0;
- // grass bands
- for(let i=0;i<10;i++){ctx.fillStyle=i%2?"#1a4b2e":"#1d5232";ctx.fillRect(x+i*pw/10,y,pw/10,ph)}
- ctx.strokeStyle="#d9ead0cc";ctx.lineWidth=Math.max(1.1,pw*.0016);ctx.strokeRect(x,y,pw,ph);
- const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x+sx*x1,y+sy*y1);ctx.lineTo(x+sx*x2,y+sy*y2);ctx.stroke()};
- line(52.5,0,52.5,68);ctx.beginPath();ctx.arc(x+52.5*sx,y+34*sy,9.15*sx,0,Math.PI*2);ctx.stroke();
- for(const side of [0,105]){const sign=side===0?1:-1;ctx.strokeRect(x+(side===0?0:105-16.5)*sx,y+13.84*sy,16.5*sx,40.32*sy);ctx.strokeRect(x+(side===0?0:105-5.5)*sx,y+24.84*sy,5.5*sx,18.32*sy);ctx.beginPath();ctx.arc(x+(side===0?11:94)*sx,y+34*sy,.18*sx,0,Math.PI*2);ctx.fillStyle="#e5eee0";ctx.fill();ctx.strokeRect(x+(side===0?-2.1:105)*sx,y+30.34*sy,2.1*sx,7.32*sy)}
- // goal nets and corner arcs
- ctx.strokeStyle="#dce9d277";ctx.lineWidth=1;for(const yy of [0,68]){ctx.beginPath();ctx.arc(x+(yy===0?0:0)*sx,y+(yy===0?0:68)*sy,1.1*sx,yy===0?0:Math.PI*1.5,yy===0?Math.PI/2:Math.PI*2);ctx.stroke()}
- const snap=sim.getSnapshot();
- for(const p of snap.players){if(p.out)continue;const px=x+p.x*sx,py=y+p.y*sy,r=Math.max(4.5,Math.min(10,pw*.009));ctx.beginPath();ctx.arc(px,py,r+(p.selected?3:0),0,Math.PI*2);ctx.fillStyle=p.selected?"#f7d46f":p.team===0?"#e8f2ff":"#e84c49";ctx.shadowColor="#000a";ctx.shadowBlur=5;ctx.fill();ctx.shadowBlur=0;ctx.lineWidth=p.selected?2:1;ctx.strokeStyle=p.selected?"#fff5c7":"#ffffffcc";ctx.stroke();ctx.fillStyle="#132019";ctx.font=`bold ${Math.max(6,r*.9)}px system-ui`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(p.slot===0?1:p.slot+1),px,py+.3)}
- const b=snap.ball,bx=x+b.x*sx,by=y+b.y*sy;ctx.beginPath();ctx.ellipse(bx,by+Math.max(0,b.z)*sy*.25,Math.max(2.5,4.3-b.z*.15),Math.max(2,3.4-b.z*.1),0,0,Math.PI*2);ctx.fillStyle="#05090777";ctx.fill();ctx.beginPath();ctx.arc(bx,by-Math.max(0,b.z)*sy*.45,Math.max(3.2,5-b.z*.25),0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#101010";ctx.lineWidth=1;ctx.stroke();
- ctx.restore();
- scoreEl.textContent=snap.score[0]+" — "+snap.score[1];clockEl.textContent=fmt(snap.matchSeconds);statusEl.textContent=snap.phase==="playing"?(snap.period===1?"1ST HALF":"2ND HALF")+" · "+snap.formations[0]:""+snap.phase.toUpperCase()+(snap.restart?" · "+snap.restart.type.toUpperCase():"");
- if(snap.events.length){const e=snap.events[snap.events.length-1];const msg=({goal:"GOAL!",keeperSave:"GOALKEEPER SAVE",tackleWon:"TACKLE WON",offside:"OFFSIDE",foul:"FOUL",restartAwarded:""+(e.restartType||"restart").replace(/[A-Z]/g," $&").toUpperCase()})[e.type];if(msg&&msg!==lastEvent){lastEvent=msg;eventUntil=performance.now()+1900;eventEl.textContent=msg}}
- if(performance.now()>eventUntil)eventEl.textContent="";
-}
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(running){updateInput();sim.update(dt)}draw();requestAnimationFrame(frame)}
-requestAnimationFrame(frame);
-</script></body></html>
+<div id="status">INITIALISING MATCH ENGINE</div><div id="event"></div>
+<div id="mobile"><div id="stick"><div id="nub"></div></div><div id="mobileActions"><button data-action="pass">PASS</button><button data-action="shoot" class="primary">SHOOT</button><button data-action="switch">SWITCH</button><button data-action="tackle">TACKLE</button><button id="sprint">SPRINT</button><button data-action="restart">PLAY</button></div></div>
+<footer><div id="help">WASD MOVE · SHIFT SPRINT · P PASS · SPACE SHOOT · E SWITCH · Q TACKLE · ESC PAUSE</div><div id="actions"><button data-action="pass">PASS · P</button><button data-action="shoot" class="primary">SHOOT · SPACE</button><button data-action="switch">SWITCH · E</button><button data-action="tackle">TACKLE · Q</button><button data-action="restart">RESTART</button><button data-action="pause">PAUSE</button></div></footer>
+<div id="rotate">ROTATE YOUR DEVICE TO LANDSCAPE<br><br>PITCH 11 IS DESIGNED FOR LANDSCAPE GAMEPLAY</div></div>
+<script type="module" src="./engine/simulation-lab.mjs"></script></body></html>
