@@ -986,12 +986,22 @@ function restartClamp(){                                   // defenders keep 9.1
     }
     return;
   }
-  if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // everyone stays in their own half until the kick-off is taken
-  const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // kick-off: centre circle, throw-in: opponents stay 2 m away
+  const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // kick-off: every other player stays outside the centre circle
   for(const p of P){
-    if(p.team===rs.team||p.gk||p.out||(rs.wall&&rs.wall.includes(p)))continue;
+    if(p===rs.p||p.out||(rs.kind!=='ko'&&(p.team===rs.team||p.gk))||(rs.wall&&rs.wall.includes(p)))continue;
     const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
     if(d<R){p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;}
+    if(rs.kind==='ko'){
+      // The same player must remain in their own half as well as outside the centre circle.
+      const ownEdge=dirOf(p.team)>0?CX-1:CX+1;
+      if((dirOf(p.team)>0&&p.x>ownEdge)||(dirOf(p.team)<0&&p.x<ownEdge)){
+        p.x=ownEdge;
+        const side=Math.sign(p.y-CY)||((p.num%2)?-1:1);
+        p.y=CY+side*Math.sqrt(Math.max(0,R*R-(p.x-CX)*(p.x-CX)));
+        p.y=clamp(p.y,PY0+4,PY1-4);
+      }
+      p.vx=p.vy=0;
+    }
     if(rs.kind==='gk'){
       const gx=dirOf(rs.team)>0?PX0:PX1,dir=dirOf(rs.team);
       const legal=PITCH11Law.goalKickOpponentPosition({x:p.x,y:p.y,goalLine:gx,direction:dir,penaltyDepth:PEN_DEPTH,halfWidth:PEN_WIDTH/2,centerY:CY,clearance:12});
