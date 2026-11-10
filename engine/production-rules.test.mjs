@@ -199,3 +199,10 @@ test("a goalkeeper foot kick does not start the second-hand-touch restriction", 
   assert.ok(source.includes("b.gkHoldActive=false;b.gkHoldWarned=false"));
   assert.doesNotMatch(source, /b\.gkReleasedBy=p\.gk\?p:null/);
 });
+
+test("Law 15 throw-ins cannot be taken with a foot pass or shot input", () => {
+  assert.match(source, /const _humanThrowLaw=humanAct;/);
+  assert.match(source, /rs&&rs\.kind==='throw'&&rs\.p===p&&ball\.owner===p/);
+  assert.match(source, /I\.shoot=I\.shootUp=I\.pass=I\.thru=I\.lob=I\.skill=I\.sw=I\.tackle=I\.swp=false/);
+  assert.match(source, /_humanThrowLaw\(p\)/);
+});
