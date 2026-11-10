@@ -32,7 +32,7 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - League-Soccer-derived ball gravity, air drag, ground friction, bounce, wind and wet-pitch behavior
 - Goalpost and crossbar collision response
 - Goalkeeper positioning, projected shot interception, catches and parries
-- Contested tackle resolution
+- Contested tackle resolution, foul awards, yellow/red cards and penalty decisions
 - Offside line check and active offside receiver whistle
 - Throw-in, corner, goal-kick, and free-kick restart state flow, including restart-specific offside exemptions
 - Goalpost and crossbar collision response
@@ -67,4 +67,4 @@ The same test command runs in GitHub Actions on pushes to `engine-adaptation` an
 
 ## Not production-ready yet
 
-Fouls, advantage, cards, penalties, substitutions, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
+Advantage, substitutions, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. `callFoul(tackler, victim, { card })` is available to the referee/rules layer. Advantage and automatic disciplinary thresholds remain incomplete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
