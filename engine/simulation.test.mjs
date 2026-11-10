@@ -132,8 +132,8 @@ test("weather settings are bounded and wind affects airborne play", () => {
 test("goal frame collision deflects a shot away from the post", () => {
   const sim = new FootballSimulation();
   sim.ball.owner = -1;
-  sim.ball.x = .05; sim.ball.y = 34 - PITCH.goalWidth / 2;
-  sim.ball.z = 1; sim.ball.vx = -5; sim.ball.vy = 0; sim.ball.vz = 0;
+  sim.ball.x = .12; sim.ball.y = 34 - PITCH.goalWidth / 2;
+  sim.ball.z = 1; sim.ball.vx = -2; sim.ball.vy = 0; sim.ball.vz = 0;
   sim.update(FIXED_DT);
   assert.ok(sim.ball.vx > 0);
   assert.ok(sim.getSnapshot().events.some(e => e.type === "goalpostHit"));
