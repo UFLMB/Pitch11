@@ -487,7 +487,7 @@ function touches(){                                        // a free ball is pic
     if(s>bs){bs=s;best=p;}
   }
   if(!best)return;
-  if(best!==b.dbl)b.dbl=null;                              // any touch by another player ends the restart taker's second-touch restriction
+  if(best!==b.dbl){b.dbl=null;b.ind=false;}              // another player's touch ends the second-touch restriction and allows a goal after a throw-in / drop
   if(!S.prac&&best.off&&b.last&&b.last.team===best.team&&b.last!==best){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;
