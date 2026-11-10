@@ -234,3 +234,13 @@ test('Law 14 additional time continues only until the penalty kick is completed'
   assert.equal(law.penaltyAdditionalTimeDecision({ retakePending: true }), 'defer');
   assert.equal(law.penaltyAdditionalTimeDecision({}), 'end');
 });
+
+test('Law 12 distinguishes DOGSO, the penalty-area exception, SPA and serious foul play', () => {
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: false, attemptToPlayBall: true }), 2);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: true }), 1);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: false }), 2);
+  assert.equal(law.foulCardDecision({ dogso: true, penaltyArea: true, attemptToPlayBall: true, alreadyBooked: true }), 3);
+  assert.equal(law.foulCardDecision({ stopsPromisingAttack: true }), 1);
+  assert.equal(law.foulCardDecision({ stopsPromisingAttack: true, alreadyBooked: true }), 3);
+  assert.equal(law.foulCardDecision({ seriousFoulPlay: true, alreadyBooked: true }), 2);
+});
