@@ -35,6 +35,7 @@ jobs:
           node --check engine/broadcast-camera.mjs
           node --check engine/stadium-visibility.mjs
           node --check engine/stadium-model.mjs
+          node --check engine/stadium-atmosphere.mjs
           node --check engine/player-animation-map.mjs
           node --check engine/player-animation.mjs
           node --check engine/league-soccer-ballphysics.mjs
