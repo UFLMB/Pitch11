@@ -78,6 +78,22 @@
     return { eligible: true, review: trigger, reason: trigger ? 'review-required' : 'silent-check' };
   }
 
+  function goalkeeperPenaltyLineOffence(state) {
+    const s = state || {};
+    if (![s.keeperX, s.goalLine, s.attackDirection, s.footReach].every(Number.isFinite) ||
+        Math.abs(s.attackDirection) !== 1) return false;
+    const lineDistance = (s.goalLine - s.keeperX) * s.attackDirection;
+    return lineDistance > Math.max(0, s.footReach) + 1e-6 || s.betweenPosts === false;
+  }
+
+  function penaltyKeeperDecision(state) {
+    const s = state || {};
+    if (!s.keeperOffLine) return 'continue';
+    if (s.goalScored) return 'goal';
+    if (s.keeperSaved || s.impactedKicker) return 'retake';
+    return 'continue';
+  }
+
   function foulCardDecision(state) {
     // Law 12: only reckless challenges require a caution; serious foul play requires
     // an explicit excessive-force / endangering-safety assessment by the event caller.
@@ -146,5 +162,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

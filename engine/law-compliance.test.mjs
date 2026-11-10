@@ -180,3 +180,22 @@ test('corner VAR is competition-enabled and must be immediate before the restart
   assert.equal(law.varReviewDecision({ category: 'corner', clearAndObviousError: true, cornerReviewEnabled: true }).review, true);
   assert.equal(law.varReviewDecision({ category: 'corner', clearAndObviousError: true, cornerReviewEnabled: true, restartOccurred: true }).review, false);
 });
+
+test('Law 14 goalkeeper must keep at least part of one foot on or behind the goal line', () => {
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 96, goalLine: 100, attackDirection: 1, footReach: 4.5 }), false);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 94, goalLine: 100, attackDirection: 1, footReach: 4.5 }), true);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 104, goalLine: 100, attackDirection: 1, footReach: 4.5 }), false);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 96, goalLine: 100, attackDirection: 1, footReach: 4.5, betweenPosts: false }), true);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: NaN, goalLine: 100, attackDirection: 1, footReach: 4.5 }), false);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 8, goalLine: 0, attackDirection: -1, footReach: 4.5 }), true);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: 4, goalLine: 0, attackDirection: -1, footReach: 4.5 }), false);
+  assert.equal(law.goalkeeperPenaltyLineOffence({ keeperX: -4, goalLine: 0, attackDirection: -1, footReach: 4.5 }), false);
+});
+
+test('Law 14 retakes a saved penalty after keeper infringement but awards a goal if scored', () => {
+  assert.equal(law.penaltyKeeperDecision({ keeperOffLine: false, keeperSaved: true }), 'continue');
+  assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true, goalScored: true, keeperSaved: true }), 'goal');
+  assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true, keeperSaved: true }), 'retake');
+  assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true, impactedKicker: true }), 'retake');
+  assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true }), 'continue');
+});

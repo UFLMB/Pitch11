@@ -3646,7 +3646,7 @@ const _gl18=goal;goal=function(dr){const evidence=ball.varIncident||{};ball.varI
       if(!done)rate(st,.8);}}};
 const _gc18=giveCard;giveCard=function(p,c){_gc18(p,c);if(p){CUT.px=p.x;CUT.py=p.y;}if(p)cut(c===1?'YELLOW CARD':c===3?'SECOND YELLOW':'RED CARD',(p.nm||'#'+p.num)+'  '+KIT[p.team].name,c===1?'#ffd400':'#e5342b',1,2.6);if(p&&p.varIncident&&p.varIncident.mistakenIdentity)varCheck('mistaken-identity',p.varIncident);if(c>1)varCheck('red-card',p&&p.varIncident||{});};
 const _ds18=doSub;doSub=function(p,bn){const o=p.num,ok=_ds18(p,bn);if(ok)cut('SUBSTITUTION','OFF #'+o+'    ON #'+p.num+'   '+KIT[p.team].name,'#5cff8a',2,2.4);return ok;};
-const _sp18=setupPen;setupPen=function(t,sh,so){const evidence=S.varIncident||{};if(!so)S.varIncident=null;_sp18(t,sh,so);if(!so){cut('PENALTY AWARDED','Referee decision confirmed','#4aa8ff',3,1.8);varCheck('penalty',evidence);}};
+const _sp18=setupPen;setupPen=function(t,sh,so){const evidence=S.varIncident||{};if(!so)S.varIncident=null;_sp18(t,sh,so);if(!so){cut(S.penaltyRetake?'PENALTY RETAKE':'PENALTY AWARDED',S.penaltyRetake?'Goalkeeper infringement - kick retaken':'Referee decision confirmed','#4aa8ff',3,1.8);varCheck('penalty',evidence);}};
 const _oopVAR=outOfPlay;outOfPlay=function(){_oopVAR();if(S.rs&&S.rs.kind==='corner'){const evidence=ball.varIncident||{};ball.varIncident=null;varCheck('corner',evidence);}};
 const _up18=update;update=function(){_up18();if(CUT.t>0&&S.mode!=='menu')CUT.t-=DT;};
 function cutDraw(){if(CUT.t<=0||H>W)return;const u=CUT.d-CUT.t,a=clamp(Math.min(u*5,CUT.t*4),0,1),e=1-a;
@@ -4809,6 +4809,120 @@ humanAct=function(p){
     return;
   }
   _humanThrowLaw(p);
+};
+
+/* IFAB Law 14: goalkeeper line position is checked at the instant of the penalty kick. */
+function clearPenaltyLineState(){
+  ball.penaltyTeam=null;ball.penaltyKicker=null;ball.penaltyKeeper=null;
+  ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;
+  ball.penaltyKeeperImpactedKicker=false;ball.penaltyRetakePending=false;
+  ball.penaltyWasShootout=false;ball.pen=false;
+}
+const _setupPenLine=setupPen;
+setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);const keeper=GK[1-t];if(keeper&&!keeper.out)keeper.face=Math.atan2(sh.y-keeper.y,sh.x-keeper.x);};
+const _setupKickoffLine=setupKickoff;
+setupKickoff=function(t){clearPenaltyLineState();_setupKickoffLine(t);};
+const _kickPenaltyLine=kick;
+kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
+  const rs=S.rs;
+  let incident=null;
+  if(rs&&rs.kind==='pen'&&rs.p===p&&mode==='shot'){
+    const team=rs.team,d=dirOf(team),gx=d>0?PX1:PX0,keeper=GK[1-team];
+    if(keeper&&!keeper.out){
+      incident={
+        team,kicker:p,keeper,shootout:!!S.so,
+        offLine:PITCH11Law.goalkeeperPenaltyLineOffence({
+          keeperX:keeper.x,goalLine:gx,attackDirection:d,
+          footReach:4.5*PLAYER_SCALE,
+          betweenPosts:Math.abs(keeper.y-CY)<=GOALH-4.5*PLAYER_SCALE
+        })
+      };
+    }
+  }
+  _kickPenaltyLine(p,vx,vy,vz,spin,rcv,tx,ty,mode);
+  if(incident){
+    ball.penaltyTeam=incident.team;ball.penaltyKicker=incident.kicker;
+    ball.penaltyKeeper=incident.keeper;ball.penaltyKeeperOffLine=incident.offLine;
+    ball.penaltyKeeperSaved=false;ball.penaltyKeeperImpactedKicker=false;
+    ball.penaltyRetakePending=false;ball.penaltyWasShootout=incident.shootout;
+    if(incident.offLine)varCheck('goal',{clearAndObviousError:true});
+  }
+};
+const _gkReactPenaltyLine=gkReact;
+gkReact=function(p){
+  const previousLast=ball.last;
+  _gkReactPenaltyLine(p);
+  if(ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
+     (ball.owner===p||(ball.last===p&&previousLast!==p)))ball.penaltyKeeperSaved=true;
+};
+const _outOfPlayPenaltyLine=outOfPlay;
+outOfPlay=function(){
+  const decision=PITCH11Law.penaltyKeeperDecision({
+    keeperOffLine:ball.pen&&ball.penaltyKeeperOffLine,
+    keeperSaved:ball.penaltyKeeperSaved,
+    impactedKicker:ball.penaltyKeeperImpactedKicker
+  });
+  if(decision==='retake'){ball.penaltyRetakePending=true;return;}
+  _outOfPlayPenaltyLine();
+};
+const _soRulesPenaltyLine=soRules;
+soRules=function(){
+  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved){
+    const stopped=ball.owner===ball.penaltyKeeper||
+      (!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3);
+    if(stopped)ball.penaltyRetakePending=true;
+    return;
+  }
+  _soRulesPenaltyLine();
+};
+function retakePenaltyForKeeperOffence(){
+  const team=ball.penaltyTeam,kicker=ball.penaltyKicker,keeper=ball.penaltyKeeper,shootout=ball.penaltyWasShootout;
+  ball.penaltyRetakePending=false;
+  if(team==null||!keeper){clearPenaltyLineState();return;}
+  keeper.penaltyLineOffences=(keeper.penaltyLineOffences||0)+1;
+  let sanction='First offence: goalkeeper warned';
+  if(keeper.penaltyLineOffences>1){
+    keeper.yc++;
+    const card=keeper.yc>=2?3:1;
+    giveCard(keeper,card);
+    sanction=card===3?'Repeated offence: second yellow and sending-off':'Repeated offence: goalkeeper cautioned';
+    if(card===3){
+      if(!PITCH11Law.hasMinimumPlayers(P,keeper.team,7)){
+        S.forfeitTeam=keeper.team;S.mode='full';S.t=0;S.rs=null;S.adv=null;S.inj=null;
+        msg('MATCH ABANDONED',KIT[keeper.team].name+' has fewer than seven players',3);
+        clearPenaltyLineState();return;
+      }
+      const replacement=firstIn(keeper.team);
+      if(replacement&&replacement!==keeper){
+        keeper.gk=false;replacement.gk=true;replacement.pos='GK';replacement.line=0;
+        replacement.st=mkStats('GK');GK[keeper.team]=replacement;
+        sanction+='; '+tag(replacement)+' becomes goalkeeper';
+      }
+    }
+  }
+  const taker=kicker&&!kicker.out&&!kicker.inj?kicker:firstIn(team);
+  clearPenaltyLineState();
+  S.penaltyRetake=true;
+  whistleStop(1.2,'PENALTY RETAKE',sanction,()=>{
+    try{
+      setupPen(team,taker,shootout);
+      if(shootout){S.mode='play';S.t=0;S.so.team=team;S.so.shooter=taker;S.so.live=true;S.so.t=0;}
+    }finally{S.penaltyRetake=false;}
+  });
+}
+const _goalPenaltyLine=goal;
+goal=function(dr){_goalPenaltyLine(dr);if(ball.pen)clearPenaltyLineState();};
+const _newMatchPenaltyLine=newMatch;
+newMatch=function(){for(const p of P)p.penaltyLineOffences=0;_newMatchPenaltyLine();};
+const _updatePenaltyLine=update;
+update=function(){
+  _updatePenaltyLine();
+  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&!ball.penaltyRetakePending){
+    const stopped=ball.owner===ball.penaltyKeeper||
+      (!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3);
+    if(stopped)ball.penaltyRetakePending=true;
+  }
+  if(ball.penaltyRetakePending&&S.mode==='play')retakePenaltyForKeeperOffence();
 };
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
