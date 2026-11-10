@@ -1,0 +1,334 @@
+/**
+ * PITCH 11 browser simulation core — isolated prototype.
+ * Coordinates: metres; X = pitch length (0..105), Y = pitch width (0..68).
+ * Team 0 attacks +X; team 1 attacks -X.
+ * No DOM, renderer, audio, or animation dependencies.
+ */
+export const SIM_VERSION = "0.1.0";
+export const PITCH = Object.freeze({ length: 105, width: 68, goalWidth: 7.32, goalHeight: 2.44, ballRadius: 0.11 });
+export const FIXED_DT = 1 / 60;
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const hypot = (x, y) => Math.hypot(x, y);
+const dist = (a, b) => hypot(a.x - b.x, a.y - b.y);
+const norm = (x, y) => { const n = hypot(x, y) || 1; return { x: x / n, y: y / n }; };
+const FORMATION = [
+  [0.055, .50], [0.19, .10], [0.17, .36], [0.17, .64], [0.19, .90],
+  [0.39, .24], [0.36, .50], [0.39, .76], [0.64, .15], [0.67, .50], [0.64, .85]
+];
+const DEFAULT_STATS = { pace: .68, pass: .68, shoot: .62, dribble: .66, defend: .62, strength: .65, stamina: .82 };
+
+function makePlayer(team, slot) {
+  const [depth, lane] = FORMATION[slot];
+  const attack = team === 0 ? 1 : -1;
+  const x = team === 0 ? 2 + depth * 101 : 103 - depth * 101;
+  const y = 3 + lane * 62;
+  const role = slot === 0 ? "GK" : slot < 5 ? "DEF" : slot < 8 ? "MID" : "FWD";
+  return {
+    id: team * 11 + slot, team, slot, role, x, y, vx: 0, vy: 0,
+    homeX: x, homeY: y, attack, facing: attack > 0 ? 0 : Math.PI,
+    stamina: 1, stats: { ...DEFAULT_STATS }, cooldown: 0, action: "idle",
+    selected: false, hasBall: false, targetX: x, targetY: y, intent: "shape"
+  };
+}
+function makeBall() {
+  return { x: 52.5, y: 34, z: PITCH.ballRadius, vx: 0, vy: 0, vz: 0, owner: -1, lastTouchTeam: -1, spin: 0 };
+}
+function copyPlayer(p) {
+  return { id:p.id,team:p.team,slot:p.slot,role:p.role,x:p.x,y:p.y,vx:p.vx,vy:p.vy,
+    facing:p.facing,stamina:p.stamina,hasBall:p.hasBall,selected:p.selected,action:p.action,intent:p.intent };
+}
+
+export class FootballSimulation {
+  constructor(options = {}) {
+    this.seed = options.seed ?? 11;
+    this.rngState = (this.seed >>> 0) || 1;
+    this.accumulator = 0;
+    this.time = 0;
+    this.tick = 0;
+    this.score = [0, 0];
+    this.phase = "kickoff";
+    this.players = Array.from({ length: 22 }, (_, i) => makePlayer(i < 11 ? 0 : 1, i % 11));
+    this.ball = makeBall();
+    this.humanTeam = options.humanTeam ?? 0;
+    this.selectedPlayer = this.humanTeam * 11 + 9;
+    this.players[this.selectedPlayer].selected = true;
+    this.commands = [];
+    this.events = [];
+    this.matchSeconds = 0;
+    this.lastSnapshot = null;
+    this.resetKickoff();
+  }
+  random() {
+    let x = this.rngState;
+    x ^= x << 13; x ^= x >>> 17; x ^= x << 5;
+    this.rngState = x >>> 0;
+    return this.rngState / 4294967296;
+  }
+  resetKickoff() {
+    for (const p of this.players) {
+      const [depth, lane] = FORMATION[p.slot];
+      p.x = p.team === 0 ? 2 + depth * 101 : 103 - depth * 101;
+      p.y = 3 + lane * 62;
+      p.homeX = p.x; p.homeY = p.y; p.vx = 0; p.vy = 0;
+      p.hasBall = false; p.action = "idle"; p.intent = "shape";
+    }
+    this.ball = makeBall();
+    const kickoff = this.players[this.humanTeam * 11 + 9];
+    kickoff.x = 51.2; kickoff.y = 34; kickoff.hasBall = true;
+    this.ball.owner = kickoff.id; this.ball.lastTouchTeam = this.humanTeam;
+    this.phase = "playing";
+  }
+  setPlayerStats(playerId, stats) {
+    const p = this.players[playerId];
+    if (!p) return false;
+    for (const key of Object.keys(DEFAULT_STATS)) if (Number.isFinite(stats[key])) p.stats[key] = clamp(stats[key], 0, 1);
+    return true;
+  }
+  selectPlayer(playerId) {
+    const p = this.players[playerId];
+    if (!p || p.team !== this.humanTeam) return false;
+    this.players[this.selectedPlayer].selected = false;
+    this.selectedPlayer = playerId;
+    p.selected = true;
+    return true;
+  }
+  command(command) {
+    if (!command || typeof command.type !== "string") return false;
+    this.commands.push({ ...command });
+    return true;
+  }
+  update(realDelta) {
+    const frame = clamp(Number(realDelta) || 0, 0, .1);
+    this.accumulator += frame;
+    let steps = 0;
+    while (this.accumulator >= FIXED_DT && steps < 6) {
+      this.step(FIXED_DT);
+      this.accumulator -= FIXED_DT;
+      steps++;
+    }
+    if (steps === 6 && this.accumulator > FIXED_DT * 6) this.accumulator = 0;
+    return this.getSnapshot();
+  }
+  step(dt) {
+    if (this.phase !== "playing") return;
+    this.tick++;
+    this.time += dt;
+    this.matchSeconds += dt;
+    this.events.length = 0;
+    for (const p of this.players) p.cooldown = Math.max(0, p.cooldown - dt);
+    this.applyCommands();
+    this.updateAI(dt);
+    this.movePlayers(dt);
+    this.updateBall(dt);
+    this.resolvePlayerBallContacts();
+    this.resolveBoundaries();
+  }
+  applyCommands() {
+    const cmds = this.commands.splice(0);
+    for (const c of cmds) {
+      const p = this.players[this.selectedPlayer];
+      if (!p) continue;
+      if (c.type === "move") {
+        const d = norm(clamp(Number(c.x) || 0, -1, 1), clamp(Number(c.y) || 0, -1, 1));
+        p.inputX = Math.abs(c.x) < .001 ? 0 : d.x;
+        p.inputY = Math.abs(c.y) < .001 ? 0 : d.y;
+        p.sprinting = !!c.sprint;
+      } else if (c.type === "releaseMove") {
+        p.inputX = 0; p.inputY = 0; p.sprinting = false;
+      } else if (c.type === "switch") {
+        const candidates = this.players.filter(q => q.team === this.humanTeam && q.role !== "GK");
+        candidates.sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
+        if (candidates[0]) this.selectPlayer(candidates[0].id);
+      } else if (c.type === "pass" && p.team === this.humanTeam && this.ball.owner === p.id) {
+        this.passBall(p, c.targetId);
+      } else if (c.type === "shoot" && p.team === this.humanTeam && this.ball.owner === p.id) {
+        this.shootBall(p, c.power);
+      } else if (c.type === "tackle") {
+        p.tackleUntil = this.time + .24;
+        p.action = "tackle";
+      }
+    }
+  }
+  updateAI(dt) {
+    const owner = this.players[this.ball.owner];
+    for (const p of this.players) {
+      if (p.id === this.selectedPlayer && p.team === this.humanTeam) {
+        p.intent = "manual";
+        continue;
+      }
+      if (owner && owner.id === p.id) {
+        this.decideOnBall(p);
+        continue;
+      }
+      const attacking = owner && owner.team === p.team;
+      const nearestOpponent = this.players.filter(q => q.team !== p.team).sort((a,b) => dist(a,p)-dist(b,p))[0];
+      const ballDistance = dist(p, this.ball);
+      if (!attacking && (!owner || owner.team !== p.team) && ballDistance < 24 && p.role !== "GK") {
+        const nearest = this.players.filter(q => q.team === p.team && q.role !== "GK").sort((a,b) => dist(a,this.ball)-dist(b,this.ball))[0];
+        if (nearest && nearest.id === p.id) {
+          p.targetX = this.ball.x; p.targetY = this.ball.y; p.intent = "press";
+        } else this.setShapeTarget(p, owner);
+      } else if (attacking) {
+        const forward = p.attack;
+        const laneOffset = (p.homeY - 34) * .35;
+        p.targetX = clamp(p.homeX + forward * (p.role === "FWD" ? 9 : 4), 3, 102);
+        p.targetY = clamp(p.homeY + laneOffset * .18, 3, 65);
+        if (nearestOpponent && dist(nearestOpponent,p) < 7) p.targetY = clamp(p.targetY + (p.y < 34 ? -5 : 5), 2, 66);
+        p.intent = "support";
+      } else this.setShapeTarget(p, owner);
+      p.targetX = clamp(p.targetX, 1.5, 103.5);
+      p.targetY = clamp(p.targetY, 1.5, 66.5);
+    }
+    // Goalkeepers stay goal-side and only attack the ball when it enters their box.
+    for (const team of [0,1]) {
+      const gk = this.players[team*11];
+      const ownGoal = team === 0 ? 0 : 105;
+      const threat = this.ball.x < 20 || this.ball.x > 85;
+      gk.targetX = ownGoal === 0 ? clamp(this.ball.x, 2, 8) : clamp(this.ball.x, 97, 103);
+      gk.targetY = clamp(this.ball.y, 24, 44);
+      if (!threat || (team === 0 ? this.ball.x > 20 : this.ball.x < 85)) {
+        gk.targetX = ownGoal === 0 ? 5 : 100;
+        gk.targetY = 34 + (this.ball.y - 34) * .18;
+      }
+      gk.intent = "goalkeeper";
+    }
+  }
+  setShapeTarget(p, owner) {
+    const shiftX = owner ? clamp((owner.x - 52.5) * .18, -8, 8) : 0;
+    const shiftY = owner ? clamp((owner.y - 34) * .12, -5, 5) : 0;
+    p.targetX = p.homeX + shiftX;
+    p.targetY = p.homeY + shiftY;
+    p.intent = "shape";
+  }
+  decideOnBall(p) {
+    const goalX = p.team === 0 ? 105 : 0;
+    const goalDist = Math.abs(goalX - p.x);
+    const goalLane = Math.abs(p.y - 34);
+    const pressure = this.players.filter(q => q.team !== p.team).reduce((best,q) => Math.min(best,dist(q,p)),99);
+    if (goalDist < 22 && goalLane < 18 && pressure > 2.5) {
+      this.shootBall(p, .72 + p.stats.shoot * .25);
+      return;
+    }
+    const forward = p.attack;
+    const options = this.players.filter(q => q.team === p.team && q.id !== p.id && q.role !== "GK")
+      .map(q => ({ p:q, score: forward*(q.x-p.x) - Math.abs(q.y-p.y)*.28 - this.players.filter(o=>o.team!==p.team).filter(o=>this.distanceToSegment(o,p,q)<3.2).length*9 }))
+      .filter(o => o.score > 4).sort((a,b)=>b.score-a.score);
+    if (pressure < 3.5 && options.length && this.random() < .045) {
+      this.passBall(p, options[0].p.id);
+      return;
+    }
+    p.targetX = clamp(p.x + forward * 8, 2, 103);
+    p.targetY = clamp(p.y + clamp(34-p.y,-5,5)*.12, 2, 66);
+    p.intent = "dribble";
+  }
+  distanceToSegment(p,a,b) {
+    const dx=b.x-a.x,dy=b.y-a.y,l2=dx*dx+dy*dy||1;
+    const t=clamp(((p.x-a.x)*dx+(p.y-a.y)*dy)/l2,0,1);
+    return hypot(p.x-(a.x+t*dx),p.y-(a.y+t*dy));
+  }
+  movePlayers(dt) {
+    for (const p of this.players) {
+      const manual = p.id === this.selectedPlayer && p.team === this.humanTeam;
+      let tx=p.targetX, ty=p.targetY, sprint=false;
+      if (manual) {
+        const ix=p.inputX||0, iy=p.inputY||0;
+        if (Math.abs(ix)+Math.abs(iy)>.01) { tx=p.x+ix*10; ty=p.y+iy*10; sprint=!!p.sprinting; }
+        else { tx=p.x; ty=p.y; }
+      }
+      const d=norm(tx-p.x,ty-p.y), gap=dist(p,{x:tx,y:ty});
+      const speed=(5.0+p.stats.pace*2.5)*(sprint?1.32:1)*(0.55+p.stamina*.45);
+      const desired=gap<.15?0:Math.min(speed,gap/dt);
+      const accel=clamp(desired-hypot(p.vx,p.vy),-12*dt,12*dt);
+      const current=norm(p.vx,p.vy);
+      const nv=Math.max(0,hypot(p.vx,p.vy)+accel);
+      p.vx=current.x*nv + d.x*Math.min(2.2*dt, .12);
+      p.vy=current.y*nv + d.y*Math.min(2.2*dt, .12);
+      const max=speed;
+      const v=hypot(p.vx,p.vy);
+      if(v>max){p.vx=p.vx/v*max;p.vy=p.vy/v*max;}
+      p.x=clamp(p.x+p.vx*dt, .5, 104.5);
+      p.y=clamp(p.y+p.vy*dt, .5, 67.5);
+      if (hypot(p.vx,p.vy)>.15) p.facing=Math.atan2(p.vy,p.vx);
+      p.stamina=clamp(p.stamina-(sprint?.0008:.00022)*dt*60, .25, 1);
+      p.action = manual && (p.inputX||p.inputY) ? (sprint?"sprint":"run") : p.intent;
+    }
+  }
+  passBall(p,targetId) {
+    let target=this.players[targetId];
+    if (!target || target.team!==p.team || target.id===p.id) {
+      const candidates=this.players.filter(q=>q.team===p.team&&q.id!==p.id&&q.role!=="GK")
+        .sort((a,b)=> (p.attack*(b.x-p.x)-Math.abs(b.y-p.y)*.2) - (p.attack*(a.x-p.x)-Math.abs(a.y-p.y)*.2));
+      target=candidates[0];
+    }
+    if(!target)return false;
+    const d=norm(target.x-p.x,target.y-p.y);
+    const lead=Math.min(3,dist(p,target)*.07);
+    this.releaseBall(p,d.x*(15+p.stats.pass*7)+target.vx*.35,d.y*(15+p.stats.pass*7)+target.vy*.35,2.1+lead*.15);
+    this.events.push({type:"pass",from:p.id,to:target.id});
+    return true;
+  }
+  shootBall(p,power=1) {
+    const goalX=p.team===0?105:0, aimY=clamp(34+(this.random()-.5)*(9-p.stats.shoot*6),30,38);
+    const d=norm(goalX-p.x,aimY-p.y),strength=clamp(Number(power)||1,.35,1.35);
+    this.releaseBall(p,d.x*(21+strength*12),d.y*(21+strength*12),2.5+strength*3);
+    this.events.push({type:"shot",player:p.id});
+    return true;
+  }
+  releaseBall(p,vx,vy,vz) {
+    p.hasBall=false; p.action="kick";
+    this.ball.owner=-1; this.ball.lastTouchTeam=p.team;
+    this.ball.x=p.x+p.attack*.55; this.ball.y=p.y;
+    this.ball.vx=vx; this.ball.vy=vy; this.ball.vz=vz;
+  }
+  updateBall(dt) {
+    const owner=this.players[this.ball.owner];
+    if(owner) {
+      const offset=owner.attack*.72;
+      this.ball.x=owner.x+offset; this.ball.y=owner.y+Math.sin(this.time*8)*.07;
+      this.ball.z=PITCH.ballRadius; this.ball.vx=owner.vx; this.ball.vy=owner.vy; this.ball.vz=0;
+      return;
+    }
+    const b=this.ball;
+    b.vz-=9.81*dt;
+    b.vx*=Math.exp(-.018*hypot(b.vx,b.vy)*dt);
+    b.vy*=Math.exp(-.018*hypot(b.vx,b.vy)*dt);
+    b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt;
+    if(b.z<PITCH.ballRadius) {
+      b.z=PITCH.ballRadius;
+      if(b.vz<-.8)b.vz=-b.vz*.48;else b.vz=0;
+      const friction=Math.exp(-1.1*dt);
+      b.vx*=friction;b.vy*=friction;
+    }
+    if(Math.abs(b.vx)+Math.abs(b.vy)<.06&&b.z<=PITCH.ballRadius+.01){b.vx=0;b.vy=0;}
+  }
+  resolvePlayerBallContacts() {
+    if(this.ball.owner>=0)return;
+    const b=this.ball;
+    const nearby=this.players.filter(p=>p.role!=="GK"||b.x<12||b.x>93)
+      .map(p=>({p,d:dist(p,b)})).filter(v=>v.d<1.15&&b.z<1.5)
+      .sort((a,c)=>a.d-c.d);
+    if(!nearby.length)return;
+    const p=nearby[0].p;
+    const opponent=this.players.filter(q=>q.team!==p.team).some(q=>dist(q,p)<1.35);
+    if(opponent&&p.team!==b.lastTouchTeam&&this.random()>.38)return;
+    b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action="control";
+    this.events.push({type:"possession",player:p.id,team:p.team});
+  }
+  resolveBoundaries() {
+    const b=this.ball;
+    if(b.x<0||b.x>105) {
+      const inGoal=Math.abs(b.y-34)<PITCH.goalWidth/2&&b.z<PITCH.goalHeight;
+      if(inGoal){const scoring=b.x>105?0:1;this.score[scoring]++;this.events.push({type:"goal",team:scoring,score:[...this.score]});this.resetKickoff();}
+      else {b.x=clamp(b.x,0,105);b.vx*=-.35;this.events.push({type:"ballOut",side:"goalLine"});}
+    }
+    if(b.y<0||b.y>68){b.y=clamp(b.y,0,68);b.vy*=-.35;this.events.push({type:"ballOut",side:"touchline"});}
+  }
+  getSnapshot() {
+    const snapshot={version:SIM_VERSION,tick:this.tick,time:this.time,matchSeconds:this.matchSeconds,
+      phase:this.phase,score:[...this.score],humanTeam:this.humanTeam,selectedPlayer:this.selectedPlayer,
+      ball:{...this.ball},players:this.players.map(copyPlayer),events:this.events.slice()};
+    this.lastSnapshot=snapshot;
+    return snapshot;
+  }
+}
+export function createSimulation(options) { return new FootballSimulation(options); }
