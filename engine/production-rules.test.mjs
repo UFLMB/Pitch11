@@ -83,3 +83,53 @@ test("penalty shootout rotation includes eligible goalkeepers", () => {
   assert.match(source, /list\.push\(\.\.\.PITCH11Law\.shootoutOrder\(P,t\)\)/);
   assert.match(source, /PITCH11Law\.shootoutOrder/);
 });
+
+
+test("offside uses the live second-last-opponent line at the instant of every deliberate kick", () => {
+  assert.match(source, /PITCH11Law\.offsideLine\(P,t,d,ball\.x\*d/);
+});
+
+test("a goalkeeper save or accidental deflection does not erase offside position", () => {
+  assert.match(source, /best\.kcd=0\.35;b\.last=best;b\.receiver=null;clearIndirect\(\);/);
+  assert.match(source, /p\.kcd=0\.35;if\(p!==b\.dbl\)b\.dbl=null;clearIndirect\(\);/);
+  assert.match(source, /p\.kcd=0\.4;if\(p!==b\.dbl\)b\.dbl=null;clearIndirect\(\);/);
+  assert.match(source, /if\(p!==b\.dbl\)b\.dbl=null;clearIndirect\(\);/);
+});
+
+test("a restart taker's physical second touch is whistled at ground and aerial heights", () => {
+  assert.match(source, /function secondTouch\(p\)\{/);
+  assert.match(source, /if\(S\.so&&S\.so\.live\)\{soResult\(false\);return;\}/);
+  assert.match(source, /if\(p===b\.dbl\)\{secondTouch\(p\);return;\}/);
+  assert.match(source, /if\(p===b\.dbl\)\{\s*const d=Math\.hypot\(b\.x-p\.x,b\.y-p\.y\)/);
+});
+
+test("shootout keeps the shooter's goalkeeper in the centre circle", () => {
+  assert.match(source, /if\(so&&p\.team===t\)\{const a=/);
+});
+
+test("substitutions enforce the total limit and three/four substitution windows", () => {
+  assert.match(source, /PITCH11Law\.substitutionLimits\(S\.half,S\.ko\)/);
+  assert.match(source, /S\.subWindowActive\[t\]/);
+  assert.match(source, /S\.subWindows\[t\]>=lim\.windows/);
+});
+
+test("the seven-player minimum is enforced after sending-offs and at stoppages", () => {
+  assert.match(source, /PITCH11Law\.abandoningTeam\(P\)/);
+  assert.match(source, /S\.abandoned=short/);
+  assert.match(source, /w=S\.abandoned!==null\?1-S\.abandoned/);
+  assert.match(source, /if\(S\.abandoned!==null\)return 1-S\.abandoned/);
+  assert.match(source, /MATCH ABANDONED/);
+});
+
+test("goalkeeper handling is restricted to the penalty area and the eight-second limit awards a corner", () => {
+  assert.match(source, /PITCH11Law\.goalkeeperHoldExpired\(g\.poss\)/);
+  assert.match(source, /b\.owner\.hold&&!\(S\.rs&&S\.rs\.p===b\.owner\)/);
+  assert.match(source, /depth=\(b\.x-own\)\*d/);
+  assert.match(source, /if\(!inBox\).*?GOALKEEPER HANDBALL/s);
+  assert.match(source, /GOALKEEPER 8-SECOND LIMIT/);
+  assert.match(source, /spot\(t,x,y,false,Math\.atan2\(CY-y,CX-x\),'corner'\)/);
+});
+
+test("all restart placements clear the previous taker's second-touch lock", () => {
+  assert.match(source, /b\.owner=tk;b\.last=tk;b\.receiver=null;b\.dbl=null;b\.protect=3/);
+});
