@@ -89,6 +89,6 @@ test("a team is forfeited only after a sending-off leaves fewer than seven playe
   assert.match(source, /if\(card>1&&!PITCH11Law\.hasMinimumPlayers\(P,p\.team,7\)\)/);
   assert.match(source, /S\.forfeitTeam=p\.team;S\.mode='full'/);
   assert.match(source, /MATCH ABANDONED/);
-  assert.match(source, /S\\.forfeitTeam=null/);
+  assert.match(source, /S\.forfeitTeam=null/);
   assert.match(source, /forfeited\?KIT\[win\]\.name\+' WIN BY FORFEIT'/);
 });
