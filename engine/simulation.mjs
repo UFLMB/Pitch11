@@ -428,9 +428,11 @@ export class FootballSimulation {
   }
   updateMatchPhase() {
     if (this.period === 1 && this.matchSeconds >= this.halfLengthSeconds) {
+      this.matchSeconds = this.halfLengthSeconds;
       this.phase = "halfTime";
       this.events.push({ type: "halfTime", score: [...this.score] });
     } else if (this.period === 2 && this.matchSeconds >= this.halfLengthSeconds * 2) {
+      this.matchSeconds = this.halfLengthSeconds * 2;
       this.phase = "fullTime";
       this.events.push({ type: "fullTime", score: [...this.score] });
     }
