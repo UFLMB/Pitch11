@@ -199,3 +199,11 @@ test('Law 14 retakes a saved penalty after keeper infringement but awards a goal
   assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true, impactedKicker: true }), 'retake');
   assert.equal(law.penaltyKeeperDecision({ keeperOffLine: true }), 'continue');
 });
+
+test('Law 11 preserves offside after opponent deflections and deliberate saves', () => {
+  assert.equal(law.offsideTouchAction({ sameTeam: false, deliberatePlay: false }), 'preserve');
+  assert.equal(law.offsideTouchAction({ sameTeam: false, deliberatePlay: true, deliberateSave: true }), 'preserve');
+  assert.equal(law.offsideTouchAction({ sameTeam: false, deliberatePlay: true, deliberateSave: false }), 'reset');
+  assert.equal(law.offsideTouchAction({ sameTeam: true, deliberatePlay: false }), 'recalculate');
+  assert.equal(law.offsideTouchAction({ sameTeam: true, deliberatePlay: true, deliberateSave: true }), 'preserve');
+});

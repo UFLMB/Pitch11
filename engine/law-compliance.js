@@ -54,6 +54,16 @@
     return { x: inPenaltyArea ? state.goalLine + state.direction * (state.penaltyDepth + state.clearance) : x, y };
   }
 
+  function offsideTouchAction(state) {
+    const s = state || {};
+    // A deliberate save never resets an opponent's offside phase. A team-mate's
+    // touch creates a new offside snapshot; an opponent's deliberate play resets it.
+    if (s.deliberateSave) return 'preserve';
+    if (s.sameTeam) return 'recalculate';
+    if (s.deliberatePlay) return 'reset';
+    return 'preserve';
+  }
+
   function varReviewDecision(state) {
     const s = state || {};
     const category = s.category;
@@ -162,5 +172,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

@@ -228,3 +228,20 @@ test("Law 14 checks the goalkeeper's goal-line position at the kick and retakes 
   assert.match(source, /varCheck\('goal',\{clearAndObviousError:true\}\)/);
   assert.match(source, /S\.penaltyRetake\?'PENALTY RETAKE'/);
 });
+
+test("Law 11 preserves offside flags after opponent deflections and goalkeeper saves", () => {
+  assert.match(source, /function applyOffsideTouch\(p,previousLast,deliberatePlay,deliberateSave\)/);
+  assert.match(source, /if\(!S\.prac&&best\.off\)\{callOffside\(best\);return;\}/);
+  assert.match(source, /applyOffsideTouch\(p,previousLast,true,true\)/);
+  assert.match(source, /applyOffsideTouch\(p,previousLast,false,false\)/);
+  assert.match(source, /if\(!S\.prac&&p\.off\)\{callOffside\(p\);return;\}/);
+});
+
+test("goalkeeper parries preserve offside flags instead of clearing the phase", () => {
+  const start = source.indexOf("function gkReact(p){");
+  const end = source.indexOf("/* ===================== 6. AI", start);
+  assert.ok(start >= 0 && end > start);
+  const keeperReact = source.slice(start, end);
+  assert.equal((keeperReact.match(/applyOffsideTouch\(p,previousLast,true,true\)/g) || []).length, 2);
+  assert.doesNotMatch(keeperReact, /clearOff\(\)/);
+});
