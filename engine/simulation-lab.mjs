@@ -90,7 +90,7 @@ const postMat = mat(0xf4f5ed, .35, .25), netMat = new THREE.LineBasicMaterial({ 
 for (const sign of [-1, 1]) {
   const gx = sign * 52.5;
   for (const z of [-3.66, 3.66]) addCylinder(.075, .075, 2.44, gx, 1.22, z, postMat, scene, 12);
-  addCylinder(.075, .075, 7.32, gx, 2.44, 0, postMat, scene, 12).rotation.z = Math.PI / 2;
+  addCylinder(.075, .075, 7.32, gx, 2.44, 0, postMat, scene, 12).rotation.x = Math.PI / 2;
   const backX = gx + sign * 2.1;
   for (const z of [-3.66, 3.66]) lineSegment(gx, z, backX, z, .055);
   lineSegment(backX, -3.66, backX, 3.66, .055);
