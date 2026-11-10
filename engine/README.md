@@ -60,7 +60,7 @@ The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, nam
 | `restart` | — | Take an awarded restart when play is stopped |
 | `continue` | — | Start the second half after half-time |
 
-## Regression tests
+## Browser simulation lab\n\nOpen `simulation-lab.html` through a static HTTP server (ES modules do not run reliably from `file://`). It imports the simulation core directly and renders a lightweight top-down validation view. Desktop controls: WASD/arrows to move, Shift to sprint, P to pass, Space to shoot, E to switch, Q to tackle, R to take a restart. Touch devices use the virtual joystick and on-screen actions. The lab accelerates match time for quick validation.\n\nThe lab is isolated from `index.html`, `stadium-runtime.js` and `graphics3d.html`; it does not replace the production match runtime.\n\n## Regression tests
 
 Run locally with Node.js 22 or later:
 
