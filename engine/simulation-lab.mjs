@@ -1,6 +1,7 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { FootballSimulation } from "./simulation.mjs";
 import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera.mjs";
+import { markRoofForCameraExclusion, configureStadiumCameraLayers } from "./stadium-visibility.mjs";
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
@@ -24,6 +25,9 @@ fillLight.position.set(70, 70, -85); scene.add(fillLight);
 
 const camera = new THREE.PerspectiveCamera(41, host.clientWidth / host.clientHeight, .1, 500);
 const broadcastCamera = createBroadcastCamera(camera, { mobile });
+// Roof meshes are on a dedicated Three.js layer. The broadcast camera omits
+// that layer; any alternate/replay camera can explicitly enable it.
+configureStadiumCameraLayers(camera, { hideRoof: true });
 
 const mat = (color, roughness = .82, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const addBox = (w, h, d, x, y, z, material, parent = scene) => {
@@ -120,15 +124,15 @@ for (let row = 0; row < 17; row++) {
   addBox(1.35, 1.2, 96 - offset * 1.4, x, y, 0, row % 3 ? standMat : seatMat);
   addBox(1.35, 1.2, 96 - offset * 1.4, -x, y, 0, row % 3 ? standMat : seatMat);
 }
-addBox(140, 2.2, 30, 0, 22.8, 59, roofMat);
-addBox(140, 2.2, 30, 0, 22.8, -59, roofMat);
-addBox(30, 2.2, 105, 70, 22.8, 0, roofMat);
-addBox(30, 2.2, 105, -70, 22.8, 0, roofMat);
+markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, 59, roofMat));
+markRoofForCameraExclusion(addBox(140, 2.2, 30, 0, 22.8, -59, roofMat));
+markRoofForCameraExclusion(addBox(30, 2.2, 105, 70, 22.8, 0, roofMat));
+markRoofForCameraExclusion(addBox(30, 2.2, 105, -70, 22.8, 0, roofMat));
 for (const z of [-74, 74]) {
-  addBox(136, .35, .6, 0, 19.5, z, mat(0xa3e635, .35, .15));
-  addBox(136, .18, .6, 0, 20.1, z, mat(0x9ccf58, .3, .1));
+  markRoofForCameraExclusion(addBox(136, .35, .6, 0, 19.5, z, mat(0xa3e635, .35, .15)));
+  markRoofForCameraExclusion(addBox(136, .18, .6, 0, 20.1, z, mat(0x9ccf58, .3, .1)));
 }
-for (const x of [-82, 82]) addBox(.6, .35, 100, x, 19.5, 0, mat(0xa3e635, .35, .15));
+for (const x of [-82, 82]) markRoofForCameraExclusion(addBox(.6, .35, 100, x, 19.5, 0, mat(0xa3e635, .35, .15)));
 
 const crowdColors = [0x31506a, 0x9c3f3b, 0xddd8c8, 0x365f47, 0x9c824b, 0x202b3a, 0x758b98, 0x5e344c];
 const crowdCount = mobile ? 1900 : 4400;
