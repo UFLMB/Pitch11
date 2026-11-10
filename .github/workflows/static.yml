@@ -34,6 +34,7 @@ jobs:
           node --check engine/pitch11-adapter.mjs
           node --check engine/broadcast-camera.mjs
           node --check engine/stadium-visibility.mjs
+          node --check engine/stadium-model.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
       - name: Run simulation and adapter regression tests
