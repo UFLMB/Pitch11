@@ -1065,10 +1065,10 @@ function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out)p.limp=true;S.
 function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
-  if(!S.prac&&b.owner&&b.owner.gk&&b.owner.hold){
-    const g=b.owner,d=dirOf(g.team),own=ownGX(g),depth=(g.x-own)*d;
-    const inBox=depth>=-4&&depth<=PEN_DEPTH+4&&Math.abs(g.y-CY)<=PEN_WIDTH/2+4;
-    if(!inBox){const t=1-g.team,x=g.x,y=g.y;whistleStop(1.2,'GOALKEEPER HANDBALL',tag(g),()=>freeKick(t,x,y,false));return;}
+  if(!S.prac&&b.owner&&b.owner.gk&&b.owner.hold&&!(S.rs&&S.rs.p===b.owner)){
+    const g=b.owner,d=dirOf(g.team),own=ownGX(g),depth=(b.x-own)*d;
+    const inBox=depth>=-BR&&depth<=PEN_DEPTH+BR&&Math.abs(b.y-CY)<=PEN_WIDTH/2+BR;
+    if(!inBox){const t=1-g.team,x=b.x,y=b.y;whistleStop(1.2,'GOALKEEPER HANDBALL',tag(g),()=>freeKick(t,x,y,false));return;}
     if(PITCH11Law.goalkeeperHoldExpired(g.poss)){
       const t=1-g.team,gx=ownGX(g),x=gx===PX0?PX0+3:PX1-3,y=g.y<CY?PY0+3:PY1-3;
       whistleStop(1.2,'GOALKEEPER 8-SECOND LIMIT',tag(g),()=>{spot(t,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;});return;
