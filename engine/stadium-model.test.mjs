@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { computeStadiumPlacement } from "./stadium-model.mjs";
 
 test("centres stadium horizontally and places its base at ground level", () => {
-  const result = computeStadiumPlacement({ min: { x: -150, y: -4, z: -100 }, max: { x: 150, y: 46, z: 100 } });
+  const result = computeStadiumPlacement({ min: { x: -100, y: -4, z: -80 }, max: { x: 100, y: 46, z: 80 } });
   assert.equal(result.scale, 1);
   assert.deepEqual(result.position, { x: 0, y: 4, z: 0 });
-  assert.deepEqual(result.dimensions, { width: 300, height: 50, depth: 200 });
+  assert.deepEqual(result.dimensions, { width: 200, height: 50, depth: 160 });
 });
 
 test("scales oversized stadiums down without distorting proportions", () => {

@@ -8,9 +8,14 @@ export function computeStadiumPlacement(bounds, maxHorizontalExtent = 220) {
   const extent = Math.max(width, depth);
   if (width <= 0 || depth <= 0 || height <= 0 || extent <= 0) throw new RangeError("Stadium model bounds must have positive dimensions.");
   const scale = Math.min(1, maxHorizontalExtent / extent);
+  const cleanZero = value => Object.is(value, -0) ? 0 : value;
   return {
     scale,
-    position: { x: -((minX + maxX) / 2) * scale, y: -minY * scale, z: -((minZ + maxZ) / 2) * scale },
+    position: {
+      x: cleanZero(-((minX + maxX) / 2) * scale),
+      y: cleanZero(-minY * scale),
+      z: cleanZero(-((minZ + maxZ) / 2) * scale)
+    },
     dimensions: { width: width * scale, height: height * scale, depth: depth * scale }
   };
 }
