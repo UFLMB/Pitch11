@@ -207,3 +207,11 @@ test('Law 11 preserves offside after opponent deflections and deliberate saves',
   assert.equal(law.offsideTouchAction({ sameTeam: true, deliberatePlay: false }), 'recalculate');
   assert.equal(law.offsideTouchAction({ sameTeam: true, deliberatePlay: true, deliberateSave: true }), 'preserve');
 });
+
+test('Law 14 requires a penalty kick to travel forward toward the opponents goal', () => {
+  assert.equal(law.penaltyKickDirectionLegal({ vx: 120, attackDirection: 1 }), true);
+  assert.equal(law.penaltyKickDirectionLegal({ vx: -120, attackDirection: 1 }), false);
+  assert.equal(law.penaltyKickDirectionLegal({ vx: -120, attackDirection: -1 }), true);
+  assert.equal(law.penaltyKickDirectionLegal({ vx: 120, attackDirection: -1 }), false);
+  assert.equal(law.penaltyKickDirectionLegal({ vx: 0, attackDirection: 1 }), false);
+});
