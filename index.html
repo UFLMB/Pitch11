@@ -2023,6 +2023,29 @@ const _sk=setupKickoff;setupKickoff=function(t){_sk(t);RP.t0=RP.total;if(S.clock
 const _nm=newMatch;newMatch=function(){_nm();stReset();};
 const MSG={FOUL:'Foul - the referee blows up.',OFFSIDE:'The flag is up - offside!',PENALTY:'Penalty awarded!',ADVANTAGE:'Referee plays advantage.',INJURY:'A player is down injured.','NO ADVANTAGE':'No advantage - back for the free kick.'};
 
+/* --- stadium atmosphere event bridge: presentation reacts to real match events --- */
+function emitStadiumEvent(type){
+  if(S.mode==='menu'||S.mode==='replay'||S.prac||S.so)return;
+  try{window.dispatchEvent(new CustomEvent('p11match-event',{detail:{type}}));}catch(_){}
+}
+const _stadiumGoal=goal;goal=function(dr){_stadiumGoal(dr);emitStadiumEvent('goal');};
+const _stadiumKeeper=gkReact;gkReact=function(p){
+  const sc=ST.sc,was=sc&&sc.on;
+  _stadiumKeeper(p);
+  if(sc&&!was&&sc.on&&sc.t!==p.team)emitStadiumEvent('keeperSave');
+};
+const _stadiumTackle=tryTackle;tryTackle=function(p,c){
+  const cd=p.tcd,r=_stadiumTackle(p,c);
+  if(p.tcd>cd+.5&&S.mode==='play')emitStadiumEvent(r?'tackleWon':'tackleMissed');
+  return r;
+};
+const _stadiumFoul=foul;foul=function(p,o,b){_stadiumFoul(p,o,b);emitStadiumEvent('foul');};
+const _stadiumCard=giveCard;giveCard=function(p,c){_stadiumCard(p,c);emitStadiumEvent(c===1?'yellowCard':'redCard');};
+const _stadiumOffside=callOffside;callOffside=function(p){emitStadiumEvent('offside');_stadiumOffside(p);};
+const _stadiumOut=outOfPlay;outOfPlay=function(){_stadiumOut();emitStadiumEvent('restartAwarded');};
+const _stadiumKickoff=setupKickoff;setupKickoff=function(t){_stadiumKickoff(t);emitStadiumEvent('restartAwarded');};
+
+
 /* --- goal replay: ring buffer of every tick, played back with slow motion --- */
 function rec(){const b=RP.buf;let k=(RP.total%RP.R)*RP.N;
   for(const p of P){b[k++]=p.x;b[k++]=p.y;b[k++]=p.face;b[k++]=p.anim;b[k++]=p.dive>0?1:p.down?2:0;b[k++]=p.diveAng;b[k++]=(p.ak|0)+((p.at>0&&p.ak)?Math.min(.99,p.at/AD[p.ak]):0);b[k++]=p.skill;}

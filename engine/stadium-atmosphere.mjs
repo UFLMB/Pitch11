@@ -50,3 +50,26 @@ export function crowdReactionEnvelope(elapsed, duration, intensity = 1) {
   const attack = Math.min(1, progress * 8 + .08);
   return Math.max(0, Math.min(1, intensity * fade * attack));
 }
+
+/**
+ * Production stadium security posts. Positions are deliberately beyond the
+ * advertising-board lines, not merely outside the painted touchlines.
+ */
+export function createProductionSecurityPositions() {
+  const positions = [];
+  for (const z of [-41.5, 41.5]) {
+    for (const x of [-40, -24, -8, 8, 24, 40]) {
+      positions.push({ x, z, zone: "sideline-stand" });
+    }
+  }
+  for (const x of [-63.5, 63.5]) {
+    for (const z of [-24, -8, 8, 24]) {
+      positions.push({ x, z, zone: "behind-goal-board" });
+    }
+  }
+  if (positions.length !== 20 || positions.some(({ x, z }) =>
+    !isOutsidePlayablePitch(x, z, 1))) {
+    throw new Error("Production stadium security must remain outside the playable pitch.");
+  }
+  return positions;
+}

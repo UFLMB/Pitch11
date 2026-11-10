@@ -27,3 +27,14 @@ test("match events map to bounded crowd reactions", () => {
   assert.ok(crowdReactionEnvelope(.2, 2, .7) > 0);
   assert.ok(crowdReactionEnvelope(.2, 2, .7) <= .7);
 });
+
+test("production security is outside the pitch and behind the advertising boards", async () => {
+  const { createProductionSecurityPositions } = await import("./stadium-atmosphere.mjs");
+  const positions = createProductionSecurityPositions();
+  assert.equal(positions.length, 20);
+  for (const p of positions) {
+    assert.equal(isOutsidePlayablePitch(p.x, p.z, 1), true);
+    if (p.zone === "sideline-stand") assert.ok(Math.abs(p.z) > 36.5);
+    if (p.zone === "behind-goal-board") assert.ok(Math.abs(p.x) > 59);
+  }
+});
