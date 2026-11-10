@@ -33,7 +33,7 @@ function makePlayer(team, slot) {
   };
 }
 function makeBall() {
-  return { x: 52.5, y: 34, z: PITCH.ballRadius, vx: 0, vy: 0, vz: 0, owner: -1, lastTouchTeam: -1, spin: 0, ignorePlayerId: -1, ignoreUntil: 0 };
+  return { x: 52.5, y: 34, z: PITCH.ballRadius, vx: 0, vy: 0, vz: 0, owner: -1, lastTouchTeam: -1, spin: 0, ignorePlayerId: -1, ignoreUntil: 0, offsidePlayerId: -1, offsideExempt: false };
 }
 function copyPlayer(p) {
   return { id:p.id,team:p.team,slot:p.slot,role:p.role,x:p.x,y:p.y,vx:p.vx,vy:p.vy,
@@ -275,7 +275,8 @@ export class FootballSimulation {
       target=candidates[0];
     }
     if(!target)return false;
-    this.ball.offsidePlayerId = this.isOffside(target, p.team) ? target.id : -1;
+    this.ball.offsidePlayerId = !this.ball.offsideExempt && this.isOffside(target, p.team) ? target.id : -1;
+    this.ball.offsideExempt = false;
     const d=norm(target.x-p.x,target.y-p.y);
     const lead=Math.min(3,dist(p,target)*.07);
     this.releaseBall(p,d.x*(15+p.stats.pass*7)+target.vx*.35,d.y*(15+p.stats.pass*7)+target.vy*.35,2.1+lead*.15);
@@ -407,14 +408,17 @@ export class FootballSimulation {
     candidates.sort((a,b) => dist(a,r)-dist(b,r));
     const taker = candidates[0];
     if (!taker) return false;
-    taker.x = clamp(r.x - taker.attack * .65, .5, 104.5);
-    taker.y = clamp(r.y, .5, 67.5);
+    const restartX = clamp(r.x, .7, 104.3);
+    const restartY = clamp(r.y, .7, 67.3);
+    taker.x = restartX - taker.attack * .72;
+    taker.y = restartY;
     taker.vx = 0; taker.vy = 0;
     taker.hasBall = true; taker.action = "restart";
     this.ball.owner = taker.id;
     this.ball.lastTouchTeam = r.team;
-    this.ball.x = r.x; this.ball.y = r.y; this.ball.z = PITCH.ballRadius;
+    this.ball.x = restartX; this.ball.y = restartY; this.ball.z = PITCH.ballRadius;
     this.ball.offsidePlayerId = -1;
+    this.ball.offsideExempt = ["throwIn", "goalKick", "corner"].includes(r.type);
     this.restart = null;
     this.phase = "playing";
     this.events.push({ type: "restartTaken", player: taker.id, team: taker.team, restartType: r.type });
