@@ -4965,7 +4965,16 @@ update=function(){
 const _doShootPenaltyForward=doShoot;
 doShoot=function(p,power,ang,lift,em){
   const rs=S.rs,penalty=!!(rs&&rs.kind==='pen'&&rs.p===p&&!S.so);
+  const shootoutPenalty=!!(rs&&rs.kind==='pen'&&rs.p===p&&S.so);
   _doShootPenaltyForward(p,power,ang,lift,em);
+  if(shootoutPenalty&&!PITCH11Law.penaltyKickDirectionLegal({vx:ball.vx,attackDirection:dirOf(rs.team)})){
+    const x=rs.x,y=rs.y;
+    clearPenaltyLineState();S.rs=null;
+    ball.x=ball.px=x;ball.y=ball.py=y;ball.z=ball.pz=ball.vx=ball.vy=ball.vz=ball.spin=0;
+    ball.owner=null;ball.receiver=null;ball.last=p;ball.protect=0;
+    soResult(false);
+    return;
+  }
   if(penalty&&!PITCH11Law.penaltyKickDirectionLegal({vx:ball.vx,attackDirection:dirOf(rs.team)})){
     const team=rs.team,x=rs.x,y=rs.y;
     clearPenaltyLineState();S.rs=null;S.adv=null;
