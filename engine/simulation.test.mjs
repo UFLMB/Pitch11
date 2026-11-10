@@ -341,7 +341,8 @@ test("formation can change independently for either team", () => {
   assert.equal(sim.players[8].role, "MID");
   assert.equal(sim.players[9].role, "FWD");
   assert.equal(sim.setFormation(1, "4-2-3-1"), true);
-  assert.equal(sim.players[20].role, "FWD");
+  assert.equal(sim.players[20].role, "MID");
+  assert.equal(sim.players[21].role, "FWD");
   assert.equal(sim.setFormation(0, "invalid"), false);
   assert.deepEqual(sim.getSnapshot().formations, ["4-4-2", "4-2-3-1"]);
 });
