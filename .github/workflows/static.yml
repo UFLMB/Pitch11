@@ -35,6 +35,7 @@ jobs:
           node --check engine/broadcast-camera.mjs
           node --check engine/stadium-visibility.mjs
           node --check engine/league-soccer-ballphysics.mjs
+          node --check stadium-runtime.js
       - name: Run simulation and adapter regression tests
         run: node --test engine/*.test.mjs
 
@@ -50,7 +51,16 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
-      - name: Download stadium model into the Pages artifact
+      - name: Vendor pinned Three.js runtime for offline same-origin loading
+        run: |
+          mkdir -p /tmp/p11-three vendor
+          npm pack three@0.170.0 --pack-destination /tmp/p11-three
+          tar -xzf /tmp/p11-three/three-0.170.0.tgz -C vendor
+          mv vendor/package vendor/three
+          test -s vendor/three/build/three.module.js
+          test -s vendor/three/examples/jsm/loaders/GLTFLoader.js
+          test -s vendor/three/LICENSE
+      - name: Download and validate stadium assets into the Pages artifact
         run: |
           mkdir -p assets
           curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://www.innerscene.com/api/library/football-stadium-f7b93967/download" --output assets/football-stadium.glb
