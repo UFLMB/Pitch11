@@ -106,7 +106,12 @@ test("substitutions are limited to five players and three stoppage windows, with
 
 test("goalkeeper hand control is limited to eight seconds and awards a corner kick", () => {
   assert.ok(source.includes("PITCH11Law.goalkeeperHoldExpired(b.gkHold)"));
-  assert.ok(source.includes("ball.gkHoldActive=!!p.gk"));
+  assert.ok(source.includes("ball.gkHoldActive=!!(p.gk&&byHand)"));
+  const keeperSave = source.match(/function gkReact\(p\)\{[\s\S]*?\n\}/);
+  assert.ok(keeperSave, "goalkeeper save routine must be present");
+  assert.match(keeperSave[0], /take\(p,true\)/, "only a genuine goalkeeper hand catch starts the eight-second clock");
+  assert.match(source, /take=function\(p,byHand=false\)[\s\S]*?_take\(p,byHand\)/, "stats wrapper must preserve hand-control state");
+  assert.match(source, /if\(Math.random\(\)<0\.35\+0\.4\*st\.def\)\{take\(p\);o\.stun/, "foot-based keeper smother must not start the hand clock");
   assert.ok(source.includes("b.gkHold>=3"));
   assert.ok(source.includes("spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner')"));
   assert.ok(source.includes("b.gkHoldActive=false"));

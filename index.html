@@ -252,7 +252,7 @@ const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=fa
 
 /* ===================== 4. ACTIONS (kick, pass, shoot, tackle) ===================== */
 function clearOff(){for(const q of P)q.off=false;ball.ind=false;}   // any new touch ends offside / indirect-kick status
-function take(p){ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!p.gk;ball.gkHoldWarned=false;p.poss=0;p.force=false;clearOff();}
+function take(p,byHand=false){ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;p.poss=0;p.force=false;clearOff();}
 function markOff(p){                                       // who is in an offside position at the moment of the pass
   clearOff();const t=p.team,d=dirOf(t),line=TI[t].off,bx=ball.x*d;
   for(let i=t*11;i<t*11+11;i++){const q=P[i];if(q!==p&&!q.out&&q.x*d>line&&q.x*d>bx&&(q.x-CX)*d>0)q.off=true;}
@@ -551,7 +551,7 @@ function gkReact(p){                                       // save only a genuin
   if(sp>340&&q>0.5&&Math.random()<0.35*(2-p.st.def))return;
   b.x=cx;b.y=cy;
   const hold=sp<(175-q*52)*hd||(sp<(335-q*95)*hd&&Math.random()<0.36*hd);
-  if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
+  if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p,true);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
   else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;clearOff();}
   else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);
     b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;clearOff();}
@@ -2073,9 +2073,9 @@ const _goal=goal;goal=function(dr){_goal(dr);const t=S.goalTeam,sc=S.scorer,s=ST
   RP.gf=RP.total;RP.did=false;AU.roar(2.2);AU.noise(.3,'highpass',2500,.25);
   cm(pick(['GOAL! ','What a goal! ','It\'s in! '])+(sc?tag(sc):KIT[t].name)+(a&&a.p.team===t&&a.p!==sc&&ST.now-a.at<8?' - set up by #'+a.p.num:''));};
 const _doPass=doPass;doPass=function(p,t,m){_doPass(p,t,m);if(S.so)return;ST.pa[p.team]++;ST.pp={p,team:p.team};};
-const _take=take;take=function(p){const q=ST.pp;
+const _take=take;take=function(p,byHand=false){const q=ST.pp;
   if(q){ST.pp=null;if(p.team===q.team&&p!==q.p){ST.po[p.team]++;rate(q.p,.03);ST.ast={p:q.p,at:ST.now};}else if(p.team!==q.team)rate(p,.06);}
-  _take(p);};
+  _take(p,byHand);};
 const _foul=foul;foul=function(p,o,b){_foul(p,o,b);ST.fl[p.team]++;rate(p,-.15);rate(o,.05);};
 const _giveCard=giveCard;giveCard=function(p,c){_giveCard(p,c);if(c!==2)ST.yc[p.team]++;if(c>1)ST.rc[p.team]++;rate(p,c===1?-.4:-1.5);
   cm(c===1?'Yellow card for '+tag(p)+'.':'RED CARD! '+tag(p)+' is off!');};
