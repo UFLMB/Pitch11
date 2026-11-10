@@ -20,7 +20,7 @@ export function createBroadcastCamera(camera, { mobile = false } = {}) {
     height: 13.5,
     sideZ: 45,
     targetX: 0,
-    targetZ: 0,
+    targetZ: 22.5,
     mobile
   };
 
@@ -53,7 +53,7 @@ export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
   state.x = damp(state.x, state.targetX, 3.0, dt);
   state.height = damp(state.height, 13.5, 2.0, dt);
   state.sideZ = damp(state.sideZ, 45, 2.0, dt);
-  state.targetZ = damp(state.targetZ, 0, 2.0, dt);
+  state.targetZ = damp(state.targetZ, 22.5, 2.0, dt);
 
   camera.position.set(state.x, state.height, state.sideZ);
   camera.lookAt(state.targetX, 0.6, state.targetZ);
