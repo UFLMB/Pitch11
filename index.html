@@ -942,7 +942,12 @@ function outOfPlay(){
     spot(1-lt,x,y,false,Math.atan2(CY-y,(CX-x)*0.3),'throw');
   }
 }
-function dropBall(t){spot(t,clamp(ball.x,PX0+20,PX1-20),clamp(ball.y,PY0+20,PY1-20),false,dirOf(t)>0?0:Math.PI,'drop');}
+function dropBall(t){
+  const x=clamp(ball.x,PX0+BR+0.1,PX1-BR-0.1),y=clamp(ball.y,PY0+BR+0.1,PY1-BR-0.1);
+  const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t});
+  const keeper=P[recipient.team*11],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
+  spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
+}
 function freeKick(t,x,y,ind){
   const d=dirOf(t),gx=d>0?PX1:PX0;x=clamp(x,PX0+6,PX1-6);y=clamp(y,PY0+6,PY1-6);
   spot(t,x,y,false,Math.atan2(CY-y,gx-x),'fk');

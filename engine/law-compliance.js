@@ -34,6 +34,18 @@
     return 'live';
   }
 
+  function droppedBallRecipient(state) {
+    const dirs = state.directions || [1, -1];
+    const insideY = Math.abs(state.y - state.centerY) <= state.penaltyHalfWidth;
+    const inLeft = state.x >= state.left && state.x <= state.left + state.penaltyDepth && insideY;
+    const inRight = state.x <= state.right && state.x >= state.right - state.penaltyDepth && insideY;
+    let team = state.lastTouchedTeam === 1 ? 1 : 0;
+    let goalkeeper = false;
+    if (inLeft) { team = dirs[0] > 0 ? 0 : 1; goalkeeper = true; }
+    else if (inRight) { team = dirs[0] < 0 ? 0 : 1; goalkeeper = true; }
+    return { team, goalkeeper };
+  }
+
   function goalkeeperHoldExpired(seconds) {
     return Number.isFinite(seconds) && seconds >= 8;
   }
@@ -80,5 +92,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, droppedBallRecipient });
 })(globalThis);
