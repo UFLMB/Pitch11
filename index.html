@@ -329,14 +329,14 @@ function aimAng(p){                                        // always at the oppo
   }else{const gk=GK[1-p.team];ty=CY+(gk.y>CY+4?-1:gk.y<CY-4?1:0)*12;}    // no stick: the side away from the keeper
   return Math.atan2(ty-p.y,gx-p.x);
 }
-function tryTackle(p,chance){
+function tryTackle(p,chance,context){
   const b=ball,o=b.owner;
   if(p.tcd>0||p.stun>0||!o||o.team===p.team||o.gk||b.protect>0)return false;
   p.tcd=0.9;p.stam=Math.max(0,p.stam-0.04);
   if(Math.hypot(b.x-p.x,b.y-p.y)>18+5*p.st.def){p.stun=0.25;return false;}  // lunged and missed
   const behind=Math.abs(angd(Math.atan2(o.y-p.y,o.x-p.x),o.face))<1;   // tackled from behind
   const win=Math.random()<clamp(chance*(p.team?0.85:1.12)*(0.6+0.8*p.st.def)*(1.35-0.7*o.st.drib)*(o.skill>0?0.35:1)*(1+(p.st.phys-o.st.phys)*0.5),0.03,0.9);
-  if(Math.random()<(0.05+(behind?0.22:0)+(p.sp?0.08:0))*(win?0.35:1)*(1.5-p.st.def)){foul(p,o,behind);return true;}
+  if(Math.random()<(0.05+(behind?0.22:0)+(p.sp?0.08:0))*(win?0.35:1)*(1.5-p.st.def)){foul(p,o,behind,{reckless:behind&&!!(context&&context.sprinting)});return true;}
   if(win){
     o.stun=0.5;o.kcd=0.6;o.vx*=0.3;o.vy*=0.3;
     FX.hit=4;
@@ -2093,7 +2093,7 @@ const _doPass=doPass;doPass=function(p,t,m){_doPass(p,t,m);if(S.so)return;ST.pa[
 const _take=take;take=function(p,byHand=false){const q=ST.pp;
   if(q){ST.pp=null;if(p.team===q.team&&p!==q.p){ST.po[p.team]++;rate(q.p,.03);ST.ast={p:q.p,at:ST.now};}else if(p.team!==q.team)rate(p,.06);}
   _take(p,byHand);};
-const _foul=foul;foul=function(p,o,b){_foul(p,o,b);ST.fl[p.team]++;rate(p,-.15);rate(o,.05);};
+const _foul=foul;foul=function(p,o,b,context){_foul(p,o,b,context);ST.fl[p.team]++;rate(p,-.15);rate(o,.05);};
 const _giveCard=giveCard;giveCard=function(p,c){_giveCard(p,c);if(c!==2)ST.yc[p.team]++;if(c>1)ST.rc[p.team]++;rate(p,c===1?-.4:-1.5);
   cm(c===1?'Yellow card for '+tag(p)+'.':'RED CARD! '+tag(p)+' is off!');};
 const _oop=outOfPlay;outOfPlay=function(){const s=ST.sc;
@@ -2509,7 +2509,7 @@ function tackleTry(p,chance,dk){                            // attempt only when
   if(!o||o.gk||o.team===p.team||p.tcd>0||p.stun>0||p.acd>0||b.protect>0){p.acT=0;return;}
   if(Math.hypot(b.x-p.x,b.y-p.y)<(18+5*p.st.def)*K.reach){
     p.acT+=DT;
-    if(p.acT>=K.commit/(dk||1)){p.acT=0;p.acd=K.cd;D9.n.at[p.team]++;act8('auto','tackle');const sp0=p.sp;p.sp=false;tryTackle(p,chance);p.sp=sp0;}   // planted feet for the challenge itself
+    if(p.acT>=K.commit/(dk||1)){p.acT=0;p.acd=K.cd;D9.n.at[p.team]++;act8('auto','tackle');const sp0=p.sp;p.sp=false;tryTackle(p,chance,{sprinting:sp0});p.sp=sp0;}   // planted feet for the challenge itself
   }else p.acT=0;
 }
 function closeIn(p,o){                                      // last few metres: step firmly onto the ball (no slow-down lag behind a moving carrier)
