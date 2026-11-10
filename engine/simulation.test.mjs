@@ -274,3 +274,18 @@ test("goalkeeper parries a shot crossing the goal mouth", () => {
   assert.ok(sim.ball.vx > 0);
   assert.ok(sim.getSnapshot().events.some(e => e.type === "keeperSave"));
 });
+
+test("match clock pauses at half-time and resumes into full-time", () => {
+  const sim = new FootballSimulation({ halfLengthSeconds: .05 });
+  for (let i = 0; i < 4; i++) sim.update(FIXED_DT);
+  assert.equal(sim.phase, "halfTime");
+  assert.equal(sim.period, 1);
+  assert.ok(Math.abs(sim.matchSeconds - .05) < 1e-9);
+  sim.command({ type: "continue" });
+  sim.update(FIXED_DT);
+  assert.equal(sim.phase, "playing");
+  assert.equal(sim.period, 2);
+  for (let i = 0; i < 4; i++) sim.update(FIXED_DT);
+  assert.equal(sim.phase, "fullTime");
+  assert.ok(Math.abs(sim.matchSeconds - .1) < 1e-9);
+});
