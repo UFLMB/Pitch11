@@ -14,6 +14,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 </head>
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
+<script src="engine/law-compliance.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -854,7 +855,11 @@ function endHalf(){
   else{S.mode='full';S.t=0;}
 }
 /* --- penalty shootout: 5 kicks each, early finish, then sudden death --- */
-function startShootout(){S.so={k:[[],[]],live:false,t:0,team:0,shooter:null};S.half=5;S.clock=0;soNext();}
+function startShootout(){
+  // IFAB: both teams must have the same number of eligible players before kicks.
+  for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
+  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null};S.half=5;S.clock=0;soNext();
+}
 function soNext(){
   const so=S.so,t=so.k[0].length<=so.k[1].length?0:1,list=[];
   for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out)list.push(p);}
@@ -865,8 +870,13 @@ const ballBeyondLine=(value,line,direction)=>direction>0?value>line+BR:value<lin
 const ballInsideGoalFrame=b=>Math.abs(b.y-CY)<=GOALH-BR&&b.z<=GOALZ-BR;
 function soRules(){
   const so=S.so,b=ball;so.t+=DT;
-  if(ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){soResult(true);return;}
-  if(!S.rs&&(b.owner||(b.last&&b.last.team!==so.team)||ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)||(b.z===0&&!b.vx&&!b.vy)||so.t>8))soResult(false);
+  const decision=PITCH11Law.shootoutDecision({
+    ball:b,shooterTeam:so.team,targetDirection:dirOf(so.team),
+    left:PX0,right:PX1,top:PY0,bottom:PY1,centerY:CY,
+    goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR,elapsed:so.t,maxSeconds:8,restartActive:!!S.rs
+  });
+  if(decision==='goal'){soResult(true);return;}
+  if(decision==='miss'){soResult(false);return;}
 }
 function soResult(ok){
   const so=S.so;so.live=false;so.k[so.team].push(ok);
@@ -949,7 +959,8 @@ function setupPen(t,sh,so){                                // everyone else wait
     p.vx=p.vy=p.ix=p.iy=0;p.dive=0;p.stun=p.kcd=p.freeze=0;p.force=false;p.down=false;
     if(p.out||p===sh)continue;
     if(p.gk){p.x=p.px=p.team===t?(d>0?PX0+28:PX1-28):gx-d*4;p.y=p.py=CY;continue;}
-    p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;
+    if(so){const a=(k++/20)*TAU;p.x=p.px=CX+Math.cos(a)*66;p.y=p.py=CY+Math.sin(a)*66;}
+    else{p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;}
   }
   sh.x=sh.px=sx-d*10;sh.y=sh.py=CY;sh.face=d>0?0:Math.PI;sh.poss=0;sh.freeze=1.2;
   const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.protect=99;clearOff();
@@ -959,9 +970,14 @@ function setupPen(t,sh,so){                                // everyone else wait
 }
 function restartClamp(){                                   // defenders keep 9.15 m from a free kick / corner
   const rs=S.rs;if(!rs||ball.owner!==rs.p)return;
-  if(rs.kind==='pen'&&!S.so){                              // penalty: nobody but taker and keepers inside the box
-    const gx=dirOf(rs.team)>0?PX1:PX0,d=dirOf(rs.team);
-    for(const p of P){if(p===rs.p||p.gk||p.out)continue;if((gx-p.x)*d<PEN_DEPTH+12&&Math.abs(p.y-CY)<PEN_WIDTH/2+12)p.x=gx-d*(PEN_DEPTH+12);}
+  if(rs.kind==='pen'&&!S.so){                              // penalty: outside the area and at least 9.15 m from the spot
+    const gx=dirOf(rs.team)>0?PX1:PX0,d=dirOf(rs.team),minArc=ARC_R+2;
+    for(const p of P){
+      if(p===rs.p||p.gk||p.out)continue;
+      if((gx-p.x)*d<PEN_DEPTH+12&&Math.abs(p.y-CY)<PEN_WIDTH/2+12)p.x=gx-d*(PEN_DEPTH+12);
+      const dx=p.x-rs.x,dy=p.y-rs.y,dist=Math.hypot(dx,dy);
+      if(dist<minArc){const k=minArc/(dist||1);p.x=rs.x+dx*k;p.y=rs.y+dy*k;}
+    }
     return;
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // everyone stays in their own half until the kick-off is taken
@@ -1093,6 +1109,7 @@ function update(){
     const pen=S.rs&&S.rs.kind==='pen';
     for(const p of P){
       if(p.out)continue;
+      if(S.so&&S.so.live&&p!==S.so.shooter&&!(p.gk&&p.team!==S.so.team)){p.ix=p.iy=0;p.sp=false;continue;} // shootout: only the kicker and defending goalkeeper may move
       if(pen&&p!==S.rs.p&&!p.gk){p.ix=p.iy=0;p.sp=false;continue;}   // penalty: everyone else waits
       if(p===ctrl)humanAct(p);else if(S.prac&&p.team&&!p.gk){p.ix=p.iy=0;p.sp=false;p.kcd=9;}else aiPlayer(p);
     }

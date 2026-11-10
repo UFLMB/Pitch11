@@ -1,0 +1,57 @@
+/* PITCH 11 — isolated IFAB law helpers. Classic-script build for the offline production game. */
+(function (root) {
+  'use strict';
+
+  function isBeyond(value, line, direction, radius) {
+    return direction > 0 ? value > line + radius : value < line - radius;
+  }
+
+  function shootoutDecision(state) {
+    const b = state.ball;
+    const dir = state.targetDirection;
+    const targetLine = dir > 0 ? state.right : state.left;
+    const crossedTarget = isBeyond(b.x, targetLine, dir, state.radius);
+    const insideFrame =
+      Math.abs(b.y - state.centerY) <= state.goalHalfWidth - state.radius &&
+      b.z <= state.goalHeight - state.radius;
+
+    if (crossedTarget && insideFrame) return 'goal';
+
+    const out =
+      b.x < state.left - state.radius ||
+      b.x > state.right + state.radius ||
+      b.y < state.top - state.radius ||
+      b.y > state.bottom + state.radius;
+    if (out) return 'miss';
+
+    // A goalkeeper who catches the ball ends the kick. A parry/deflection does not:
+    // the ball remains live and the kicker may play it after the goalkeeper's touch.
+    if (b.owner && b.owner.team !== state.shooterTeam) return 'miss';
+
+    const speed = Math.hypot(b.vx || 0, b.vy || 0);
+    if (!b.owner && b.z <= 0 && Math.abs(b.vz || 0) < 0.5 && speed < 0.5) return 'miss';
+    if (!state.restartActive && state.elapsed >= state.maxSeconds) return 'miss';
+    return 'live';
+  }
+
+  function shootoutExclusions(players) {
+    const active = [0, 1].map(team =>
+      players.filter(p => p.team === team && !p.out)
+    );
+    const target = Math.min(active[0].length, active[1].length);
+    const excluded = [];
+    for (let team = 0; team < 2; team++) {
+      const excess = active[team].length - target;
+      if (excess <= 0) continue;
+      // Preserve the goalkeeper and defensive balance; remove the most advanced
+      // eligible outfield players first. The captain's choice is abstracted here.
+      const candidates = active[team]
+        .filter(p => !p.gk)
+        .sort((a, b) => (b.role - a.role) || (b.num - a.num));
+      excluded.push(...candidates.slice(0, excess));
+    }
+    return excluded;
+  }
+
+  root.PITCH11Law = Object.freeze({ isBeyond, shootoutDecision, shootoutExclusions });
+})(globalThis);

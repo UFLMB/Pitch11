@@ -64,9 +64,10 @@ test("a restart taker's second-touch restriction ends on any other player's cont
   assert.match(source, /if\(p!==ball\.dbl\)ball\.dbl=null/);
 });
 
-test("penalty shootouts use the same whole-ball boundary checks as open play", () => {
-  assert.match(source, /if\(ballInsideGoalFrame\(b\)&&\(ballBeyondLine\(b\.x,PX0,-1\)\|\|ballBeyondLine\(b\.x,PX1,1\)\)\)\{soResult\(true\);return;\}/);
-  assert.match(source, /ballBeyondLine\(b\.y,PY0,-1\)\|\|ballBeyondLine\(b\.y,PY1,1\)/);
+test("penalty shootouts use the isolated whole-ball law decision helper", () => {
+  assert.match(source, /PITCH11Law\.shootoutDecision\(/);
+  assert.match(source, /goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR/);
+  assert.match(source, /const ballBeyondLine=/);
 });
 
 test("goal-line versus touchline restarts are classified after full crossing", () => {
