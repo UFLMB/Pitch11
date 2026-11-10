@@ -1986,6 +1986,23 @@ whistle(len,n){if(!this.c||!G.vol)return;const c=this.c;for(let i=0;i<n;i++){con
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.2,t+.02);g.gain.setValueAtTime(.2,t+len);g.gain.linearRampToValueAtTime(0,t+len+.04);
   o.connect(g);g.connect(this.m);o.start(t);l.start(t);o.stop(t+len+.06);l.stop(t+len+.06);}},
 roar(x){this.ex=Math.max(this.ex,x);},
+event(type){
+  if(!this.c||!G.vol||!G.crowd)return;
+  const play=(dur,filter,freq,level)=>this.noise(dur,filter,freq,level);
+  switch(type){
+    case 'goal': this.roar(2.2);play(2.8,'bandpass',1050,.34);play(2.2,'highpass',1850,.16);play(1.8,'lowpass',420,.2);break;
+    case 'keeperSave': this.roar(.95);play(.72,'bandpass',1450,.2);play(.48,'highpass',2300,.1);break;
+    case 'bigChance': this.roar(.72);play(.9,'bandpass',1250,.15);break;
+    case 'tackleWon': play(.48,'bandpass',850,.095);break;
+    case 'tackleMissed': play(.38,'highpass',1700,.07);break;
+    case 'foul': this.roar(.28);play(.65,'bandpass',520,.11);break;
+    case 'yellowCard': this.roar(.5);play(1.05,'highpass',2050,.16);play(.8,'bandpass',720,.09);break;
+    case 'redCard': this.roar(.85);play(1.6,'highpass',2250,.23);play(1.2,'bandpass',620,.14);break;
+    case 'offside': play(.62,'highpass',1900,.105);break;
+    case 'restartAwarded': play(.24,'bandpass',650,.035);break;
+    default: break;
+  }
+},
 tick(){if(!this.c)return;const m=S.mode,q=m==='menu'?0:(m==='half'||m==='subs'||m==='full')?.35:1,gd=Math.abs(ball.x-(ball.x<CX?PX0:PX1)),
   pr=m==='play'?Math.pow(Math.max(0,1-gd/380),2)*.7:0,t=this.c.currentTime;this.ex=Math.max(0,this.ex-DT*.4);
   const lv=Math.max(this.ex,pr);this.g.gain.setTargetAtTime([0,.5,1][G.crowd]*q*(.05+.1*Math.min(lv,2))*(1+.12*Math.sin(performance.now()/900)),t,.12);
@@ -1997,7 +2014,7 @@ const _doShoot=doShoot;doShoot=function(p,pw,a,l,e){
   const t=p.team,dx=Math.abs((dirOf(t)>0?PX1:PX0)-p.x),dy=p.y-CY,pen=!!(S.rs&&S.rs.kind==='pen'),xg=pen?.76:clamp(.95*Math.exp(-Math.hypot(dx,dy*1.4)/95),.01,.8);
   _doShoot(p,pw,a,l,e);if(S.so)return;
   ST.sh[t]++;ST.xg[t]+=xg;const gxx=dirOf(t)>0?PX1:PX0,yp=ball.y+ball.vy/(ball.vx||1e-6)*(gxx-ball.x);ST.sc={id:ball.shotId,t,p,xg,on:false,on0:ball.vx*(gxx-ball.x)>0&&Math.abs(yp-CY)<GOALH};rate(p,.05);
-  if(xg>.3)cm('Big chance for '+tag(p)+'!');};
+  if(xg>.3){cm('Big chance for '+tag(p)+'!');AU.event('bigChance');}};
 const _gkReact=gkReact;gkReact=function(p){const s=ST.sc,l=ball.last;_gkReact(p);
   if(s&&!s.on&&s.on0&&s.t!==p.team&&ball.shotId===s.id&&(ball.owner===p||(ball.last===p&&l!==p))){s.on=true;ST.sot[s.t]++;rate(s.p,.15);rate(p,.4);if(s.xg>.12){cm(pick(['Great save!','Keeper denies it!','Smart stop by the keeper!']));AU.roar(1.1);}}};
 const _goal=goal;goal=function(dr){_goal(dr);const t=S.goalTeam,sc=S.scorer,s=ST.sc,a=ST.ast;
@@ -2026,7 +2043,7 @@ const MSG={FOUL:'Foul - the referee blows up.',OFFSIDE:'The flag is up - offside
 /* --- stadium atmosphere event bridge: presentation reacts to real match events --- */
 function emitStadiumEvent(type){
   if(S.mode==='menu'||S.mode==='replay'||S.prac||S.so)return;
-  try{window.dispatchEvent(new CustomEvent('p11match-event',{detail:{type}}));}catch(_){}
+  AU.event(type);
 }
 const _stadiumGoal=goal;goal=function(dr){_stadiumGoal(dr);emitStadiumEvent('goal');};
 const _stadiumKeeper=gkReact;gkReact=function(p){
