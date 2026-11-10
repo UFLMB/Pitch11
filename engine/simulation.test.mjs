@@ -252,6 +252,8 @@ test("direct reception from a corner is exempt from offside", () => {
   const receiver = sim.players[9];
   receiver.x = 90; receiver.y = 34;
   sim.ball.x = taker.x; sim.ball.y = taker.y;
+  assert.notEqual(receiver.id, taker.id);
+  assert.equal(sim.isOffside(receiver, 0), true);
   assert.equal(sim.ball.offsideExempt, true);
   sim.passBall(taker, receiver.id);
   assert.equal(sim.ball.offsidePlayerId, -1);
