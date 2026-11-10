@@ -1,29 +1,36 @@
 /**
- * PITCH 11 broadcast camera.
- * Side-line Tele Broadcast framing with damped ball tracking and contextual zoom.
- * Coordinates follow the simulation: X = pitch length, Y = pitch width.
+ * PITCH 11 broadcast camera — Three.js world-space coordinates.
+ *
+ * The simulation uses X=0..105 and Y=0..68 metres. The rendered pitch is
+ * centred at the origin: worldX = simulationX - 52.5, worldZ = simulationY - 34.
+ * Three.js world Y is vertical. This conversion is intentionally kept here so
+ * simulation coordinates can never be mistaken for camera world coordinates.
  */
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const damp = (current, target, sharpness, dt) =>
   current + (target - current) * (1 - Math.exp(-sharpness * Math.max(0, dt)));
 
+const PITCH_HALF_LENGTH = 52.5;
+const PITCH_HALF_WIDTH = 34;
+const toWorldX = metres => metres - PITCH_HALF_LENGTH;
+const toWorldZ = metres => metres - PITCH_HALF_WIDTH;
+
 export function createBroadcastCamera(camera, { mobile = false } = {}) {
-  camera.fov = mobile ? 43 : 41;
-  camera.near = 0.1;
-  camera.far = 500;
-  camera.position.set(52.5, mobile ? 43 : 40, mobile ? 104 : 98);
-  camera.lookAt(52.5, 0.6, 0);
-  camera.updateProjectionMatrix();
-  return {
-    x: 52.5,
-    y: mobile ? 43 : 40,
-    z: mobile ? 104 : 98,
-    targetX: 52.5,
-    targetY: 0.6,
+  const initial = {
+    x: 0,
+    height: mobile ? 28 : 27,
+    sideZ: mobile ? 70 : 68,
+    targetX: 0,
     targetZ: 0,
-    mobile,
-    initialized: true
+    mobile
   };
+  camera.fov = mobile ? 46 : 44;
+  camera.near = 0.1;
+  camera.far = 300;
+  camera.position.set(initial.x, initial.height, initial.sideZ);
+  camera.lookAt(initial.targetX, 0.6, initial.targetZ);
+  camera.updateProjectionMatrix();
+  return initial;
 }
 
 export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
@@ -35,27 +42,28 @@ export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
     : null;
   const attackDirection = (owner?.team ?? ball.lastTouchTeam) === 1 ? -1 : 1;
 
-  // A small velocity lead keeps fast passes and clearances inside the frame.
-  const lead = clamp((Number(ball.vx) || 0) * 0.28, -7, 7);
-  const desiredX = clamp(ball.x + lead + attackDirection * 2.5, 7, 98);
-  const lateralOffset = clamp((ball.y - 34) * 0.16, -5.2, 5.2);
+  // Follow the ball along the pitch length, with a restrained velocity lead.
+  const velocityLead = clamp((Number(ball.vx) || 0) * 0.24, -6, 6);
+  const simTargetX = clamp(ball.x + velocityLead + attackDirection * 2, 5, 100);
+  const desiredX = clamp(toWorldX(simTargetX), -46, 46);
 
-  // Tighten the shot slightly in either attacking third without abrupt zoom jumps.
+  // Track the ball's lateral lane only slightly; the camera stays on its
+  // broadcast gantry instead of orbiting around or crossing the pitch.
+  const laneOffset = clamp(toWorldZ(ball.y) * 0.10, -3.4, 3.4);
   const goalDistance = Math.min(ball.x, 105 - ball.x);
-  const attackingThird = 1 - clamp((goalDistance - 9) / 25, 0, 1);
-  const zoom = attackingThird * 0.78;
-  const baseZ = state.mobile ? 104 : 98;
-  const baseY = state.mobile ? 43 : 40;
-  const desiredZ = baseZ - zoom * 10;
-  const desiredY = baseY - zoom * 4.2;
+  const attackingThird = 1 - clamp((goalDistance - 8) / 27, 0, 1);
+  const zoom = attackingThird * 0.68;
 
-  state.targetX = damp(state.targetX, desiredX, 2.7, dt);
-  state.targetY = damp(state.targetY, 0.6, 2.2, dt);
-  state.targetZ = damp(state.targetZ, lateralOffset, 1.8, dt);
-  state.x = damp(state.x, state.targetX, 3.4, dt);
-  state.y = damp(state.y, desiredY, 1.65, dt);
-  state.z = damp(state.z, desiredZ, 1.65, dt);
+  const desiredHeight = (state.mobile ? 28 : 27) - zoom * 2.8;
+  const desiredSideZ = (state.mobile ? 70 : 68) - zoom * 7 + laneOffset * 0.12;
+  const desiredTargetZ = laneOffset * 0.22;
 
-  camera.position.set(state.x, state.y, state.z);
-  camera.lookAt(state.targetX, state.targetY, state.targetZ);
+  state.targetX = damp(state.targetX, desiredX, 2.8, dt);
+  state.targetZ = damp(state.targetZ, desiredTargetZ, 1.7, dt);
+  state.x = damp(state.x, state.targetX, 3.2, dt);
+  state.height = damp(state.height, desiredHeight, 1.8, dt);
+  state.sideZ = damp(state.sideZ, desiredSideZ, 1.8, dt);
+
+  camera.position.set(state.x, state.height, state.sideZ);
+  camera.lookAt(state.targetX, 0.6, state.targetZ);
 }
