@@ -4,6 +4,7 @@ import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera
 import { markRoofForCameraExclusion, configureStadiumCameraLayers } from "./stadium-visibility.mjs";
 import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
 import { computeStadiumPlacement } from "./stadium-model.mjs";
+import { computeLocomotionPose } from "./player-animation.mjs";
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
@@ -367,21 +368,18 @@ function syncMeshes(snapshot) {
       group.rotation.y = -p.facing - Math.PI / 2;
       group.userData.ring.visible = p.selected;
       const speed = Math.hypot(p.vx, p.vy);
-      const gait = clamp(speed / 6.8, 0, 1);
-      const phase = snapshot.time * (5.2 + speed * 1.15) + p.id * .73;
-      const stride = Math.sin(phase) * .62 * gait;
-      const lift = Math.max(0, Math.sin(phase)) * .48 * gait;
+      const pose = computeLocomotionPose(speed, snapshot.time, p.id);
       const rig = group.userData.rig;
-      rig.legs[0].rotation.x = stride;
-      rig.legs[1].rotation.x = -stride;
-      rig.knees[0].rotation.x = lift;
-      rig.knees[1].rotation.x = Math.max(0, -Math.sin(phase)) * .48 * gait;
-      rig.arms[0].rotation.x = -stride * .72 - .08;
-      rig.arms[1].rotation.x = stride * .72 - .08;
-      rig.elbows[0].rotation.x = -.12 - lift * .22;
-      rig.elbows[1].rotation.x = -.12 - rig.knees[1].rotation.x * .22;
+      rig.legs[0].rotation.x = pose.stride;
+      rig.legs[1].rotation.x = -pose.stride;
+      rig.knees[0].rotation.x = pose.leftKnee;
+      rig.knees[1].rotation.x = pose.rightKnee;
+      rig.arms[0].rotation.x = -pose.stride * .72 - .08;
+      rig.arms[1].rotation.x = pose.stride * .72 - .08;
+      rig.elbows[0].rotation.x = -.12 - pose.leftKnee * .22;
+      rig.elbows[1].rotation.x = -.12 - pose.rightKnee * .22;
       rig.torso.rotation.x = -Math.min(.1, speed * .012);
-      group.position.y = gait > .05 ? Math.abs(Math.sin(phase * 2)) * .025 * gait : 0;
+      group.position.y = pose.bob;
     }
   }
   const b = snapshot.ball;
