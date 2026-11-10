@@ -403,3 +403,31 @@ test("five-substitution limit is enforced and live substitutions are blocked", (
   assert.equal(sim.substitutionsUsed[0], 5);
   assert.equal(sim.substitute(0, 6, 0), false);
 });
+
+
+test("defensive block narrows in its own half and steps out when play moves away", () => {
+  const sim = new FootballSimulation();
+  const defender = sim.players[12];
+  const opponent = sim.players[9];
+  opponent.y = 34;
+  opponent.x = 90;
+  sim.setShapeTarget(defender, opponent);
+  const deepWidth = Math.abs(defender.targetY - 34);
+  opponent.x = 20;
+  sim.setShapeTarget(defender, opponent);
+  const highBlockWidth = Math.abs(defender.targetY - 34);
+  assert.ok(deepWidth < Math.abs(defender.homeY - 34));
+  assert.ok(highBlockWidth > deepWidth);
+});
+
+test("forwards make a measured support run as possession advances", () => {
+  const advanced = new FootballSimulation({ seed: 71 });
+  const static = new FootballSimulation({ seed: 71 });
+  advanced.players[9].x = 82;
+  static.players[9].x = 20;
+  advanced.players[9].y = static.players[9].y = 34;
+  advanced.ball.owner = static.ball.owner = 9;
+  advanced.updateAI(FIXED_DT);
+  static.updateAI(FIXED_DT);
+  assert.ok(advanced.players[10].targetX > static.players[10].targetX + 1);
+});
