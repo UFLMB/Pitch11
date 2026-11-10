@@ -1,0 +1,33 @@
+name: Simulation regression tests
+
+on:
+  push:
+    branches: [engine-adaptation]
+  pull_request:
+    branches: [main]
+
+jobs:
+  simulation-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check browser lab module syntax
+        run: node --check engine/simulation-lab.mjs
+      - name: Run simulation regression tests
+        run: node --test engine/*.test.mjs
+      - name: Package standalone browser lab
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitch11-simulation-lab-preview
+          path: |
+            simulation-lab.html
+            engine/simulation.mjs
+            engine/league-soccer-ballphysics.mjs
+            engine/simulation-lab.mjs
+          if-no-files-found: error
+          retention-days: 7
