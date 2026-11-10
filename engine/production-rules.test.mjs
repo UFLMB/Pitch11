@@ -92,3 +92,13 @@ test("a team is forfeited only after a sending-off leaves fewer than seven playe
   assert.match(source, /S\.forfeitTeam=null/);
   assert.match(source, /forfeited\?KIT\[win\]\.name\+' WIN BY FORFEIT'/);
 });
+
+
+test("substitutions are limited to five players and three stoppage windows, with half-time exempt", () => {
+  assert.ok(source.includes("PITCH11Law.substitutionEligibility("));
+  assert.ok(source.includes("subWindowUsed:[false,false]"));
+  assert.ok(source.includes("subWindows:[0,0]"));
+  assert.ok(source.includes("WINDOWS  '+S.subWindows[0]+'/3"));
+  assert.ok(source.includes("S.ret==='whistle'"));
+  assert.ok(source.includes("S.ret==='half'"));
+});

@@ -76,3 +76,20 @@ test('Law 3 requires at least seven eligible players; dismissed players do not c
   assert.equal(law.hasMinimumPlayers(players, 1), false);
   assert.equal(law.hasMinimumPlayers(players, 0, 6), true);
 });
+
+
+test('substitution eligibility enforces five players and three stoppage opportunities', () => {
+  const check = state => ({ ...law.substitutionEligibility(state) });
+  assert.deepEqual(check({ used: 0, windows: 0, inStoppage: false, halftime: false, windowUsed: false }),
+    { allowed: false, consumesWindow: false, reason: 'stoppage' });
+  assert.deepEqual(check({ used: 0, windows: 0, inStoppage: true, halftime: false, windowUsed: false }),
+    { allowed: true, consumesWindow: true, reason: 'new-window' });
+  assert.deepEqual(check({ used: 2, windows: 1, inStoppage: true, halftime: false, windowUsed: true }),
+    { allowed: true, consumesWindow: false, reason: 'same-window' });
+  assert.deepEqual(check({ used: 2, windows: 3, inStoppage: true, halftime: false, windowUsed: false }),
+    { allowed: false, consumesWindow: false, reason: 'windows' });
+  assert.deepEqual(check({ used: 4, windows: 3, inStoppage: false, halftime: true, windowUsed: false }),
+    { allowed: true, consumesWindow: false, reason: 'halftime' });
+  assert.deepEqual(check({ used: 5, windows: 0, inStoppage: true, halftime: true, windowUsed: false }),
+    { allowed: false, consumesWindow: false, reason: 'limit' });
+});

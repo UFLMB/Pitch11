@@ -34,6 +34,17 @@
     return 'live';
   }
 
+  function substitutionEligibility(state) {
+    const used = Number.isFinite(state.used) ? state.used : 0;
+    const windows = Number.isFinite(state.windows) ? state.windows : 0;
+    if (used >= 5) return { allowed: false, consumesWindow: false, reason: 'limit' };
+    if (state.halftime) return { allowed: true, consumesWindow: false, reason: 'halftime' };
+    if (!state.inStoppage) return { allowed: false, consumesWindow: false, reason: 'stoppage' };
+    if (state.windowUsed) return { allowed: true, consumesWindow: false, reason: 'same-window' };
+    if (windows >= 3) return { allowed: false, consumesWindow: false, reason: 'windows' };
+    return { allowed: true, consumesWindow: true, reason: 'new-window' };
+  }
+
   function hasMinimumPlayers(players, team, minimum) {
     const limit = Number.isInteger(minimum) && minimum > 0 ? minimum : 7;
     return players.filter(p => p.team === team && !p.out).length >= limit;
@@ -65,5 +76,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility });
 })(globalThis);
