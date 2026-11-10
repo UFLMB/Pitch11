@@ -37,32 +37,44 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     all.push({x:a[0]+(b[0]-a[0])*t,z:a[1]+(b[1]-a[1])*t,y:row.y,row:ri,section:Math.floor(d/27)});
    }
   }
-  const bodyGeo=new THREE.CylinderGeometry(.14,.17,.48,6);
-  const headGeo=new THREE.SphereGeometry(.105,6,5);
-  const armGeo=new THREE.CylinderGeometry(.045,.055,.34,5);
-  const bodyMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96});
-  const skinMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9});
+  const bodyGeo=new THREE.CapsuleGeometry(.16,.22,3,7);
+  const headGeo=new THREE.SphereGeometry(.105,8,6);
+  const hairGeo=new THREE.SphereGeometry(.108,7,5);
+  const armGeo=new THREE.CylinderGeometry(.045,.055,.34,6);
+  const legGeo=new THREE.CylinderGeometry(.055,.07,.28,6);
+  const bodyMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.92});
+  const skinMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.88});
+  const trouserMat=new THREE.MeshStandardMaterial({color:0x20242a,roughness:.94});
+  const hairMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.98});
   const torso=new THREE.InstancedMesh(bodyGeo,bodyMat,all.length);
   const head=new THREE.InstancedMesh(headGeo,skinMat,all.length);
+  const hair=new THREE.InstancedMesh(hairGeo,hairMat,all.length);
   const arms=new THREE.InstancedMesh(armGeo,skinMat,all.length*2);
+  const legs=new THREE.InstancedMesh(legGeo,trouserMat,all.length*2);
   const o=new THREE.Object3D(),col=new THREE.Color();
-  const sectionColors=[0x183750,0x8b3038,0x294b3b,0xb38c36,0x35465f,0x713c58,0x8f9894,0x245466];
+  const sectionColors=[0x183750,0x8b3038,0x294b3b,0xb38c36,0x35465f,0x713c58,0x8f9894,0x245466,0xeee8d9,0x25302d];
   const skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
+  const hairColors=[0x171311,0x302017,0x4b3324,0x17191c,0x6a4b2e];
   let seed=7711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   crowdFans=all.map((p,i)=>{
    const scale=.88+rnd()*.22,yaw=Math.atan2(-p.x,-p.z)+(rnd()-.5)*.3;
-   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],reacts:false};
+   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],raised:rnd()<.22,reacts:false};
    const base=sectionColors[p.section%sectionColors.length];
-   col.setHex(base).multiplyScalar(.86+rnd()*.25);
-   o.position.set(p.x,p.y+.31*scale,p.z);o.rotation.set(0,yaw,0);o.scale.setScalar(scale);o.updateMatrix();torso.setMatrixAt(i,o.matrix);torso.setColorAt(i,col);
-   col.setHex(fan.skin);o.position.set(p.x,p.y+.69*scale,p.z);o.updateMatrix();head.setMatrixAt(i,o.matrix);head.setColorAt(i,col);
-   for(let side=-1;side<=1;side+=2){const ai=i*2+(side===1?1:0);o.position.set(p.x+side*.15*scale,p.y+.52*scale,p.z);o.rotation.set(0,yaw,side*.82);o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);}
+   col.setHex(base).multiplyScalar(.82+rnd()*.32);
+   o.position.set(p.x,p.y+.36*scale,p.z);o.rotation.set(0,yaw,0);o.scale.setScalar(scale);o.updateMatrix();torso.setMatrixAt(i,o.matrix);torso.setColorAt(i,col);
+   col.setHex(fan.skin);o.position.set(p.x,p.y+.77*scale,p.z);o.scale.setScalar(scale);o.updateMatrix();head.setMatrixAt(i,o.matrix);head.setColorAt(i,col);
+   col.setHex(hairColors[Math.floor(rnd()*hairColors.length)]);o.position.set(p.x,p.y+.835*scale,p.z);o.scale.set(scale*.94,scale*.52,scale*.94);o.updateMatrix();hair.setMatrixAt(i,o.matrix);hair.setColorAt(i,col);
+   col.setHex(fan.skin);
+   for(let side=-1;side<=1;side+=2){
+    const ai=i*2+(side===1?1:0);
+    o.position.set(p.x+side*.15*scale,p.y+.51*scale,p.z);o.rotation.set(0,yaw,side*(fan.raised?.18:.82));o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);
+    o.position.set(p.x+side*.075*scale,p.y+.145*scale,p.z);o.rotation.set(0,yaw,side*.035);o.scale.setScalar(scale);o.updateMatrix();legs.setMatrixAt(ai,o.matrix);
+   }
    return fan;
   });
-  torso.instanceMatrix.needsUpdate=true;head.instanceMatrix.needsUpdate=true;arms.instanceMatrix.needsUpdate=true;
-  torso.computeBoundingSphere();head.computeBoundingSphere();arms.computeBoundingSphere();
-  scene.add(torso,head,arms);
-  crowdFans.meshes={torso,head,arms};
+  for(const mesh of[torso,head,hair,arms,legs]){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
+  scene.add(torso,head,hair,arms,legs);
+  crowdFans.meshes={torso,head,hair,arms,legs};
  }
  function addSecurity(){
   const positions=createProductionSecurityPositions();
