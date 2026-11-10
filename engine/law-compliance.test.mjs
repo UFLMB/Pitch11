@@ -246,10 +246,16 @@ test('Law 12 distinguishes DOGSO, the penalty-area exception, SPA and serious fo
 });
 
 test('DOGSO requires proximity, control, forward direction and no more than one defender ahead', () => {
-  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 1, ballControl: true, towardGoal: true };
+  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 1, attackersAhead: 0, ballControl: true, towardGoal: true };
   assert.equal(law.dogsoOpportunity(base), true);
   assert.equal(law.dogsoOpportunity({ ...base, defendersAhead: 2 }), false);
   assert.equal(law.dogsoOpportunity({ ...base, distanceToGoal: 420 }), false);
   assert.equal(law.dogsoOpportunity({ ...base, ballControl: false }), false);
   assert.equal(law.dogsoOpportunity({ ...base, towardGoal: false }), false);
+});
+
+test('DOGSO also considers numerical attacking support under the 2026/27 Law 12 wording', () => {
+  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 3, attackersAhead: 4, ballControl: true, towardGoal: true };
+  assert.equal(law.dogsoOpportunity(base), true);
+  assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: 3 }), false);
 });
