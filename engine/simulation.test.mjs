@@ -307,3 +307,29 @@ test("AI defender schedules a pressure tackle near an opponent", () => {
   assert.ok(defender.tackleUntil > sim.time);
   assert.ok(defender.tackleCooldown > 0);
 });
+
+test("foul inside the attacking penalty area awards a penalty", () => {
+  const sim = new FootballSimulation();
+  const defender = sim.players[15], attacker = sim.players[9];
+  attacker.x = 95; attacker.y = 34;
+  sim.ball.x = 95; sim.ball.y = 34;
+  assert.equal(sim.callFoul(defender, attacker), true);
+  assert.equal(sim.phase, "restart");
+  assert.equal(sim.restart.type, "penalty");
+  assert.equal(sim.restart.team, 0);
+  assert.equal(sim.restart.x, 94);
+  assert.equal(sim.restart.y, 34);
+});
+
+test("second yellow card dismisses a player from active simulation", () => {
+  const sim = new FootballSimulation();
+  const offender = sim.players[15], victim = sim.players[9];
+  sim.callFoul(offender, victim, { card: true });
+  assert.equal(offender.yellowCards, 1);
+  assert.equal(offender.out, false);
+  sim.callFoul(offender, victim, { card: true });
+  assert.equal(offender.yellowCards, 2);
+  assert.equal(offender.redCard, true);
+  assert.equal(offender.out, true);
+  assert.equal(sim.selectPlayer(offender.id), false);
+});
