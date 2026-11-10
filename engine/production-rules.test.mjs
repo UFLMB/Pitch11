@@ -161,11 +161,11 @@ test("goalkeeper handball boundary is evaluated at the ball contact point", () =
 
 test("goalkeeper cannot handle a deliberate teammate back-pass or a direct teammate throw-in", () => {
   assert.ok(source.includes("gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?(rs&&rs.kind==='throw'?'throw-in':'back-pass'):null)"));
-  assert.ok(source.includes("if(!p.gk||ball.gkNoHands!==p.team)ball.gkNoHands=null"));
+  assert.ok(source.includes("if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}"));
   assert.ok(source.includes("PITCH11Law.goalkeeperIllegalHandlingRestart(insideArea,b.gkNoHands===keeper.team)"));
   assert.ok(source.includes("handlingRestart==='indirect-free-kick'"));
   assert.ok(source.includes("b.gkNoHands=null"));
-  assert.ok(source.includes("b.gkNoHands=null;clearOff()"));
+  assert.ok(source.includes("b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff()"));
 });
 
 
