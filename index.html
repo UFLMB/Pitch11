@@ -4827,12 +4827,12 @@ function clearPenaltyLineState(){
   ball.penaltyTeam=null;ball.penaltyKicker=null;ball.penaltyKeeper=null;
   ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;
   ball.penaltyKeeperImpactedKicker=false;ball.penaltyRetakePending=false;
-  ball.penaltyWasShootout=false;ball.pen=false;
+  ball.penaltyWasShootout=false;ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=null;ball.pen=false;
 }
 const _setupPenLine=setupPen;
 setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);const keeper=GK[1-t];if(keeper&&!keeper.out)keeper.face=Math.atan2(sh.y-keeper.y,sh.x-keeper.x);};
 const _setupKickoffLine=setupKickoff;
-setupKickoff=function(t){clearPenaltyLineState();_setupKickoffLine(t);};
+setupKickoff=function(t){S.penaltyExtraTime=false;clearPenaltyLineState();_setupKickoffLine(t);};
 const _kickPenaltyLine=kick;
 kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const rs=S.rs;
@@ -4856,6 +4856,7 @@ kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
     ball.penaltyKeeper=incident.keeper;ball.penaltyKeeperOffLine=incident.offLine;
     ball.penaltyKeeperSaved=false;ball.penaltyKeeperImpactedKicker=false;
     ball.penaltyRetakePending=false;ball.penaltyWasShootout=incident.shootout;
+    ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=p;
     if(incident.offLine)varCheck('goal',{clearAndObviousError:true});
   }
 };
@@ -4868,8 +4869,9 @@ gkReact=function(p){
       goalLine:gx,attackDirection:d,centerY:CY,goalHalfWidth:GOALH,goalHeight:GOALZ,
       radius:BR,gravity:BALL_GRAV,maxTime:2}));
   _gkReactPenaltyLine(p);
-  if(onTarget&&ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
-     (ball.owner===p||(ball.last===p&&previousLast!==p)))ball.penaltyKeeperSaved=true;
+  const keeperTouched=ball.pen&&p===ball.penaltyKeeper&&(ball.owner===p||(ball.last===p&&previousLast!==p));
+  if(keeperTouched)ball.penaltyLastTouch=p;
+  if(onTarget&&ball.penaltyKeeperOffLine&&keeperTouched)ball.penaltyKeeperSaved=true;
 };
 const _outOfPlayPenaltyLine=outOfPlay;
 outOfPlay=function(){
@@ -4880,6 +4882,7 @@ outOfPlay=function(){
   });
   if(decision==='retake'){ball.penaltyRetakePending=true;return;}
   _outOfPlayPenaltyLine();
+  if(ball.pen)clearPenaltyLineState();
 };
 const _soRulesPenaltyLine=soRules;
 soRules=function(){
@@ -4929,7 +4932,7 @@ function retakePenaltyForKeeperOffence(){
 const _goalPenaltyLine=goal;
 goal=function(dr){_goalPenaltyLine(dr);if(ball.pen)clearPenaltyLineState();};
 const _newMatchPenaltyLine=newMatch;
-newMatch=function(){for(const p of P)p.penaltyLineOffences=0;_newMatchPenaltyLine();};
+newMatch=function(){S.penaltyExtraTime=false;for(const p of P)p.penaltyLineOffences=0;_newMatchPenaltyLine();};
 const _updatePenaltyLine=update;
 update=function(){
   _updatePenaltyLine();
