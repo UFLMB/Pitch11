@@ -14,7 +14,23 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 </head>
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
-<script src="engine/law-compliance.js"></script>
+<script src="engine/law-compliance.js">
+/* Law 15: a throw-in must use the dedicated two-handed overhead delivery.
+   Do not let pass / shot / skill inputs turn the restart into a foot kick. */
+const _humanThrowLaw=humanAct;
+humanAct=function(p){
+  const rs=S.rs;
+  if(rs&&rs.kind==='throw'&&rs.p===p&&ball.owner===p){
+    const saved={shoot:I.shoot,shootUp:I.shootUp,pass:I.pass,thru:I.thru,lob:I.lob,skill:I.skill,sw:I.sw,tackle:I.tackle,swp:I.swp};
+    I.shoot=I.shootUp=I.pass=I.thru=I.lob=I.skill=I.sw=I.tackle=I.swp=false;
+    I.chargeT=0;
+    _humanThrowLaw(p);
+    Object.assign(I,saved);
+    return;
+  }
+  _humanThrowLaw(p);
+};
+</script>
 <script>
 'use strict';
 /* =====================================================================
