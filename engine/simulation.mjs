@@ -43,7 +43,7 @@ function copyPlayer(p) {
 export class FootballSimulation {
   constructor(options = {}) {
     this.seed = options.seed ?? 11;
-    this.weather = { windX: options.windX ?? 0, windY: options.windY ?? 0, wetness: options.wetness ?? 0 };
+    this.weather = { windX: options.windX ?? 0, windY: options.windY ?? 0, wetness: clamp(Number(options.wetness) || 0, 0, 1) };
     this.rngState = (this.seed >>> 0) || 1;
     this.accumulator = 0;
     this.time = 0;
