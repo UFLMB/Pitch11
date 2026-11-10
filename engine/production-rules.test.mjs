@@ -147,7 +147,7 @@ test("goal-kick opponents are kept outside the penalty area and at least 9.15m f
 
 test("goalkeeper handball outside the penalty area awards a direct free kick at the contact point", () => {
   assert.ok(source.includes("const insideArea=(b.x-gx)*d>=0"));
-  assert.ok(source.includes("whistleStop(1.4,'HANDBALL','Goalkeeper handled outside the penalty area',()=>freeKick(1-keeper.team,x,y,false))"));
+  assert.ok(source.includes("whistleStop(1.4,label,'Goalkeeper handled the ball illegally',()=>freeKick(1-keeper.team,x,y,handlingRestart==='indirect-free-kick'))"));
   assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
 });
 
