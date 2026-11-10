@@ -424,8 +424,10 @@ export class FootballSimulation {
   }
   releaseBall(p,vx,vy,vz) {
     p.hasBall=false; p.action="kick";
+    const kickDirection = norm(vx, vy);
     this.ball.owner=-1; this.ball.lastTouchTeam=p.team;
-    this.ball.x=p.x+p.attack*.55; this.ball.y=p.y;
+    this.ball.x=p.x+kickDirection.x*.42; this.ball.y=p.y+kickDirection.y*.42;
+    this.ball.z=PITCH.ballRadius;
     this.ball.vx=vx; this.ball.vy=vy; this.ball.vz=vz;
     this.ball.ignorePlayerId=p.id; this.ball.ignoreUntil=this.time+.22;
   }
@@ -542,9 +544,21 @@ export class FootballSimulation {
   updateBall(dt) {
     const owner=this.players[this.ball.owner];
     if(owner) {
-      const offset=owner.attack*.72;
-      this.ball.x=owner.x+offset; this.ball.y=owner.y+Math.sin(this.time*8)*.07;
-      this.ball.z=PITCH.ballRadius; this.ball.vx=owner.vx; this.ball.vy=owner.vy; this.ball.vz=0;
+      const speed = hypot(owner.vx, owner.vy);
+      const direction = speed > .35 ? norm(owner.vx, owner.vy) : { x: owner.attack, y: 0 };
+      const lateral = { x: -direction.y, y: direction.x };
+      const touchDistance = clamp(.38 + speed * .075, .38, .85);
+      const touchAmplitude = clamp(speed * .025, 0, .12);
+      const touchRate = 7 + speed * .55;
+      const phase = this.time * touchRate + owner.id * .73;
+      const sideOffset = Math.sin(phase) * touchAmplitude;
+      const sideVelocity = Math.cos(phase) * touchAmplitude * touchRate;
+      this.ball.x = owner.x + direction.x * touchDistance + lateral.x * sideOffset;
+      this.ball.y = owner.y + direction.y * touchDistance + lateral.y * sideOffset;
+      this.ball.z = PITCH.ballRadius;
+      this.ball.vx = owner.vx + lateral.x * sideVelocity;
+      this.ball.vy = owner.vy + lateral.y * sideVelocity;
+      this.ball.vz = 0;
       return;
     }
     const b=this.ball;
