@@ -115,7 +115,7 @@ test("substitutions are limited to five players and three stoppage windows, with
 test("goalkeeper hand control is limited to eight seconds and awards a corner kick", () => {
   assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
   assert.doesNotMatch(source, /take=function\(p\)\{/ , "later wrappers must not discard the hand-control argument");
-  assert.equal((source.match(/take=function\(p,byHand=false\)/g)||[]).length, 6, "all six possession wrappers must accept the hand-control flag");
+  assert.equal((source.match(/take=function\(p,byHand=false\)/g)||[]).length, 7, "all seven possession wrappers must accept the hand-control flag");
   for (const wrapper of ["_take(p,byHand)", "_tk8(p,byHand)", "_tk10(p,byHand)", "_tk19(p,byHand)", "_tk23(p,byHand)", "_tkA(p,byHand)"]) {
     assert.ok(source.includes(wrapper), "hand-control state must pass through " + wrapper);
   }
@@ -258,4 +258,12 @@ test("Law 14 does not retake for an off-line goalkeeper touching a penalty that 
   assert.match(source, /PITCH11Law\.penaltyShotOnTarget\(/);
   assert.match(source, /const onTarget=!!\(ball\.pen&&ball\.penaltyKeeperOffLine/);
   assert.match(source, /if\(onTarget&&ball\.pen&&ball\.penaltyKeeperOffLine/);
+});
+
+test("Law 14 additional time waits for penalty completion and honours retakes", () => {
+  assert.match(source, /const _endHalfPenaltyAddedTime=endHalf/);
+  assert.match(source, /PITCH11Law\.penaltyAdditionalTimeDecision\(/);
+  assert.match(source, /penaltyOtherPlayerTouched/);
+  assert.match(source, /if\(ball\.pen\)clearPenaltyLineState\(\)/);
+  assert.match(source, /if\(ball\.penaltyRetakePending&&S\.mode==='play'\)retakePenaltyForKeeperOffence\(\)/);
 });
