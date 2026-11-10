@@ -1,4 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
+import * as THREE from "../vendor/three/build/three.module.js";
 import { FootballSimulation } from "./simulation.mjs";
 import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera.mjs";
 import { markRoofForCameraExclusion, configureStadiumCameraLayers } from "./stadium-visibility.mjs";
