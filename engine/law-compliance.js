@@ -46,6 +46,31 @@
     return { team, goalkeeper };
   }
 
+  function freeKickWallClearancePosition(state) {
+    const tx = state.tangentX;
+    const ty = state.tangentY;
+    const length = Math.hypot(tx, ty) || 1;
+    const ux = tx / length;
+    const uy = ty / length;
+    const along = Math.max(-state.halfLength, Math.min(state.halfLength,
+      (state.x - state.wallX) * ux + (state.y - state.wallY) * uy));
+    const closestX = state.wallX + ux * along;
+    const closestY = state.wallY + uy * along;
+    let dx = state.x - closestX;
+    let dy = state.y - closestY;
+    let distance = Math.hypot(dx, dy);
+    if (distance >= state.clearance) return { x: state.x, y: state.y };
+    if (distance < 1e-6) {
+      dx = state.wallX - state.ballX;
+      dy = state.wallY - state.ballY;
+      distance = Math.hypot(dx, dy) || 1;
+    }
+    return {
+      x: closestX + dx / distance * state.clearance,
+      y: closestY + dy / distance * state.clearance
+    };
+  }
+
   function kickoffPlayerPosition(state) {
     let x = state.x;
     let y = state.y;
@@ -133,5 +158,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, droppedBallRecipient, goalKickOpponentPosition, kickoffPlayerPosition });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, droppedBallRecipient, goalKickOpponentPosition, kickoffPlayerPosition, freeKickWallClearancePosition });
 })(globalThis);
