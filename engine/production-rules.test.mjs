@@ -116,6 +116,8 @@ test("the seven-player minimum is enforced after sending-offs and at stoppages",
 
 test("goalkeeper handling is restricted to the penalty area and the eight-second limit awards a corner", () => {
   assert.match(source, /PITCH11Law\.goalkeeperHoldExpired\(g\.poss\)/);
+  assert.match(source, /b\.owner\.hold&&!\(S\.rs&&S\.rs\.p===b\.owner\)/);
+  assert.match(source, /depth=\(b\.x-own\)\*d/);
   assert.match(source, /if\(!inBox\).*?GOALKEEPER HANDBALL/s);
   assert.match(source, /GOALKEEPER 8-SECOND LIMIT/);
   assert.match(source, /spot\(t,x,y,false,Math\.atan2\(CY-y,CX-x\),'corner'\)/);
