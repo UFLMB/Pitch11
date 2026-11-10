@@ -137,7 +137,9 @@ test("all restart placements clear the previous taker's second-touch lock", () =
   assert.match(source, /b\.owner=tk;b\.last=tk;b\.receiver=null;b\.dbl=null;b\.protect=3/);
 });
 
-test("a dropped ball does not create a restart taker's second-touch lock", () => {
+test("a dropped ball allows the same player to play again but cannot score until another player touches", () => {
   assert.match(source, /if\(rs&&rs\.p===p&&rs\.kind!=='drop'\)ball\.dbl=p/);
-  assert.match(source, /rs&&\(rs\.ind\|\|rs\.kind==='throw'\|\|rs\.kind==='drop'\)\)b\.ind=true/);
+  assert.match(source, /b\.ind=true;b\.indBy=p/);
+  assert.match(source, /keepIndirect=ball\.ind&&ball\.indBy===p/);
+  assert.match(source, /if\(best!==b\.indBy\)clearIndirect\(\)/);
 });
