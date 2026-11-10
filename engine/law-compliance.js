@@ -133,9 +133,11 @@
 
   function dogsoOpportunity(state) {
     const s = state || {};
+    const numericalAdvantage = Number.isFinite(s.attackersAhead) &&
+      Number.isFinite(s.defendersAhead) && s.attackersAhead > s.defendersAhead;
     return Number.isFinite(s.distanceToGoal) && s.distanceToGoal > 0 && s.distanceToGoal <= 380 &&
       Number.isFinite(s.lateralDistance) && s.lateralDistance <= 250 &&
-      Number.isFinite(s.defendersAhead) && s.defendersAhead <= 1 &&
+      Number.isFinite(s.defendersAhead) && (s.defendersAhead <= 1 || numericalAdvantage) &&
       s.ballControl === true && s.towardGoal === true;
   }
 
