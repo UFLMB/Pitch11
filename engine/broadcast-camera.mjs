@@ -1,36 +1,37 @@
 /**
- * PITCH 11 broadcast camera — Three.js world-space coordinates.
+ * PITCH 11 broadcast camera — placed in the open camera lane just pitch-side
+ * of the first seating row and underneath the near-side roof canopy.
  *
- * The simulation uses X=0..105 and Y=0..68 metres. The rendered pitch is
- * centred at the origin: worldX = simulationX - 52.5, worldZ = simulationY - 34.
- * Three.js world Y is vertical. This conversion is intentionally kept here so
- * simulation coordinates can never be mistaken for camera world coordinates.
+ * Stadium geometry: near stand begins at Z=47; roof spans Z=44..74 and
+ * Y=21.7..23.9. Camera at (Y=10, Z=45) is in front of the stand and below
+ * the canopy, looking inward across the pitch rather than through the roof.
+ * Rendered pitch coordinates: X=-52.5..52.5, Z=-34..34.
  */
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const damp = (current, target, sharpness, dt) =>
   current + (target - current) * (1 - Math.exp(-sharpness * Math.max(0, dt)));
 
 const PITCH_HALF_LENGTH = 52.5;
-const PITCH_HALF_WIDTH = 34;
 const toWorldX = metres => metres - PITCH_HALF_LENGTH;
-const toWorldZ = metres => metres - PITCH_HALF_WIDTH;
 
 export function createBroadcastCamera(camera, { mobile = false } = {}) {
-  const initial = {
+  const state = {
     x: 0,
-    height: mobile ? 28 : 27,
-    sideZ: mobile ? 70 : 68,
+    height: 10,
+    sideZ: 45,
     targetX: 0,
     targetZ: 0,
     mobile
   };
-  camera.fov = mobile ? 46 : 44;
+
+  // Broad Tele Broadcast framing is necessary from the lower camera lane.
+  camera.fov = mobile ? 66 : 62;
   camera.near = 0.1;
-  camera.far = 300;
-  camera.position.set(initial.x, initial.height, initial.sideZ);
-  camera.lookAt(initial.targetX, 0.6, initial.targetZ);
+  camera.far = 320;
+  camera.position.set(state.x, state.height, state.sideZ);
+  camera.lookAt(state.targetX, 0.6, state.targetZ);
   camera.updateProjectionMatrix();
-  return initial;
+  return state;
 }
 
 export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
@@ -42,27 +43,17 @@ export function updateBroadcastCamera(camera, state, snapshot, deltaSeconds) {
     : null;
   const attackDirection = (owner?.team ?? ball.lastTouchTeam) === 1 ? -1 : 1;
 
-  // Follow the ball along the pitch length, with a restrained velocity lead.
-  const velocityLead = clamp((Number(ball.vx) || 0) * 0.24, -6, 6);
-  const simTargetX = clamp(ball.x + velocityLead + attackDirection * 2, 5, 100);
-  const desiredX = clamp(toWorldX(simTargetX), -46, 46);
+  const velocityLead = clamp((Number(ball.vx) || 0) * 0.20, -5, 5);
+  const simTargetX = clamp(ball.x + velocityLead + attackDirection * 1.5, 6, 99);
+  const desiredX = clamp(toWorldX(simTargetX), -45, 45);
 
-  // Track the ball's lateral lane only slightly; the camera stays on its
-  // broadcast gantry instead of orbiting around or crossing the pitch.
-  const laneOffset = clamp(toWorldZ(ball.y) * 0.10, -3.4, 3.4);
-  const goalDistance = Math.min(ball.x, 105 - ball.x);
-  const attackingThird = 1 - clamp((goalDistance - 8) / 27, 0, 1);
-  const zoom = attackingThird * 0.68;
-
-  const desiredHeight = (state.mobile ? 28 : 27) - zoom * 2.8;
-  const desiredSideZ = (state.mobile ? 70 : 68) - zoom * 7 + laneOffset * 0.12;
-  const desiredTargetZ = laneOffset * 0.22;
-
-  state.targetX = damp(state.targetX, desiredX, 2.8, dt);
-  state.targetZ = damp(state.targetZ, desiredTargetZ, 1.7, dt);
-  state.x = damp(state.x, state.targetX, 3.2, dt);
-  state.height = damp(state.height, desiredHeight, 1.8, dt);
-  state.sideZ = damp(state.sideZ, desiredSideZ, 1.8, dt);
+  // Fixed gantry and pitch-centre aim prevent the camera entering the roof,
+  // stands, or goal-end structures while play moves along the field.
+  state.targetX = damp(state.targetX, desiredX, 2.6, dt);
+  state.x = damp(state.x, state.targetX, 3.0, dt);
+  state.height = damp(state.height, 10, 2.0, dt);
+  state.sideZ = damp(state.sideZ, 45, 2.0, dt);
+  state.targetZ = damp(state.targetZ, 0, 2.0, dt);
 
   camera.position.set(state.x, state.height, state.sideZ);
   camera.lookAt(state.targetX, 0.6, state.targetZ);
