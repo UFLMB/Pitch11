@@ -10,6 +10,8 @@ This folder contains an isolated browser-first football simulation prototype. Th
 import { createSimulation } from "./simulation.mjs";
 
 const match = createSimulation({ seed: 11, humanTeam: 0 });
+match.setFormation(0, "4-4-2");
+match.setFormation(1, "4-2-3-1");
 const snapshot = match.update(1 / 60);
 match.command({ type: "move", x: 0.7, y: -0.2, sprint: true });
 match.command({ type: "pass" });
@@ -20,11 +22,11 @@ match.setWeather(2, -1, 0.25);
 match.command({ type: "switch" });
 ```
 
-The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; team 1 attacks toward -X. Updates are integrated at a fixed 1/60 s timestep, with a bounded accumulator.
+The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, name)` to switch either team independently. Team 0 attacks toward +X; team 1 attacks toward -X. Updates are integrated at a fixed 1/60 s timestep, with a bounded accumulator.
 
 ## Current prototype scope
 
-- 22 players and two 4-3-3 formations
+- 22 players and independently selectable 4-3-3, 4-4-2 and 4-2-3-1 formations
 - Deterministic seeded pseudo-random decisions
 - Fixed-step player movement, player separation and basic team/player AI
 - AI defensive pressure and cooldown-based tackle attempts
