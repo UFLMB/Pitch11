@@ -258,8 +258,7 @@ function markOff(p){                                       // who is in an offsi
 }
 function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const b=ball,a=Math.atan2(vy,vx),rs=S.rs;
-  if(mode==='pass'||mode==='thru'||mode==='lob'){if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);}
-  else clearOff();
+  if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);
   if(rs&&(rs.ind||rs.kind==='throw'||rs.kind==='drop'))b.ind=true; // indirect kicks, throw-ins and dropped balls cannot score untouched
   b.protect=0;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';

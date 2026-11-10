@@ -72,3 +72,7 @@ test("penalty shootouts use the same whole-ball boundary checks as open play", (
 test("goal-line versus touchline restarts are classified after full crossing", () => {
   assert.match(source, /if\(b\.x<PX0-BR\|\|b\.x>PX1\+BR\)\{/);
 });
+
+test("offside position is recorded for shots as well as passes", () => {
+  assert.match(source, /if\(rs&&\(rs\.kind==='throw'\|\|rs\.kind==='corner'\|\|rs\.kind==='gk'\)\)clearOff\(\);else markOff\(p\);/);
+});
