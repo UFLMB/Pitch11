@@ -17,4 +17,4 @@ jobs:
         with:
           node-version: 22
       - name: Run simulation regression tests
-        run: node --test engine/simulation.test.mjs
+        run: node --test engine/*.test.mjs
