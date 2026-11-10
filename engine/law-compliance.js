@@ -35,17 +35,28 @@
   }
 
   function goalkeeperHoldExpired(seconds) {
-    return Number.isFinite(seconds) && seconds >= 8;
+    return Number.isFinite(seconds) && seconds > 8;
+  }
+
+  function offsideLine(players, team, direction, ballProjection, opponentGoalLineProjection) {
+    const defenders = players
+      .filter(p => p.team !== team && !p.out)
+      .map(p => p.x * direction)
+      .sort((a, b) => b - a);
+    const secondLast = defenders.length >= 2 ? defenders[1] : opponentGoalLineProjection;
+    return Math.max(ballProjection, secondLast);
   }
 
   function substitutionEligibility(state) {
     const used = Number.isFinite(state.used) ? state.used : 0;
     const windows = Number.isFinite(state.windows) ? state.windows : 0;
-    if (used >= 5) return { allowed: false, consumesWindow: false, reason: 'limit' };
+    const maxSubs = state.extraTime ? 6 : 5;
+    const maxWindows = state.extraTime ? 4 : 3;
+    if (used >= maxSubs) return { allowed: false, consumesWindow: false, reason: 'limit' };
     if (state.halftime) return { allowed: true, consumesWindow: false, reason: 'halftime' };
     if (!state.inStoppage) return { allowed: false, consumesWindow: false, reason: 'stoppage' };
     if (state.windowUsed) return { allowed: true, consumesWindow: false, reason: 'same-window' };
-    if (windows >= 3) return { allowed: false, consumesWindow: false, reason: 'windows' };
+    if (windows >= maxWindows) return { allowed: false, consumesWindow: false, reason: 'windows' };
     return { allowed: true, consumesWindow: true, reason: 'new-window' };
   }
 
@@ -80,5 +91,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, offsideLine });
 })(globalThis);
