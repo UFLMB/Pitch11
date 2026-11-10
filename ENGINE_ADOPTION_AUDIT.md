@@ -82,7 +82,7 @@ The simulation should expose data, not draw anything. The renderer should interp
 - Added 22-player / two-team state, 4-3-3 formation data, ball state, input commands, snapshots, and events.
 - Defined metres-based 105 × 68 m coordinates and a fixed 1/60 s timestep with a bounded accumulator.
 - Added seeded pseudo-random decisions for repeatable test scenarios.
-- Added initial movement, AI shape/support/press intents, passing, shooting, possession, goalkeeper positioning, shot interception/catches/parries, tackle resolution, goal detection, goal-frame collisions, offside checks, and restart flow for throw-ins, corners, goal kicks, and free kicks.
+- Added initial movement, AI shape/support/press intents, passing, shooting, possession, goalkeeper positioning, shot interception/catches/parries, tackle resolution, goal detection, goal-frame collisions, offside checks, restart flow for throw-ins/corners/goal kicks/free kicks, and half-time/full-time transitions.
 - Adapted the isolated League-Soccer ball-force integration (gravity, drag, bounce, ground friction, wind, wetness) into a browser-safe ES module, with Apache-2.0 attribution and license text.
 - Added Node.js regression tests for the simulation and upstream ball-physics parity, plus a GitHub Actions workflow that runs both suites.
 - First CI run passed; the expanded tests for tackling and long-run AI stability also passed.
