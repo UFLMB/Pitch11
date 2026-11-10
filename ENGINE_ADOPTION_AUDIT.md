@@ -86,7 +86,9 @@ The simulation should expose data, not draw anything. The renderer should interp
 - Adapted the isolated League-Soccer ball-force integration (gravity, drag, bounce, ground friction, wind, wetness) into a browser-safe ES module, with Apache-2.0 attribution and license text.
 - Added Node.js regression tests for the simulation and upstream ball-physics parity, plus a GitHub Actions workflow that runs both suites.
 - First CI run passed; the expanded tests for tackling and long-run AI stability also passed.
-- The simulation remains isolated and is not connected to the current gameplay renderer.
+- Added an isolated `engine/pitch11-adapter.mjs` to map metres to the existing Canvas coordinate system and convert camera-relative input.
+- Adapter regression tests cover pitch-corner mapping, input rotation, and detached render data.
+- The adapter remains unimported by `index.html`; production gameplay is not connected to the new core.
 
 ### Stage 2 — Physics extraction
 - Reproduce the upstream ball-physics behavior in a standalone browser-safe module.
