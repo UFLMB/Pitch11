@@ -1067,16 +1067,19 @@ function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
   if(b.gkHoldActive&&b.owner&&b.owner.gk){
-    const keeper=b.owner,d=dirOf(keeper.team),gx=d>0?PX0:PX1,insideArea=(keeper.x-gx)*d>=0&&(keeper.x-gx)*d<=PEN_DEPTH&&Math.abs(keeper.y-CY)<=PEN_WIDTH/2;
-    if(insideArea){
-      b.gkHold+=DT;
-      if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;msg('GOALKEEPER 5-SECOND COUNTDOWN','Release the ball',5);}
-      if(PITCH11Law.goalkeeperHoldExpired(b.gkHold)){
-        const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
-        spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
-        msg('8-SECOND VIOLATION','CORNER KICK',2);return;
-      }
-    }else{b.gkHold=0;b.gkHoldWarned=false;}
+    const keeper=b.owner,d=dirOf(keeper.team),gx=d>0?PX0:PX1;
+    const insideArea=(b.x-gx)*d>=0&&(b.x-gx)*d<=PEN_DEPTH&&Math.abs(b.y-CY)<=PEN_WIDTH/2;
+    if(!insideArea){
+      const x=b.x,y=b.y;b.gkHold=0;b.gkHoldWarned=false;
+      whistleStop(1.4,'HANDBALL','Goalkeeper handled outside the penalty area',()=>freeKick(1-keeper.team,x,y,false));return;
+    }
+    b.gkHold+=DT;
+    if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;msg('GOALKEEPER 5-SECOND COUNTDOWN','Release the ball',5);}
+    if(PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'){
+      const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
+      spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
+      msg('8-SECOND VIOLATION','CORNER KICK',2);return;
+    }
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;}
   if(!b.ind&&ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){goal(b.x>PX1?1:-1);return;}
   if(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)){outOfPlay();return;}
@@ -2329,7 +2332,7 @@ function tick8(){
     else if(W8.ret>0){W8.ret-=DT;if(W8.ret<=0){const a=W8.a,b=W8.b;W8.wall=0;if(ball.owner===b&&!a.out){act8('pass','wallreturn');PSV.err=0.7;doPass(b,a,'thru');}}}
   }
 }
-const _tk8=take;take=function(p){_tk8(p);if(W8.wall){if(p===W8.b)W8.ret=TUNING.wall.delay;else W8.wall=0;}};   // receiver controls the pass -> one-touch return
+const _tk8=take;take=function(p,byHand=false){_tk8(p,byHand);if(W8.wall){if(p===W8.b)W8.ret=TUNING.wall.delay;else W8.wall=0;}};   // receiver controls the pass -> one-touch return
 const _ai8=aiPlayer;aiPlayer=function(p){
   if(p.wr>0&&!p.gk){const dx=p.wx-p.x,dy=p.wy-p.y,m=Math.hypot(dx,dy);if(m>8){p.ix=dx/m;p.iy=dy/m;p.sp=true;}else{p.ix=p.iy=0;p.sp=false;}return;}
   _ai8(p);};
@@ -2787,9 +2790,9 @@ const _hp10=humanPass;humanPass=function(p,mode){
 };
 const _dp10=doPass;doPass=function(p,t,mode){_dp10(p,t,mode);if(t)S.passRingT=t,S.passRingT2=0.6;if(train.on&&train.drill===0)train.count++;else if(train.on&&train.drill===2&&mode==='thru')train.count++;};
 const _tt10=tryTackle;tryTackle=function(p,c){const t0=p.tcd,r=_tt10(p,c);if(r&&p.tcd>t0+0.5){buzz(26);pop8('TIMED TACKLE');}if(r&&train.on&&train.drill===3)train.count++;return r;};
-const _tk10=take;take=function(p){
+const _tk10=take;take=function(p,byHand=false){
   const incoming=p===ctrl&&!p.gk&&ball.receiver===p&&ball.pmode&&(I.sprint||I.pass||I.thru);
-  _tk10(p);
+  _tk10(p,byHand);
   if(p.gk&&p.team===0&&!S.prac)ctrl=p;
   if(incoming){pop8('TIMED TOUCH');buzz(16);}
 };
@@ -3718,7 +3721,7 @@ function spMeter(){if(!spOn()||S.mode!=='play')return;const p=ctrl,d=Math.hypot(
   [['POWER',pw,pw>.8?'#ff5a40':'#ffd400'],['ACCURACY',ac,ac>.6?'#5cff8a':ac>.3?'#ffd400':'#ff5a40']].forEach((r,i)=>{const yy=y+h*(.3+i*.4);ctx.textAlign='left';txt(r[0],x+h*.2,yy,h*.2,'#cfe3ff',800);
     ctx.fillStyle='rgba(255,255,255,.2)';rr(x+w*.34,yy-h*.07,w*.6,h*.14,h*.07);ctx.fill();ctx.fillStyle=r[2];rr(x+w*.34,yy-h*.07,Math.max(h*.14,w*.6*r[1]),h*.14,h*.07);ctx.fill();});ctx.restore();}
 /* rating events: tackles, key passes, saves */
-const _tk19=take;take=function(p){const o=ball.owner;_tk19(p);if(o&&o.team!==p.team&&S.mode==='play'&&!S.prac&&!p.gk){rate(p,.07);rate(o,-.02);const i=P.indexOf(p);TL.t[i]=(TL.t[i]||0)+1;}};
+const _tk19=take;take=function(p,byHand=false){const o=ball.owner;_tk19(p,byHand);if(o&&o.team!==p.team&&S.mode==='play'&&!S.prac&&!p.gk){rate(p,.07);rate(o,-.02);const i=P.indexOf(p);TL.t[i]=(TL.t[i]||0)+1;}};
 const _kk19=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){_kk19(p,vx,vy,vz,spin,rcv,tx,ty,mode);const ps=mode==='pass'||mode==='thru'||mode==='lob',ka=ball.ast;
   if(!ps&&ka&&!S.prac&&S.mode==='play'&&Math.abs((dirOf(p.team)>0?PX1:PX0)-p.x)<320){rate(ka,.12);const i=P.indexOf(ka);TL.k[i]=(TL.k[i]||0)+1;}};
 const _gr19=gkReact;gkReact=function(p){const n=ST.sot[0]+ST.sot[1];_gr19(p);if(ST.sot[0]+ST.sot[1]>n&&!S.prac){const i=P.indexOf(p);TL.s[i]=(TL.s[i]||0)+1;}};
@@ -3939,7 +3942,7 @@ const _ha23=humanAct;humanAct=function(p){
 };
 /* set pieces: the taker cannot touch the ball again until someone else has (no dribbling off from a throw-in / kick-off) */
 const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p)ball.dbl=p;};
-const _tk23=take;take=function(p){if(p!==ball.dbl)ball.dbl=null;_tk23(p);};
+const _tk23=take;take=function(p,byHand=false){if(p!==ball.dbl)ball.dbl=null;_tk23(p,byHand);};
 /* throw-in: the three nearest team-mates come to offer a short, a forward and a safe option along the touchline */
 function throwSup23(p,rs){
   const t=p.team,d=dirOf(t),n=rs.y<CY?1:-1,tk=rs.p,L=[];
@@ -4266,7 +4269,7 @@ AU.musOn=function(on){if(!this.c)return;const t=this.c.currentTime;
 const _tk33=AU.tick;AU.tick=function(){_tk33.call(this);this.musOn(S.mode==='menu');};
 const _gl33=goal;goal=function(dr){_gl33(dr);AU.goalFx();buzz(60);};
 const _ttA=tryTackle;tryTackle=function(p,c){const r=_ttA(p,c);if(r||p===ctrl)AU.tackle();return r;};
-const _tkA=take;take=function(p){_tkA(p);if(p.gk&&S.mode==='play')AU.glove();};
+const _tkA=take;take=function(p,byHand=false){_tkA(p,byHand);if(p.gk&&S.mode==='play')AU.glove();};
 const _apA=airPlay;airPlay=function(p){_apA(p);if(p.jump>0)AU.head();};
 const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);const v=Math.hypot(vx,vy);if(m==='shot'){AU.tone(95,45,.12,.45);if(v>500)AU.noise(.15,'bandpass',1200,.22);}};
 const _uiT=uiTap;uiTap=function(x,y){AU.click();_uiT(x,y);};
