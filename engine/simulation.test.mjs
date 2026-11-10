@@ -493,3 +493,38 @@ test("goalkeeper does not dive for a shot that misses the goal mouth", () => {
   assert.notEqual(keeper.action, "keeper-dive-left");
   assert.notEqual(keeper.action, "keeper-dive-right");
 });
+
+
+test("auto switching selects the human-controlled player who gains possession", () => {
+  const sim = new FootballSimulation({ seed: 41 });
+  sim.humanTeam = 0;
+  sim.selectPlayer(9);
+  sim.ball.owner = 4;
+  sim.players[4].team = 0;
+  sim.players[4].role = "FWD";
+  assert.equal(sim.updateAutoPlayerSelection(), true);
+  assert.equal(sim.selectedPlayer, 4);
+});
+
+test("auto switching chooses the nearest defender when the opponent carries the ball", () => {
+  const sim = new FootballSimulation({ seed: 42 });
+  sim.humanTeam = 0;
+  for (const p of sim.players.filter(p => p.team === 0)) { p.x = 10; p.y = 10; }
+  sim.players[5].x = 68; sim.players[5].y = 34;
+  sim.selectPlayer(9);
+  sim.ball.owner = 11;
+  sim.players[11].x = 70; sim.players[11].y = 34;
+  assert.equal(sim.updateAutoPlayerSelection(), true);
+  assert.equal(sim.selectedPlayer, 5);
+});
+
+test("auto switching preserves a selected player who is already close to the play", () => {
+  const sim = new FootballSimulation({ seed: 43 });
+  sim.humanTeam = 0;
+  sim.selectPlayer(9);
+  sim.players[9].x = 48; sim.players[9].y = 34;
+  sim.ball.owner = 11;
+  sim.players[11].x = 52; sim.players[11].y = 34;
+  assert.equal(sim.updateAutoPlayerSelection(), false);
+  assert.equal(sim.selectedPlayer, 9);
+});
