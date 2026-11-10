@@ -151,3 +151,13 @@ test('kick-off positioning keeps every player outside the centre circle and in t
   assert.ok(far.x < base.centerX);
   assert.equal(far.y, 20);
 });
+
+
+test('the goalkeeper second-hand-touch marker is created only after actual hand control', () => {
+  const keeper = { gk: true, team: 0 };
+  const outfielder = { gk: false, team: 0 };
+  assert.equal(law.goalkeeperReleaseMarker(keeper, true), keeper);
+  assert.equal(law.goalkeeperReleaseMarker(keeper, false), null);
+  assert.equal(law.goalkeeperReleaseMarker(outfielder, true), null);
+  assert.equal(law.goalkeeperReleaseMarker(null, true), null);
+});
