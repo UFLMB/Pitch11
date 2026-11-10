@@ -155,7 +155,10 @@ test('Law 12 cautions reckless challenges, sends off serious foul play, and hand
 });
 
 test('VAR checks are limited to the five 2026/27 review categories and clear errors', () => {
-  assert.deepEqual(law.varReviewDecision({ category: 'goal' }), { eligible: true, review: false, reason: 'silent-check' });
+  const silentGoal = law.varReviewDecision({ category: 'goal' });
+  assert.equal(silentGoal.eligible, true);
+  assert.equal(silentGoal.review, false);
+  assert.equal(silentGoal.reason, 'silent-check');
   assert.equal(law.varReviewDecision({ category: 'goal', clearAndObviousError: true }).review, true);
   assert.equal(law.varReviewDecision({ category: 'penalty', seriousMissedIncident: true }).review, true);
   assert.equal(law.varReviewDecision({ category: 'throw-in', clearAndObviousError: true }).eligible, false);
