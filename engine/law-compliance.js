@@ -54,6 +54,30 @@
     return { x: inPenaltyArea ? state.goalLine + state.direction * (state.penaltyDepth + state.clearance) : x, y };
   }
 
+  function varReviewDecision(state) {
+    const s = state || {};
+    const category = s.category;
+    const supported = ['goal', 'penalty', 'red-card', 'mistaken-identity', 'corner'];
+    if (!supported.includes(category)) return { eligible: false, review: false, reason: 'not-reviewable' };
+
+    // The 2026/27 protocol permits corner reviews only when the competition
+    // enables them and the decision can still be changed before the restart.
+    if (category === 'corner' && (!s.cornerReviewEnabled || s.restartOccurred)) {
+      return { eligible: false, review: false, reason: 'corner-option-or-restart' };
+    }
+
+    // Once play has restarted, only mistaken identity and specified serious
+    // sending-off incidents (violent conduct etc.) remain reviewable.
+    const seriousSendingOff = !!(s.violentConduct || s.spitting || s.biting || s.abusiveAction);
+    if (s.restartOccurred && category !== 'mistaken-identity' &&
+        !(category === 'red-card' && seriousSendingOff)) {
+      return { eligible: false, review: false, reason: 'restart-already-taken' };
+    }
+
+    const trigger = !!(s.clearAndObviousError || s.seriousMissedIncident);
+    return { eligible: true, review: trigger, reason: trigger ? 'review-required' : 'silent-check' };
+  }
+
   function foulCardDecision(state) {
     // Law 12: only reckless challenges require a caution; serious foul play requires
     // an explicit excessive-force / endangering-safety assessment by the event caller.
@@ -122,5 +146,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

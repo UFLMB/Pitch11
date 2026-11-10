@@ -153,3 +153,30 @@ test('Law 12 cautions reckless challenges, sends off serious foul play, and hand
   assert.equal(law.foulCardDecision({ seriousFoulPlay: true, reckless: false, alreadyBooked: false }), 2);
   assert.equal(law.foulCardDecision({ seriousFoulPlay: true, reckless: true, alreadyBooked: true }), 2);
 });
+
+test('VAR checks are limited to the five 2026/27 review categories and clear errors', () => {
+  const silentGoal = law.varReviewDecision({ category: 'goal' });
+  assert.equal(silentGoal.eligible, true);
+  assert.equal(silentGoal.review, false);
+  assert.equal(silentGoal.reason, 'silent-check');
+  assert.equal(law.varReviewDecision({ category: 'goal', clearAndObviousError: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'penalty', seriousMissedIncident: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'throw-in', clearAndObviousError: true }).eligible, false);
+});
+
+test('VAR restart restrictions preserve only mistaken identity and serious sending-off reviews', () => {
+  assert.equal(law.varReviewDecision({ category: 'goal', clearAndObviousError: true, restartOccurred: true }).review, false);
+  assert.equal(law.varReviewDecision({ category: 'penalty', seriousMissedIncident: true, restartOccurred: true }).review, false);
+  assert.equal(law.varReviewDecision({ category: 'mistaken-identity', clearAndObviousError: true, restartOccurred: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'red-card', seriousMissedIncident: true, violentConduct: true, restartOccurred: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'red-card', seriousMissedIncident: true, spitting: true, restartOccurred: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'red-card', seriousMissedIncident: true, biting: true, restartOccurred: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'red-card', seriousMissedIncident: true, abusiveAction: true, restartOccurred: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'red-card', clearAndObviousError: true, restartOccurred: true }).review, false);
+});
+
+test('corner VAR is competition-enabled and must be immediate before the restart', () => {
+  assert.equal(law.varReviewDecision({ category: 'corner', clearAndObviousError: true }).eligible, false);
+  assert.equal(law.varReviewDecision({ category: 'corner', clearAndObviousError: true, cornerReviewEnabled: true }).review, true);
+  assert.equal(law.varReviewDecision({ category: 'corner', clearAndObviousError: true, cornerReviewEnabled: true, restartOccurred: true }).review, false);
+});
