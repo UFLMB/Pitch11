@@ -68,8 +68,9 @@
 
     // Once play has restarted, only mistaken identity and specified serious
     // sending-off incidents (violent conduct etc.) remain reviewable.
+    const seriousSendingOff = !!(s.violentConduct || s.spitting || s.biting || s.abusiveAction);
     if (s.restartOccurred && category !== 'mistaken-identity' &&
-        !(category === 'red-card' && s.violentConduct)) {
+        !(category === 'red-card' && seriousSendingOff)) {
       return { eligible: false, review: false, reason: 'restart-already-taken' };
     }
 
