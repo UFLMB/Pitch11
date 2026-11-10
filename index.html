@@ -2483,6 +2483,7 @@ function slideFoul(p,q,tq,behind){
 }
 function slideHit(p,sd){
   const K=TUNING.df.sl,b=ball,o=b.owner,def=p.st.def,rch=K.reach+K.rd*def,tq=1-clamp(Math.abs(sd.t-K.ideal)/0.25,0,1);   // tq: timing quality, 1 = contact at the ideal moment
+  if(!S.prac&&p.off&&Math.hypot(b.x-p.x,b.y-p.y)<rch){callOffside(p);return;}
   if(o&&o.team!==p.team&&!o.gk&&b.protect<=0){
     const dx=b.x-p.x,dy=b.y-p.y;
     if(Math.hypot(dx,dy)<=rch){
@@ -3134,6 +3135,7 @@ function bodyCollide(){                                    // the ball bounces o
     if(d>=R||d<0.01)continue;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
+    if(!S.prac&&p.off){callOffside(p);return;}
     const e=0.48;b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
     b.x=p.x+nx*R;b.y=p.y+ny*R;
     if(-vn>220&&b.z<4&&b.vz<25)b.vz=Math.min(55,18+(-vn-220)*0.035);
