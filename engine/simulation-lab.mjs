@@ -1,5 +1,6 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 import { FootballSimulation } from "./simulation.mjs";
+import { createBroadcastCamera, updateBroadcastCamera } from "./broadcast-camera.mjs";
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
@@ -21,9 +22,8 @@ keyLight.position.set(-65, 110, 45); scene.add(keyLight);
 const fillLight = new THREE.DirectionalLight(0x91bfff, .65);
 fillLight.position.set(70, 70, -85); scene.add(fillLight);
 
-const camera = new THREE.PerspectiveCamera(43, host.clientWidth / host.clientHeight, .1, 500);
-camera.position.set(0, 63, 119);
-camera.lookAt(0, 0, 0);
+const camera = new THREE.PerspectiveCamera(41, host.clientWidth / host.clientHeight, .1, 500);
+const broadcastCamera = createBroadcastCamera(camera, { mobile });
 
 const mat = (color, roughness = .82, metalness = 0) => new THREE.MeshStandardMaterial({ color, roughness, metalness });
 const addBox = (w, h, d, x, y, z, material, parent = scene) => {
@@ -297,7 +297,9 @@ function frame(now) {
   if (now - lastRender < frameMs) return;
   const dt = Math.min(.05, (now - last) / 1000); last = now; lastRender = now;
   if (!paused) { updateInput(); simulation.update(dt); }
-  syncMeshes(simulation.getSnapshot());
+  const snapshot = simulation.getSnapshot();
+  syncMeshes(snapshot);
+  updateBroadcastCamera(camera, broadcastCamera, snapshot, dt);
   renderer.render(scene, camera);
 }
 document.addEventListener("visibilitychange", () => { last = performance.now(); });

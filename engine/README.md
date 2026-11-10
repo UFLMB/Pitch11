@@ -46,6 +46,7 @@ The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, nam
 - Detached snapshots and event output
 - A separate adapter mapping metres to the existing PITCH 11 Canvas world (1 m = 10 legacy units)
 - Camera-relative input conversion and render-frame data mapping
+- A damped side-line Tele Broadcast camera with ball-velocity anticipation, attack-third zoom and touchline-aware framing
 
 ## Commands
 
@@ -60,7 +61,7 @@ The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, nam
 | `restart` | — | Take an awarded restart when play is stopped |
 | `continue` | — | Start the second half after half-time |
 
-## Browser simulation lab\n\nOpen `simulation-lab.html` through a static HTTP server (ES modules do not run reliably from `file://`). The standalone 3D lab generates its pitch, stadium stands, crowd, LED boards, floodlights, goals, player meshes and ball locally; it does not require an external stadium GLB. Three.js is loaded from jsDelivr. Desktop controls: WASD/arrows to move, Shift to sprint, P to pass, Space to shoot, E to switch, Q to tackle, R to take a restart, Esc to pause. Touch devices use the virtual joystick and on-screen actions. Landscape orientation is required on phones. The lab accelerates match time for quick validation.\n\nThe lab is isolated from `index.html`, `stadium-runtime.js` and `graphics3d.html`; it does not replace the production match runtime. Browser/WebGL and Android performance checks are still required before production integration.\n\n## Regression tests
+## Browser simulation lab\n\nOpen `simulation-lab.html` through a static HTTP server (ES modules do not run reliably from `file://`). The standalone 3D lab generates its pitch, stadium stands, crowd, LED boards, floodlights, goals, player meshes and ball locally; it does not require an external stadium GLB. Three.js is loaded from jsDelivr. Desktop controls: WASD/arrows to move, Shift to sprint, P to pass, Space to shoot, E to switch, Q to tackle, R to take a restart, Esc to pause. Touch devices use the virtual joystick and on-screen actions. Landscape orientation is required on phones. The lab uses a side-line Tele Broadcast camera that smoothly follows the ball, anticipates fast travel, and tightens framing near either penalty area. The camera is shared by desktop and landscape mobile layouts, with a slightly wider mobile frame. The lab accelerates match time for quick validation.\n\nThe lab is isolated from `index.html`, `stadium-runtime.js` and `graphics3d.html`; it does not replace the production match runtime. Browser/WebGL and Android performance checks are still required before production integration.\n\n## Regression tests
 
 Run locally with Node.js 22 or later:
 
