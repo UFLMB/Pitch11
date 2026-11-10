@@ -91,3 +91,29 @@ test("exports a versioned API", () => {
   assert.equal(typeof SIM_VERSION, "string");
   assert.equal(typeof FootballSimulation, "function");
 });
+
+test("close tackle wins possession deterministically", () => {
+  const sim = new FootballSimulation({ seed: 99 });
+  const defender = sim.players[9];
+  const attacker = sim.players[15];
+  sim.players[sim.ball.owner].hasBall = false;
+  sim.ball.owner = attacker.id;
+  attacker.hasBall = true;
+  attacker.x = defender.x; attacker.y = defender.y;
+  defender.x = attacker.x; defender.y = attacker.y;
+  sim.command({ type: "tackle" });
+  sim.update(FIXED_DT);
+  assert.equal(sim.ball.owner, defender.id);
+  assert.ok(sim.getSnapshot().events.some(e => e.type === "tackleWon"));
+});
+
+test("AI movement remains inside pitch and finite over a longer run", () => {
+  const sim = new FootballSimulation({ seed: 2026 });
+  for (let i = 0; i < 1800; i++) sim.update(FIXED_DT);
+  for (const p of sim.players) {
+    assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y));
+    assert.ok(p.x >= .5 && p.x <= 104.5);
+    assert.ok(p.y >= .5 && p.y <= 67.5);
+  }
+  assert.ok(Number.isFinite(sim.ball.x) && Number.isFinite(sim.ball.y));
+});
