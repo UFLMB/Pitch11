@@ -799,7 +799,7 @@ function aiGK(p){
     const dd=Math.hypot(o.x-p.x,o.y-p.y);
     if(dd<22&&p.tcd<=0&&b.protect<=0){
       p.tcd=0.8;
-      if(Math.random()<0.35+0.4*st.def){take(p);o.stun=0.4;p.freeze=0.5;}
+      if(Math.random()<0.35+0.4*st.def){take(p,true);o.stun=0.4;p.freeze=0.5;}
       else{b.owner=null;b.last=p;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;}
       return;
     }
@@ -2610,7 +2610,7 @@ function gkStep(p){                                         // true = the keeper
     if(dd<K.smother&&p.tcd<=0&&b.protect<=0){               // grab the ball off his feet
       p.tcd=0.8;
       if(o.skill>0){p.stun=0.7;act8('gk','dummied');}       // skill move: beaten
-      else if(Math.random()<0.3+0.4*p.st.def){take(p);o.stun=0.4;p.freeze=0.5;D9.n.gs[t]++;act8('gk','smother');gkEnd(c,t);return true;}
+      else if(Math.random()<0.3+0.4*p.st.def){take(p,true);o.stun=0.4;p.freeze=0.5;D9.n.gs[t]++;act8('gk','smother');gkEnd(c,t);return true;}
       else if(Math.random()<0.08){foul(p,o,false);gkEnd(c,t);return true;}
       else{b.owner=null;b.last=p;b.receiver=null;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;act8('gk','spill');}
       return true;
