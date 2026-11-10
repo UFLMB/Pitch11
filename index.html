@@ -3626,17 +3626,26 @@ DRF.cut=1;G.rf.cut=1;
 let EVT=[],TL={g:{},a:{},t:{},k:{},s:{}};
 const CUT={t:0,d:0,title:'',sub:'',col:'#fff',ic:0};
 function cut(title,sub,col,ic,d){if(!G.rf.cut||S.prac)return;CUT.t=CUT.d=d||2.4;CUT.title=title;CUT.sub=sub||'';CUT.col=col||'#fff';CUT.ic=ic||0;}
+const VAR_LOG=[];
+function varCheck(category,evidence){
+  const data=Object.assign({},evidence||{},{category});
+  const result=PITCH11Law.varReviewDecision(data);
+  VAR_LOG.push({category,review:result.review,reason:result.reason});
+  if(result.review)cut('VAR CHECK','Referee review required: '+category.toUpperCase(),'#4aa8ff',0,2.4);
+  return result;
+}
 const _nm18=newMatch;newMatch=function(){EVT=[];TL={g:{},a:{},t:{},k:{},s:{}};CUT.t=0;_nm18();};
-const _gl18=goal;goal=function(dr){const a0=ST.ast;_gl18(dr);const sc=S.scorer;if(!sc||S.prac)return;
+const _gl18=goal;goal=function(dr){const evidence=ball.varIncident||{};ball.varIncident=null;varCheck('goal',evidence);const a0=ST.ast;_gl18(dr);const sc=S.scorer;if(!sc||S.prac)return;
   const i=P.indexOf(sc),og=sc.team!==S.goalTeam,st=ball.ast;
   EVT.push({t:S.goalTeam,n:sc.num,m:gmin()|0,og});
   if(!og){TL.g[i]=(TL.g[i]||0)+1;
     if(st&&st.team===sc.team&&st!==sc){TL.a[P.indexOf(st)]=(TL.a[P.indexOf(st)]||0)+1;
       const done=a0&&a0.p.team===sc.team&&a0.p!==sc&&ST.now-a0.at<8;   // the pass-based rating bonus may already have paid out
       if(!done)rate(st,.8);}}};
-const _gc18=giveCard;giveCard=function(p,c){_gc18(p,c);if(p){CUT.px=p.x;CUT.py=p.y;}if(p)cut(c===1?'YELLOW CARD':c===3?'SECOND YELLOW':'RED CARD',(p.nm||'#'+p.num)+'  '+KIT[p.team].name,c===1?'#ffd400':'#e5342b',1,2.6);};
+const _gc18=giveCard;giveCard=function(p,c){if(p&&p.varIncident&&p.varIncident.mistakenIdentity)varCheck('mistaken-identity',p.varIncident);if(c>1)varCheck('red-card',p&&p.varIncident||{});_gc18(p,c);if(p){CUT.px=p.x;CUT.py=p.y;}if(p)cut(c===1?'YELLOW CARD':c===3?'SECOND YELLOW':'RED CARD',(p.nm||'#'+p.num)+'  '+KIT[p.team].name,c===1?'#ffd400':'#e5342b',1,2.6);};
 const _ds18=doSub;doSub=function(p,bn){const o=p.num,ok=_ds18(p,bn);if(ok)cut('SUBSTITUTION','OFF #'+o+'    ON #'+p.num+'   '+KIT[p.team].name,'#5cff8a',2,2.4);return ok;};
-const _sp18=setupPen;setupPen=function(t,sh,so){_sp18(t,sh,so);if(!so)cut('PENALTY AWARDED','Referee decision confirmed','#4aa8ff',3,1.8);};
+const _sp18=setupPen;setupPen=function(t,sh,so){if(!so){const evidence=S.varIncident||{};S.varIncident=null;varCheck('penalty',evidence);}_sp18(t,sh,so);if(!so)cut('PENALTY AWARDED','Referee decision confirmed','#4aa8ff',3,1.8);};
+const _oopVAR=outOfPlay;outOfPlay=function(){_oopVAR();if(S.rs&&S.rs.kind==='corner'){const evidence=ball.varIncident||{};ball.varIncident=null;varCheck('corner',evidence);}};
 const _up18=update;update=function(){_up18();if(CUT.t>0&&S.mode!=='menu')CUT.t-=DT;};
 function cutDraw(){if(CUT.t<=0||H>W)return;const u=CUT.d-CUT.t,a=clamp(Math.min(u*5,CUT.t*4),0,1),e=1-a;
   ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.globalAlpha=a;ctx.textBaseline='middle';
