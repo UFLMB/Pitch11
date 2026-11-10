@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { FootballSimulation, FIXED_DT, PITCH, SIM_VERSION } from "./simulation.js";
+import { FootballSimulation, FIXED_DT, PITCH, SIM_VERSION } from "./simulation.mjs";
 
 test("initializes a complete 22-player match", () => {
   const sim = new FootballSimulation({ seed: 42 });
