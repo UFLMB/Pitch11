@@ -30,6 +30,9 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - Goalpost and crossbar collision response
 - Basic goalkeeper positioning and ball claims
 - Contested tackle resolution
+- Offside line check and active offside receiver whistle
+- Throw-in, corner, goal-kick, and free-kick restart state flow
+- Goalpost and crossbar collision response
 - Goal-plane detection and kickoff reset
 - Detached snapshots and event output
 
@@ -56,4 +59,4 @@ The same test command runs in GitHub Actions on pushes to `engine-adaptation` an
 
 ## Not production-ready yet
 
-Offside, fouls, advantage, cards, throw-ins, corners, goal kicks, free kicks, penalties, substitutions, match phases, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The prototype must not replace the existing match engine until these systems are implemented and validated.
+Fouls, advantage, cards, penalties, substitutions, full match phases, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The prototype must not replace the existing match engine until these systems are implemented and validated.
