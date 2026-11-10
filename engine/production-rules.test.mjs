@@ -106,6 +106,10 @@ test("substitutions are limited to five players and three stoppage windows, with
 
 test("goalkeeper hand control is limited to eight seconds and awards a corner kick", () => {
   assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
+  assert.doesNotMatch(source, /take=function\\(p\\)\\{/ , "later wrappers must not discard the hand-control argument");
+  for (const wrapper of ["_take(p,byHand)", "_tk8(p,byHand)", "_tk10(p,byHand)", "_tk19(p,byHand)", "_tk23(p,byHand)", "_tkA(p,byHand)"]) {
+    assert.ok(source.includes(wrapper), "hand-control state must pass through " + wrapper);
+  }
   assert.ok(source.includes("ball.gkHoldActive=!!(p.gk&&byHand)"));
   const keeperSave = source.match(/function gkReact\(p\)\{[\s\S]*?\n\}/);
   assert.ok(keeperSave, "goalkeeper save routine must be present");
