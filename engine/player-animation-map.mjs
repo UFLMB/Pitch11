@@ -71,6 +71,10 @@ export function resolvePlayerClip(animations, state) {
       const clip = byName.get(normalize(alias));
       if (clip) return clip;
     }
+    for (const clip of clips) {
+      const name = normalize(clip?.name);
+      if (name && aliases.some(alias => name.endsWith(normalize(alias)))) return clip;
+    }
   }
   return null;
 }
