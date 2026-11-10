@@ -12,6 +12,7 @@ import { createSimulation } from "./simulation.mjs";
 const match = createSimulation({ seed: 11, humanTeam: 0 });
 match.setFormation(0, "4-4-2");
 match.setFormation(1, "4-2-3-1");
+match.setTactics(0, { width: 1.1, depth: 0.9, pressing: 0.8, directness: 0.7 });
 const snapshot = match.update(1 / 60);
 match.command({ type: "move", x: 0.7, y: -0.2, sprint: true });
 match.command({ type: "pass" });
@@ -22,12 +23,13 @@ match.setWeather(2, -1, 0.25);
 match.command({ type: "switch" });
 ```
 
-The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, name)` to switch either team independently. Team 0 attacks toward +X; team 1 attacks toward -X. Updates are integrated at a fixed 1/60 s timestep, with a bounded accumulator.
+The simulation uses metres and a 105 × 68 m pitch. Call `setFormation(team, name)` to switch either team independently, and `setTactics(team, settings)` to adjust width, depth, pressing and directness. Team 0 attacks toward +X; team 1 attacks toward -X. Updates are integrated at a fixed 1/60 s timestep, with a bounded accumulator.
 
 ## Current prototype scope
 
 - 22 players and independently selectable 4-3-3, 4-4-2 and 4-2-3-1 formations
 - Deterministic seeded pseudo-random decisions
+- Independent team width, depth, pressing and directness tactics
 - Fixed-step player movement, player separation and basic team/player AI
 - AI defensive pressure and cooldown-based tackle attempts
 - Possession, dribbling intent, passing and shooting
