@@ -184,3 +184,10 @@ test("kick-off keeps every non-kicker, including teammates and goalkeepers, outs
   assert.ok(source.includes("PITCH11Law.kickoffPlayerPosition("));
   assert.ok(source.includes("radius:R,pitchTop:PY0,pitchBottom:PY1"));
 });
+
+
+test("attacking players are kept one metre from a three-player free-kick wall", () => {
+  assert.ok(source.includes("rs.kind==='fk'&&rs.wall&&p.team===rs.team&&!p.gk"));
+  assert.ok(source.includes("PITCH11Law.freeKickWallClearancePosition("));
+  assert.ok(source.includes("halfLength:15,clearance:10"));
+});
