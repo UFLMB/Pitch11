@@ -12,29 +12,30 @@ function fakeCamera() {
 }
 const snapshot = (ball, players=[]) => ({ ball, players });
 
-test("camera starts in the unobstructed pitch-side gantry, before the roof and stands", () => {
+test("camera is in the clear pitch-side lane, under the roof and before the first stand", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera);
-  assert.equal(camera.fov, 54);
+  assert.equal(camera.fov, 62);
   assert.equal(camera.position.x, 0);
-  assert.equal(camera.position.y, 25);
-  assert.equal(camera.position.z, 42);
-  assert.deepEqual(camera.target, {x:0,y:.6,z:-34});
-  // Stadium geometry: roof begins at Z=44; first stand begins at Z=47.
-  assert.ok(camera.position.z < 44);
-  assert.ok(camera.position.y > 23.9);
+  assert.equal(camera.position.y, 10);
+  assert.equal(camera.position.z, 45);
+  assert.deepEqual(camera.target, {x:0,y:.6,z:0});
+  // Roof spans Z=44..74 and Y=21.7..23.9; first stand starts at Z=47.
+  assert.ok(camera.position.z >= 44 && camera.position.z < 47);
+  assert.ok(camera.position.y < 21.7);
   assert.equal(camera.projectionUpdated, true);
   assert.equal(state.mobile, false);
 });
 
-test("camera aim crosses the full pitch toward the far touchline", () => {
+test("camera vertical field of view contains both touchlines", () => {
   const camera = fakeCamera();
   createBroadcastCamera(camera);
-  const nearEdgeRayY = camera.position.y +
-    (camera.target.y-camera.position.y) *
-    ((42-34)/(42-(-34)));
-  assert.ok(nearEdgeRayY > 20 && nearEdgeRayY < 26);
-  assert.equal(camera.target.z, -34);
+  const cameraAngle = Math.atan2(camera.position.y-camera.target.y, camera.position.z-camera.target.z);
+  const nearAngle = Math.atan2(camera.position.y, camera.position.z-34);
+  const farAngle = Math.atan2(camera.position.y, camera.position.z+34);
+  const halfFov = camera.fov * Math.PI / 360;
+  assert.ok(Math.abs(nearAngle-cameraAngle) < halfFov);
+  assert.ok(Math.abs(farAngle-cameraAngle) < halfFov);
 });
 
 test("simulation X is converted to centred Three.js world X before tracking", () => {
@@ -46,32 +47,33 @@ test("simulation X is converted to centred Three.js world X before tracking", ()
   assert.ok(state.targetX > 0 && state.targetX < 40);
   assert.equal(camera.position.x, state.x);
   assert.ok(camera.target.x > 0);
-  assert.equal(camera.position.z, 42);
-  assert.equal(camera.target.z, -34);
+  assert.equal(camera.position.z, 45);
+  assert.equal(camera.target.z, 0);
 });
 
-test("camera stays pitch-side of the roof at both goal lines and touchlines", () => {
+test("camera stays under the canopy and in front of the stand at both goal lines", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera, {mobile:true});
   updateBroadcastCamera(camera, state, snapshot({
     x: 105, y: 68, z: .11, vx: 40, vy: 0, owner: -1, lastTouchTeam: 0
   }), .08);
   assert.ok(state.targetX <= 45 && state.targetX >= -45);
-  assert.equal(state.sideZ, 42);
-  assert.equal(state.height, 26);
-  assert.ok(camera.position.z < 44);
-  assert.equal(camera.fov, 56);
+  assert.equal(state.sideZ, 45);
+  assert.equal(state.height, 10);
+  assert.ok(camera.position.z < 47);
+  assert.ok(camera.position.y < 21.7);
+  assert.equal(camera.fov, 66);
 });
 
-test("camera tracks play at the left and right ends without changing its gantry side", () => {
+test("camera tracks play at both ends without changing its broadcast lane", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera);
   updateBroadcastCamera(camera, state, snapshot({
     x: 0, y: 0, z: .11, vx: 0, vy: 0, owner: -1, lastTouchTeam: 1
   }), .08);
   assert.ok(state.targetX < 0);
-  assert.equal(state.targetZ, -34);
-  assert.equal(state.sideZ, 42);
+  assert.equal(state.targetZ, 0);
+  assert.equal(state.sideZ, 45);
 });
 
 test("camera handles missing owner and invalid delta without NaN", () => {
