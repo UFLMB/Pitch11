@@ -267,3 +267,11 @@ test("Law 14 additional time waits for penalty completion and honours retakes", 
   assert.match(source, /if\(ball\.pen\)clearPenaltyLineState\(\)/);
   assert.match(source, /if\(ball\.penaltyRetakePending&&S\.mode==='play'\)retakePenaltyForKeeperOffence\(\)/);
 });
+
+test("Law 12 applies DOGSO, SPA and a conservative serious-slide-foul threshold", () => {
+  assert.match(source, /PITCH11Law\.dogsoOpportunity\(/);
+  assert.match(source, /stopsPromisingAttack:spa&&!pen/);
+  assert.match(source, /attemptToPlayBall:true/);
+  assert.match(source, /seriousFoulPlay=behind&&tq<0\.12&&speed>180/);
+  assert.match(source, /slideFoul\(p,o,tq,behind\)/);
+});
