@@ -3231,7 +3231,7 @@ const _rsX=resetSave;resetSave=function(){_rsX();G.x=Object.assign({},DX,{kit:[n
 const chgX=()=>{fixX();applyX();save();};
 
 /* --- rules: offside, fouls, cards, injuries --- */
-const _moX=markOff;markOff=function(...a){if(!X().offside){clearOff();return;}_moX(...a);};
+const _moX=markOff;markOff=function(...a){if(!X().offside){clearOffside();return;}_moX(...a);};
 const _foX=foul;foul=function(...a){if(Math.random()>=[0,.5,1][Math.min(2,X().fouls)])return;_foX(...a);};
 const _gcX=giveCard;giveCard=function(...a){if(!X().cards)return;_gcX(...a);};
 const _riX=randInjury;randInjury=function(){if(Math.random()>=[0,.4,1][Math.min(2,X().inj)])return;_riX();};
