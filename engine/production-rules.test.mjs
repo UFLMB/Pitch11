@@ -228,3 +228,11 @@ test("Law 14 checks the goalkeeper's goal-line position at the kick and retakes 
   assert.match(source, /varCheck\('goal',\{clearAndObviousError:true\}\)/);
   assert.match(source, /S\.penaltyRetake\?'PENALTY RETAKE'/);
 });
+
+test("Law 11 preserves offside flags after opponent deflections and goalkeeper saves", () => {
+  assert.match(source, /function applyOffsideTouch\(p,previousLast,deliberatePlay,deliberateSave\)/);
+  assert.match(source, /if\(!S\.prac&&best\.off\)\{callOffside\(best\);return;\}/);
+  assert.match(source, /applyOffsideTouch\(p,previousLast,true,true\)/);
+  assert.match(source, /applyOffsideTouch\(p,previousLast,false,false\)/);
+  assert.match(source, /if\(!S\.prac&&p\.off\)\{callOffside\(p\);return;\}/);
+});
