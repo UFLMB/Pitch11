@@ -4,7 +4,9 @@
  * Team 0 attacks +X; team 1 attacks -X.
  * No DOM, renderer, audio, or animation dependencies.
  */
-export const SIM_VERSION = "0.1.0";
+import { applyLeagueSoccerBallPhysics } from "./league-soccer-ballphysics.mjs";
+
+export const SIM_VERSION = "0.2.0";
 export const PITCH = Object.freeze({ length: 105, width: 68, goalWidth: 7.32, goalHeight: 2.44, ballRadius: 0.11 });
 export const FIXED_DT = 1 / 60;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -41,6 +43,7 @@ function copyPlayer(p) {
 export class FootballSimulation {
   constructor(options = {}) {
     this.seed = options.seed ?? 11;
+    this.weather = { windX: options.windX ?? 0, windY: options.windY ?? 0, wetness: options.wetness ?? 0 };
     this.rngState = (this.seed >>> 0) || 1;
     this.accumulator = 0;
     this.time = 0;
@@ -77,6 +80,9 @@ export class FootballSimulation {
     kickoff.x = 51.2; kickoff.y = 34; kickoff.hasBall = true;
     this.ball.owner = kickoff.id; this.ball.lastTouchTeam = this.humanTeam;
     this.phase = "playing";
+  }
+  setWeather(windX = 0, windY = 0, wetness = 0) {
+    this.weather = { windX: Number(windX) || 0, windY: Number(windY) || 0, wetness: clamp(Number(wetness) || 0, 0, 1) };
   }
   setPlayerStats(playerId, stats) {
     const p = this.players[playerId];
@@ -315,17 +321,10 @@ export class FootballSimulation {
       return;
     }
     const b=this.ball;
-    b.vz-=9.81*dt;
-    b.vx*=Math.exp(-.018*hypot(b.vx,b.vy)*dt);
-    b.vy*=Math.exp(-.018*hypot(b.vx,b.vy)*dt);
+    applyLeagueSoccerBallPhysics(b,dt,this.weather);
+    // Upstream applies forces first, then advances the position by the updated momentum.
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.z+=b.vz*dt;
-    if(b.z<PITCH.ballRadius) {
-      b.z=PITCH.ballRadius;
-      if(b.vz<-.8)b.vz=-b.vz*.48;else b.vz=0;
-      const friction=Math.exp(-1.1*dt);
-      b.vx*=friction;b.vy*=friction;
-    }
-    if(Math.abs(b.vx)+Math.abs(b.vy)<.06&&b.z<=PITCH.ballRadius+.01){b.vx=0;b.vy=0;}
+    if(Math.abs(b.vx)+Math.abs(b.vy)+Math.abs(b.vz)<.06&&b.z<=PITCH.ballRadius+.01){b.vx=0;b.vy=0;b.vz=0;}
   }
   resolvePlayerBallContacts() {
     if(this.ball.owner>=0)return;
@@ -341,8 +340,37 @@ export class FootballSimulation {
     b.owner=p.id;b.lastTouchTeam=p.team;p.hasBall=true;p.action=p.role==="GK"?"keeper-claim":"control";
     this.events.push({type:p.role==="GK"?"keeperSave":"possession",player:p.id,team:p.team});
   }
+  resolveGoalFrameCollisions() {
+    const b = this.ball;
+    const radius = PITCH.ballRadius + .07;
+    for (const gx of [0, 105]) {
+      for (const gy of [34 - PITCH.goalWidth / 2, 34 + PITCH.goalWidth / 2]) {
+        const dx = b.x - gx, dy = b.y - gy;
+        const d = Math.hypot(dx, dy);
+        if (b.z < PITCH.goalHeight + radius && d < radius) {
+          const nx = d > 1e-8 ? dx / d : (gx === 0 ? 1 : -1);
+          const ny = d > 1e-8 ? dy / d : 0;
+          const dot = b.vx * nx + b.vy * ny;
+          if (dot < 0) { b.vx -= 1.72 * dot * nx; b.vy -= 1.72 * dot * ny; }
+          b.x = gx + nx * radius; b.y = gy + ny * radius;
+          this.events.push({ type: "goalpostHit" });
+        }
+      }
+      const dx = b.x - gx, dz = b.z - PITCH.goalHeight;
+      const d = Math.hypot(dx, dz);
+      if (Math.abs(b.y - 34) < PITCH.goalWidth / 2 + radius && d < radius) {
+        const nx = d > 1e-8 ? dx / d : (gx === 0 ? 1 : -1);
+        const nz = d > 1e-8 ? dz / d : -1;
+        const dot = b.vx * nx + b.vz * nz;
+        if (dot < 0) { b.vx -= 1.72 * dot * nx; b.vz -= 1.72 * dot * nz; }
+        b.x = gx + nx * radius; b.z = PITCH.goalHeight + nz * radius;
+        this.events.push({ type: "crossbarHit" });
+      }
+    }
+  }
   resolveBoundaries() {
     const b=this.ball;
+    this.resolveGoalFrameCollisions();
     if(b.x<0||b.x>105) {
       const inGoal=Math.abs(b.y-34)<PITCH.goalWidth/2&&b.z<PITCH.goalHeight;
       if(inGoal){const scoring=b.x>105?0:1;this.score[scoring]++;this.events.push({type:"goal",team:scoring,score:[...this.score]});this.resetKickoff();}
