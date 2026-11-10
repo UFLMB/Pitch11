@@ -3943,7 +3943,7 @@ const _ha23=humanAct;humanAct=function(p){
   }
 };
 /* set pieces: the taker cannot touch the ball again until someone else has (no dribbling off from a throw-in / kick-off) */
-const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p)ball.dbl=p;};
+const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p&&rs.kind!=='drop')ball.dbl=p;};
 const _tk23=take;take=function(p){if(p!==ball.dbl)ball.dbl=null;_tk23(p);};
 /* throw-in: the three nearest team-mates come to offer a short, a forward and a safe option along the touchline */
 function throwSup23(p,rs){
