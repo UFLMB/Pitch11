@@ -244,3 +244,12 @@ test('Law 12 distinguishes DOGSO, the penalty-area exception, SPA and serious fo
   assert.equal(law.foulCardDecision({ stopsPromisingAttack: true, alreadyBooked: true }), 3);
   assert.equal(law.foulCardDecision({ seriousFoulPlay: true, alreadyBooked: true }), 2);
 });
+
+test('DOGSO requires proximity, control, forward direction and no more than one defender ahead', () => {
+  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 1, ballControl: true, towardGoal: true };
+  assert.equal(law.dogsoOpportunity(base), true);
+  assert.equal(law.dogsoOpportunity({ ...base, defendersAhead: 2 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, distanceToGoal: 420 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, ballControl: false }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, towardGoal: false }), false);
+});
