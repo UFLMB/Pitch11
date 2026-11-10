@@ -245,3 +245,11 @@ test("goalkeeper parries preserve offside flags instead of clearing the phase", 
   assert.equal((keeperReact.match(/applyOffsideTouch\(p,previousLast,true,true\)/g) || []).length, 2);
   assert.doesNotMatch(keeperReact, /clearOff\(\)/);
 });
+
+test("Law 14 rejects a backward penalty kick and awards an indirect free kick", () => {
+  assert.match(source, /PITCH11Law\.penaltyKickDirectionLegal\(\{vx,attackDirection:dirOf\(rs\.team\)\}\)/);
+  assert.match(source, /const _doShootPenaltyForward=doShoot/);
+  assert.match(source, /penalty=!!\(rs&&rs\.kind==='pen'&&rs\.p===p&&!S\.so\)/);
+  assert.match(source, /INDIRECT FREE KICK','The penalty kick must be taken forward'/);
+  assert.match(source, /freeKick\(1-team,x,y,true\)/);
+});
