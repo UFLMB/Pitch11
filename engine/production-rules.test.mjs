@@ -54,3 +54,21 @@ test("penalty decisions are not randomly overturned", () => {
   assert.ok(wrapper);
   assert.doesNotMatch(wrapper[0], /Math\.random|PENALTY OVERTURNED/);
 });
+
+test("throw-ins and dropped balls cannot score without another touch", () => {
+  assert.match(source, /rs&&\(rs\.ind\|\|rs\.kind==='throw'\|\|rs\.kind==='drop'\)\)b\.ind=true/);
+});
+
+test("a restart taker's second-touch restriction ends on any other player's contact", () => {
+  assert.match(source, /if\(best!==b\.dbl\)b\.dbl=null/);
+  assert.match(source, /if\(p!==ball\.dbl\)ball\.dbl=null/);
+});
+
+test("penalty shootouts use the same whole-ball boundary checks as open play", () => {
+  assert.match(source, /if\(ballInsideGoalFrame\(b\)&&\(ballBeyondLine\(b\.x,PX0,-1\)\|\|ballBeyondLine\(b\.x,PX1,1\)\)\)\{soResult\(true\);return;\}/);
+  assert.match(source, /ballBeyondLine\(b\.y,PY0,-1\)\|\|ballBeyondLine\(b\.y,PY1,1\)/);
+});
+
+test("goal-line versus touchline restarts are classified after full crossing", () => {
+  assert.match(source, /if\(b\.x<PX0-BR\|\|b\.x>PX1\+BR\)\{/);
+});
