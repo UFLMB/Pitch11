@@ -260,6 +260,17 @@ export class FootballSimulation {
   }
   updateAI(dt) {
     const owner = this.players[this.ball.owner];
+    // Compute each team's press order once per tick instead of sorting the same
+    // eleven players repeatedly for every defender.
+    const pressOrders = [0, 1].map(team => this.players
+      .filter(p => p.team === team && !p.out && p.role !== "GK")
+      .sort((a, b) => dist(a, this.ball) - dist(b, this.ball)));
+    const pressRanks = new Map();
+    for (const order of pressOrders) order.forEach((p, rank) => pressRanks.set(p.id, rank));
+    const opponents = [
+      this.players.filter(p => p.team === 1 && !p.out),
+      this.players.filter(p => p.team === 0 && !p.out)
+    ];
     for (const p of this.players) {
       if (p.out) continue;
       if (p.id === this.selectedPlayer && p.team === this.humanTeam) {
@@ -276,13 +287,12 @@ export class FootballSimulation {
         p.tackleCooldown = 1.1;
         p.action = "press-tackle";
       }
-      const nearestOpponent = this.players.filter(q => q.team !== p.team && !q.out).sort((a,b) => dist(a,p)-dist(b,p))[0];
+      const nearestOpponent = opponents[p.team].reduce((best, q) =>
+        !best || dist(q, p) < dist(best, p) ? q : best, null);
       const ballDistance = dist(p, this.ball);
       if (!attacking && (!owner || owner.team !== p.team) && p.role !== "GK") {
         const tactics = this.tactics[p.team];
-        const pressers = this.players.filter(q => q.team === p.team && !q.out && q.role !== "GK")
-          .sort((a,b) => dist(a,this.ball)-dist(b,this.ball));
-        const rank = pressers.findIndex(q => q.id === p.id);
+        const rank = pressRanks.get(p.id) ?? Number.MAX_SAFE_INTEGER;
         const maxPressers = Math.max(1, Math.round(1 + tactics.pressing * 2));
         const pressRange = 12 + tactics.pressing * 20;
         if (ballDistance < pressRange && rank >= 0 && rank < maxPressers) {
@@ -294,7 +304,10 @@ export class FootballSimulation {
         const forward = p.attack;
         const tactics = this.tactics[p.team];
         const laneOffset = (p.homeY - 34) * .35 * tactics.width;
-        p.targetX = clamp(p.homeX + forward * (p.role === "FWD" ? 9 : 4) * tactics.depth, 3, 102);
+        const progression = Math.max(0, forward * (owner.x - p.x) - 6);
+        const forwardRun = p.role === "FWD" ? clamp(progression * .28, 0, 7) :
+          p.role === "MID" ? clamp(progression * .12, 0, 3) : 0;
+        p.targetX = clamp(p.homeX + forward * ((p.role === "FWD" ? 9 : 4) + forwardRun) * tactics.depth, 3, 102);
         p.targetY = clamp(34 + (p.homeY - 34) * tactics.width + laneOffset * .18, 3, 65);
         if (nearestOpponent && dist(nearestOpponent,p) < 7) p.targetY = clamp(p.targetY + (p.y < 34 ? -5 : 5), 2, 66);
         p.intent = "support";
@@ -318,10 +331,16 @@ export class FootballSimulation {
   }
   setShapeTarget(p, owner) {
     const tactics = this.tactics[p.team];
-    const shiftX = owner ? clamp((owner.x - 52.5) * .18 * tactics.depth, -8, 8) : 0;
-    const shiftY = owner ? clamp((owner.y - 34) * .12 * tactics.width, -5, 5) : 0;
-    p.targetX = p.homeX + shiftX;
-    p.targetY = p.homeY + shiftY;
+    const ballX = owner?.x ?? this.ball.x;
+    const ballY = owner?.y ?? this.ball.y;
+    const defendingOwnHalf = p.team === 0 ? ballX < 52.5 : ballX > 52.5;
+    // The block narrows around the centre when defending deep and steps out
+    // when play is pushed into the opponent's half.
+    const compactness = defendingOwnHalf ? .78 : 1.04;
+    const shiftX = owner ? clamp((owner.x - 52.5) * .22 * tactics.depth, -11, 11) : 0;
+    const shiftY = owner ? clamp((owner.y - 34) * .2 * tactics.width, -8, 8) : 0;
+    p.targetX = clamp(p.homeX + shiftX, 1.5, 103.5);
+    p.targetY = clamp(34 + (p.homeY - 34) * tactics.width * compactness + shiftY, 1.5, 66.5);
     p.intent = "shape";
   }
   decideOnBall(p) {
