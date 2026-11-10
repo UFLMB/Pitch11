@@ -230,22 +230,67 @@ const keeperMats = [mat(0xf1c72d, .55), mat(0x49b96e, .55)];
 const skinMat = mat(0xb98262, .85), sockMat = [mat(0xe9edf2), mat(0x20242a)];
 function createPlayerMesh(p) {
   const group = new THREE.Group();
-  const shirt = new THREE.Mesh(new THREE.CapsuleGeometry(.34, .62, 3, 7), p.role === "GK" ? keeperMats[p.team] : kitMats[p.team]);
-  shirt.position.y = 1.0; group.add(shirt);
-  const shorts = new THREE.Mesh(new THREE.BoxGeometry(.56, .28, .38), shortsMats[p.team]);
-  shorts.position.y = .52; group.add(shorts);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.22, 10, 8), skinMat);
-  head.position.y = 1.68; group.add(head);
-  const legMat = sockMat[p.team];
+  const kit = p.role === "GK" ? keeperMats[p.team] : kitMats[p.team];
+  const skinPalette = [0xb98262, 0x8e5b43, 0xd5a47f, 0x704936];
+  const skin = new THREE.MeshStandardMaterial({ color: skinPalette[p.id % skinPalette.length], roughness: .88 });
+  const darkBoot = mat(0x111820, .48);
+  const torso = new THREE.Group();
+  torso.position.y = 1.03;
+  group.add(torso);
+
+  const shirt = new THREE.Mesh(new THREE.CapsuleGeometry(.29, .58, 4, 9), kit);
+  shirt.position.y = .12; torso.add(shirt);
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(.105, .025, 5, 14), mat(0xe7e9df, .72));
+  collar.position.set(0, .39, 0); collar.rotation.x = Math.PI / 2; torso.add(collar);
+  const chestStripe = new THREE.Mesh(new THREE.BoxGeometry(.055, .42, .018), mat(0xe8edf2, .62));
+  chestStripe.position.set(.12, .1, -.285); torso.add(chestStripe);
+  const badge = new THREE.Mesh(new THREE.BoxGeometry(.09, .11, .025), mat(0xe4c36c, .55, .18));
+  badge.position.set(-.16, .24, -.29); torso.add(badge);
+
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, .15, 8), skin);
+  neck.position.y = .48; torso.add(neck);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.19, 14, 12), skin);
+  head.position.y = .72; torso.add(head);
+  const hair = new THREE.Mesh(new THREE.SphereGeometry(.194, 12, 8, 0, Math.PI * 2, 0, Math.PI * .43), mat(0x241d19, .96));
+  hair.position.y = .76; torso.add(hair);
+
+  const shorts = new THREE.Mesh(new THREE.BoxGeometry(.49, .27, .34), shortsMats[p.team]);
+  shorts.position.y = .59; group.add(shorts);
+  const legs = [], knees = [], arms = [], elbows = [];
   for (const side of [-1, 1]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(.085, .07, .48, 7), legMat);
-    leg.position.set(side * .16, .23, 0); group.add(leg);
-    const boot = new THREE.Mesh(new THREE.BoxGeometry(.14, .1, .27), mat(0x14191d, .55));
-    boot.position.set(side * .16, .06, -.08); group.add(boot);
+    const leg = new THREE.Group();
+    leg.position.set(side * .145, .55, 0);
+    group.add(leg);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(.105, .29, 3, 7), skin);
+    thigh.position.y = -.17; leg.add(thigh);
+    const knee = new THREE.Group();
+    knee.position.y = -.34; leg.add(knee);
+    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(.073, .27, 3, 7), sockMat[p.team]);
+    shin.position.y = -.15; knee.add(shin);
+    const boot = new THREE.Mesh(new THREE.BoxGeometry(.145, .105, .29), darkBoot);
+    boot.position.set(0, -.31, -.075); knee.add(boot);
+    const sole = new THREE.Mesh(new THREE.BoxGeometry(.15, .025, .29), mat(0x303840, .62));
+    sole.position.set(0, -.36, -.075); knee.add(sole);
+    legs.push(leg); knees.push(knee);
+
+    const arm = new THREE.Group();
+    arm.position.set(side * .34, 1.34, 0);
+    group.add(arm);
+    const sleeve = new THREE.Mesh(new THREE.CapsuleGeometry(.085, .2, 3, 7), kit);
+    sleeve.position.y = -.13; arm.add(sleeve);
+    const elbow = new THREE.Group();
+    elbow.position.y = -.28; arm.add(elbow);
+    const forearm = new THREE.Mesh(new THREE.CapsuleGeometry(.064, .22, 3, 7), skin);
+    forearm.position.y = -.13; elbow.add(forearm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(.075, 8, 7), skin);
+    hand.position.y = -.28; elbow.add(hand);
+    arms.push(arm); elbows.push(elbow);
   }
+
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .045, 6, 28), new THREE.MeshBasicMaterial({ color: 0xf4d36d }));
   ring.rotation.x = Math.PI / 2; ring.position.y = .09; ring.visible = false; group.add(ring);
   group.userData.ring = ring;
+  group.userData.rig = { torso, legs, knees, arms, elbows };
   scene.add(group); playerMeshes.set(p.id, group); return group;
 }
 for (const p of simulation.players) createPlayerMesh(p);
@@ -318,8 +363,21 @@ function syncMeshes(snapshot) {
       group.rotation.y = -p.facing - Math.PI / 2;
       group.userData.ring.visible = p.selected;
       const speed = Math.hypot(p.vx, p.vy);
-      const moving = speed > .35;
-      group.position.y = moving ? Math.abs(Math.sin(snapshot.time * 10 + p.id)) * .045 : 0;
+      const gait = clamp(speed / 6.8, 0, 1);
+      const phase = snapshot.time * (5.2 + speed * 1.15) + p.id * .73;
+      const stride = Math.sin(phase) * .62 * gait;
+      const lift = Math.max(0, Math.sin(phase)) * .48 * gait;
+      const rig = group.userData.rig;
+      rig.legs[0].rotation.x = stride;
+      rig.legs[1].rotation.x = -stride;
+      rig.knees[0].rotation.x = lift;
+      rig.knees[1].rotation.x = Math.max(0, -Math.sin(phase)) * .48 * gait;
+      rig.arms[0].rotation.x = -stride * .72 - .08;
+      rig.arms[1].rotation.x = stride * .72 - .08;
+      rig.elbows[0].rotation.x = -.12 - lift * .22;
+      rig.elbows[1].rotation.x = -.12 - rig.knees[1].rotation.x * .22;
+      rig.torso.rotation.x = -Math.min(.1, speed * .012);
+      group.position.y = gait > .05 ? Math.abs(Math.sin(phase * 2)) * .025 * gait : 0;
     }
   }
   const b = snapshot.ball;
