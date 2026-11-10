@@ -15,11 +15,11 @@ const snapshot = (ball, players=[]) => ({ ball, players });
 test("camera is in the clear pitch-side lane, under the roof and before the first stand", () => {
   const camera = fakeCamera();
   const state = createBroadcastCamera(camera);
-  assert.equal(camera.fov, 62);
+  assert.equal(camera.fov, 63);
   assert.equal(camera.position.x, 0);
-  assert.equal(camera.position.y, 10);
+  assert.equal(camera.position.y, 13.5);
   assert.equal(camera.position.z, 45);
-  assert.deepEqual(camera.target, {x:0,y:.6,z:0});
+  assert.deepEqual(camera.target, {x:0,y:.6,z:22.5});
   // Roof spans Z=44..74 and Y=21.7..23.9; first stand starts at Z=47.
   assert.ok(camera.position.z >= 44 && camera.position.z < 47);
   assert.ok(camera.position.y < 21.7);
@@ -48,7 +48,7 @@ test("simulation X is converted to centred Three.js world X before tracking", ()
   assert.equal(camera.position.x, state.x);
   assert.ok(camera.target.x > 0);
   assert.equal(camera.position.z, 45);
-  assert.equal(camera.target.z, 0);
+  assert.equal(camera.target.z, 22.5);
 });
 
 test("camera stays under the canopy and in front of the stand at both goal lines", () => {
@@ -59,10 +59,10 @@ test("camera stays under the canopy and in front of the stand at both goal lines
   }), .08);
   assert.ok(state.targetX <= 45 && state.targetX >= -45);
   assert.equal(state.sideZ, 45);
-  assert.equal(state.height, 10);
+  assert.equal(state.height, 13.5);
   assert.ok(camera.position.z < 47);
   assert.ok(camera.position.y < 21.7);
-  assert.equal(camera.fov, 66);
+  assert.equal(camera.fov, 63);
 });
 
 test("camera tracks play at both ends without changing its broadcast lane", () => {
@@ -72,7 +72,7 @@ test("camera tracks play at both ends without changing its broadcast lane", () =
     x: 0, y: 0, z: .11, vx: 0, vy: 0, owner: -1, lastTouchTeam: 1
   }), .08);
   assert.ok(state.targetX < 0);
-  assert.equal(state.targetZ, 0);
+  assert.equal(state.targetZ, 22.5);
   assert.equal(state.sideZ, 45);
 });
 
