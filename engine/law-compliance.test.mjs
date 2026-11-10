@@ -220,7 +220,7 @@ test('Law 14 keeper-save retakes require the penalty shot to be on target', () =
   const base = { x: 900, y: 400, z: 4, vx: 200, vy: 0, vz: 0, goalLine: 1000, attackDirection: 1, centerY: 400, goalHalfWidth: 36.6, goalHeight: 24, radius: 4, gravity: 300, maxTime: 2 };
   assert.equal(law.penaltyShotOnTarget(base), true);
   assert.equal(law.penaltyShotOnTarget({ ...base, y: 450 }), false);
-  assert.equal(law.penaltyShotOnTarget({ ...base, z: 30, vz: 0 }), false);
+  assert.equal(law.penaltyShotOnTarget({ ...base, z: 30, vz: 80 }), false);
   assert.equal(law.penaltyShotOnTarget({ ...base, vx: -200 }), false);
   assert.equal(law.penaltyShotOnTarget({ ...base, x: 100, goalLine: 0, vx: -200, attackDirection: -1 }), true);
   assert.equal(law.penaltyShotOnTarget({ ...base, maxTime: 0.2 }), false);
