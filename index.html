@@ -484,7 +484,7 @@ function touches(){                                        // a free ball is pic
     if(p.out)continue;
     if(p===b.dbl){
       const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
-      if(p.kcd<=0&&p.stun<=0&&d<r){secondTouch(p);return;}
+      if(p.kcd<=0&&d<r){secondTouch(p);return;}
       continue;
     }
     if(p.gk||p.kcd>0||p.stun>0)continue;
