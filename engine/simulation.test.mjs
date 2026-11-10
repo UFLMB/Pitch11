@@ -360,3 +360,13 @@ test("dismissed controlled player is switched out and never takes kickoff", () =
   assert.notEqual(sim.ball.owner, offender.id);
   assert.equal(sim.players[sim.ball.owner].out, false);
 });
+
+test("team tactics are independently configurable and bounded", () => {
+  const sim = new FootballSimulation();
+  assert.equal(sim.setTactics(0, { width: 2, depth: .8, pressing: 1.2, directness: 1.1 }), true);
+  assert.equal(sim.setTactics(1, { width: .7, depth: 1.1, pressing: .2, directness: .4 }), true);
+  assert.deepEqual(sim.tactics[0], { width: 1.4, depth: .8, pressing: 1.2, directness: 1.1 });
+  assert.deepEqual(sim.tactics[1], { width: .7, depth: 1.1, pressing: .2, directness: .4 });
+  assert.equal(sim.setTactics(2, { width: 1 }), false);
+  assert.deepEqual(sim.getSnapshot().tactics, sim.tactics);
+});
