@@ -3646,7 +3646,7 @@ const _gl18=goal;goal=function(dr){const evidence=ball.varIncident||{};ball.varI
       if(!done)rate(st,.8);}}};
 const _gc18=giveCard;giveCard=function(p,c){_gc18(p,c);if(p){CUT.px=p.x;CUT.py=p.y;}if(p)cut(c===1?'YELLOW CARD':c===3?'SECOND YELLOW':'RED CARD',(p.nm||'#'+p.num)+'  '+KIT[p.team].name,c===1?'#ffd400':'#e5342b',1,2.6);if(p&&p.varIncident&&p.varIncident.mistakenIdentity)varCheck('mistaken-identity',p.varIncident);if(c>1)varCheck('red-card',p&&p.varIncident||{});};
 const _ds18=doSub;doSub=function(p,bn){const o=p.num,ok=_ds18(p,bn);if(ok)cut('SUBSTITUTION','OFF #'+o+'    ON #'+p.num+'   '+KIT[p.team].name,'#5cff8a',2,2.4);return ok;};
-const _sp18=setupPen;setupPen=function(t,sh,so){const evidence=S.varIncident||{};if(!so)S.varIncident=null;_sp18(t,sh,so);if(!so){cut('PENALTY AWARDED','Referee decision confirmed','#4aa8ff',3,1.8);varCheck('penalty',evidence);}};
+const _sp18=setupPen;setupPen=function(t,sh,so){const evidence=S.varIncident||{};if(!so)S.varIncident=null;_sp18(t,sh,so);if(!so){cut(S.penaltyRetake?'PENALTY RETAKE':'PENALTY AWARDED',S.penaltyRetake?'Goalkeeper infringement - kick retaken':'Referee decision confirmed','#4aa8ff',3,1.8);varCheck('penalty',evidence);}};
 const _oopVAR=outOfPlay;outOfPlay=function(){_oopVAR();if(S.rs&&S.rs.kind==='corner'){const evidence=ball.varIncident||{};ball.varIncident=null;varCheck('corner',evidence);}};
 const _up18=update;update=function(){_up18();if(CUT.t>0&&S.mode!=='menu')CUT.t-=DT;};
 function cutDraw(){if(CUT.t<=0||H>W)return;const u=CUT.d-CUT.t,a=clamp(Math.min(u*5,CUT.t*4),0,1),e=1-a;
@@ -4845,6 +4845,7 @@ kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
     ball.penaltyKeeper=incident.keeper;ball.penaltyKeeperOffLine=incident.offLine;
     ball.penaltyKeeperSaved=false;ball.penaltyKeeperImpactedKicker=false;
     ball.penaltyRetakePending=false;ball.penaltyWasShootout=incident.shootout;
+    if(incident.offLine)varCheck('goal',{clearAndObviousError:true});
   }
 };
 const _gkReactPenaltyLine=gkReact;
@@ -4901,9 +4902,12 @@ function retakePenaltyForKeeperOffence(){
   }
   const taker=kicker&&!kicker.out&&!kicker.inj?kicker:firstIn(team);
   clearPenaltyLineState();
+  S.penaltyRetake=true;
   whistleStop(1.2,'PENALTY RETAKE',sanction,()=>{
-    setupPen(team,taker,shootout);
-    if(shootout){S.mode='play';S.t=0;S.so.team=team;S.so.shooter=taker;S.so.live=true;S.so.t=0;}
+    try{
+      setupPen(team,taker,shootout);
+      if(shootout){S.mode='play';S.t=0;S.so.team=team;S.so.shooter=taker;S.so.live=true;S.so.t=0;}
+    }finally{S.penaltyRetake=false;}
   });
 }
 const _goalPenaltyLine=goal;
