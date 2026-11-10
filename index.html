@@ -3236,7 +3236,7 @@ const _rsX=resetSave;resetSave=function(){_rsX();G.x=Object.assign({},DX,{kit:[n
 const chgX=()=>{fixX();applyX();save();};
 
 /* --- rules: offside, fouls, cards, injuries --- */
-const _moX=markOff;markOff=function(...a){if(!X().offside){clearOff();return;}_moX(...a);};
+const _moX=markOff;markOff=function(...a){if(!X().offside){clearOffside();return;}_moX(...a);};
 const _foX=foul;foul=function(...a){if(Math.random()>=[0,.5,1][Math.min(2,X().fouls)])return;_foX(...a);};
 const _gcX=giveCard;giveCard=function(...a){if(!X().cards)return;_gcX(...a);};
 const _riX=randInjury;randInjury=function(){if(Math.random()>=[0,.4,1][Math.min(2,X().inj)])return;_riX();};
@@ -4195,7 +4195,7 @@ drawSubs=function(){
   fit(KIT[0].name+'   '+S.score[0]+' - '+S.score[1]+'   '+KIT[1].name+'   \u00b7   '+clockStr(),W/2,H*.1875,W*.56,H*.036,'rgba(255,224,110,.95)');
   ubtn(W*.3,H*.27,W*.4,H*.14,'RESUME',resumeSubs,Y);UI.def=resumeSubs;
   const gap=W*.018,tw=(W*.88-gap*3)/4;
-  [['SUBS',S.subs[0]+'/5 used','#3ddc84',()=>{M.pp='subs';}],['TACTICS','Press, line, style','#4aa3ff',()=>{M.instr=1;}],['STATS','Live match stats','#ffb020',()=>{M.pp='stats';M.st=1;}],['SETTINGS','Camera, sound, assists','#b07cff',()=>{M.pp='set';}]]
+  [['SUBS',S.subs[0]+'/'+(S.ko&&S.half>=3?6:5)+' used','#3ddc84',()=>{M.pp='subs';}],['TACTICS','Press, line, style','#4aa3ff',()=>{M.instr=1;}],['STATS','Live match stats','#ffb020',()=>{M.pp='stats';M.st=1;}],['SETTINGS','Camera, sound, assists','#b07cff',()=>{M.pp='set';}]]
   .forEach((t,i)=>tile(W*.06+i*(tw+gap),H*.47,tw,H*.25,t[0],t[1],t[2],t[3]));
   ubtn(W*.07,H*.78,W*.26,H*.1,'CAMERA: '+CAMN[G.cam],cycleCam,0);
   ubtn(W*.37,H*.78,W*.26,H*.1,M.cf2?'TAP TO CONFIRM':'RESTART',()=>{if(M.cf2){M.cf2=0;rematch();}else{M.cf2=1;M.conf=0;}},M.cf2?'rgba(255,60,40,.5)':0);
@@ -4207,7 +4207,7 @@ function endScreen(full){
   mtHead(full?(forfeited?'MATCH ABANDONED':'FULL TIME'):S.brk.title);
   glass(W*.1,H*.16,W*.8,H*.47,H*.05,{top:'rgba(255,255,255,.14)',bot:'rgba(255,255,255,.05)'});
   fit(KIT[0].name,W*.27,H*.255,W*.3,H*.05);fit(KIT[1].name,W*.73,H*.255,W*.3,H*.05);txt(sa+' - '+sb,W/2,H*.255,H*.12,'#fff',900);
-    fit(full?(forfeited?KIT[win].name+' WIN BY FORFEIT':(so?'Penalties '+so[0]+' - '+so[1]+'   ·   ':'')+(win<0?'DRAW':KIT[win].name+' WIN')):'Substitutions used '+S.subs[0]+'/5',W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
+    fit(full?(forfeited?KIT[win].name+' WIN BY FORFEIT':(so?'Penalties '+so[0]+' - '+so[1]+'   ·   ':'')+(win<0?'DRAW':KIT[win].name+' WIN')):'Substitutions used '+S.subs[0]+'/'+(S.ko&&S.half>=3?6:5),W/2,H*.345,W*.7,H*.04,'rgba(255,224,110,.95)');
   const tp=(ST.pos[0]+ST.pos[1])||1,a=Math.round(ST.pos[0]/tp*100);
   [['POSSESSION',a,100-a,'%'],['SHOTS',ST.sh[0],ST.sh[1],''],['ON TARGET',ST.sot[0],ST.sot[1],'']].forEach((r,i)=>{const y=H*(.43+i*.062),tot=r[1]+r[2]||1;
     txt(r[1]+r[3],W*.2,y,H*.04,'#fff',800);txt(r[2]+r[3],W*.8,y,H*.04,'#fff',800);txt(r[0],W/2,y,H*.028,'#9fb0c0',700);
