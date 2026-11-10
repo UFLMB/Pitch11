@@ -145,3 +145,11 @@ test('the goalkeeper second-hand-touch marker is created only after actual hand 
   assert.equal(law.goalkeeperReleaseMarker(outfielder, true), null);
   assert.equal(law.goalkeeperReleaseMarker(null, true), null);
 });
+
+test('Law 12 cautions reckless challenges, sends off serious foul play, and handles a second yellow', () => {
+  assert.equal(law.foulCardDecision({ reckless: false, alreadyBooked: false }), 0);
+  assert.equal(law.foulCardDecision({ reckless: true, alreadyBooked: false }), 1);
+  assert.equal(law.foulCardDecision({ reckless: true, alreadyBooked: true }), 3);
+  assert.equal(law.foulCardDecision({ seriousFoulPlay: true, reckless: false, alreadyBooked: false }), 2);
+  assert.equal(law.foulCardDecision({ seriousFoulPlay: true, reckless: true, alreadyBooked: true }), 2);
+});
