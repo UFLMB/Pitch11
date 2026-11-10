@@ -253,3 +253,9 @@ test("Law 14 rejects a backward penalty kick and awards an indirect free kick", 
   assert.match(source, /INDIRECT FREE KICK','The penalty kick must be taken forward'/);
   assert.match(source, /freeKick\(1-team,x,y,true\)/);
 });
+
+test("Law 14 does not retake for an off-line goalkeeper touching a penalty that was going wide or high", () => {
+  assert.match(source, /PITCH11Law\.penaltyShotOnTarget\(/);
+  assert.match(source, /const onTarget=!!\(ball\.pen&&ball\.penaltyKeeperOffLine/);
+  assert.match(source, /if\(onTarget&&ball\.pen&&ball\.penaltyKeeperOffLine/);
+});
