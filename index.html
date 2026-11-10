@@ -828,7 +828,7 @@ const tag=p=>KIT[p.team].name+' '+(p.nm||'#'+p.num);
 function firstIn(t){for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out)return p;}return P[t*11+1];}
 function setupKickoff(team){
   const b=ball;
-  b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.dbl=null;b.ind=false;b.pen=false;b.hcd=0;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;
+  b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.dbl=null;b.ind=false;b.indBy=null;b.pen=false;b.hcd=0;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;
   S.rs=null;S.adv=null;clearOff();
   for(const p of P){
     if(p.out)continue;
