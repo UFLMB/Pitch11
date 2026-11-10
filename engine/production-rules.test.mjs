@@ -110,4 +110,5 @@ test("goalkeeper hand control is limited to eight seconds and awards a corner ki
   assert.ok(source.includes("b.gkHold>=3"));
   assert.ok(source.includes("spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner')"));
   assert.ok(source.includes("b.gkHoldActive=false"));
+  assert.ok(source.includes("b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false"));
 });
