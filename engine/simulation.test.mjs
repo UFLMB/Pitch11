@@ -138,3 +138,47 @@ test("goal frame collision deflects a shot away from the post", () => {
   assert.ok(sim.ball.vx > 0);
   assert.ok(sim.getSnapshot().events.some(e => e.type === "goalpostHit"));
 });
+
+test("offside is evaluated against the second-last defender", () => {
+  const sim = new FootballSimulation();
+  const passer = sim.players[6];
+  const receiver = sim.players[9];
+  passer.x = 50; passer.y = 34;
+  receiver.x = 90; receiver.y = 34;
+  sim.ball.x = 50; sim.ball.y = 34;
+  sim.players[11].x = 101;
+  for (let id = 12; id < 22; id++) sim.players[id].x = 80;
+  assert.equal(sim.isOffside(receiver, 0), true);
+  receiver.x = 70;
+  assert.equal(sim.isOffside(receiver, 0), false);
+});
+
+test("offside receiver triggers an indirect free-kick restart", () => {
+  const sim = new FootballSimulation();
+  const passer = sim.players[6], receiver = sim.players[9];
+  passer.x = 50; passer.y = 34; receiver.x = 90; receiver.y = 34;
+  sim.ball.x = 50; sim.ball.y = 34;
+  sim.players[11].x = 101;
+  for (let id = 12; id < 22; id++) sim.players[id].x = 80;
+  assert.equal(sim.passBall(passer, receiver.id), true);
+  assert.equal(sim.ball.offsidePlayerId, receiver.id);
+  for (const p of sim.players) if (p.id !== receiver.id) { p.x = 5; p.y = 5; }
+  sim.ball.x = receiver.x; sim.ball.y = receiver.y; sim.ball.z = PITCH.ballRadius;
+  sim.ball.owner = -1; sim.ball.lastTouchTeam = 0; sim.ball.ignorePlayerId = -1;
+  sim.resolvePlayerBallContacts();
+  assert.equal(sim.phase, "restart");
+  assert.equal(sim.restart.type, "freeKick");
+  assert.equal(sim.restart.team, 1);
+});
+
+test("throw-in restart can be taken and resumes play", () => {
+  const sim = new FootballSimulation();
+  sim.awardRestart(1, "throwIn", 55, 68);
+  assert.equal(sim.phase, "restart");
+  sim.command({ type: "restart" });
+  sim.update(FIXED_DT);
+  assert.equal(sim.phase, "playing");
+  assert.equal(sim.restart, null);
+  assert.equal(sim.players[sim.ball.owner].team, 1);
+  assert.ok(sim.getSnapshot().events.some(e => e.type === "restartTaken"));
+});
