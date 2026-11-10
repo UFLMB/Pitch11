@@ -51,3 +51,42 @@ test('production ball dimensions remain unchanged', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /GOALH=36\.6,GOALD=22,GOALZ=24,BR=4,BVR=1\.1,BALL_SCALE=1/);
 });
+
+
+test('offside line uses the live second-last opponent and the ball position', () => {
+  const players = [
+    { team: 1, x: 950, out: false },
+    { team: 1, x: 900, out: false },
+    { team: 1, x: 700, out: false },
+    { team: 0, x: 990, out: false }
+  ];
+  assert.equal(law.offsideLine(players, 0, 1, 800, 1110), 900);
+  assert.equal(law.offsideLine(players, 0, 1, 930, 1110), 930);
+  assert.equal(law.offsideLine(players.slice(0, 1), 0, 1, 700, 1110), 1110);
+});
+
+test('substitution limits follow the five-plus-three-window model and optional extra-time allowance', () => {
+  assert.deepEqual({ ...law.substitutionLimits(2, true) }, { substitutions: 5, windows: 3 });
+  assert.deepEqual({ ...law.substitutionLimits(3, true) }, { substitutions: 6, windows: 4 });
+  assert.deepEqual({ ...law.substitutionLimits(4, true) }, { substitutions: 6, windows: 4 });
+  assert.deepEqual({ ...law.substitutionLimits(5, true) }, { substitutions: 5, windows: 3 });
+  assert.deepEqual({ ...law.substitutionLimits(4, false) }, { substitutions: 5, windows: 3 });
+});
+
+test('goalkeeper eight-second limit triggers at eight seconds, not before', () => {
+  assert.equal(law.goalkeeperHoldExpired(7.99), false);
+  assert.equal(law.goalkeeperHoldExpired(8), true);
+  assert.equal(law.goalkeeperHoldExpired(9), true);
+});
+
+test('a match cannot continue with fewer than seven active players', () => {
+  const players = [];
+  for (let team = 0; team < 2; team++) {
+    for (let role = 0; role < 11; role++) {
+      players.push({ team, out: team === 1 ? role >= 6 : role >= 7 });
+    }
+  }
+  assert.equal(law.abandoningTeam(players), 1);
+  assert.equal(law.abandoningTeam(players.map(p => ({ ...p, out: p.team === 0 ? p.out : p.role >= 5 }))), 0);
+  assert.equal(law.abandoningTeam(players.map(p => ({ ...p, out: false }))), null);
+});
