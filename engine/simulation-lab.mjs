@@ -7,6 +7,7 @@ import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/Skele
 import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
 import { computeStadiumPlacement } from "./stadium-model.mjs";
 import { computeLocomotionPose } from "./player-animation.mjs";
+import { createSecurityPositions, crowdReactionProfile, crowdReactionEnvelope } from "./stadium-atmosphere.mjs";
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
@@ -145,29 +146,96 @@ for (const z of [-74, 74]) {
 }
 for (const x of [-82, 82]) markRoofForCameraExclusion(addBox(.6, .35, 100, x, 19.5, 0, mat(0xa3e635, .35, .15), stadiumFallback));
 
+// Organized seating: consistent row spacing, section color blocks and clear aisles.
 const crowdColors = [0x31506a, 0x9c3f3b, 0xddd8c8, 0x365f47, 0x9c824b, 0x202b3a, 0x758b98, 0x5e344c];
-const crowdCount = mobile ? 1900 : 4400;
+const crowdCount = mobile ? 1800 : 4400;
 const torsoGeo = new THREE.CapsuleGeometry(.16, .38, 2, 5);
 const headGeo = new THREE.SphereGeometry(.105, 5, 4);
+const armGeo = new THREE.BoxGeometry(.075, .34, .075);
 const torsoMesh = new THREE.InstancedMesh(torsoGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .96 }), crowdCount);
 const headMesh = new THREE.InstancedMesh(headGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .9 }), crowdCount);
+const armMesh = new THREE.InstancedMesh(armGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .94 }), crowdCount * 2);
 const dummy = new THREE.Object3D(), color = new THREE.Color();
 let seed = 711;
 const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+const crowdSeats = [];
+const perSide = Math.ceil(crowdCount / 4);
+const rowCount = 16;
+const seatsPerRow = Math.ceil(perSide / rowCount);
 for (let i = 0; i < crowdCount; i++) {
-  const side = i % 4, row = Math.floor(random() * 16), lane = random();
+  const side = Math.floor(i / perSide);
+  const local = i % perSide;
+  const row = local % rowCount;
+  const seat = Math.floor(local / rowCount);
+  const centeredSeat = seat - (seatsPerRow - 1) / 2;
+  const aisleOffset = (seat >= seatsPerRow * .25 ? 1.25 : 0) + (seat >= seatsPerRow * .5 ? 1.25 : 0) + (seat >= seatsPerRow * .75 ? 1.25 : 0);
+  const aisleCoordinate = centeredSeat + aisleOffset;
+  const aisleCenter = 1.875;
+  const aisleHalfSpan = Math.max(1, (seatsPerRow - 1) / 2 + 1.875);
+  const normalizedSeat = (aisleCoordinate - aisleCenter) / aisleHalfSpan;
   let x, z;
-  if (side < 2) { x = (random() - .5) * (119 - row * 1.1); z = (side === 0 ? 1 : -1) * (47 + row * .78 + lane * .7); }
-  else { x = (side === 2 ? 1 : -1) * (64 + row * .7 + lane * .7); z = (random() - .5) * (83 - row * 1.1); }
-  const y = 2.6 + row * 1.15;
-  const scale = .82 + random() * .35;
-  dummy.position.set(x, y + .36 * scale, z); dummy.rotation.set(0, random() * Math.PI * 2, 0); dummy.scale.set(scale, scale, scale); dummy.updateMatrix();
-  torsoMesh.setMatrixAt(i, dummy.matrix); color.setHex(crowdColors[Math.floor(random() * crowdColors.length)]); torsoMesh.setColorAt(i, color);
-  dummy.position.set(x, y + .77 * scale, z); dummy.scale.setScalar(scale); dummy.updateMatrix();
-  headMesh.setMatrixAt(i, dummy.matrix); color.setHex([0xc98e6a, 0x9b674e, 0xe1b18b, 0x704a38][Math.floor(random() * 4)]); headMesh.setColorAt(i, color);
+  if (side < 2) {
+    x = normalizedSeat * (57 - row * .42);
+    z = (side === 0 ? 1 : -1) * (47 + row * .78);
+  } else {
+    x = (side === 2 ? 1 : -1) * (64 + row * .7);
+    z = normalizedSeat * (40 - row * .38);
+  }
+  const platformTop = 2.8 + row * 1.15;
+  const scale = .86 + random() * .25;
+  const section = Math.min(7, Math.floor((seat / Math.max(1, seatsPerRow)) * 8));
+  const shirtColor = crowdColors[(section + (side === 1 || side === 3 ? 2 : 0)) % crowdColors.length];
+  const skinColor = [0xc98e6a, 0x9b674e, 0xe1b18b, 0x704a38][Math.floor(random() * 4)];
+  const phase = random() * Math.PI * 2;
+  const base = { x, z, y: platformTop, scale, phase, side };
+  crowdSeats.push(base);
+  dummy.position.set(x, platformTop + .98 * scale, z);
+  dummy.rotation.set(0, (side === 0 ? Math.PI : side === 1 ? 0 : side === 2 ? -Math.PI / 2 : Math.PI / 2) + (random() - .5) * .12, 0);
+  dummy.scale.set(scale, scale, scale); dummy.updateMatrix();
+  torsoMesh.setMatrixAt(i, dummy.matrix); color.setHex(shirtColor); torsoMesh.setColorAt(i, color);
+  dummy.position.set(x, platformTop + 1.46 * scale, z); dummy.scale.setScalar(scale); dummy.updateMatrix();
+  headMesh.setMatrixAt(i, dummy.matrix); color.setHex(skinColor); headMesh.setColorAt(i, color);
+  for (let arm = 0; arm < 2; arm++) {
+    dummy.position.set(x + (arm === 0 ? -.22 : .22) * scale, platformTop + .94 * scale, z);
+    dummy.rotation.set(0, 0, arm === 0 ? -.16 : .16);
+    dummy.scale.setScalar(scale); dummy.updateMatrix();
+    armMesh.setMatrixAt(i * 2 + arm, dummy.matrix);
+    color.setHex(shirtColor); armMesh.setColorAt(i * 2 + arm, color);
+  }
 }
-torsoMesh.instanceMatrix.needsUpdate = true; headMesh.instanceMatrix.needsUpdate = true;
-stadiumAtmosphere.add(torsoMesh, headMesh);
+torsoMesh.instanceMatrix.needsUpdate = true;
+headMesh.instanceMatrix.needsUpdate = true;
+armMesh.instanceMatrix.needsUpdate = true;
+torsoMesh.computeBoundingSphere(); headMesh.computeBoundingSphere(); armMesh.computeBoundingSphere();
+stadiumAtmosphere.add(torsoMesh, headMesh, armMesh);
+
+const securityMat = mat(0x17232c, .82), securityVestMat = mat(0xc6e85a, .62), securitySkinMat = mat(0xb98262, .88);
+function createSecurityGuard(position, index) {
+  const guard = new THREE.Group();
+  guard.name = "Stadium security — perimeter only";
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .55, 3, 7), securityMat);
+  body.position.y = 1.02; guard.add(body);
+  const vest = new THREE.Mesh(new THREE.BoxGeometry(.39, .48, .27), securityVestMat);
+  vest.position.set(0, 1.12, -.015); guard.add(vest);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), securitySkinMat);
+  head.position.y = 1.53; guard.add(head);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.15, .15, .075, 10), securityMat);
+  cap.position.y = 1.66; guard.add(cap);
+  for (const side of [-1, 1]) {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(.075, .38, 3, 6), securityMat);
+    leg.position.set(side * .105, .36, 0); guard.add(leg);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.065, .3, 3, 6), securityMat);
+    arm.position.set(side * .27, 1.02, -.015); arm.rotation.z = side * -.12; guard.add(arm);
+  }
+  guard.position.set(position.x, 0, position.z);
+  guard.rotation.y = Math.atan2(-position.x, -position.z);
+  guard.userData.patrolPhase = index * .73;
+  stadiumAtmosphere.add(guard);
+  return guard;
+}
+const securityPositions = createSecurityPositions();
+const securityGuards = securityPositions.map(createSecurityGuard);
+
 
 const boardMat = mat(0x07131b, .45, .55);
 for (const z of [-38, 38]) {
@@ -360,6 +428,40 @@ const scoreEl = document.querySelector("#score"), clockEl = document.querySelect
 const statusEl = document.querySelector("#status"), eventEl = document.querySelector("#event");
 const keys = new Set(); let joystick = { x: 0, y: 0, sprint: false }, last = performance.now(), lastRender = 0;
 let lastEvent = "", eventUntil = 0, paused = false;
+let crowdReaction = { start: 0, duration: 0, intensity: 0 };
+let crowdEventTick = -1;
+function triggerCrowdReaction(type, simTime) {
+  const profile = crowdReactionProfile(type);
+  if (!profile) return;
+  crowdReaction = { start: simTime, duration: profile.duration, intensity: profile.intensity };
+}
+function updateCrowdAnimation(simTime) {
+  const elapsed = simTime - crowdReaction.start;
+  const envelope = crowdReactionEnvelope(elapsed, crowdReaction.duration, crowdReaction.intensity);
+  if (envelope <= .008) return;
+  for (let i = 0; i < crowdSeats.length; i++) {
+    const fan = crowdSeats[i];
+    const wave = Math.sin(simTime * 9.5 + fan.phase);
+    const bounce = Math.max(0, wave) * .19 * envelope;
+    dummy.position.set(fan.x, fan.y + .98 * fan.scale + bounce, fan.z);
+    dummy.rotation.set(wave * .07 * envelope, 0, Math.sin(simTime * 3.2 + fan.phase) * .045 * envelope);
+    dummy.scale.set(fan.scale, fan.scale * (1 + .08 * envelope), fan.scale);
+    dummy.updateMatrix(); torsoMesh.setMatrixAt(i, dummy.matrix);
+    dummy.position.set(fan.x, fan.y + 1.46 * fan.scale + bounce, fan.z);
+    dummy.rotation.set(0, 0, 0); dummy.scale.setScalar(fan.scale); dummy.updateMatrix();
+    headMesh.setMatrixAt(i, dummy.matrix);
+    const armLift = envelope * (.65 + .35 * Math.max(0, wave));
+    for (let arm = 0; arm < 2; arm++) {
+      dummy.position.set(fan.x + (arm === 0 ? -.22 : .22) * fan.scale, fan.y + (.94 + .13 * armLift) * fan.scale + bounce, fan.z);
+      dummy.rotation.set(0, 0, (arm === 0 ? -1 : 1) * (.16 + 1.05 * armLift));
+      dummy.scale.setScalar(fan.scale); dummy.updateMatrix();
+      armMesh.setMatrixAt(i * 2 + arm, dummy.matrix);
+    }
+  }
+  torsoMesh.instanceMatrix.needsUpdate = true;
+  headMesh.instanceMatrix.needsUpdate = true;
+  armMesh.instanceMatrix.needsUpdate = true;
+}
 const formatClock = t => String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(Math.floor(t % 60)).padStart(2, "0");
 function action(name) {
   if (name === "pass") simulation.command({ type: "pass" });
@@ -410,6 +512,15 @@ document.querySelector("#sprint").addEventListener("pointerdown", e => { e.preve
 for (const name of ["pointerup", "pointercancel", "lostpointercapture"]) window.addEventListener(name, () => { joystick.sprint = false; });
 
 function syncMeshes(snapshot, dt) {
+  if (snapshot.tick !== crowdEventTick) {
+    crowdEventTick = snapshot.tick;
+    const strongest = snapshot.events
+      .map(event => ({ event, profile: crowdReactionProfile(event.type) }))
+      .filter(entry => entry.profile)
+      .sort((a, b) => b.profile.intensity - a.profile.intensity)[0];
+    if (strongest) triggerCrowdReaction(strongest.event.type, snapshot.time);
+  }
+  updateCrowdAnimation(snapshot.time);
   for (const p of snapshot.players) {
     let group = playerMeshes.get(p.id);
     if (!group && !p.out) group = createPlayerMesh(p);
