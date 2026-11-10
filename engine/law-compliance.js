@@ -34,6 +34,13 @@
     return 'live';
   }
 
+  function shootoutOrder(players, team) {
+    // Every eligible player may take a kick, including the goalkeeper.
+    return players
+      .filter(p => p.team === team && !p.out)
+      .sort((a, b) => (a.role === 0 ? 1 : 0) - (b.role === 0 ? 1 : 0) || a.role - b.role || a.num - b.num);
+  }
+
   function shootoutExclusions(players) {
     const active = [0, 1].map(team =>
       players.filter(p => p.team === team && !p.out)
@@ -53,5 +60,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ isBeyond, shootoutDecision, shootoutExclusions });
+  root.PITCH11Law = Object.freeze({ isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder });
 })(globalThis);
