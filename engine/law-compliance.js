@@ -34,6 +34,11 @@
     return 'live';
   }
 
+  function hasMinimumPlayers(players, team, minimum) {
+    const limit = Number.isInteger(minimum) && minimum > 0 ? minimum : 7;
+    return players.filter(p => p.team === team && !p.out).length >= limit;
+  }
+
   function shootoutOrder(players, team) {
     // Every eligible player may take a kick, including the goalkeeper.
     return players
@@ -60,5 +65,5 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder });
+  root.PITCH11Law = Object.freeze({ hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder });
 })(globalThis);
