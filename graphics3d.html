@@ -27,7 +27,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 <div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button data-view="drone">DRONE CAM · DEV</button><button id="back">BACK TO GAME</button></div></div>
 <div id="status">MATCHDAY ENVIRONMENT 3.0 · LIVE STADIUM</div>
 <div id="drone-hud"><div class="drone-pad"><button data-move="forward" aria-label="Move forward">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="back" aria-label="Move backward">▼</button><button data-move="right" aria-label="Move right">▶</button></div><div class="drone-alt"><button data-move="up" aria-label="Rise">＋</button><button data-move="down" aria-label="Descend">−</button></div></div><div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: use directional controls</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script>
 function show3DError(message){const panel=document.querySelector("#loading");if(!panel)return;panel.style.display="grid";panel.style.padding="28px";panel.style.textAlign="center";panel.style.lineHeight="1.6";panel.innerHTML="<div><strong style=\"color:#ffb4a8\">3D SCENE COULD NOT START</strong><small style=\"display:block;max-width:560px;margin:12px auto;color:#d5dcd5\"></small><button onclick=\"location.reload()\">RETRY</button><small style=\"display:block;margin-top:12px\">If this repeats, check WebGL and the network connection.</small></div>";panel.querySelector("small").textContent=message;}
 window.addEventListener("error",event=>show3DError(event.message||"A script or WebGL error occurred."));
@@ -35,8 +35,8 @@ window.addEventListener("unhandledrejection",event=>show3DError(event.reason?.me
 </script>
 <script type="module">
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/controls/OrbitControls.js';
-import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/loaders/GLTFLoader.js';
+import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from './vendor/three/examples/jsm/loaders/GLTFLoader.js';
 
 const host=document.querySelector('#stage'),loading=document.querySelector('#loading');
 const lowPower=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
