@@ -182,3 +182,25 @@ test("throw-in restart can be taken and resumes play", () => {
   assert.equal(sim.players[sim.ball.owner].team, 1);
   assert.ok(sim.getSnapshot().events.some(e => e.type === "restartTaken"));
 });
+
+test("switch command changes to a different nearest teammate", () => {
+  const sim = new FootballSimulation();
+  const current = sim.players[sim.selectedPlayer];
+  const alternate = sim.players[8];
+  sim.ball.x = current.x; sim.ball.y = current.y;
+  alternate.x = current.x + .5; alternate.y = current.y;
+  sim.command({ type: "switch" });
+  sim.update(FIXED_DT);
+  assert.equal(sim.selectedPlayer, alternate.id);
+});
+
+test("analog input produces slower movement than full joystick deflection", () => {
+  const low = new FootballSimulation({ seed: 4 });
+  const full = new FootballSimulation({ seed: 4 });
+  const lx = low.players[low.selectedPlayer].x;
+  const fx = full.players[full.selectedPlayer].x;
+  low.command({ type: "move", x: .2, y: 0 });
+  full.command({ type: "move", x: 1, y: 0 });
+  for (let i = 0; i < 30; i++) { low.update(FIXED_DT); full.update(FIXED_DT); }
+  assert.ok(low.players[low.selectedPlayer].x - lx < full.players[full.selectedPlayer].x - fx);
+});
