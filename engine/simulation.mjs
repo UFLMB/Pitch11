@@ -135,6 +135,7 @@ export class FootballSimulation {
   applyCommands() {
     const cmds = this.commands.splice(0);
     for (const c of cmds) {
+      if (c.type === "restart") { this.takeRestart(); continue; }
       const p = this.players[this.selectedPlayer];
       if (!p) continue;
       if (c.type === "move") {
