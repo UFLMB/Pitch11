@@ -1,6 +1,6 @@
 # PITCH 11 Simulation Core (prototype)
 
-This folder contains an isolated browser-first football simulation prototype. It is deliberately not wired into the production match loop yet.
+This folder contains an isolated browser-first football simulation prototype. The renderer adapter is also isolated and is deliberately not wired into the production match loop yet.
 
 ## Runtime
 
@@ -37,6 +37,8 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - Goalpost and crossbar collision response
 - Goal-plane detection and kickoff reset
 - Detached snapshots and event output
+- A separate adapter mapping metres to the existing PITCH 11 Canvas world (1 m = 10 legacy units)
+- Camera-relative input conversion and render-frame data mapping
 
 ## Commands
 
@@ -62,4 +64,4 @@ The same test command runs in GitHub Actions on pushes to `engine-adaptation` an
 
 ## Not production-ready yet
 
-Fouls, advantage, cards, penalties, substitutions, full match phases, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The prototype must not replace the existing match engine until these systems are implemented and validated.
+Fouls, advantage, cards, penalties, substitutions, full match phases, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
