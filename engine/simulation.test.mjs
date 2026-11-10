@@ -117,3 +117,24 @@ test("AI movement remains inside pitch and finite over a longer run", () => {
   }
   assert.ok(Number.isFinite(sim.ball.x) && Number.isFinite(sim.ball.y));
 });
+
+test("weather settings are bounded and wind affects airborne play", () => {
+  const sim = new FootballSimulation({ windX: 2, windY: -1, wetness: 2 });
+  assert.equal(sim.weather.wetness, 1);
+  sim.ball.owner = -1;
+  sim.ball.x = 40; sim.ball.y = 30; sim.ball.z = 2;
+  sim.ball.vx = 0; sim.ball.vy = 0; sim.ball.vz = 0;
+  sim.update(FIXED_DT);
+  assert.ok(sim.ball.vx > 0);
+  assert.ok(sim.ball.vy < 0);
+});
+
+test("goal frame collision deflects a shot away from the post", () => {
+  const sim = new FootballSimulation();
+  sim.ball.owner = -1;
+  sim.ball.x = .05; sim.ball.y = 34 - PITCH.goalWidth / 2;
+  sim.ball.z = 1; sim.ball.vx = -5; sim.ball.vy = 0; sim.ball.vz = 0;
+  sim.update(FIXED_DT);
+  assert.ok(sim.ball.vx > 0);
+  assert.ok(sim.getSnapshot().events.some(e => e.type === "goalpostHit"));
+});
