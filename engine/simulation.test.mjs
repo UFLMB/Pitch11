@@ -333,3 +333,15 @@ test("second yellow card dismisses a player from active simulation", () => {
   assert.equal(offender.out, true);
   assert.equal(sim.selectPlayer(offender.id), false);
 });
+
+test("formation can change independently for either team", () => {
+  const sim = new FootballSimulation();
+  assert.equal(sim.formations[0], "4-3-3");
+  assert.equal(sim.setFormation(0, "4-4-2"), true);
+  assert.equal(sim.players[8].role, "MID");
+  assert.equal(sim.players[9].role, "FWD");
+  assert.equal(sim.setFormation(1, "4-2-3-1"), true);
+  assert.equal(sim.players[20].role, "FWD");
+  assert.equal(sim.setFormation(0, "invalid"), false);
+  assert.deepEqual(sim.getSnapshot().formations, ["4-4-2", "4-2-3-1"]);
+});
