@@ -26,7 +26,8 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 
 - 22 players and two 4-3-3 formations
 - Deterministic seeded pseudo-random decisions
-- Fixed-step player movement and basic team/player AI
+- Fixed-step player movement, player separation and basic team/player AI
+- AI defensive pressure and cooldown-based tackle attempts
 - Possession, dribbling intent, passing and shooting
 - League-Soccer-derived ball gravity, air drag, ground friction, bounce, wind and wet-pitch behavior
 - Goalpost and crossbar collision response
