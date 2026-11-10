@@ -167,3 +167,12 @@ test("goalkeeper cannot handle a deliberate teammate back-pass or a direct teamm
   assert.ok(source.includes("b.gkNoHands=null"));
   assert.ok(source.includes("b.gkNoHands=null;clearOff()"));
 });
+
+
+test("goalkeeper cannot handle the ball again after releasing it until another player touches it", () => {
+  assert.ok(source.includes("b.gkReleasedBy=p.gk?p:null"));
+  assert.ok(source.includes("if(b.gkReleasedBy&&b.last!==b.gkReleasedBy)b.gkReleasedBy=null"));
+  assert.ok(source.includes("secondTouch=b.gkReleasedBy===keeper"));
+  assert.ok(source.includes("secondTouch?'SECOND TOUCH':'BACK-PASS / THROW-IN'"));
+  assert.ok(source.includes("b.gkReleasedBy=null;b.gkHold=0"));
+});
