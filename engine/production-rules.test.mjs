@@ -275,3 +275,9 @@ test("Law 12 applies DOGSO, SPA and a conservative serious-slide-foul threshold"
   assert.match(source, /seriousFoulPlay=behind&&tq<0\.12&&speed>180/);
   assert.match(source, /slideFoul\(p,o,tq,behind\)/);
 });
+
+test("Law 14 applies the forward-kick requirement to shootouts without awarding an in-match free kick", () => {
+  assert.match(source, /shootoutPenalty=!!\(rs&&rs\.kind==='pen'&&rs\.p===p&&S\.so\)/);
+  assert.match(source, /if\(shootoutPenalty&&!PITCH11Law\.penaltyKickDirectionLegal/);
+  assert.match(source, /if\(shootoutPenalty[\s\S]*?soResult\(false\)/);
+});
