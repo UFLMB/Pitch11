@@ -142,6 +142,7 @@ export class FootballSimulation {
         let ix = clamp(Number(c.x) || 0, -1, 1), iy = clamp(Number(c.y) || 0, -1, 1);
         const inputMagnitude = hypot(ix, iy);
         if (inputMagnitude > 1) { ix /= inputMagnitude; iy /= inputMagnitude; }
+        p.inputMagnitude = Math.min(1, inputMagnitude);
         p.inputX = Math.abs(ix) < .001 ? 0 : ix;
         p.inputY = Math.abs(iy) < .001 ? 0 : iy;
         p.sprinting = !!c.sprint;
@@ -248,7 +249,7 @@ export class FootballSimulation {
         else { tx=p.x; ty=p.y; }
       }
       const d=norm(tx-p.x,ty-p.y), gap=dist(p,{x:tx,y:ty});
-      const speed=(5.0+p.stats.pace*2.5)*(sprint?1.32:1)*(0.55+p.stamina*.45);
+      const speed=(5.0+p.stats.pace*2.5)*(manual?(p.inputMagnitude||0):1)*(sprint?1.32:1)*(0.55+p.stamina*.45);
       const desired=gap<.15?0:Math.min(speed,gap/dt);
       const accel=clamp(desired-hypot(p.vx,p.vy),-12*dt,12*dt);
       const current=norm(p.vx,p.vy);
