@@ -51,3 +51,18 @@ test('production ball dimensions remain unchanged', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /GOALH=36\.6,GOALD=22,GOALZ=24,BR=4,BVR=1\.1,BALL_SCALE=1/);
 });
+
+
+test('shootout order includes every eligible player, including the goalkeeper, exactly once', () => {
+  const players = [];
+  for (let team = 0; team < 2; team++) {
+    for (let role = 0; role < 11; role++) players.push({ team, role, num: role + 1, gk: role === 0, out: false });
+  }
+  players[7].out = true;
+  const order = law.shootoutOrder(players, 0);
+  assert.equal(order.length, 10);
+  assert.equal(order.some(p => p.gk), true);
+  assert.equal(new Set(order).size, 10);
+  assert.equal(order.some(p => p.out), false);
+  assert.equal(law.shootoutOrder(players, 1).length, 11);
+});

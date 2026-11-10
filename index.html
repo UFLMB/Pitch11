@@ -862,7 +862,7 @@ function startShootout(){
 }
 function soNext(){
   const so=S.so,t=so.k[0].length<=so.k[1].length?0:1,list=[];
-  for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out)list.push(p);}
+  list.push(...PITCH11Law.shootoutOrder(P,t));
   so.team=t;so.shooter=list[so.k[t].length%list.length];so.live=true;so.t=0;
   setupPen(t,so.shooter,true);S.mode='play';S.t=0;
 }

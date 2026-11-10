@@ -77,3 +77,9 @@ test("goal-line versus touchline restarts are classified after full crossing", (
 test("offside position is recorded for shots as well as passes", () => {
   assert.match(source, /if\(rs&&\(rs\.kind==='throw'\|\|rs\.kind==='corner'\|\|rs\.kind==='gk'\)\)clearOff\(\);else markOff\(p\);/);
 });
+
+
+test("penalty shootout rotation includes eligible goalkeepers", () => {
+  assert.match(source, /list\.push\(\.\.\.PITCH11Law\.shootoutOrder\(P,t\)\)/);
+  assert.match(source, /PITCH11Law\.shootoutOrder/);
+});
