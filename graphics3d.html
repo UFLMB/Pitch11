@@ -34,7 +34,7 @@ window.addEventListener("error",event=>show3DError(event.message||"A script or W
 window.addEventListener("unhandledrejection",event=>show3DError(event.reason?.message||String(event.reason||"A module failed to load.")));
 </script>
 <script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
+import * as THREE from './vendor/three/build/three.module.js';
 import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from './vendor/three/examples/jsm/loaders/GLTFLoader.js';
 
