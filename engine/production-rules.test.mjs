@@ -281,3 +281,19 @@ test("Law 14 applies the forward-kick requirement to shootouts without awarding 
   assert.match(source, /if\(shootoutPenalty&&!PITCH11Law\.penaltyKickDirectionLegal/);
   assert.match(source, /if\(shootoutPenalty[\s\S]*?soResult\(false\)/);
 });
+
+test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advantage is played", () => {
+  assert.match(source, /attackersAhead=P\.filter/);
+  assert.match(source, /const advantagePossible=!pen&&!hurt&&prog>0\.45/);
+  assert.match(source, /S\.adv=\{team:t,t:2\.5,fn,offender:p,dogso:advDogso,cardOnFailure\}/);
+  assert.match(source, /if\(a\.dogso\)S\.pendingCard=\{player:a\.offender,card:1\}/);
+  assert.match(source, /if\(a\.dogso\|\|a\.cardOnFailure\)issueAdvantageCaution\(a\.offender\)/);
+  assert.match(source, /function issueAdvantageCaution\(p\)/);
+  assert.match(source, /goal=function\(dr\)\{S\.pendingCard=null;/);
+});
+
+test("Law 12 advantage is resolved before period end and before a subsequent whistle", () => {
+  assert.match(source, /if\(S\.adv\)\{S\.clock=plen\(\);return;\}/);
+  assert.match(source, /if\(S\.adv&&\(S\.adv\.dogso\|\|S\.adv\.cardOnFailure\)\)/);
+  assert.match(source, /if\(S\.pendingCard\)\{issueAdvantageCaution/);
+});
