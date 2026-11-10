@@ -20,6 +20,9 @@ const scene = new THREE.Scene();
 const stadiumFallback = new THREE.Group();
 stadiumFallback.name = "PITCH 11 procedural stadium fallback";
 scene.add(stadiumFallback);
+const stadiumAtmosphere = new THREE.Group();
+stadiumAtmosphere.name = "PITCH 11 matchday atmosphere";
+scene.add(stadiumAtmosphere);
 scene.background = new THREE.Color(0x101e2a);
 scene.fog = new THREE.Fog(0x101e2a, 180, 360);
 scene.add(new THREE.HemisphereLight(0xc9e0ff, 0x1a241c, 1.65));
@@ -161,20 +164,20 @@ for (let i = 0; i < crowdCount; i++) {
   headMesh.setMatrixAt(i, dummy.matrix); color.setHex([0xc98e6a, 0x9b674e, 0xe1b18b, 0x704a38][Math.floor(random() * 4)]); headMesh.setColorAt(i, color);
 }
 torsoMesh.instanceMatrix.needsUpdate = true; headMesh.instanceMatrix.needsUpdate = true;
-stadiumFallback.add(torsoMesh, headMesh);
+stadiumAtmosphere.add(torsoMesh, headMesh);
 
 const boardMat = mat(0x07131b, .45, .55);
 for (const z of [-38, 38]) {
-  addBox(118, 1.1, .6, 0, .7, z, boardMat, stadiumFallback);
-  addBox(116, .06, .04, 0, 1.28, z + (z < 0 ? .33 : -.33), mat(0xb5e65b, .35, .2), stadiumFallback);
+  addBox(118, 1.1, .6, 0, .7, z, boardMat, stadiumAtmosphere);
+  addBox(116, .06, .04, 0, 1.28, z + (z < 0 ? .33 : -.33), mat(0xb5e65b, .35, .2), stadiumAtmosphere);
 }
-for (const x of [-59, 59]) addBox(.6, 1.1, 78, x, .7, 0, boardMat, stadiumFallback);
+for (const x of [-59, 59]) addBox(.6, 1.1, 78, x, .7, 0, boardMat, stadiumAtmosphere);
 for (const x of [-91, 91]) for (const z of [-79, 79]) {
-  addCylinder(.25, .38, 39, x, 19.5, z, mat(0x36434a, .5, .55), stadiumFallback, 8);
+  addCylinder(.25, .38, 39, x, 19.5, z, mat(0x36434a, .5, .55), stadiumAtmosphere, 8);
   const lamp = new THREE.Mesh(new THREE.BoxGeometry(7, 1.2, 1.2), new THREE.MeshBasicMaterial({ color: 0xe9f2ff }));
-  lamp.position.set(x, 39.3, z); stadiumFallback.add(lamp);
+  lamp.position.set(x, 39.3, z); stadiumAtmosphere.add(lamp);
   const glow = new THREE.PointLight(0xdbeaff, mobile ? 110 : 170, 120, 1.8);
-  glow.position.set(x, 38, z); stadiumFallback.add(glow);
+  glow.position.set(x, 38, z); stadiumAtmosphere.add(glow);
 }
 
 // Dugouts and technical-area details.
@@ -183,7 +186,7 @@ for (const sign of [-1, 1]) {
   addBox(16, .25, 2.1, 0, .9, 0, mat(0x18232a), bench);
   addBox(16, 2.1, .15, 0, 2.0, -sign * .9, mat(0x263c46, .35, .3), bench);
   for (let i = 0; i < 10; i++) addBox(1.2, .8, .75, -7 + i * 1.55, .55, .1, mat(0x52636a), bench);
-  bench.position.set(0, 0, sign * 39.5); stadiumFallback.add(bench);
+  bench.position.set(0, 0, sign * 39.5); stadiumAtmosphere.add(bench);
 }
 
 
