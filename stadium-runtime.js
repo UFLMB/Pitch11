@@ -98,10 +98,76 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   scene.add(goalNetMesh);
  }
  function addFlags(){const mat=new THREE.MeshStandardMaterial({color:0xa3e635,side:THREE.DoubleSide,roughness:.8});for(const [x,z] of [[-52.5,-34],[-52.5,34],[52.5,-34],[52.5,34]]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,1.55,6),new THREE.MeshStandardMaterial({color:0xb8c2c4,metalness:.5}));pole.position.set(x,.78,z);scene.add(pole);const flag=new THREE.Mesh(new THREE.PlaneGeometry(.48,.3,3,2),mat.clone());flag.position.set(x+.24,1.38,z);flag.userData.phase=flagMeshes.length*.8;flagMeshes.push(flag);scene.add(flag);}}
+
+ // Build one compact, deterministic turf atlas at load time; no external asset or per-frame work.
+ function createPitchGrassTextures(){
+  const size=mobile?512:1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const g=canvas.getContext('2d',{alpha:false});
+  const base=g.createLinearGradient(0,0,size,size);
+  base.addColorStop(0,'#347b40');base.addColorStop(.5,'#2e7139');base.addColorStop(1,'#286637');
+  g.fillStyle=base;g.fillRect(0,0,size,size);
+  const bands=14,band=size/bands;
+  for(let i=0;i<bands;i++){
+   g.fillStyle=i%2?'rgba(7,30,13,.105)':'rgba(190,225,165,.075)';
+   g.fillRect(i*band,0,band+1,size);
+   g.fillStyle=i%2?'rgba(255,255,255,.018)':'rgba(0,0,0,.018)';
+   g.fillRect(i*band+band*.94,0,band*.06,size);
+  }
+  let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  // Fine blades run with the mowing direction; varied hue and length avoid a flat painted look.
+  const blades=mobile?10500:26000;
+  for(let i=0;i<blades;i++){
+   const x=rnd()*size,y=rnd()*size,len=2+rnd()*(mobile?5:8),lean=(rnd()-.5)*2.8;
+   const light=rnd();
+   g.strokeStyle=light>.52?'rgba(180,220,145,.19)':light>.18?'rgba(9,42,17,.22)':'rgba(225,235,190,.12)';
+   g.lineWidth=.45+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+lean,y-len);g.stroke();
+  }
+  const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
+  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.generateMipmaps=true;
+  albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
+  albedo.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  // A low-contrast grayscale microstructure adds a restrained turf surface response.
+  const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=256;
+  const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,256,256);
+  for(let i=0;i<4200;i++){
+   const x=rnd()*256,y=rnd()*256,len=1+rnd()*4;
+   d.strokeStyle=rnd()>.5?'rgba(235,235,235,.32)':'rgba(35,35,35,.3)';
+   d.lineWidth=.5+rnd()*.6;d.beginPath();d.moveTo(x,y);d.lineTo(x+(rnd()-.5)*1.4,y-len);d.stroke();
+  }
+  const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.RepeatWrapping;
+  detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
+  return{albedo,detail};
+ }
+ function enhancePitchGrass(stadium){
+  stadium.updateMatrixWorld(true);
+  const textures=createPitchGrassTextures();let changed=0;
+  stadium.traverse(o=>{
+   if(!o.isMesh)return;
+   const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3());
+   const longSide=Math.max(size.x,size.z),shortSide=Math.min(size.x,size.z);
+   // Only touch the thin, pitch-sized green surface; stands, boards, seats and goal assets are excluded.
+   if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
+   const source=Array.isArray(o.material)?o.material:[o.material];
+   const replacements=source.map(original=>{
+    if(!original)return original;
+    const hsl={h:0,s:0,l:0};if(original.color)original.color.getHSL(hsl);
+    if(hsl.h<.19||hsl.h>.48||hsl.s<.18)return original;
+    const m=original.clone();
+    if(!m.map){m.map=textures.albedo;m.color.set(0xffffff);}
+    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
+    if(!m.roughnessMap)m.roughnessMap=textures.detail;
+    m.roughness=Math.max(.9,m.roughness||0);m.metalness=0;m.needsUpdate=true;
+    changed++;return m;
+   });
+   o.material=Array.isArray(o.material)?replacements:replacements[0];
+  });
+  if(changed)console.info('PITCH 11 realistic turf materials:',changed);
+ }
+
  const loader=new GLTFLoader();
  loader.load('./assets/football-stadium.glb',gltf=>{
   const stadium=gltf.scene;stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
-  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;scene.add(stadium);
+  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);
   try{addCrowd();addSecurity();}catch(e){console.warn('PITCH 11 matchday atmosphere skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);setGoalDimensions();addFlags();
   const details=new GLTFLoader();details.load('./assets/team-dugout.glb',asset=>{for(const s of[-1,1]){const d=asset.scene.clone(true);d.position.set(s*12.5,.05,36.5);if(s<0)d.rotation.y=Math.PI;scene.add(d);}},undefined,()=>{});
