@@ -58,7 +58,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
   ko:true,subs:[0,0],subWindows:[0,0],subWindowActive:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,abandoned:null};
-const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,px:CX,py:CY,pz:0};
+const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,dbl:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,px:CX,py:CY,pz:0};
 const P=[];
 for(let t=0;t<2;t++)for(let r=0;r<11;r++)P.push({team:t,role:r,gk:r===0,x:0,y:0,px:0,py:0,vx:0,vy:0,ix:0,iy:0,sp:false,face:0,turn:0,stam:1,
   kcd:0,tcd:0,stun:0,think:0,poss:0,freeze:0,force:false,dive:0,diveAng:0,react:0,err:0,seenShot:-1,divedShot:-1,anim:0,
@@ -932,7 +932,7 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
   tk.x=tk.px=x;tk.y=tk.py=y;tk.vx=tk.vy=0;tk.face=faceTo;tk.dive=0;tk.stun=0;tk.kcd=0;
   const b=ball;
   b.x=b.px=x+Math.cos(faceTo)*10;b.y=b.py=y+Math.sin(faceTo)*10;b.z=b.pz=b.vz=b.vx=b.vy=b.spin=0;
-  b.owner=tk;b.last=tk;b.receiver=null;b.protect=3;clearOff();
+  b.owner=tk;b.last=tk;b.receiver=null;b.dbl=null;b.protect=3;clearOff();
   tk.poss=0;tk.freeze=gk?0.45:rnd(0.5,0.85);tk.force=false;
   S.rs={kind:kind||'drop',team,p:tk,x,y};S.adv=null;
 }
@@ -1457,7 +1457,7 @@ function drawSubs(){
   if(M.instr){drawInstr();return;}
   ctx.fillStyle='rgba(0,0,0,.84)';ctx.fillRect(0,0,W,H);
   const lim=substitutionLimits(),done=S.subs[0]>=lim.substitutions,windowDone=S.ret!=='half'&&!S.subWindowActive[0]&&S.subWindows[0]>=lim.windows;
-  txt('PAUSE  -  SUBS  '+S.subs[0]+'/'+lim.substitutions+'  ·  WINDOWS  '+S.subWindows[0]+'/'+lim.windows,W/2,H*0.07,H*0.06,'#fff',900);
+  fit('PAUSE  -  SUBS  '+S.subs[0]+'/'+lim.substitutions+'  ·  WINDOWS  '+S.subWindows[0]+'/'+lim.windows,W/2,H*.07,W*.92,H*.045,'#fff');
   const rh=H*0.057,y0=H*0.14,fs=rh*0.55;
   txt('ON THE PITCH  (tap one, then a bench player)',W*0.28,y0-rh*0.5,fs*0.9,'#ffe600',700);txt('BENCH',W*0.74,y0-rh*0.5,fs*0.9,'#ffe600',700);
   ctx.textAlign='left';
