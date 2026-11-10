@@ -15,6 +15,8 @@ match.command({ type: "move", x: 0.7, y: -0.2, sprint: true });
 match.command({ type: "pass" });
 match.command({ type: "shoot", power: 1 });
 match.command({ type: "tackle" });
+match.command({ type: "restart" });
+match.setWeather(2, -1, 0.25);
 match.command({ type: "switch" });
 ```
 
@@ -46,6 +48,7 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 | `pass` | optional `targetId` | Pass to a teammate or choose an AI target |
 | `shoot` | optional `power` | Shoot toward the opponent goal |
 | `tackle` | — | Attempt a nearby tackle |
+| `restart` | — | Take an awarded restart when play is stopped |
 
 ## Regression tests
 
