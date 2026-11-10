@@ -36,6 +36,7 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 - Throw-in, corner, goal-kick, and free-kick restart state flow, including restart-specific offside exemptions
 - Goalpost and crossbar collision response
 - Goal-plane detection and kickoff reset
+- First-half, second-half and full-time phases with a pausable match clock
 - Detached snapshots and event output
 - A separate adapter mapping metres to the existing PITCH 11 Canvas world (1 m = 10 legacy units)
 - Camera-relative input conversion and render-frame data mapping
@@ -51,6 +52,7 @@ The simulation uses metres and a 105 × 68 m pitch. Team 0 attacks toward +X; te
 | `shoot` | optional `power` | Shoot toward the opponent goal |
 | `tackle` | — | Attempt a nearby tackle |
 | `restart` | — | Take an awarded restart when play is stopped |
+| `continue` | — | Start the second half after half-time |
 
 ## Regression tests
 
@@ -64,4 +66,4 @@ The same test command runs in GitHub Actions on pushes to `engine-adaptation` an
 
 ## Not production-ready yet
 
-Fouls, advantage, cards, penalties, substitutions, full match phases, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
+Fouls, advantage, cards, penalties, substitutions, full keeper dive/animation logic, player collision avoidance, tactical depth, team tactics, and the PITCH 11 presentation adapter are not complete. The adapter in `pitch11-adapter.mjs` is not imported by `index.html` yet. The prototype must not replace the existing match engine until the remaining systems are implemented and validated.
