@@ -87,7 +87,9 @@ test("penalty shootout rotation includes eligible goalkeepers", () => {
 
 test("Law 12 foul discipline uses event severity instead of random card rolls", () => {
   assert.match(source, /PITCH11Law\.foulCardDecision\(/);
+  assert.match(source, /reckless:behind&&!!\(context&&context\.sprinting\)/);
   assert.match(source, /reckless:behind\|\|tq<0\.55/);
+  assert.match(source, /foul=function\(p,o,b,context\)\{_foul\(p,o,b,context\)/);
   assert.doesNotMatch(source, /const sev=\(behind\?0\.5:0\.15\)/);
 });
 
