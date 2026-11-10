@@ -53,5 +53,34 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ isBeyond, shootoutDecision, shootoutExclusions });
+  function offsideLine(players, team, direction, ballProjection, opponentGoalLineProjection) {
+    const defenders = players
+      .filter(p => p.team !== team && !p.out)
+      .map(p => p.x * direction)
+      .sort((a, b) => b - a);
+    const secondLast = defenders.length >= 2 ? defenders[1] : opponentGoalLineProjection;
+    return Math.max(ballProjection, secondLast);
+  }
+
+  function substitutionLimits(period, extraTimeAllowed) {
+    const extraTime = !!extraTimeAllowed && (period === 3 || period === 4);
+    return { substitutions: extraTime ? 6 : 5, windows: extraTime ? 4 : 3 };
+  }
+
+  function goalkeeperHoldExpired(seconds) {
+    return Number.isFinite(seconds) && seconds >= 8;
+  }
+
+  function abandoningTeam(players, minimum = 7) {
+    for (let team = 0; team < 2; team++) {
+      const count = players.filter(p => p.team === team && !p.out).length;
+      if (count < minimum) return team;
+    }
+    return null;
+  }
+
+  root.PITCH11Law = Object.freeze({
+    isBeyond, shootoutDecision, shootoutExclusions,
+    offsideLine, substitutionLimits, goalkeeperHoldExpired, abandoningTeam
+  });
 })(globalThis);
