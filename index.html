@@ -3631,9 +3631,11 @@ function varCheck(category,evidence){
   const data=Object.assign({},evidence||{},{category});
   const result=PITCH11Law.varReviewDecision(data);
   VAR_LOG.push({category,review:result.review,reason:result.reason});
+  if(VAR_LOG.length>64)VAR_LOG.shift();
   if(result.review)cut('VAR CHECK','Referee review required: '+category.toUpperCase(),'#4aa8ff',0,2.4);
   return result;
 }
+const _nmVAR=newMatch;newMatch=function(){VAR_LOG.length=0;_nmVAR();};
 const _nm18=newMatch;newMatch=function(){EVT=[];TL={g:{},a:{},t:{},k:{},s:{}};CUT.t=0;_nm18();};
 const _gl18=goal;goal=function(dr){const evidence=ball.varIncident||{};ball.varIncident=null;varCheck('goal',evidence);const a0=ST.ast;_gl18(dr);const sc=S.scorer;if(!sc||S.prac)return;
   const i=P.indexOf(sc),og=sc.team!==S.goalTeam,st=ball.ast;
