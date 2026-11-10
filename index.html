@@ -4827,12 +4827,12 @@ function clearPenaltyLineState(){
   ball.penaltyTeam=null;ball.penaltyKicker=null;ball.penaltyKeeper=null;
   ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;
   ball.penaltyKeeperImpactedKicker=false;ball.penaltyRetakePending=false;
-  ball.penaltyWasShootout=false;ball.pen=false;
+  ball.penaltyWasShootout=false;ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=null;ball.pen=false;
 }
 const _setupPenLine=setupPen;
 setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);const keeper=GK[1-t];if(keeper&&!keeper.out)keeper.face=Math.atan2(sh.y-keeper.y,sh.x-keeper.x);};
 const _setupKickoffLine=setupKickoff;
-setupKickoff=function(t){clearPenaltyLineState();_setupKickoffLine(t);};
+setupKickoff=function(t){S.penaltyExtraTime=false;clearPenaltyLineState();_setupKickoffLine(t);};
 const _kickPenaltyLine=kick;
 kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const rs=S.rs;
@@ -4856,6 +4856,7 @@ kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
     ball.penaltyKeeper=incident.keeper;ball.penaltyKeeperOffLine=incident.offLine;
     ball.penaltyKeeperSaved=false;ball.penaltyKeeperImpactedKicker=false;
     ball.penaltyRetakePending=false;ball.penaltyWasShootout=incident.shootout;
+    ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=p;
     if(incident.offLine)varCheck('goal',{clearAndObviousError:true});
   }
 };
@@ -4868,8 +4869,9 @@ gkReact=function(p){
       goalLine:gx,attackDirection:d,centerY:CY,goalHalfWidth:GOALH,goalHeight:GOALZ,
       radius:BR,gravity:BALL_GRAV,maxTime:2}));
   _gkReactPenaltyLine(p);
-  if(onTarget&&ball.pen&&ball.penaltyKeeperOffLine&&p===ball.penaltyKeeper&&
-     (ball.owner===p||(ball.last===p&&previousLast!==p)))ball.penaltyKeeperSaved=true;
+  const keeperTouched=ball.pen&&p===ball.penaltyKeeper&&(ball.owner===p||(ball.last===p&&previousLast!==p));
+  if(keeperTouched)ball.penaltyLastTouch=p;
+  if(onTarget&&ball.penaltyKeeperOffLine&&keeperTouched)ball.penaltyKeeperSaved=true;
 };
 const _outOfPlayPenaltyLine=outOfPlay;
 outOfPlay=function(){
@@ -4880,6 +4882,7 @@ outOfPlay=function(){
   });
   if(decision==='retake'){ball.penaltyRetakePending=true;return;}
   _outOfPlayPenaltyLine();
+  if(ball.pen)clearPenaltyLineState();
 };
 const _soRulesPenaltyLine=soRules;
 soRules=function(){
@@ -4929,14 +4932,20 @@ function retakePenaltyForKeeperOffence(){
 const _goalPenaltyLine=goal;
 goal=function(dr){_goalPenaltyLine(dr);if(ball.pen)clearPenaltyLineState();};
 const _newMatchPenaltyLine=newMatch;
-newMatch=function(){for(const p of P)p.penaltyLineOffences=0;_newMatchPenaltyLine();};
+newMatch=function(){S.penaltyExtraTime=false;for(const p of P)p.penaltyLineOffences=0;_newMatchPenaltyLine();};
 const _updatePenaltyLine=update;
 update=function(){
   _updatePenaltyLine();
-  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&!ball.penaltyRetakePending){
-    const stopped=ball.owner===ball.penaltyKeeper||
-      (!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3);
-    if(stopped)ball.penaltyRetakePending=true;
+  if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&S.penaltyExtraTime&&ball.penaltyOtherPlayerTouched&&!ball.penaltyRetakePending)
+    ball.penaltyRetakePending=true;
+  if(ball.pen&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
+  if(ball.pen&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3){
+    const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
+    if(decision==='retake')ball.penaltyRetakePending=true;else clearPenaltyLineState();
+  }
+  if(ball.pen&&ball.penaltyOtherPlayerTouched){
+    const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
+    if(decision!=='retake')clearPenaltyLineState();
   }
   if(ball.penaltyRetakePending&&S.mode==='play')retakePenaltyForKeeperOffence();
 };
@@ -4952,6 +4961,45 @@ doShoot=function(p,power,ang,lift,em){
     ball.owner=null;ball.receiver=null;ball.last=p;ball.protect=0;
     whistleStop(1.4,'INDIRECT FREE KICK','The penalty kick must be taken forward',()=>freeKick(1-team,x,y,true));
   }
+};
+
+function notePenaltyOtherTouch(previousLast){
+  if(ball.pen&&ball.last&&ball.last!==previousLast&&ball.last!==ball.penaltyKeeper)
+    ball.penaltyOtherPlayerTouched=true;
+}
+const _takePenaltyAddedTime=take;
+take=function(p,byHand=false){
+  const penaltyTouch=ball.pen&&p!==ball.penaltyKeeper;
+  _takePenaltyAddedTime(p,byHand);
+  if(penaltyTouch)ball.penaltyOtherPlayerTouched=true;
+};
+const _touchesPenaltyAddedTime=touches;
+touches=function(){const previousLast=ball.last;_touchesPenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
+const _bodyCollidePenaltyAddedTime=bodyCollide;
+bodyCollide=function(){const previousLast=ball.last;_bodyCollidePenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
+const _slideHitPenaltyAddedTime=slideHit;
+slideHit=function(p,sd){const previousLast=ball.last;_slideHitPenaltyAddedTime(p,sd);notePenaltyOtherTouch(previousLast);};
+const _kickPenaltyAddedTime=kick;
+kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
+  const penaltyTouch=ball.pen&&p!==ball.penaltyKeeper;
+  _kickPenaltyAddedTime(p,vx,vy,vz,spin,rcv,tx,ty,mode);
+  if(penaltyTouch)ball.penaltyOtherPlayerTouched=true;
+};
+const _endHalfPenaltyAddedTime=endHalf;
+endHalf=function(){
+  const keeperRetake=!!(ball.pen&&PITCH11Law.penaltyKeeperDecision({
+    keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,
+    impactedKicker:ball.penaltyKeeperImpactedKicker
+  })==='retake');
+  const decision=PITCH11Law.penaltyAdditionalTimeDecision({
+    penaltyRestart:!!(S.rs&&S.rs.kind==='pen'),
+    retakePending:!!(S.penaltyRetake||ball.penaltyRetakePending),
+    keeperRetake,penaltyInFlight:!!ball.pen,
+    otherPlayerTouched:!!ball.penaltyOtherPlayerTouched
+  });
+  if(decision==='defer'){S.penaltyExtraTime=true;S.clock=plen();return;}
+  if(S.penaltyExtraTime){S.penaltyExtraTime=false;S.clock=plen();}
+  _endHalfPenaltyAddedTime();
 };
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
