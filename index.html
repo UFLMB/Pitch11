@@ -5048,6 +5048,7 @@ function issueAdvantageCaution(p){
 }
 const _whistleStopPendingCard=whistleStop;
 whistleStop=function(sec,big,sub,fn,hurt){
+  if(S.adv&&(S.adv.dogso||S.adv.cardOnFailure)){issueAdvantageCaution(S.adv.offender);S.adv=null;}
   if(S.pendingCard){issueAdvantageCaution(S.pendingCard.player);S.pendingCard=null;}
   _whistleStopPendingCard(sec,big,sub,fn,hurt);
 };
@@ -5061,6 +5062,7 @@ const _goalPendingAdvantageCard=goal;
 goal=function(dr){S.pendingCard=null;_goalPendingAdvantageCard(dr);};
 const _endHalfPendingAdvantageCard=endHalf;
 endHalf=function(){
+  if(S.adv){S.clock=plen();return;}
   if(S.pendingCard){issueAdvantageCaution(S.pendingCard.player);S.pendingCard=null;}
   _endHalfPendingAdvantageCard();
 };
