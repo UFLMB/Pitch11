@@ -494,3 +494,11 @@ test("Law 10 equalises team numbers immediately after a shoot-out sending-off", 
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
   assert.match(source, /q\.soExcluded=true/);
 });
+
+
+test("Law 10 replaces a sent-off shoot-out goalkeeper with an eligible player and then equalises numbers", () => {
+  assert.match(source, /PITCH11Law\.shootoutReplacementGoalkeeper\(P,p\.team\)/);
+  assert.match(source, /const wasShootoutGoalkeeper=!!\(S\.so&&p&&p\.gk&&c>1/);
+  assert.match(source, /GK\[p\.team\]=replacement/);
+  assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
+});
