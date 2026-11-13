@@ -2382,7 +2382,7 @@ const _stadiumTackle=tryTackle;tryTackle=function(p,c){
   if(p.tcd>cd+.5&&S.mode==='play')emitStadiumEvent(r?'tackleWon':'tackleMissed');
   return r;
 };
-const _stadiumFoul=foul;foul=function(p,o,b){_stadiumFoul(p,o,b);emitStadiumEvent('foul');};
+const _stadiumFoul=foul;foul=function(p,o,b,context){_stadiumFoul(p,o,b,context);emitStadiumEvent('foul');};
 const _stadiumCard=giveCard;giveCard=function(p,c){_stadiumCard(p,c);emitStadiumEvent(c===1?'yellowCard':'redCard');};
 const _stadiumOffside=callOffside;callOffside=function(p){emitStadiumEvent('offside');_stadiumOffside(p);};
 const _stadiumOut=outOfPlay;outOfPlay=function(){_stadiumOut();emitStadiumEvent('restartAwarded');};
@@ -3622,9 +3622,9 @@ const _wsR=whistleStop;whistleStop=function(sec,big,sub,fn,hurt){_wsR(sec,big,su
   else if(REF.card&&REF.card.t>0)rDo('whistle',.5,0,{pose:'card',t:2.2,next:{pose:'point',t:Math.max(.5,sec-2.7),pa:ang}});
   else if(big==='FOUL'||big==='PENALTY'||big==='OFFSIDE'||big==='NO ADVANTAGE')rDo('whistle',.5,ang,{pose:'point',t:hold});
   else rDo('whistle',.5);};
-const _foR=foul;foul=function(p,o,b){REF.awT=o.team;const st=G.rf.strict;
+const _foR=foul;foul=function(p,o,b,context){REF.awT=o.team;const st=G.rf.strict;
   if(st===0&&Math.random()<.3&&!(S.rs&&S.rs.kind==='pen')){rDo('adv',1,0);msg('PLAY ON','',1);return;}
-  _foR(p,o,b);
+  _foR(p,o,b,context);
   if(st===2&&S.mode==='whistle'&&p&&!p.out&&!(S.card&&S.card.t>2.4)&&Math.random()<.3){if(++p.yc>=2){giveCard(p,3);queueMinimumPlayerForfeit(p);finishMinimumPlayerForfeit();}else giveCard(p,1);}};
 const _gcR=giveCard;giveCard=function(p,c){const px=p.x,py=p.y,old=S.card;_gcR(p,c);if(S.card===old||!G.rf.show)return;REF.card={c:c===1?'#ffd400':'#e5342b',px,py,t:3.2};};
 const _coR=callOffside;callOffside=function(p){REF.awT=1-p.team;const a=REF.ar[p.y<CY?0:1];a.fup=2.6;a.fa=dirOf(1-p.team)>0?0:Math.PI;_coR(p);};
@@ -4771,7 +4771,7 @@ function mvFTS(){const w=winner26();for(let i=0;i<22;i++){const p=P[i];if(p.out)
   const a=i*2.4,r=26+(i%4)*14,d=scWalk(p,CX+Math.cos(a)*r,CY+Math.sin(a)*r,70,CX,CY);   // winners rush to the centre circle and celebrate
   if(d<6&&!(p.at>0))setAct(p,5,0);}}
 /* --- triggers --- */
-const _fo26=foul;foul=function(p,o,b){FL26.p=p;FL26.o=o;try{_fo26(p,o,b);}finally{FL26.p=FL26.o=null;}};
+const _fo26=foul;foul=function(p,o,b,context){FL26.p=p;FL26.o=o;try{_fo26(p,o,b,context);}finally{FL26.p=FL26.o=null;}};
 const _of26=callOffside;callOffside=function(p){FL26.p=p;FL26.o=null;try{_of26(p);}finally{FL26.p=FL26.o=null;}};
 const _ws26=whistleStop;whistleStop=function(sec,big,sub,fn,hurt){
   _ws26(sec,big,sub,fn,hurt);
