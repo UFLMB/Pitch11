@@ -40,7 +40,7 @@ test("offside exemptions are limited to throw-ins, corners and goal kicks", () =
 });
 
 test("opponents stay two metres from a throw-in", () => {
-  assert.match(source, /\{ko:91\.5,throw:20,gk:91\.5\}/);
+  assert.match(source, /\{ko:91\.5,throw:20,gk:91\.5,drop:40\}/);
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
@@ -351,4 +351,11 @@ test("Law 10 prevents a goalkeeper throw from scoring directly while preserving 
   assert.match(source, /goalkeeperThrowGoalDecision/);
   assert.match(source, /releasedByGoalkeeper:!!b\.gkReleasedBy/);
   assert.match(source, /lastTouchIsThrower:b\.gkReleasedBy===b\.last/);
+});
+
+
+test("Law 8 keeps every player except the dropped-ball recipient at least four metres away", () => {
+  assert.match(source, /ball\.x=ball\.px=x;ball\.y=ball\.py=y;S\.rs\.r=40/);
+  assert.match(source, /drop:40/);
+  assert.match(source, /rs\.kind==='drop'\?false/);
 });

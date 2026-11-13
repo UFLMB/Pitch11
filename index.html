@@ -973,6 +973,7 @@ function dropBall(t){
   const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t});
   const keeper=P[recipient.team*11],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
   spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
+  ball.x=ball.px=x;ball.y=ball.py=y;S.rs.r=40;                                                   // Law 8: everyone else remains at least 4 m away
 }
 function freeKick(t,x,y,ind){
   const d=dirOf(t),gx=d>0?PX1:PX0;
@@ -1015,14 +1016,18 @@ function restartClamp(){                                   // defenders keep 9.1
     return;
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // all players except the kicker stay in their own half
-  const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // opponents: 9.15 m; other restarts: applicable opponents only
+  const R=rs.r||({ko:91.5,throw:20,gk:91.5,drop:40})[rs.kind];if(!R)return;     // Law 8 dropped ball: all players except the recipient keep 4 m clear
   const attackDirection=dirOf(rs.team),ownGoalLine=attackDirection>0?PX0:PX1;
   const ownPenaltyRestart=rs.kind==='fk'&&(rs.x-ownGoalLine)*attackDirection>=0&&
     (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
-    if(p===rs.p||p.out||(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk))||(rs.wall&&rs.wall.includes(p)))continue;
-    const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
-    if(d<R){p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;}
+    const restrictedTeam=rs.kind==='drop'?false:(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk));
+    if(p===rs.p||p.out||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
+    let dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy);
+    if(d<R){
+      if(d<1e-6){const a=P.indexOf(p)*2.399963229728653;dx=Math.cos(a);dy=Math.sin(a);d=1;}
+      p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;
+    }
     if(rs.kind==='gk'||ownPenaltyRestart){
       const gx=ownGoalLine,dir=attackDirection;
       const legal=PITCH11Law.goalKickOpponentPosition({x:p.x,y:p.y,goalLine:gx,direction:dir,penaltyDepth:PEN_DEPTH,halfWidth:PEN_WIDTH/2,centerY:CY,clearance:12});
