@@ -5194,12 +5194,7 @@ function retakePenaltyForKeeperOffence(){
         msg('MATCH ABANDONED',KIT[keeper.team].name+' has fewer than seven players',3);
         clearPenaltyLineState();return;
       }
-      const replacement=firstIn(keeper.team);
-      if(replacement&&replacement!==keeper){
-        keeper.gk=false;replacement.gk=true;replacement.pos='GK';replacement.line=0;
-        replacement.st=mkStats('GK');GK[keeper.team]=replacement;
-        sanction+='; '+tag(replacement)+' becomes goalkeeper';
-      }
+      // Law 3's giveCard wrapper has already appointed the replacement goalkeeper.
     }
   }
   const taker=kicker&&!kicker.out&&!kicker.inj?kicker:firstIn(team);
