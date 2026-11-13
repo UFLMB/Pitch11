@@ -482,8 +482,10 @@ test('Law 10 includes temporarily off-field players in shoot-out eligibility and
   const order = law.shootoutOrder(players, 0);
   assert.equal(order.includes(players[10]), true, 'a temporarily off-field injured player remains eligible');
   const excluded = law.shootoutExclusions(players);
+  for (const player of excluded) { player.out = true; player.soExcluded = true; }
+  assert.equal(law.shootoutOrder(players, 0).includes(players[10]), false, 'a player excluded to equalise numbers cannot be reintroduced');
   const remaining = [0, 1].map(team => players.filter(p =>
-    p.team === team && (!p.out || p.tempOff === true || p.substitutionPending === true) && !excluded.includes(p)
+    p.team === team && p.soExcluded !== true && (!p.out || p.tempOff === true || p.substitutionPending === true)
   ));
   assert.equal(remaining[0].length, remaining[1].length);
   assert.equal(remaining[0].some(p => p.gk), true);
