@@ -567,8 +567,8 @@ test("Law 11 snapshots the second-last opponent from live player positions at th
 
 
 test("Law 8 uses the active replacement goalkeeper for a dropped ball inside the penalty area", () => {
-  const dropBall = source.match(/function dropBall\(t,recipientTeam\)\{[\\s\\S]*?\\n\}/);
+  const dropBall = source.match(/function dropBall\(t,recipientTeam\)\{[\s\S]*?\n\}/);
   assert.ok(dropBall, "production dropped-ball routine must be present");
-  assert.match(dropBall[0], /const keeper=GK\\[recipient\\.team\\]/);
-  assert.doesNotMatch(dropBall[0], /const keeper=P\\[recipient\\.team\\*11\\]/);
+  assert.match(dropBall[0], /const keeper=GK\[recipient\.team\]/);
+  assert.doesNotMatch(dropBall[0], /const keeper=P\[recipient\.team\*11\]/);
 });
