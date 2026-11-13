@@ -30,7 +30,6 @@
 
     const speed = Math.hypot(b.vx || 0, b.vy || 0);
     if (!b.owner && b.z <= 0 && Math.abs(b.vz || 0) < 0.5 && speed < 0.5) return 'miss';
-    if (!state.restartActive && state.elapsed >= state.maxSeconds) return 'miss';
     return 'live';
   }
 

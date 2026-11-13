@@ -60,8 +60,10 @@ test('a goalkeeper catch ends the kick but a parry leaves it live', () => {
 test('a post rebound remains live until it stops or leaves the field', () => {
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, x: 95, vx: -2 } }), 'live');
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, x: 95, y: 60.2, vx: 0 } }), 'miss');
-  assert.equal(law.shootoutDecision({ ...base, elapsed: 8, ball: { ...base.ball, x: 95 } }), 'miss');
-  assert.equal(law.shootoutDecision({ ...base, elapsed: 8, restartActive: true, ball: { ...base.ball, x: 95, owner: { team: 0 } } }), 'live');
+  assert.equal(law.shootoutDecision({ ...base, elapsed: 8, ball: { ...base.ball, x: 95, vx: 1 } }), 'live');
+  assert.equal(law.shootoutDecision({ ...base, elapsed: 30, ball: { ...base.ball, x: 95, vx: 1 } }), 'live');
+  assert.equal(law.shootoutDecision({ ...base, elapsed: 30, ball: { ...base.ball, x: 95, z: 0, vz: 0, vx: 0, vy: 0 } }), 'miss');
+  assert.equal(law.shootoutDecision({ ...base, elapsed: 30, restartActive: true, ball: { ...base.ball, x: 95, owner: { team: 0 } } }), 'live');
 });
 
 test('shootout teams are reduced to equal numbers without removing goalkeepers', () => {
