@@ -300,6 +300,7 @@
   function directRestartGoalDecision(state) {
     const s = state || {};
     if (!Number.isInteger(s.restartKickerTeam) || !Number.isInteger(s.scoringTeam)) return 'goal';
+    if (s.restartKind === 'drop') return s.restartKickerTeam === s.scoringTeam ? 'corner' : 'goal-kick';
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 

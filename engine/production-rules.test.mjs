@@ -44,7 +44,7 @@ test("opponents stay two metres from a throw-in", () => {
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
-  assert.match(source, /if\(rs&&rs\.p===p\)ball\.dbl=p/);
+  assert.match(source, /if\(rs&&rs\.p===p\)\{ball\.dbl=p;ball\.dblKind=rs\.kind;\}/);
   assert.match(source, /if\(p!==ball\.dbl\|\|ball\.last!==ball\.dbl\)ball\.dbl=null/);
   assert.doesNotMatch(source, /ball\.dblT/);
 });
@@ -378,6 +378,8 @@ test("Law 8 keeps every player except the dropped-ball recipient at least four m
 test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks, goal kicks and corners", () => {
   assert.match(source, /PITCH11Law\.directRestartGoalDecision\(/);
   assert.match(source, /restartKickerTeam:b\.dbl===b\.last&&b\.dbl\?b\.dbl\.team:null/);
+  assert.match(source, /ball\.dblKind=rs\.kind/);
+  assert.match(source, /restartKind:b\.dbl===b\.last&&b\.dbl\?b\.dblKind:null/);
   assert.match(source, /keeperThrowDecision==='goal'/);
 });
 
