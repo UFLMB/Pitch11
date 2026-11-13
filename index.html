@@ -57,7 +57,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
-  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
+  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],subExitRunners:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
 const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,px:CX,py:CY,pz:0};
 const P=[];
 for(let t=0;t<2;t++)for(let r=0;r<11;r++)P.push({team:t,role:r,gk:r===0,x:0,y:0,px:0,py:0,vx:0,vy:0,ix:0,iy:0,sp:false,face:0,turn:0,stam:1,
@@ -490,7 +490,7 @@ function touches(){                                        // a free ball is pic
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9;
   for(const p of P){
-    if(p.gk||p.out||p.kcd>0||p.stun>0||p===b.dbl)continue;
+    if(p.gk||p.out||p.substitutionExiting||p.kcd>0||p.stun>0||p===b.dbl)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
@@ -867,7 +867,7 @@ function setupKickoff(team){
   S.mode='kickoff';S.t=0;
 }
 function newMatch(){
-  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;S.subExits=[];S.pendingSubs=[];S.pendingPeriodAction=null;S.pendingSubsResume=false;
+  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;S.subExits=[];S.subExitRunners=[];S.pendingSubs=[];S.pendingPeriodAction=null;S.pendingSubsResume=false;
   applyTeam(0,G.club);applyTeam(1,M.opp);setupKickoff(0);
 }
 function nextPeriod(n){if(S.subExits.length){S.pendingPeriodAction=()=>nextPeriod(n);return;}S.half=n;S.clock=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
@@ -935,7 +935,7 @@ function celebrate(){
   const sc=S.scorer,gt=S.goalTeam,dr=dirOf(gt);
   for(const p of P){
     p.ix=p.iy=0;p.sp=false;
-    if(p.gk||p.out||p.team!==gt)continue;
+    if(p.gk||p.out||p.substitutionExiting||p.team!==gt)continue;
     if(p===sc){if(S.t<1.8)goTo(p,dr>0?PX1-20:PX0+20,sc.y<CY?PY0+25:PY1-25,true);}
     else if(sc){const dx=sc.x-p.x,dy=sc.y-p.y,d=Math.hypot(dx,dy);if(d>30){p.ix=dx/d;p.iy=dy/d;p.sp=true;}}
   }
@@ -1172,15 +1172,28 @@ function tickSubstitutionExits(){
       applySubstitution(p,e.bench,e.position);
       S.subExits.splice(i,1);
     }else if(exitDecision==='delay-substitute'){
-      p.out=true;p.substitutionExiting=false;p.substitutionPending=true;p.x=p.px=p.y=p.py=-400;
-      p.vx=p.vy=p.ix=p.iy=0;
+      p.substitutionPending=true;
+      S.subExitRunners.push(e);
       S.pendingSubs.push({player:p,bench:e.bench,position:e.position,team:e.team,running:S.mode==='play',elapsed:0});
       S.subExits.splice(i,1);
-      msg('SUBSTITUTE DELAYED','May enter at the first stoppage after one minute',2.2);
+      msg('SUBSTITUTE DELAYED','Player must still leave; substitute waits one minute',2.2);
     }
   }
   if(!S.subExits.length&&S.pendingSubsResume){S.pendingSubsResume=false;S.mode=S.ret;}
   if(!S.subExits.length&&S.pendingPeriodAction){const fn=S.pendingPeriodAction;S.pendingPeriodAction=null;fn();}
+}
+function tickSubExitRunners(){
+  for(let i=S.subExitRunners.length-1;i>=0;i--){
+    const e=S.subExitRunners[i],p=e.player;
+    if(!p){S.subExitRunners.splice(i,1);continue;}
+    const dx=e.target.x-p.x,dy=e.target.y-p.y,d=Math.hypot(dx,dy),step=28*DT;
+    if(d>step){p.x+=dx/d*step;p.y+=dy/d*step;p.px=p.x;p.py=p.y;}
+    else{
+      p.x=p.px=p.y=p.py=-400;
+      p.out=true;p.substitutionExiting=false;p.vx=p.vy=p.ix=p.iy=0;
+      S.subExitRunners.splice(i,1);
+    }
+  }
 }
 function startPendingSubstitutionClocks(){
   for(const q of S.pendingSubs)if(!q.running){q.running=true;q.elapsed=0;}
@@ -1192,7 +1205,7 @@ function tickPendingSubstitutionClocks(){
 function completeEligiblePendingSubs(){
   for(let i=S.pendingSubs.length-1;i>=0;i--){
     const q=S.pendingSubs[i];
-    if(PITCH11Law.timeLimitedSubstitutionEntryDecision({elapsedSinceRestart:q.elapsed,firstStoppage:true})!=='allow')continue;
+    if(PITCH11Law.timeLimitedSubstitutionEntryDecision({elapsedSinceRestart:q.elapsed,firstStoppage:true,playerExited:q.player&&q.player.out===true})!=='allow')continue;
     applySubstitution(q.player,q.bench,q.position);
     S.pendingSubs.splice(i,1);
     msg('SUBSTITUTE ENTERED','One-minute delay completed',1.8);
@@ -1296,7 +1309,7 @@ function update(){
   if(S.card&&S.card.t>0)S.card.t-=DT;
   if(toast.t>0)toast.t-=DT;
   if(H>W)return;                                           // portrait: paused
-  tickSubstitutionExits();tickPendingSubstitutionClocks();
+  tickSubstitutionExits();tickSubExitRunners();tickPendingSubstitutionClocks();
   if(FX.hit>0){FX.hit--;camUpdate();return;}               // brief hit-stop on big tackles
   FX.shake=Math.max(0,FX.shake-0.8);
   updateInput();gestureTick();
@@ -1654,7 +1667,7 @@ function drawSubs(){
     const p=P[r],y=y0+r*rh,x=W*0.06,w=W*0.44;
     UI.r.push({x,y,w,h:rh-2,fn:()=>{if(!p.out){S.sel=p;S.pv=p;}}});
     ctx.fillStyle=S.sel===p?'rgba(255,230,0,.35)':'rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);
-    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+(S.subExits.some(e=>e.player===p)?'  LEAVING':p.substitutionPending?'  SUB DELAYED':p.tempOff?'  OFF FIELD':p.out?'  SENT OFF':p.inj?'  INJURED':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
+    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+((S.subExits.some(e=>e.player===p)||S.subExitRunners.some(e=>e.player===p))?'  LEAVING':p.substitutionPending?'  SUB DELAYED':p.tempOff?'  OFF FIELD':p.out?'  SENT OFF':p.inj?'  INJURED':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
     ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32,rh*0.35);
     ctx.fillStyle=p.fat>0.5?'#ff6040':p.fat>0.3?'#ffc040':'#5cff8a';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32*(1-p.fat),rh*0.35);
   }
@@ -1664,7 +1677,7 @@ function drawSubs(){
     ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);fit((bn.nm||'#'+bn.num)+'  '+bn.pos+'  '+ovr(bn.st),x+8,y+rh/2,w-16,fs,'#fff','left');
   });
   ctx.textAlign='center';
-  if(S.subExits.length)txt('PLAYERS LEAVING · '+Math.max(0,10-Math.max(...S.subExits.map(e=>e.elapsed))).toFixed(1)+'s',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.pendingSubs.length)txt('SUBSTITUTE DELAYED · 1 MINUTE',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
+  if(S.subExits.length)txt('PLAYERS LEAVING · '+Math.max(0,10-Math.max(...S.subExits.map(e=>e.elapsed))).toFixed(1)+'s',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subExitRunners.length)txt('PLAYER STILL EXITING · SUBSTITUTE DELAYED',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.pendingSubs.length)txt('SUBSTITUTE DELAYED · 1 MINUTE',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
   drawStats(S.pv||S.sel);
   ubtn(W*0.4,H*0.84,W*0.22,H*0.11,'RESUME',resumeSubs,'rgba(255,230,0,.35)');UI.def=resumeSubs;
   ubtn(W*0.04,H*0.84,W*0.22,H*0.11,M.conf?'TAP TO CONFIRM':'QUIT MATCH',()=>{if(M.conf)quitMatch();else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
@@ -2655,6 +2668,7 @@ function slideFoul(p,q,tq,behind){
   p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind,foulSanction,penaltyKicker);
 }
 function slideHit(p,sd){
+  if(p.substitutionExiting)return;
   const K=TUNING.df.sl,b=ball,o=b.owner,def=p.st.def,rch=K.reach+K.rd*def,tq=1-clamp(Math.abs(sd.t-K.ideal)/0.25,0,1);   // tq: timing quality, 1 = contact at the ideal moment
   if(!S.prac&&p.off&&Math.hypot(b.x-p.x,b.y-p.y)<rch){callOffside(p);return;}
   if(o&&o.team!==p.team&&!o.gk&&b.protect<=0){
@@ -3302,7 +3316,7 @@ MS.layout=function(){
 function bodyCollide(){                                    // the ball bounces off bodies it cannot be controlled by (blocked passes, keepers, stunned players)
   const b=ball;if(b.owner||b.z>16||H>W)return;
   for(const p of P){
-    if(p.out)continue;
+    if(p.out||p.substitutionExiting)continue;
     if(p===b.last&&p.kcd>0.1)continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
