@@ -889,12 +889,17 @@ function startShootout(){
   if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
-  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1,flipEnds:Math.random()<0.5?true:false};for(const p of P){p.shootoutPenaltyLineOffences=0;p.shootoutYC=0;}S.half=5;S.clock=0;soNext();
+  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1,flipEnds:Math.random()<0.5?true:false,taken:[[],[]]};for(const p of P){p.shootoutPenaltyLineOffences=0;p.shootoutYC=0;}S.half=5;S.clock=0;soNext();
 }
 function soNext(){
-  const so=S.so,t=PITCH11Law.shootoutNextTeam(so.k[0].length,so.k[1].length,so.firstTeam),list=[];
-  list.push(...PITCH11Law.shootoutOrder(P,t));
-  so.team=t;so.shooter=list[so.k[t].length%list.length];so.live=true;so.t=0;
+  const so=S.so,t=PITCH11Law.shootoutNextTeam(so.k[0].length,so.k[1].length,so.firstTeam);
+  if(!so.taken)so.taken=[[],[]];
+  so.team=t;so.shooter=PITCH11Law.shootoutNextKicker(P,t,so.taken[t]);
+  if(!so.shooter){S.mode='full';S.t=0;return;}
+  const eligible=PITCH11Law.shootoutOrder(P,t);
+  if(so.taken[t].filter(p=>eligible.includes(p)).length>=eligible.length)so.taken[t]=[];
+  so.shooter=PITCH11Law.shootoutNextKicker(P,t,so.taken[t]);
+  so.live=true;so.t=0;
   setupPen(t,so.shooter,true);S.mode='play';S.t=0;
 }
 const ballBeyondLine=(value,line,direction)=>direction>0?value>line+BR:value<line-BR;
@@ -910,7 +915,7 @@ function soRules(){
   if(decision==='miss'){soResult(false);return;}
 }
 function soResult(ok){
-  const so=S.so;so.live=false;so.k[so.team].push(ok);
+  const so=S.so;so.live=false;so.k[so.team].push(ok);if(!so.taken)so.taken=[[],[]];if(so.shooter&&!so.taken[so.team].includes(so.shooter))so.taken[so.team].push(so.shooter);
   if(ok)burst(ball.x,ball.y,so.team);
   whistleStop(1.8,ok?'GOAL!':'NO GOAL','',soAfter);
 }

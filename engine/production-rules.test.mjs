@@ -79,9 +79,9 @@ test("offside position is recorded for shots as well as passes", () => {
 });
 
 
-test("penalty shootout rotation includes eligible goalkeepers", () => {
-  assert.match(source, /list\.push\(\.\.\.PITCH11Law\.shootoutOrder\(P,t\)\)/);
-  assert.match(source, /PITCH11Law\.shootoutOrder/);
+test("penalty shootout rotation includes eligible goalkeepers and tracks repeat-kick eligibility", () => {
+  assert.match(source, /PITCH11Law\.shootoutOrder\(P,t\)/);
+  assert.match(source, /PITCH11Law\.shootoutNextKicker\(P,t,so\.taken\[t\]\)/);
 });
 
 
@@ -501,4 +501,11 @@ test("Law 10 replaces a sent-off shoot-out goalkeeper with an eligible player an
   assert.match(source, /const wasShootoutGoalkeeper=!!\(S\.so&&p&&p\.gk&&c>1/);
   assert.match(source, /GK\[p\.team\]=replacement/);
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
+});
+
+
+test("Law 10 tracks shoot-out kickers by player so eligibility changes cannot cause premature repeat kicks", () => {
+  assert.match(source, /taken:\[\[\],\[\]\]/);
+  assert.match(source, /PITCH11Law\.shootoutNextKicker\(P,t,so\.taken\[t\]\)/);
+  assert.match(source, /so\.taken\[so\.team\]\.push\(so\.shooter\)/);
 });
