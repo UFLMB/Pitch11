@@ -359,3 +359,10 @@ test("Law 8 keeps every player except the dropped-ball recipient at least four m
   assert.match(source, /drop:40/);
   assert.match(source, /rs\.kind==='drop'\?false/);
 });
+
+
+test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks, goal kicks and corners", () => {
+  assert.match(source, /PITCH11Law\.directRestartGoalDecision\(/);
+  assert.match(source, /restartKickerTeam:b\.dbl&&b\.dbl\.team/);
+  assert.match(source, /keeperThrowDecision==='goal'/);
+});
