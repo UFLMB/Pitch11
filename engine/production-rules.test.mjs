@@ -410,10 +410,10 @@ test("Law 5 removes assessed outfield players for one running minute and restore
   assert.match(source, /assessment\.foulCautionOrSendingOff=!!\(assessment\.foulCautionOrSendingOff\|\|p\.law5FoulSanction\)/);
   assert.match(source, /assessment\.penaltyKicker=!!\(assessment\.penaltyKicker\|\|p\.law5PenaltyKicker\)/);
   assert.match(source, /hurt\.inj=true;hurt\.law5FoulSanction=card>0;hurt\.law5AssessmentQuickly=card>0/);
-  assert.match(source, /assessment\.assessmentCompletedQuickly=!!\(assessment\.assessmentCompletedQuickly\|\|p\.law5AssessmentQuickly\)/);
   assert.match(source, /o\.inj=true/);
   assert.match(source, /if\(penaltyKicker\)o\.law5PenaltyKicker=true/);
   assert.match(source, /p\.tempOffStartedAt=gmin\(\)/);
+  assert.match(source, /restartWasLive=!!S\.rs/);
   assert.match(source, /p\.out=true/);
   assert.match(source, /function returnFromAssessment\(p,periodRestart\)/);
   assert.match(source, /PITCH11Law\.offFieldReturnDecision\(\{elapsedMinutes:gmin\(\)-p\.tempOffStartedAt\}\)/);
