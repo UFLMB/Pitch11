@@ -104,6 +104,14 @@ test('goalkeeper hand control expires only after eight full seconds', () => {
   assert.equal(law.goalkeeperHoldExpired(NaN), false);
 });
 
+test('goalkeeper time-wasting is cautioned only after a repeated offence', () => {
+  assert.equal(law.goalkeeperHoldSanction(0), 'none');
+  assert.equal(law.goalkeeperHoldSanction(1), 'none');
+  assert.equal(law.goalkeeperHoldSanction(2), 'yellow');
+  assert.equal(law.goalkeeperHoldSanction(3), 'second-yellow');
+  assert.equal(law.goalkeeperHoldSanction(NaN), 'none');
+});
+
 
 test('dropped balls in either penalty area go to the defending goalkeeper', () => {
   const decide = law.droppedBallRecipient;
