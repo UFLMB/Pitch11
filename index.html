@@ -57,7 +57,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
-  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null};
+  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],pendingSubs:[],pendingPeriodAction:null};
 const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,px:CX,py:CY,pz:0};
 const P=[];
 for(let t=0;t<2;t++)for(let r=0;r<11;r++)P.push({team:t,role:r,gk:r===0,x:0,y:0,px:0,py:0,vx:0,vy:0,ix:0,iy:0,sp:false,face:0,turn:0,stam:1,
@@ -866,11 +866,11 @@ function setupKickoff(team){
   S.mode='kickoff';S.t=0;
 }
 function newMatch(){
-  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;
+  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;S.subExits=[];S.pendingSubs=[];S.pendingPeriodAction=null;
   applyTeam(0,G.club);applyTeam(1,M.opp);setupKickoff(0);
 }
-function nextPeriod(n){S.half=n;S.clock=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
-function brk(title,btn,fn){S.mode='half';S.t=0;S.brk={title,btn,fn};aiSubs(1,2);}
+function nextPeriod(n){if(S.subExits.length){S.pendingPeriodAction=()=>nextPeriod(n);return;}S.half=n;S.clock=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
+function brk(title,btn,fn){completeEligiblePendingSubs();S.mode='half';S.t=0;S.brk={title,btn,fn};aiSubs(1,2);}
 function endHalf(){
   for(const p of P){p.ix=p.iy=0;p.sp=false;}I.shoot=false;I.chargeT=0;S.adv=null;S.rs=null;
   const tie=S.score[0]===S.score[1],h=S.half;
@@ -882,6 +882,7 @@ function endHalf(){
 }
 /* --- penalty shootout: 5 kicks each, early finish, then sudden death --- */
 function startShootout(){
+  if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
   S.so={k:[[],[]],live:false,t:0,team:0,shooter:null};S.half=5;S.clock=0;soNext();
@@ -940,6 +941,7 @@ function celebrate(){
 }
 /* --- stoppages --- */
 function whistleStop(sec,big,sub,fn,hurt){                 // freeze play, show a message, then run fn
+  completeEligiblePendingSubs();
   S.subWindowUsed=[false,false];
   S.mode='whistle';S.t=0;S.wt=sec;S.after=fn;S.inj=hurt||null;S.adv=null;msg(big,sub,sec);
   if(hurt)hurt.down=true;
@@ -1104,17 +1106,94 @@ function randInjury(){
   whistleStop(3,'INJURY',tag(p)+' is down',()=>dropBall(t),p);
 }
 /* --- substitutions (5 per team, bench of 7) --- */
+function applySubstitution(p,bn,position){
+  if(!p||!bn)return false;
+  p.num=bn.num;p.nm=bn.nm||'';p.skin=bn.skin;p.st=bn.st;p.winded=false;p.stam=1;p.fat=0;p.yc=0;
+  p.inj=p.down=p.limp=false;p.out=false;p.substitutionPending=false;
+  p.vx=p.vy=p.ix=p.iy=0;
+  p.x=p.px=position.x;p.y=p.py=position.y;
+  msg('SUBSTITUTION',KIT[p.team].name+' #'+bn.num+' on',1.6);
+  return true;
+}
+function substitutionExitTarget(p){
+  const candidates=[
+    {x:PX0,y:clamp(p.y,PY0,PY1)},
+    {x:PX1,y:clamp(p.y,PY0,PY1)},
+    {x:clamp(p.x,PX0,PX1),y:PY0},
+    {x:clamp(p.x,PX0,PX1),y:PY1}
+  ];
+  let best=candidates[0],distance=Infinity;
+  for(const q of candidates){const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<distance){distance=d;best=q;}}
+  return {x:best.x,y:best.y,distance};
+}
 function doSub(p,bn){
   const t=p.team;
   const halftime=S.mode==='half'||(S.mode==='subs'&&S.ret==='half');
   const inStoppage=S.mode==='whistle'||(S.mode==='subs'&&S.ret==='whistle');
   const eligibility=PITCH11Law.substitutionEligibility({used:S.subs[t],windows:S.subWindows[t],inStoppage,halftime,windowUsed:S.subWindowUsed[t]});
-  if(p.out||!eligibility.allowed||p.gk!==(bn.pos==='GK'))return false;
+  if(p.out||!eligibility.allowed||p.gk!==(bn.pos==='GK')||BENCH[t].indexOf(bn)<0)return false;
   if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
-  p.num=bn.num;p.nm=bn.nm||'';p.skin=bn.skin;p.st=bn.st;p.winded=false;p.stam=1;p.fat=0;p.yc=0;p.inj=p.down=p.limp=false;
-  BENCH[t].splice(BENCH[t].indexOf(bn),1);S.subs[t]++;
-  msg('SUBSTITUTION',KIT[t].name+' #'+bn.num+' on',1.6);
+  S.subs[t]++;
+  BENCH[t].splice(BENCH[t].indexOf(bn),1);
+  const position={x:p.x,y:p.y},exit=substitutionExitTarget(p),exitSeconds=exit.distance/28;
+  // Injury/safety exceptions and a goalkeeper replacement that cannot wait for a delayed entry.
+  if(p.inj||p.safetyExitException){
+    applySubstitution(p,bn,position);return true;
+  }
+  if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
+    giveCard(p,p.yc>=1?3:1);
+    applySubstitution(p,bn,position);return true;
+  }
+  // All substitutions signalled in one stoppage share the ten-second deadline from the final signal.
+  for(const e of S.subExits)e.elapsed=0;
+  S.subExits.push({player:p,bench:bn,position,target:exit,elapsed:0,team:t,exitSeconds});
+  p.inj=p.down=p.limp=false;
+  msg('SUBSTITUTION','Player leaving at nearest touchline',1.2);
   return true;
+}
+function tickSubstitutionExits(){
+  if(!S.subExits.length)return;
+  for(let i=S.subExits.length-1;i>=0;i--){
+    const e=S.subExits[i],p=e.player;
+    if(!p||!e.bench){S.subExits.splice(i,1);continue;}
+    e.elapsed+=DT;
+    const dx=e.target.x-p.x,dy=e.target.y-p.y,d=Math.hypot(dx,dy);
+    const step=28*DT;
+    if(d>step){p.x+=dx/d*step;p.y+=dy/d*step;p.px=p.x;p.py=p.y;}
+    else{p.x=p.px=e.target.x;p.y=p.py=e.target.y;}
+    const remaining=Math.max(0,d-step);
+    const exitDecision=PITCH11Law.timeLimitedSubstitutionExitDecision({
+      elapsedSeconds:e.elapsed,
+      nearOrCrossingExit:remaining<=12
+    });
+    if(d<=step||exitDecision==='allow'){
+      applySubstitution(p,e.bench,e.position);
+      S.subExits.splice(i,1);
+    }else if(exitDecision==='delay-substitute'){
+      p.out=true;p.substitutionPending=true;p.x=p.px=p.y=p.py=-400;
+      p.vx=p.vy=p.ix=p.iy=0;
+      S.pendingSubs.push({player:p,bench:e.bench,position:e.position,team:e.team,running:false,elapsed:0});
+      S.subExits.splice(i,1);
+      msg('SUBSTITUTE DELAYED','May enter at the first stoppage after one minute',2.2);
+    }
+  }
+  if(!S.subExits.length&&S.pendingPeriodAction){const fn=S.pendingPeriodAction;S.pendingPeriodAction=null;fn();}
+}
+function startPendingSubstitutionClocks(){
+  for(const q of S.pendingSubs)if(!q.running){q.running=true;q.elapsed=0;}
+}
+function tickPendingSubstitutionClocks(){
+  if(S.mode!=='play')return;
+  for(const q of S.pendingSubs)if(q.running)q.elapsed+=DT;
+}
+function completeEligiblePendingSubs(){
+  for(let i=S.pendingSubs.length-1;i>=0;i--){
+    const q=S.pendingSubs[i];
+    if(PITCH11Law.timeLimitedSubstitutionEntryDecision({elapsedSinceRestart:q.elapsed,firstStoppage:true})!=='allow')continue;
+    applySubstitution(q.player,q.bench,q.position);
+    S.pendingSubs.splice(i,1);
+    msg('SUBSTITUTE ENTERED','One-minute delay completed',1.8);
+  }
 }
 function aiSubs(t,max,q){                                  // swap injured / tired players
   let n=0;
@@ -1214,6 +1293,7 @@ function update(){
   if(S.card&&S.card.t>0)S.card.t-=DT;
   if(toast.t>0)toast.t-=DT;
   if(H>W)return;                                           // portrait: paused
+  tickSubstitutionExits();tickPendingSubstitutionClocks();
   if(FX.hit>0){FX.hit--;camUpdate();return;}               // brief hit-stop on big tackles
   FX.shake=Math.max(0,FX.shake-0.8);
   updateInput();gestureTick();
@@ -1221,14 +1301,14 @@ function update(){
   if(m==='menu'||m==='half'||m==='full'||m==='subs'){camUpdate();endEdges();return;}
   if(m==='kickoff'){
     stepBall();
-    if(S.t>1.5){S.mode='play';S.t=0;}
+    if(S.t>1.5){S.mode='play';S.t=0;startPendingSubstitutionClocks();}
     camUpdate();endEdges();return;
   }
   if(m==='whistle'){
     camUpdate();
     if(S.t>S.wt){
       if(S.inj){const q=S.inj;S.inj=null;if(injured(q)){endEdges();return;}}
-      S.mode='play';S.t=0;
+      S.mode='play';S.t=0;startPendingSubstitutionClocks();
       if(!S.so&&S.half===2&&gmin()>60&&Math.random()<0.35)aiSubs(1,1);
       const f=S.after;S.after=null;if(f)f();
     }
@@ -1580,7 +1660,7 @@ function drawSubs(){
     ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);fit((bn.nm||'#'+bn.num)+'  '+bn.pos+'  '+ovr(bn.st),x+8,y+rh/2,w-16,fs,'#fff','left');
   });
   ctx.textAlign='center';
-  if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
+  if(S.subExits.length)txt('PLAYERS LEAVING · '+Math.max(0,10-Math.max(...S.subExits.map(e=>e.elapsed))).toFixed(1)+'s',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.pendingSubs.length)txt('SUBSTITUTE DELAYED · 1 MINUTE',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
   drawStats(S.pv||S.sel);
   ubtn(W*0.4,H*0.84,W*0.22,H*0.11,'RESUME',resumeSubs,'rgba(255,230,0,.35)');UI.def=resumeSubs;
   ubtn(W*0.04,H*0.84,W*0.22,H*0.11,M.conf?'TAP TO CONFIRM':'QUIT MATCH',()=>{if(M.conf)quitMatch();else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
