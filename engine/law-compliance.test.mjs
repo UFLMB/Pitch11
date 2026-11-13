@@ -29,6 +29,13 @@ test('an accidental second touch in a shoot-out retakes a scored kick but makes 
   assert.equal(law.shootoutDecision({ ...base, doubleTouch: true, ball: { ...base.ball, x: 95, y: 60.2, vx: 0 } }), 'miss');
 });
 
+test('a restart kicker second contact is only detected when the ball is physically approaching', () => {
+  assert.equal(law.isRestartKickerSecondContact({ isRestartKicker: true, approaching: true }), true);
+  assert.equal(law.isRestartKickerSecondContact({ isRestartKicker: true, approaching: false }), false);
+  assert.equal(law.isRestartKickerSecondContact({ isRestartKicker: false, approaching: true }), false);
+  assert.equal(law.isRestartKickerSecondContact({ isRestartKicker: true, approaching: undefined }), false);
+});
+
 test('Law 14 accidental double touch retakes a scored penalty and awards an indirect free kick otherwise', () => {
   assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: false, goalScored: false }), 'continue');
   assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: true, goalScored: true }), 'retake');
