@@ -486,3 +486,11 @@ test("Law 10 positions the kicker's goalkeeper on the goal-line/penalty-area bou
   assert.match(source, /PITCH11Law\.shootoutKickerGoalkeeperPosition\(/);
   assert.match(source, /penaltyHalfWidth:PEN_WIDTH\/2/);
 });
+
+
+test("Law 10 equalises team numbers immediately after a shoot-out sending-off", () => {
+  assert.match(source, /const _giveCardShootoutEqualisation=giveCard/);
+  assert.match(source, /if\(!shootoutSendOff\)return/);
+  assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
+  assert.match(source, /q\.soExcluded=true/);
+});
