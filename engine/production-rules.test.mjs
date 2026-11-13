@@ -9,6 +9,42 @@ assert.ok(scriptMatch, "production game script must exist");
 const source = scriptMatch[1];
 const lawSource = readFileSync(new URL("./law-compliance.js", import.meta.url), "utf8");
 
+test("Law 4 equipment inspection rejects missing compulsory kit and unsafe items", () => {
+  const context = {};
+  vm.runInNewContext(lawSource, context, { filename: "law-compliance.js" });
+  const law = context.PITCH11Law;
+  assert.ok(law, "Law 4 helpers must be exposed to the production runtime");
+  const compliant = {
+    shirtWithSleeves: true, shorts: true, socks: true,
+    shinguards: true, shinguardsCovered: true, footwear: true,
+    dangerousEquipment: false, uncoveredJewellery: false,
+    playerElectronicEquipment: false
+  };
+  assert.deepEqual(Array.from(law.playerEquipmentIssues(compliant)), []);
+  assert.equal(law.equipmentInspectionDecision(compliant), "allow");
+
+  const incomplete = { ...compliant, shirtWithSleeves: false, shinguardsCovered: false, footwear: false };
+  assert.deepEqual(Array.from(law.playerEquipmentIssues(incomplete)), ["shirt", "shinguards", "footwear"]);
+  assert.equal(law.equipmentInspectionDecision(incomplete), "replace-item");
+
+  const unsafe = { ...compliant, dangerousEquipment: true, uncoveredJewellery: true, playerElectronicEquipment: true };
+  assert.deepEqual(Array.from(law.playerEquipmentIssues(unsafe)), [
+    "dangerous-equipment", "uncovered-jewellery", "electronic-equipment"
+  ]);
+  assert.equal(law.equipmentInspectionDecision(unsafe), "remove-item");
+});
+
+test("Law 4 equipment checks are wired into match start and substitution entry", () => {
+  const inspection = source.match(/function inspectMatchEquipment\(\)\s*\{[\s\S]*?\n\}/);
+  assert.ok(inspection, "the match-start equipment inspection must exist");
+  assert.match(inspection[0], /PITCH11Law\.playerEquipmentIssues\(p\.equipment\)/);
+  assert.match(inspection[0], /p\.equipment\.inspected=issues\.length===0/);
+  assert.match(inspection[0], /if\(failed\)\{S\.mode='full'/);
+  assert.match(source, /applyTeam\(0,G\.club\);applyTeam\(1,M\.opp\);if\(!inspectMatchEquipment\(\)\)return;setupKickoff\(0\)/);
+  assert.match(source, /PITCH11Law\.equipmentInspectionDecision\(incomingEquipment\)/);
+  assert.match(source, /if\(equipmentDecision!=='allow'\)/);
+});
+
 test("production browser runtime parses without syntax errors", () => {
   assert.doesNotThrow(() => new vm.Script(source, { filename: "index.html:inline-script" }));
 });
