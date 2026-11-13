@@ -7,6 +7,7 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const scriptMatch = html.match(/<script>\s*([\s\S]*?)<\/script>/);
 assert.ok(scriptMatch, "production game script must exist");
 const source = scriptMatch[1];
+const lawSource = readFileSync(new URL("./law-compliance.js", import.meta.url), "utf8");
 
 test("production browser runtime parses without syntax errors", () => {
   assert.doesNotThrow(() => new vm.Script(source, { filename: "index.html:inline-script" }));
@@ -469,7 +470,7 @@ test("Law 5 removes assessed outfield players for one running minute and restore
 
 
 test("Law 3 sends off an already-cautioned goalkeeper who exceeds the substitution exit deadline", () => {
-  const helper = law.match(/function goalkeeperSubstitutionDelayDecision\(state\)\s*\{[\s\S]*?\n  \}/);
+  const helper = lawSource.match(/function goalkeeperSubstitutionDelayDecision\(state\)\s*\{[\s\S]*?\n  \}/);
   assert.ok(helper, "goalkeeper substitution delay decision must be defined");
   const isolated = new Function("return (" + helper[0].replace("function goalkeeperSubstitutionDelayDecision(state)", "function (state)") + ");")();
   assert.equal(isolated({ exceededTenSeconds: false, alreadyCautioned: true }), "continue");
