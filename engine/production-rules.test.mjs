@@ -480,3 +480,9 @@ test("Law 10 independently selects the shoot-out end and first-kicking team", ()
   assert.match(source, /firstTeam:Math\.random\(\)<0\.5\?0:1/);
   assert.match(source, /PITCH11Law\.shootoutDirection\(t,S\.so\.flipEnds\)/);
 });
+
+
+test("Law 10 positions the kicker's goalkeeper on the goal-line/penalty-area boundary intersection", () => {
+  assert.match(source, /PITCH11Law\.shootoutKickerGoalkeeperPosition\(/);
+  assert.match(source, /penaltyHalfWidth:PEN_WIDTH\/2/);
+});
