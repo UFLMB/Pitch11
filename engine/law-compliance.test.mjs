@@ -300,6 +300,14 @@ test('2026/27 Laws 15 and 16 require a referee countdown signal before reversing
 });
 
 
+test('Law 16 awards a delayed-goal-kick corner on the side nearest the original restart position', () => {
+  assert.equal(law.goalKickDelayCornerY({ restartY: 10, topY: 0, bottomY: 100 }), 0);
+  assert.equal(law.goalKickDelayCornerY({ restartY: 90, topY: 0, bottomY: 100 }), 100);
+  assert.equal(law.goalKickDelayCornerY({ restartY: 50, topY: 0, bottomY: 100 }), 0);
+  assert.equal(law.goalKickDelayCornerY({ restartY: NaN, topY: 0, bottomY: 100 }), 100);
+});
+
+
 test('Law 13 moves an attacking indirect free kick out of the opponents goal area', () => {
   const decide = state => ({ ...law.freeKickGoalAreaPosition(state) });
   assert.deepEqual(decide({ x: 980, y: 30, goalLine: 1000, direction: 1, centerY: 50, depth: 55, halfWidth: 91.5, indirect: true }),
