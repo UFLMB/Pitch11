@@ -233,5 +233,23 @@
     return s.kind === 'throw' ? 'opponent-throw-in' : 'opponent-corner';
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function freeKickGoalAreaPosition(state) {
+    const s = state || {};
+    const fields = [s.x, s.y, s.goalLine, s.direction, s.centerY, s.depth, s.halfWidth];
+    if (!fields.every(Number.isFinite) || Math.abs(s.direction) !== 1 || s.depth < 0 || s.halfWidth < 0) {
+      return { x: s.x, y: s.y, adjusted: false };
+    }
+    const distanceFromGoal = (s.goalLine - s.x) * s.direction;
+    if (!s.indirect || distanceFromGoal < -1e-6 || distanceFromGoal > s.depth + 1e-6 ||
+        Math.abs(s.y - s.centerY) > s.halfWidth) {
+      return { x: s.x, y: s.y, adjusted: false };
+    }
+    return {
+      x: s.goalLine - s.direction * s.depth,
+      y: Math.max(s.centerY - s.halfWidth, Math.min(s.centerY + s.halfWidth, s.y)),
+      adjusted: true
+    };
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, freeKickGoalAreaPosition, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
