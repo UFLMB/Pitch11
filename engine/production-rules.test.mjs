@@ -521,7 +521,7 @@ test("Law 10 does not replace an injured outfield shoot-out player and equalises
 test("Law 10 replaces an injured shoot-out goalkeeper using an excluded player, an available named substitute, or a player changing places", () => {
   assert.match(source, /PITCH11Law\.shootoutExcludedGoalkeeper\(P,t\)/);
   assert.match(source, /PITCH11Law\.shootoutInjuryDecision\(/);
-  assert.match(source, /namedGoalkeeper&&S\.subs\[t\]<5/);
+  assert.ok(source.includes('namedSubstituteAvailable:!!namedSubstitute&&S.subs[t]<5'));
   assert.match(source, /replacement\.gk=true/);
   assert.match(source, /GK\[t\]=replacement/);
   assert.match(source, /keeperHadKicked/);
@@ -529,8 +529,8 @@ test("Law 10 replaces an injured shoot-out goalkeeper using an excluded player, 
 
 
 test("Law 10 accepts any unused named substitute as an injured shoot-out goalkeeper replacement", () => {
-  assert.match(source, /const namedSubstitute=S\\.subs\\[t\\]<5\?\(BENCH\\[t\\]\\[0\\]\\|\\|null\):null/);
-  assert.match(source, /if\(applySubstitution\(q,namedSubstitute,position\)\)/);
+  assert.ok(source.includes('const namedSubstitute=S.subs[t]<5?(BENCH[t][0]||null):null'));
+  assert.ok(source.includes('if(applySubstitution(q,namedSubstitute,position))'));
   assert.match(source, /BENCH\[t\]\.splice\(benchIndex,1\)/);
   assert.doesNotMatch(source, /BENCH\[t\]\.find\(player=>player\.pos==='GK'\)/);
 });
