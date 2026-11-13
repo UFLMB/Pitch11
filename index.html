@@ -3368,6 +3368,7 @@ function bodyCollide(){                                    // the ball bounces o
     if(p===b.last&&p.kcd>0.1)continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
+    if(p===b.dbl&&S.so&&S.so.live&&p===S.so.shooter)b.shootoutDoubleTouch=true;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
     if(!S.prac&&p.off){callOffside(p);return;}
