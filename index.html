@@ -5197,7 +5197,7 @@ newMatch=function(){_newMatchGkHoldSanction();for(const p of P)p.gkHoldOffences=
 function refereeContactPromisingAttack(p){
   if(!p||p.out)return false;
   const d=dirOf(p.team),gx=d>0?PX1:PX0;
-  return (p.x-CX)*d>PW*.12&&(gx-p.x)*d<PW*.4&&Math.abs(p.y-CY)<PH*.45&&ball.vx*d>25;
+  return (p.x-CX)*d>PW*.12&&(gx-p.x)*d<PW*.4&&Math.abs(p.y-CY)<PH*.45&&(ball.vx*d>25||p.vx*d>25);
 }
 function stopForRefereeContact(contact){
   if(!contact)return;
@@ -5226,6 +5226,12 @@ goal=function(dr){
 };
 const _outOfPlayLaw9Referee=outOfPlay;
 outOfPlay=function(){ball.refContact=null;_outOfPlayLaw9Referee();};
+const _touchesLaw9Referee=touches;
+touches=function(){const previousLast=ball.last;_touchesLaw9Referee();if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
+const _bodyCollideLaw9Referee=bodyCollide;
+bodyCollide=function(){const previousLast=ball.last;_bodyCollideLaw9Referee();if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
+const _slideHitLaw9Referee=slideHit;
+slideHit=function(p,sd){const previousLast=ball.last;_slideHitLaw9Referee(p,sd);if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
 
 /* A second player's deflection clears the direct-restart/second-touch marker, including goalkeeper parries. */
 const _aiGKDirectRestart=aiGK;
