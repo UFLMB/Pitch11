@@ -1202,6 +1202,12 @@ function doSub(p,bn){
     });
     if(delayDecision==='send-off'){
       p.yc++;giveCard(p,3);
+      if(PITCH11Law.matchAbandonmentDecision(P,t,7,!!S.so)==='abandon'){
+        S.forfeitTeam=t;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
+        for(const q of P){q.ix=q.iy=0;q.sp=false;}
+        msg('MATCH ABANDONED',KIT[t].name+' has fewer than seven players',3);
+        return false;
+      }
       msg('GOALKEEPER SENT OFF','Second caution for delaying the substitution',2);
       return false;
     }

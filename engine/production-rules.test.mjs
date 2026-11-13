@@ -487,6 +487,17 @@ test("Law 5 removes assessed outfield players for one running minute and restore
 });
 
 
+test("Law 3 checks the seven-player minimum after a goalkeeper is sent off for substitution delay", () => {
+  const doSub = source.match(/function doSub\(p,bn\)\{[\s\S]*?\n\}/);
+  assert.ok(doSub, "production substitution path must exist");
+  const sendOff = doSub[0].match(/if\(delayDecision==='send-off'\)\{[\s\S]*?\n    \}/);
+  assert.ok(sendOff, "booked goalkeeper delay must trigger the send-off path");
+  assert.match(sendOff[0], /giveCard\(p,3\)/);
+  assert.match(sendOff[0], /PITCH11Law\.matchAbandonmentDecision\(P,t,7,!!S\.so\)==='abandon'/);
+  assert.match(sendOff[0], /S\.forfeitTeam=t;S\.mode='full'/);
+  assert.match(sendOff[0], /fewer than seven players/);
+});
+
 test("Law 3 sends off an already-cautioned goalkeeper who exceeds the substitution exit deadline", () => {
   const helper = lawSource.match(/function goalkeeperSubstitutionDelayDecision\(state\)\s*\{[\s\S]*?\n  \}/);
   assert.ok(helper, "goalkeeper substitution delay decision must be defined");
