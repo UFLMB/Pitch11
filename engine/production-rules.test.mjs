@@ -355,7 +355,7 @@ test("Law 10 prevents a goalkeeper throw from scoring directly while preserving 
 
 
 test("Law 8 keeps every player except the dropped-ball recipient at least four metres away", () => {
-  assert.match(source, /S\.rs\.r=40/);
+  assert.match(source, /ball\.x=ball\.px=x;ball\.y=ball\.py=y;S\.rs\.r=40/);
   assert.match(source, /drop:40/);
   assert.match(source, /rs\.kind==='drop'\?false/);
 });
