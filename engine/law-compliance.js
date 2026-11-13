@@ -221,7 +221,7 @@
     const first = firstTeam === 1 ? 1 : 0;
     if (a < b) return 0;
     if (b < a) return 1;
-    return a % 2 === 0 ? first : 1 - first;
+    return first;
   }
 
   function shootoutOrder(players, team) {
