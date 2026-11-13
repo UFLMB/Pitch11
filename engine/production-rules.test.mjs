@@ -324,6 +324,11 @@ test("Laws 15 and 16 allow normal restart time before a referee-signalled five-s
 });
 
 
+test("Law 16 chooses the delayed-goal-kick corner from the original restart position", () => {
+  assert.match(source, /PITCH11Law\.goalKickDelayCornerY\(\{restartY:rs\.y,topY,bottomY\}\)/);
+});
+
+
 test("Law 13 applies goal-area placement, own-penalty-area clearance and the one-metre wall exclusion", () => {
   assert.match(source, /PITCH11Law\.freeKickGoalAreaPosition\(/);
   assert.match(source, /ownPenaltyRestart/);
