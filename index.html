@@ -2561,7 +2561,7 @@ function slideInjury(o,tq,behind,foulSanction){                          // a ha
   D9.n.si[o.team===0?1:0]++;act8('slide','injury');
 }
 function slideFoul(p,q,tq,behind){
-  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp,speed=Math.hypot(p.vx,p.vy),previousYc=p.yc,previousOut=p.out;
+  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp,speed=Math.hypot(p.vx,p.vy),previousYc=p.yc;
   const seriousFoulPlay=behind&&tq<0.12&&speed>180;
   p.sp=true;foul(p,q,behind,{reckless:behind||tq<0.55,seriousFoulPlay,attemptToPlayBall:true});
   const foulSanction=p.out||p.yc>previousYc;
