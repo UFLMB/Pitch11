@@ -572,3 +572,10 @@ test("Law 8 uses the active replacement goalkeeper for a dropped ball inside the
   assert.match(dropBall[0], /const keeper=GK\[recipient\.team\]/);
   assert.doesNotMatch(dropBall[0], /const keeper=P\[recipient\.team\*11\]/);
 });
+
+
+test("Law 12 preserves the goalkeeper back-pass restriction for the active replacement goalkeeper", () => {
+  assert.match(source, /b\.last!==GK\[b\.gkNoHands\]/);
+  assert.doesNotMatch(source, /b\.last!==P\[b\.gkNoHands\*11\]/);
+  assert.match(source, /GK\[p\.team\]=replacement/);
+});
