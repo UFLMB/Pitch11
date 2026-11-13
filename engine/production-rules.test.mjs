@@ -385,6 +385,18 @@ test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks,
 });
 
 
+test("a restart taker is penalised for a controlled second touch even when the ball is stationary", () => {
+  const touchFunction = source.match(/function touches\(\)\{[\\s\\S]*?\\n\\}/);
+  assert.ok(touchFunction, "production ball-control routine must be present");
+  assert.match(touchFunction[0], /secondTouchCandidate=null,secondTouchScore=-1e9/);
+  assert.match(touchFunction[0], /p===b\.dbl&&b\.last===p/);
+  assert.match(touchFunction[0], /secondTouchScore>bs/);
+  assert.match(touchFunction[0], /restartSecondTouchRestart\(\{isKicker:true,insideOwnPenaltyArea\}\)/);
+  assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
+  assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
+  assert.match(source, /const _aiGKDirectRestart=aiGK/);
+});
+
 test("Direct-restart touch tracking clears after a second player's deflection or control", () => {
   assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
   assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
