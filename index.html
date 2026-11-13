@@ -1126,15 +1126,15 @@ function aiSubs(t,max,q){                                  // swap injured / tir
     n++;q=null;
   }
 }
-function injured(q){                                       // after the stoppage: sub him, or he plays on limping
+function injured(q){                                       // after the stoppage: substitute, or apply the one-minute off-field protocol
   const t=q.team;q.down=false;
   const eligibility=PITCH11Law.substitutionEligibility({used:S.subs[t],windows:S.subWindows[t],inStoppage:true,halftime:false,windowUsed:S.subWindowUsed[t]});
-  if(!eligibility.allowed||!BENCH[t].length){q.limp=true;return false;}
-  if(t===1){aiSubs(1,1,q);return false;}
+  if(!eligibility.allowed||!BENCH[t].length){q.limp=true;sendOffForAssessment(q);return false;}
+  if(t===1){aiSubs(1,1,q);if(q.inj&&!q.out)sendOffForAssessment(q);return false;}
   S.sel=q;openSubs('whistle');return true;
 }
 function openSubs(ret){S.ret=ret;S.mode='subs';M.conf=0;}
-function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out)p.limp=true;S.sel=null;S.pv=null;S.mode=S.ret;}
+function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out){p.limp=true;sendOffForAssessment(p);}S.sel=null;S.pv=null;S.mode=S.ret;}
 function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
@@ -5239,6 +5239,49 @@ aiGK=function(p){
   const previousLast=ball.last;
   _aiGKDirectRestart(p);
   if(ball.last!==previousLast&&ball.last!==ball.dbl)ball.dbl=null;
+};
+
+/* --- IFAB Law 5 (2026/27): off-field injury assessment for one running minute --- */
+function sendOffForAssessment(p){
+  if(!p||p.gk||PITCH11Law.offFieldTreatmentDecision({stoppedForInjury:true,goalkeeper:!!p.gk})!=='leave-one-minute')return false;
+  if(p.tempOff)return true;
+  p.tempOff=true;p.tempOffStartedAt=gmin();p.tempOffUntil=p.tempOffStartedAt+1;
+  p.tempOffX=p.x;p.tempOffY=p.y;p.out=true;p.down=false;p.limp=true;
+  p.vx=p.vy=p.ix=p.iy=0;p.x=p.px=p.y=p.py=-400;
+  msg('PLAYER OFF FIELD','One-minute injury assessment',1.8);
+  return true;
+}
+function returnFromAssessment(p,periodRestart){
+  if(!p||!p.tempOff)return false;
+  const x=clamp(Number.isFinite(p.tempOffX)?p.tempOffX:CX,PX0+8,PX1-8);
+  const savedY=Number.isFinite(p.tempOffY)?p.tempOffY:CY;
+  p.out=false;p.tempOff=false;p.inj=false;p.down=false;p.limp=true;
+  p.vx=p.vy=p.ix=p.iy=0;
+  if(periodRestart){p.x=p.px=x;p.y=p.py=clamp(savedY,PY0+8,PY1-8);}
+  else{
+    p.x=p.px=x;
+    p.y=p.py=Math.abs(savedY-PY0)<=Math.abs(savedY-PY1)?PY0+2:PY1-2;
+    msg('PLAYER READY TO RETURN',tag(p)+' may re-enter',1.6);
+  }
+  p.tempOffStartedAt=p.tempOffUntil=p.tempOffX=p.tempOffY=null;
+  return true;
+}
+function restoreAllTempOff(periodRestart){
+  for(const p of P)if(p.tempOff)returnFromAssessment(p,!!periodRestart);
+}
+const _setupKickoffLaw5=setupKickoff;
+setupKickoff=function(team){restoreAllTempOff(true);_setupKickoffLaw5(team);};
+const _startShootoutLaw5=startShootout;
+startShootout=function(){restoreAllTempOff(true);_startShootoutLaw5();};
+const _updateLaw5OffField=update;
+update=function(){
+  _updateLaw5OffField();
+  if(S.mode!=='play')return;
+  for(const p of P){
+    if(!p.tempOff)continue;
+    const decision=PITCH11Law.offFieldReturnDecision({elapsedMinutes:gmin()-p.tempOffStartedAt});
+    if(decision==='return')returnFromAssessment(p,false);
+  }
 };
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
