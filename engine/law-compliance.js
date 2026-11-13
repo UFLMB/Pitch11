@@ -205,8 +205,8 @@
 
   function timeLimitedSubstitutionEntryDecision(state) {
     const s = state || {};
-    return s.firstStoppage === true && Number.isFinite(s.elapsedSinceRestart) &&
-      s.elapsedSinceRestart >= 60 ? 'allow' : 'wait';
+    return s.firstStoppage === true && s.playerExited === true &&
+      Number.isFinite(s.elapsedSinceRestart) && s.elapsedSinceRestart >= 60 ? 'allow' : 'wait';
   }
 
   function hasMinimumPlayers(players, team, minimum) {
