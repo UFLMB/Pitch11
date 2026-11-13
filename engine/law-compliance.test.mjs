@@ -601,3 +601,28 @@ test('injured players cannot be selected as shoot-out goalkeeper replacements', 
   players[3].inj = true;
   assert.equal(law.shootoutExcludedGoalkeeper(players, 0), null);
 });
+
+
+test('offside line uses the live second-last opponent, or the only opponent when fewer than two remain', () => {
+  const players = [
+    { team: 0, x: 10, out: false },
+    { team: 1, x: 90, out: false },
+    { team: 1, x: 70, out: false },
+    { team: 1, x: 80, out: false },
+    { team: 1, x: 100, out: true }
+  ];
+  assert.equal(law.secondLastOpponentPosition(players, 0, 1), 80);
+  assert.equal(law.secondLastOpponentPosition(players, 0, -1), 70);
+  assert.equal(law.secondLastOpponentPosition(players.filter(p => p.team === 0 || p.x === 90), 0, 1), 90);
+  assert.equal(law.secondLastOpponentPosition(players.filter(p => p.team === 0), 0, 1), null);
+});
+
+test('offside position requires the attacker to be beyond both the ball and second-last opponent in the opponents half', () => {
+  const base = { attackerX: 80, ballX: 60, secondLastOpponentX: 70, direction: 1, halfway: 50 };
+  assert.equal(law.isOffsidePosition(base), true);
+  assert.equal(law.isOffsidePosition({ ...base, attackerX: 70 }), false);
+  assert.equal(law.isOffsidePosition({ ...base, ballX: 80 }), false);
+  assert.equal(law.isOffsidePosition({ ...base, secondLastOpponentX: 80 }), false);
+  assert.equal(law.isOffsidePosition({ ...base, attackerX: 40 }), false);
+  assert.equal(law.isOffsidePosition({ ...base, attackerX: 20, ballX: 40, secondLastOpponentX: 30, direction: -1 }), true);
+});
