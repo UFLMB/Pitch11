@@ -594,8 +594,10 @@ test('injured players cannot be selected as shoot-out goalkeeper replacements', 
     { team: 0, num: 1, gk: false, out: false, inj: true, st: { def: 1 }, role: 1 },
     { team: 0, num: 2, gk: false, out: false, inj: false, st: { def: 0.6 }, role: 2 },
     { team: 0, num: 3, gk: false, out: true, soExcluded: true, soUnavailableInjured: true, st: { def: 1 }, role: 0 },
-    { team: 0, num: 4, gk: false, out: true, soExcluded: true, soUnavailableInjured: false, st: { def: 0.8 }, role: 3 }
+    { team: 0, num: 4, gk: false, out: true, inj: false, soExcluded: true, soUnavailableInjured: false, st: { def: 0.8 }, role: 3 }
   ];
   assert.equal(law.shootoutReplacementGoalkeeper(players, 0), players[1]);
   assert.equal(law.shootoutExcludedGoalkeeper(players, 0), players[3]);
+  players[3].inj = true;
+  assert.equal(law.shootoutExcludedGoalkeeper(players, 0), null);
 });
