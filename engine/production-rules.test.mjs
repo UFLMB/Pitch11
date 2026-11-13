@@ -339,3 +339,9 @@ test("Law 11 detects an offside attacker challenging or obstructing an opponent 
   assert.match(source, /if\(!S\.prac&&!best\.off\)/);
   assert.match(source, /callOffside\(challenger\)/);
 });
+
+
+test("Law 10 prevents abandonment below seven players during shoot-outs, including goalkeeper penalty retakes", () => {
+  assert.match(source, /matchAbandonmentDecision\(P,p\.team,7,!!S\.so\)/);
+  assert.match(source, /matchAbandonmentDecision\(P,keeper\.team,7,shootout\)/);
+});
