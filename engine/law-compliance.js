@@ -229,7 +229,7 @@
 
   function restartDelayDecision(state) {
     const s = state || {};
-    if (!['throw', 'gk'].includes(s.kind) || !Number.isFinite(s.seconds) || s.seconds < 5) return 'continue';
+    if (s.signalled !== true || !['throw', 'gk'].includes(s.kind) || !Number.isFinite(s.seconds) || s.seconds < 5) return 'continue';
     return s.kind === 'throw' ? 'opponent-throw-in' : 'opponent-corner';
   }
 

@@ -5125,22 +5125,27 @@ goal=function(dr){
   _goalLaw11Sight(dr);
 };
 
-/* --- IFAB Laws 15/16 (2026/27): five-second restart countdown for delayed throw-ins and goal kicks --- */
+/* --- IFAB Laws 15/16 (2026/27): referee-signalled countdown after deliberate delay --- */
 const _updateLaw1516Delay=update;
 update=function(){
   _updateLaw1516Delay();
   const rs=S.rs;
   if(S.mode!=='play'||!rs||ball.owner!==rs.p||(rs.kind!=='throw'&&rs.kind!=='gk'))return;
-  if(!Number.isFinite(rs.delayElapsed)){
-    rs.delayElapsed=0;rs.delayShown=5;
+  /* Give a normal restart its execution window. A persistent five-second delay
+     is the simulation's referee judgement that the restart is being delayed. */
+  if(!rs.delaySignalled){
+    rs.delayWait=(rs.delayWait||0)+DT;
+    if(rs.delayWait<5)return;
+    rs.delaySignalled=true;rs.delayElapsed=0;rs.delayShown=5;
     msg('5-SECOND COUNTDOWN','5',1.1);
+    return;
   }
   rs.delayElapsed+=DT;
   const remaining=Math.max(0,Math.ceil(5-rs.delayElapsed));
   if(remaining>0&&remaining!==rs.delayShown){
     rs.delayShown=remaining;msg('5-SECOND COUNTDOWN',String(remaining),1.1);
   }
-  const decision=PITCH11Law.restartDelayDecision({kind:rs.kind,seconds:rs.delayElapsed});
+  const decision=PITCH11Law.restartDelayDecision({kind:rs.kind,seconds:rs.delayElapsed,signalled:rs.delaySignalled});
   if(decision==='continue')return;
   const team=rs.team,x=rs.x,y=rs.y;
   if(decision==='opponent-throw-in'){

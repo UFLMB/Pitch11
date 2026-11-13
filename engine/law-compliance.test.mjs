@@ -271,12 +271,13 @@ test('Law 11 detects an offside attacker clearly blocking the goalkeeper\'s line
 });
 
 
-test('2026/27 Laws 15 and 16 apply the five-second restart delay outcome', () => {
-  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 4.999 }), 'continue');
-  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 5 }), 'opponent-throw-in');
-  assert.equal(law.restartDelayDecision({ kind: 'gk', seconds: 5 }), 'opponent-corner');
-  assert.equal(law.restartDelayDecision({ kind: 'corner', seconds: 8 }), 'continue');
-  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: NaN }), 'continue');
+test('2026/27 Laws 15 and 16 require a referee countdown signal before reversing a delayed restart', () => {
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 5, signalled: false }), 'continue');
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 4.999, signalled: true }), 'continue');
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 5, signalled: true }), 'opponent-throw-in');
+  assert.equal(law.restartDelayDecision({ kind: 'gk', seconds: 5, signalled: true }), 'opponent-corner');
+  assert.equal(law.restartDelayDecision({ kind: 'corner', seconds: 8, signalled: true }), 'continue');
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: NaN, signalled: true }), 'continue');
 });
 
 
