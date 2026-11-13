@@ -382,3 +382,12 @@ test("Direct-restart touch tracking clears after a second player's deflection or
   assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
   assert.match(source, /const _aiGKDirectRestart=aiGK/);
 });
+
+test("Law 9 restarts with a dropped ball after referee contact causes a direct goal, possession change or promising attack", () => {
+  assert.match(source, /b\.refContact=\{x:b\.x,y:b\.y,team:contactTeam,recipientTeam\}/);
+  assert.match(source, /function resolveRefereeContact\(p\)/);
+  assert.match(source, /refereeContactPromisingAttack\(p\)/);
+  assert.match(source, /refereeContactDecision\(\{directGoal:true\}\)/);
+  assert.match(source, /dropBall\(contact\.team,contact\.recipientTeam\)/);
+  assert.match(source, /outOfPlay=function\(\)\{ball\.refContact=null/);
+});
