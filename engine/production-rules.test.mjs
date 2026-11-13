@@ -180,7 +180,7 @@ test("goalkeeper cannot handle a deliberate teammate back-pass or a direct teamm
   assert.ok(source.includes("PITCH11Law.goalkeeperIllegalHandlingRestart(insideArea,prohibitedPass||secondTouch)"));
   assert.ok(source.includes("handlingRestart==='indirect-free-kick'"));
   assert.ok(source.includes("b.gkNoHands=null"));
-  assert.ok(source.includes("b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff()"));
+  assert.ok(source.includes("b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;b.restartDoubleTouchPending=null;clearOff()"));
 });
 
 
