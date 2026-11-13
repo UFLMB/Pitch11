@@ -959,7 +959,9 @@ function dropBall(t){
   spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
 }
 function freeKick(t,x,y,ind){
-  const d=dirOf(t),gx=d>0?PX1:PX0;x=clamp(x,PX0+6,PX1-6);y=clamp(y,PY0+6,PY1-6);
+  const d=dirOf(t),gx=d>0?PX1:PX0;
+  const legalSpot=PITCH11Law.freeKickGoalAreaPosition({x,y,goalLine:gx,direction:d,centerY:CY,depth:SIX_DEPTH,halfWidth:SIX_WIDTH/2,indirect:!!ind});
+  x=clamp(legalSpot.x,PX0+6,PX1-6);y=clamp(legalSpot.y,PY0+6,PY1-6);
   spot(t,x,y,false,Math.atan2(CY-y,gx-x),'fk');
   const rs=S.rs,dg=Math.hypot(gx-x,CY-y),ux=(gx-x)/dg,uy=(CY-y)/dg;
   rs.ind=!!ind;rs.r=91.5;
@@ -998,14 +1000,30 @@ function restartClamp(){                                   // defenders keep 9.1
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // all players except the kicker stay in their own half
   const R=rs.r||({ko:91.5,throw:20,gk:91.5})[rs.kind];if(!R)return;     // opponents: 9.15 m; other restarts: applicable opponents only
+  const attackDirection=dirOf(rs.team),ownGoalLine=attackDirection>0?PX0:PX1;
+  const ownPenaltyRestart=rs.kind==='fk'&&(rs.x-ownGoalLine)*attackDirection>=0&&
+    (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
     if(p===rs.p||p.out||(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk))||(rs.wall&&rs.wall.includes(p)))continue;
     const dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy)||0.1;
     if(d<R){p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;}
-    if(rs.kind==='gk'){
-      const gx=dirOf(rs.team)>0?PX0:PX1,dir=dirOf(rs.team);
+    if(rs.kind==='gk'||ownPenaltyRestart){
+      const gx=ownGoalLine,dir=attackDirection;
       const legal=PITCH11Law.goalKickOpponentPosition({x:p.x,y:p.y,goalLine:gx,direction:dir,penaltyDepth:PEN_DEPTH,halfWidth:PEN_WIDTH/2,centerY:CY,clearance:12});
       if(legal.x!==p.x){p.x=legal.x;p.vx=0;}
+    }
+  }
+  if(rs.kind==='fk'&&rs.wall&&rs.wall.length>=3){
+    const wallClearance=10;
+    for(const p of P){
+      if(p.team!==rs.team||p.out||p===rs.p)continue;
+      for(let pass=0;pass<3;pass++)for(const w of rs.wall){
+        if(!w||w.out)continue;
+        let dx=p.x-w.x,dy=p.y-w.y,dist=Math.hypot(dx,dy);
+        if(dist>=wallClearance)continue;
+        if(dist<1e-6){dx=-(w.y-rs.y);dy=w.x-rs.x;dist=Math.hypot(dx,dy)||1;}
+        p.x=w.x+dx/dist*wallClearance;p.y=w.y+dy/dist*wallClearance;p.vx=p.vy=0;
+      }
     }
   }
 }
