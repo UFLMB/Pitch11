@@ -218,13 +218,13 @@
   function shootoutOrder(players, team) {
     // Every eligible player may take a kick, including the goalkeeper.
     return players
-      .filter(p => p.team === team && !p.out)
+      .filter(p => p.team === team && p.soExcluded !== true && (!p.out || p.tempOff === true || p.substitutionPending === true))
       .sort((a, b) => (a.role === 0 ? 1 : 0) - (b.role === 0 ? 1 : 0) || a.role - b.role || a.num - b.num);
   }
 
   function shootoutExclusions(players) {
     const active = [0, 1].map(team =>
-      players.filter(p => p.team === team && !p.out)
+      players.filter(p => p.team === team && (!p.out || p.tempOff === true || p.substitutionPending === true))
     );
     const target = Math.min(active[0].length, active[1].length);
     const excluded = [];

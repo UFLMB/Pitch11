@@ -470,3 +470,24 @@ test('Law 5 allows return after one running minute or at the next period restart
   assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 1 }), 'return');
   assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 0.2, periodRestart: true }), 'return');
 });
+
+
+test('Law 10 includes temporarily off-field players in shoot-out eligibility and equal-number reduction', () => {
+  const players = Array.from({ length: 22 }, (_, i) => ({
+    team: i < 11 ? 0 : 1, role: i % 11, num: (i % 11) + 1, gk: i % 11 === 0, out: false
+  }));
+  players[10].out = true;
+  players[10].tempOff = true;
+  players[21].out = true;
+  const order = law.shootoutOrder(players, 0);
+  assert.equal(order.includes(players[10]), true, 'a temporarily off-field injured player remains eligible');
+  const excluded = law.shootoutExclusions(players);
+  for (const player of excluded) { player.out = true; player.soExcluded = true; }
+  assert.equal(law.shootoutOrder(players, 0).includes(players[10]), false, 'a player excluded to equalise numbers cannot be reintroduced');
+  const remaining = [0, 1].map(team => players.filter(p =>
+    p.team === team && p.soExcluded !== true && (!p.out || p.tempOff === true || p.substitutionPending === true)
+  ));
+  assert.equal(remaining[0].length, remaining[1].length);
+  assert.equal(remaining[0].some(p => p.gk), true);
+  assert.equal(remaining[1].some(p => p.gk), true);
+});
