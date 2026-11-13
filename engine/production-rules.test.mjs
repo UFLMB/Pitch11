@@ -466,3 +466,10 @@ test("Law 10 alternates shoot-out teams from the randomly selected first kicker"
   assert.match(source, /firstTeam:Math\.random\(\)<0\.5\?0:1/);
   assert.match(source, /PITCH11Law\.shootoutNextTeam\(so\.k\[0\]\.length,so\.k\[1\]\.length,so\.firstTeam\)/);
 });
+
+
+test("Law 10 resets goalkeeper penalty-offence warnings for the shoot-out and tracks shoot-out cautions separately", () => {
+  assert.match(source, /p\.shootoutPenaltyLineOffences=0;p\.shootoutYC=0/);
+  assert.match(source, /PITCH11Law\.shootoutKeeperOffenceSanction\(/);
+  assert.match(source, /shootout\?keeper\.shootoutPenaltyLineOffences/);
+});
