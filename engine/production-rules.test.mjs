@@ -366,3 +366,10 @@ test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks,
   assert.match(source, /restartKickerTeam:b\.dbl===b\.last&&b\.dbl\?b\.dbl\.team:null/);
   assert.match(source, /keeperThrowDecision==='goal'/);
 });
+
+
+test("Direct-restart touch tracking clears after a second player's deflection or control", () => {
+  assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
+  assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
+  assert.match(source, /const _aiGKDirectRestart=aiGK/);
+});
