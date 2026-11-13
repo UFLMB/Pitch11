@@ -252,7 +252,7 @@ const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=fa
 
 /* ===================== 4. ACTIONS (kick, pass, shoot, tackle) ===================== */
 function clearOff(){for(const q of P)q.off=false;ball.ind=false;}   // any new touch ends offside / indirect-kick status
-function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;p.poss=0;p.force=false;clearOff();}
+function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;ball.gkHoldShown=0;p.poss=0;p.force=false;clearOff();}
 function markOff(p){                                       // who is in an offside position at the moment of the pass
   clearOff();const t=p.team,d=dirOf(t),line=TI[t].off,bx=ball.x*d;
   for(let i=t*11;i<t*11+11;i++){const q=P[i];if(q!==p&&!q.out&&q.x*d>line&&q.x*d>bx&&(q.x-CX)*d>0)q.off=true;}
@@ -270,7 +270,7 @@ function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const b=ball,a=Math.atan2(vy,vx),rs=S.rs;
   if(rs&&(rs.kind==='throw'||rs.kind==='corner'||rs.kind==='gk'))clearOff();else markOff(p);
   if(rs&&(rs.ind||rs.kind==='throw'||rs.kind==='drop'))b.ind=true; // indirect kicks, throw-ins and dropped balls cannot score untouched
-  b.protect=0;b.gkHold=0;b.gkReleasedBy=PITCH11Law.goalkeeperReleaseMarker(p,b.gkHoldActive);b.gkHoldActive=false;b.gkHoldWarned=false;
+  b.protect=0;b.gkHold=0;b.gkReleasedBy=PITCH11Law.goalkeeperReleaseMarker(p,b.gkHoldActive);b.gkHoldActive=false;b.gkHoldWarned=false;b.gkHoldShown=0;
   b.gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?p.team:null);b.gkNoHandsFrom=b.gkNoHands===null?null:p;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';
   b.x=p.x+Math.cos(a)*9;b.y=p.y+Math.sin(a)*9;
@@ -952,7 +952,7 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
   tk.x=tk.px=x;tk.y=tk.py=y;tk.vx=tk.vy=0;tk.face=faceTo;tk.dive=0;tk.stun=0;tk.kcd=0;
   const b=ball;
   b.x=b.px=x+Math.cos(faceTo)*10;b.y=b.py=y+Math.sin(faceTo)*10;b.z=b.pz=b.vz=b.vx=b.vy=b.spin=0;
-  b.owner=tk;b.last=tk;b.receiver=null;b.protect=3;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff();
+  b.owner=tk;b.last=tk;b.receiver=null;b.protect=3;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;b.gkHoldShown=0;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff();
   tk.poss=0;tk.freeze=gk?0.45:rnd(0.5,0.85);tk.force=false;
   S.rs={kind:kind||'drop',team,p:tk,x,y};S.adv=null;
 }
@@ -1146,18 +1146,18 @@ function rules(){
     const secondTouch=b.gkReleasedBy===keeper,prohibitedPass=b.gkNoHands===keeper.team;
     const handlingRestart=PITCH11Law.goalkeeperIllegalHandlingRestart(insideArea,prohibitedPass||secondTouch);
     if(handlingRestart){
-      const x=b.x,y=b.y;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;b.gkHold=0;b.gkHoldWarned=false;b.gkHoldActive=false;
+      const x=b.x,y=b.y;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;b.gkHold=0;b.gkHoldWarned=false;b.gkHoldShown=0;b.gkHoldActive=false;
       const label=!insideArea?'HANDBALL':secondTouch?'SECOND TOUCH':'BACK-PASS / THROW-IN';
       whistleStop(1.4,label,'Goalkeeper handled the ball illegally',()=>freeKick(1-keeper.team,x,y,handlingRestart==='indirect-free-kick'));return;
     }
     b.gkHold+=DT;
-    if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;msg('GOALKEEPER 5-SECOND COUNTDOWN','Release the ball',5);}
+    if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;b.gkHoldShown=5;msg('GOALKEEPER 5-SECOND COUNTDOWN','5',1.1);}else if(b.gkHoldWarned){const remaining=Math.max(1,Math.ceil(8-b.gkHold));if(remaining!==b.gkHoldShown){b.gkHoldShown=remaining;msg('GOALKEEPER 5-SECOND COUNTDOWN',String(remaining),1.1);}}
     if(PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'){
       const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
       spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
       msg('8-SECOND VIOLATION','CORNER KICK',2);return;
     }
-  }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;}
+  }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;b.gkHoldShown=0;}
   const goalDirection=b.x>PX1?1:-1,scoringTeam=dirOf(0)===goalDirection?0:1;
   const keeperThrowDecision=PITCH11Law.goalkeeperThrowGoalDecision({releasedByGoalkeeper:!!b.gkReleasedBy,lastTouchIsThrower:b.gkReleasedBy===b.last,keeperTeam:b.gkReleasedBy&&b.gkReleasedBy.team,scoringTeam});
   const directRestartDecision=PITCH11Law.directRestartGoalDecision({restartKickerTeam:b.dbl===b.last&&b.dbl?b.dbl.team:null,scoringTeam});

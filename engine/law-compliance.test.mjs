@@ -95,10 +95,11 @@ test('substitution eligibility enforces five players and three stoppage opportun
 });
 
 
-test('goalkeeper hand control expires at eight seconds, not before', () => {
+test('goalkeeper hand control expires only after eight full seconds', () => {
   assert.equal(law.goalkeeperHoldExpired(0), false);
   assert.equal(law.goalkeeperHoldExpired(7.999), false);
-  assert.equal(law.goalkeeperHoldExpired(8), true);
+  assert.equal(law.goalkeeperHoldExpired(8), false);
+  assert.equal(law.goalkeeperHoldExpired(8.0001), true);
   assert.equal(law.goalkeeperHoldExpired(8.5), true);
   assert.equal(law.goalkeeperHoldExpired(NaN), false);
 });
@@ -125,7 +126,8 @@ test('goalkeeper hand control outside the penalty area is a direct free kick; in
   assert.equal(law.goalkeeperHandControlDecision(false, 0), 'direct-free-kick');
   assert.equal(law.goalkeeperHandControlDecision(false, 8), 'direct-free-kick');
   assert.equal(law.goalkeeperHandControlDecision(true, 7.999), 'continue');
-  assert.equal(law.goalkeeperHandControlDecision(true, 8), 'corner');
+  assert.equal(law.goalkeeperHandControlDecision(true, 8), 'continue');
+  assert.equal(law.goalkeeperHandControlDecision(true, 8.0001), 'corner');
 });
 
 

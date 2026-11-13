@@ -112,7 +112,7 @@ test("substitutions are limited to five players and three stoppage windows, with
 });
 
 
-test("goalkeeper hand control is limited to eight seconds and awards a corner kick", () => {
+test("goalkeeper hand control shows the final five-second countdown and awards a corner only after eight seconds", () => {
   assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
   assert.doesNotMatch(source, /take=function\(p\)\{/ , "later wrappers must not discard the hand-control argument");
   assert.equal((source.match(/take=function\(p,byHand=false\)/g)||[]).length, 7, "all seven possession wrappers must accept the hand-control flag");
@@ -132,6 +132,8 @@ test("goalkeeper hand control is limited to eight seconds and awards a corner ki
   assert.match(chargedKeeper[0], /take\(p,true\)/, "manual goalkeeper smothers use hand control");
   assert.ok(source.includes("if(p.team===0&&!pw&&!stick){take(p);return;}"), "ordinary outfield foot control must not start the hand clock");
   assert.ok(source.includes("b.gkHold>=3"));
+  assert.ok(source.includes("b.gkHoldShown=5"));
+  assert.ok(source.includes("Math.ceil(8-b.gkHold)"));
   assert.ok(source.includes("spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner')"));
   assert.ok(source.includes("b.gkHoldActive=false"));
   assert.ok(source.includes("b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false"));
