@@ -549,3 +549,10 @@ test("Law 11 preserves an existing offside phase when a field defender deliberat
   assert.match(source, /applyOffsideTouch\(p,previousLast,true,deliberateSave\)/);
   assert.match(source, /restoreOffsideAfterSave\(offsideSnapshot\)/);
 });
+
+
+test("Law 11 carries the deliberate-save decision through controlled, aerial and deflected field-player contacts", () => {
+  assert.match(source, /applyOffsideTouch\(best,previousLast,false,deliberateSave\)/);
+  assert.match(source, /applyOffsideTouch\(best,previousLast,true,deliberateSave\)/);
+  assert.match(source, /restoreOffsideAfterSave\(offsideSnapshot\)/);
+});
