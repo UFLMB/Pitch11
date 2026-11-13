@@ -460,3 +460,9 @@ test("Law 10 keeps temporarily off-field injury-assessment players eligible for 
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
   assert.match(source, /PITCH11Law\.shootoutOrder\(P,t\)/);
 });
+
+
+test("Law 10 alternates shoot-out teams from the randomly selected first kicker", () => {
+  assert.match(source, /firstTeam:Math\.random\(\)<0\.5\?0:1/);
+  assert.match(source, /PITCH11Law\.shootoutNextTeam\(so\.k\[0\]\.length,so\.k\[1\]\.length,so\.firstTeam\)/);
+});
