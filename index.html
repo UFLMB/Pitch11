@@ -999,7 +999,7 @@ function setupPen(t,sh,so){                                // everyone else wait
   for(const p of P){
     p.vx=p.vy=p.ix=p.iy=0;p.dive=0;p.stun=p.kcd=p.freeze=0;p.force=false;p.down=false;
     if(p.out||p===sh)continue;
-    if(p.gk){p.x=p.px=p.team===t?(d>0?PX0+28:PX1-28):gx-d*4;p.y=p.py=CY;continue;}
+    if(p.gk){if(p.team===t){const pos=PITCH11Law.shootoutKickerGoalkeeperPosition({ownGoalLine:d>0?PX0:PX1,centerY:CY,penaltyHalfWidth:PEN_WIDTH/2});p.x=p.px=pos.x;p.y=p.py=pos.y;}else{p.x=p.px=gx-d*4;p.y=p.py=CY;}continue;}
     if(so){const a=(k++/20)*TAU;p.x=p.px=CX+Math.cos(a)*66;p.y=p.py=CY+Math.sin(a)*66;}
     else{p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;}
   }
