@@ -251,5 +251,10 @@
     };
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, freeKickGoalAreaPosition, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function replacementGoalkeeper(players, team) {
+    if (!Array.isArray(players)) return null;
+    return players.find(player => player && player.team === team && !player.out && !player.gk) || null;
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

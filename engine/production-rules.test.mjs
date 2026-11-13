@@ -322,3 +322,12 @@ test("Law 13 applies goal-area placement, own-penalty-area clearance and the one
   assert.match(source, /rs\.wall\.length>=3/);
   assert.match(source, /const wallClearance=10/);
 });
+
+
+test("Law 3 appoints a replacement goalkeeper after a goalkeeper sending-off when the match can continue", () => {
+  assert.match(source, /const _law3ReplacementGoalkeeper=giveCard/);
+  assert.match(source, /PITCH11Law\.replacementGoalkeeper\(P,team\)/);
+  assert.match(source, /replacement\.gk=true/);
+  assert.match(source, /GK\[team\]=replacement/);
+  assert.match(source, /S\.mode==='full'/);
+});

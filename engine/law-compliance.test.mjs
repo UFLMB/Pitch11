@@ -289,3 +289,16 @@ test('Law 13 moves an attacking indirect free kick out of the opponents goal are
   assert.deepEqual(decide({ x: 980, y: 30, goalLine: 1000, direction: 1, centerY: 50, depth: 55, halfWidth: 91.5, indirect: false }),
     { x: 980, y: 30, adjusted: false });
 });
+
+
+test('Law 3 appoints an eligible on-field player when a goalkeeper is sent off', () => {
+  const players = [
+    { team: 0, gk: true, out: true, id: 'sent-off' },
+    { team: 0, gk: false, out: false, id: 'first' },
+    { team: 0, gk: false, out: true, id: 'dismissed' },
+    { team: 1, gk: false, out: false, id: 'opponent' }
+  ];
+  assert.equal(law.replacementGoalkeeper(players, 0), players[1]);
+  assert.equal(law.replacementGoalkeeper(players, 1), players[3]);
+  assert.equal(law.replacementGoalkeeper([], 0), null);
+});
