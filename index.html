@@ -1309,7 +1309,7 @@ function update(){
   if(S.card&&S.card.t>0)S.card.t-=DT;
   if(toast.t>0)toast.t-=DT;
   if(H>W)return;                                           // portrait: paused
-  tickSubstitutionExits();tickSubExitRunners();tickPendingSubstitutionClocks();
+  tickSubstitutionExits();tickPendingSubstitutionClocks();tickSubExitRunners();
   if(FX.hit>0){FX.hit--;camUpdate();return;}               // brief hit-stop on big tackles
   FX.shake=Math.max(0,FX.shake-0.8);
   updateInput();gestureTick();
