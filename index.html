@@ -5505,6 +5505,7 @@ injured=function(q){
   let replacement=null;
   if(decision==='excluded-player'){
     replacement=excludedKeeper;
+    removePlayer(q);
     replacement.out=false;replacement.soExcluded=false;replacement.inj=false;replacement.down=false;
     replacement.tempOff=false;replacement.substitutionPending=false;
   }else if(decision==='named-substitute'){
