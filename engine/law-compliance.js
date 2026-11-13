@@ -270,5 +270,12 @@
     return hasMinimumPlayers(players, team, minimum || 7) ? 'continue' : 'abandon';
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function goalkeeperThrowGoalDecision(state) {
+    const s = state || {};
+    if (s.releasedByGoalkeeper !== true || s.lastTouchIsThrower !== true) return 'goal';
+    if (!Number.isInteger(s.keeperTeam) || !Number.isInteger(s.scoringTeam)) return 'goal-kick';
+    return s.keeperTeam === s.scoringTeam ? 'corner' : 'goal-kick';
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

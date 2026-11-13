@@ -345,3 +345,10 @@ test("Law 10 prevents abandonment below seven players during shoot-outs, includi
   assert.match(source, /matchAbandonmentDecision\(P,p\.team,7,!!S\.so\)/);
   assert.match(source, /matchAbandonmentDecision\(P,keeper\.team,7,shootout\)/);
 });
+
+
+test("Law 10 prevents a goalkeeper throw from scoring directly while preserving goals after another touch", () => {
+  assert.match(source, /goalkeeperThrowGoalDecision/);
+  assert.match(source, /releasedByGoalkeeper:!!b\.gkReleasedBy/);
+  assert.match(source, /lastTouchIsThrower:b\.gkReleasedBy===b\.last/);
+});
