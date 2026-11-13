@@ -1065,7 +1065,13 @@ function restartClamp(){                                   // defenders keep 9.1
   const ownPenaltyRestart=rs.kind==='fk'&&(rs.x-ownGoalLine)*attackDirection>=0&&
     (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
-    const restrictedTeam=rs.kind==='drop'?false:(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk));
+    const opponentGoalLine=attackDirection>0?PX1:PX0;
+    const goalkeeperGoalLineException=PITCH11Law.restartOpponentDistanceExemption({
+      restartKind:rs.kind,goalkeeper:!!p.gk,
+      onOwnGoalLine:Math.abs(p.x-opponentGoalLine)<=4.5*PLAYER_SCALE,
+      betweenPosts:Math.abs(p.y-CY)<=GOALH-4.5*PLAYER_SCALE
+    });
+    const restrictedTeam=rs.kind==='drop'?false:(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||goalkeeperGoalLineException));
     if(p===rs.p||p.out||p.substitutionExiting||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
     let dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy);
     if(d<R){

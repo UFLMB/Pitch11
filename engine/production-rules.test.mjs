@@ -203,7 +203,7 @@ test("goalkeeper cannot handle the ball again after releasing it until another p
 
 test("kick-off keeps every player in their own half and only opponents 9.15m from the ball", () => {
   assert.ok(source.includes("if(rs.kind==='ko')for(const p of P)"));
-  assert.ok(source.includes("rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk)"));
+  assert.ok(source.includes("rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||goalkeeperGoalLineException)"));
   assert.doesNotMatch(source, /kickoffPlayerPosition/);
 });
 
@@ -355,6 +355,23 @@ test("Law 13 applies goal-area placement, own-penalty-area clearance and the one
   assert.match(source, /const wallClearance=10/);
 });
 
+
+test("Law 13 and restart laws enforce opponent distances for goalkeepers except the free-kick goal-line exception", () => {
+  const helper = lawSource.match(/function restartOpponentDistanceExemption\(state\)\s*\{[\s\S]*?\n  \}/);
+  assert.ok(helper, "the goalkeeper distance exception must be explicit");
+  const isolated = new Function("return (" + helper[0].replace("function restartOpponentDistanceExemption(state)", "function (state)") + ");")();
+  assert.equal(isolated({ restartKind: "fk", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), true);
+  assert.equal(isolated({ restartKind: "fk", goalkeeper: true, onOwnGoalLine: false, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "throw", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "corner", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "gk", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
+  const clamp = source.match(/function restartClamp\(\)\{[\s\S]*?\n\}/);
+  assert.ok(clamp, "restart positioning must be present");
+  assert.match(clamp[0], /PITCH11Law\.restartOpponentDistanceExemption\(/);
+  assert.match(clamp[0], /p\.team===rs\.team\|\|goalkeeperGoalLineException/);
+  assert.doesNotMatch(clamp[0], /p\.team===rs\.team\|\|p\.gk/,
+    "goalkeepers must not be globally exempt from opponent restart distances");
+});
 
 test("Law 3 appoints a replacement goalkeeper after a goalkeeper sending-off when the match can continue", () => {
   assert.match(source, /const _law3ReplacementGoalkeeper=giveCard/);
