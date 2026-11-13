@@ -356,19 +356,20 @@ test("Law 13 applies goal-area placement, own-penalty-area clearance and the one
 });
 
 
-test("Law 13 and restart laws enforce opponent distances for goalkeepers except the free-kick goal-line exception", () => {
-  const helper = lawSource.match(/function restartOpponentDistanceExemption\(state\)\s*\{[\s\S]*?\n  \}/);
-  assert.ok(helper, "the goalkeeper distance exception must be explicit");
-  const isolated = new Function("return (" + helper[0].replace("function restartOpponentDistanceExemption(state)", "function (state)") + ");")();
-  assert.equal(isolated({ restartKind: "fk", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), true);
-  assert.equal(isolated({ restartKind: "fk", goalkeeper: true, onOwnGoalLine: false, betweenPosts: true }), false);
-  assert.equal(isolated({ restartKind: "throw", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
-  assert.equal(isolated({ restartKind: "corner", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
-  assert.equal(isolated({ restartKind: "gk", goalkeeper: true, onOwnGoalLine: true, betweenPosts: true }), false);
+test("Law 13 and restart laws enforce opponent distances except the free-kick goal-line exception", () => {
+  const helper = lawSource.match(/function restartGoalLineDistanceExemption\(state\)\s*\{[\s\S]*?\n  \}/);
+  assert.ok(helper, "the goal-line distance exception must be explicit");
+  const isolated = new Function("return (" + helper[0].replace("function restartGoalLineDistanceExemption(state)", "function (state)") + ");")();
+  assert.equal(isolated({ restartKind: "fk", onOwnGoalLine: true, betweenPosts: true }), true);
+  assert.equal(isolated({ restartKind: "fk", onOwnGoalLine: false, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "fk", onOwnGoalLine: true, betweenPosts: false }), false);
+  assert.equal(isolated({ restartKind: "throw", onOwnGoalLine: true, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "corner", onOwnGoalLine: true, betweenPosts: true }), false);
+  assert.equal(isolated({ restartKind: "gk", onOwnGoalLine: true, betweenPosts: true }), false);
   const clamp = source.match(/function restartClamp\(\)\{[\s\S]*?\n\}/);
   assert.ok(clamp, "restart positioning must be present");
-  assert.match(clamp[0], /PITCH11Law\.restartOpponentDistanceExemption\(/);
-  assert.match(clamp[0], /p\.team===rs\.team\|\|goalkeeperGoalLineException/);
+  assert.match(clamp[0], /PITCH11Law\.restartGoalLineDistanceExemption\(/);
+  assert.match(clamp[0], /p\.team===rs\.team\|\|goalLineDistanceException/);
   assert.doesNotMatch(clamp[0], /p\.team===rs\.team\|\|p\.gk/,
     "goalkeepers must not be globally exempt from opponent restart distances");
 });
