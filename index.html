@@ -5133,6 +5133,19 @@ update=function(){
   S.rs.box=true;S.rs.r=91.5;
   msg('DELAYED GOAL KICK','CORNER KICK',2);
 };
+
+/* --- IFAB Law 3: a team must designate a goalkeeper after its goalkeeper is sent off --- */
+const _law3ReplacementGoalkeeper=giveCard;
+giveCard=function(p,c){
+  const wasGoalkeeper=!!(p&&p.gk),team=p&&p.team;
+  _law3ReplacementGoalkeeper(p,c);
+  if(c<=1||!wasGoalkeeper||S.mode==='full')return;
+  const replacement=PITCH11Law.replacementGoalkeeper(P,team);
+  if(!replacement)return;
+  replacement.gk=true;replacement.pos='GK';replacement.line=0;replacement.st=mkStats('GK');
+  replacement.dive=0;replacement.freeze=0;GK[team]=replacement;
+  msg('GOALKEEPER SENT OFF',tag(replacement)+' takes over in goal',2);
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>
