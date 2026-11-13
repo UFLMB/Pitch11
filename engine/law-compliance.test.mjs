@@ -568,3 +568,22 @@ test('shoot-out does not repeat a kicker until every currently eligible player h
   players[2].out = true;
   assert.equal(law.shootoutNextKicker(players, 0, [players[0], players[1]]), players[3]);
 });
+
+
+test('Law 10 allows an excluded player to replace an injured shoot-out goalkeeper', () => {
+  const players = [
+    { team: 0, num: 1, role: 0, gk: true, out: false },
+    { team: 0, num: 2, role: 1, gk: false, out: false, soExcluded: false, st: { def: 0.7 } },
+    { team: 0, num: 3, role: 2, gk: false, out: true, soExcluded: true, st: { def: 0.9 } },
+    { team: 1, num: 1, role: 0, gk: true, out: false }
+  ];
+  assert.equal(law.shootoutExcludedGoalkeeper(players, 0), players[2]);
+  assert.equal(law.shootoutExcludedGoalkeeper(players, 1), null);
+});
+
+test('Law 10 chooses the correct injured-player procedure during kicks from the penalty mark', () => {
+  assert.equal(law.shootoutInjuryDecision({ goalkeeper: false, excludedPlayerAvailable: true }), 'remove-and-equalise');
+  assert.equal(law.shootoutInjuryDecision({ goalkeeper: true, excludedPlayerAvailable: true }), 'excluded-player');
+  assert.equal(law.shootoutInjuryDecision({ goalkeeper: true, namedSubstituteAvailable: true }), 'named-substitute');
+  assert.equal(law.shootoutInjuryDecision({ goalkeeper: true }), 'change-places');
+});
