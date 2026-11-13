@@ -7,6 +7,7 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const scriptMatch = html.match(/<script>\s*([\s\S]*?)<\/script>/);
 assert.ok(scriptMatch, "production game script must exist");
 const source = scriptMatch[1];
+const lawSource = readFileSync(new URL("./law-compliance.js", import.meta.url), "utf8");
 
 test("production browser runtime parses without syntax errors", () => {
   assert.doesNotThrow(() => new vm.Script(source, { filename: "index.html:inline-script" }));
@@ -467,6 +468,22 @@ test("Law 5 removes assessed outfield players for one running minute and restore
   assert.match(source, /if\(q\.inj&&!q\.out\)sendOffForAssessment\(q\)/);
 });
 
+
+test("Law 3 sends off an already-cautioned goalkeeper who exceeds the substitution exit deadline", () => {
+  const helper = lawSource.match(/function goalkeeperSubstitutionDelayDecision\(state\)\s*\{[\s\S]*?\n  \}/);
+  assert.ok(helper, "goalkeeper substitution delay decision must be defined");
+  const isolated = new Function("return (" + helper[0].replace("function goalkeeperSubstitutionDelayDecision(state)", "function (state)") + ");")();
+  assert.equal(isolated({ exceededTenSeconds: false, alreadyCautioned: true }), "continue");
+  assert.equal(isolated({ exceededTenSeconds: true, alreadyCautioned: false }), "caution-and-replace");
+  assert.equal(isolated({ exceededTenSeconds: true, alreadyCautioned: true }), "send-off");
+  const doSub = source.match(/function doSub\(p,bn\)\{[\s\S]*?\n\}/);
+  assert.ok(doSub, "production substitution path must exist");
+  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?p\.yc\+\+;giveCard\(p,3\)/);
+  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?return false/);
+  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?return false[\s\S]*?S\.subs\[t\]\+\+/,
+    "the send-off branch must return before consuming the substitution or removing the bench goalkeeper");
+  assert.match(doSub[0], /if\(eligibility\.consumesWindow\)[\s\S]*?S\.subs\[t\]\+\+/);
+});
 
 test("Law 3 applies the ten-second exit deadline and one-minute delayed substitute entry in production", () => {
   assert.match(source, /function substitutionExitTarget\(p\)/);
