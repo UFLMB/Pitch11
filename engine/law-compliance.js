@@ -153,7 +153,7 @@
   }
 
   function goalkeeperHoldExpired(seconds) {
-    return Number.isFinite(seconds) && seconds >= 8;
+    return Number.isFinite(seconds) && seconds > 8;
   }
 
   function goalkeeperHandControlDecision(insidePenaltyArea, seconds) {
