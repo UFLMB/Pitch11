@@ -3364,7 +3364,10 @@ function bodyCollide(){                                    // the ball bounces o
     if(p===b.last&&p.kcd>0.1)continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
-    if(p===b.dbl&&S.so&&S.so.live&&p===S.so.shooter)b.shootoutDoubleTouch=true;
+    if(p===b.dbl){
+      if(S.so&&S.so.live&&p===S.so.shooter)b.shootoutDoubleTouch=true;
+      else if(ball.pen&&!ball.penaltyWasShootout&&p===ball.penaltyKicker)ball.penaltyDoubleTouch=true;
+    }
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
     if(!S.prac&&p.off){callOffside(p);return;}
@@ -5066,7 +5069,7 @@ function clearPenaltyLineState(){
   ball.penaltyTeam=null;ball.penaltyKicker=null;ball.penaltyKeeper=null;
   ball.penaltyKeeperOffLine=false;ball.penaltyKeeperSaved=false;
   ball.penaltyKeeperImpactedKicker=false;ball.penaltyRetakePending=false;
-  ball.penaltyWasShootout=false;ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=null;ball.pen=false;
+  ball.penaltyWasShootout=false;ball.penaltyOtherPlayerTouched=false;ball.penaltyLastTouch=null;ball.penaltyDoubleTouch=false;ball.pen=false;
 }
 const _setupPenLine=setupPen;
 setupPen=function(t,sh,so){clearPenaltyLineState();_setupPenLine(t,sh,so);const keeper=GK[1-t];if(keeper&&!keeper.out)keeper.face=Math.atan2(sh.y-keeper.y,sh.x-keeper.x);};
@@ -5185,12 +5188,12 @@ update=function(){
   _updatePenaltyLine();
   if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&S.penaltyExtraTime&&ball.penaltyOtherPlayerTouched&&!ball.penaltyRetakePending)
     ball.penaltyRetakePending=true;
-  if(ball.pen&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
-  if(ball.pen&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3){
+  if(ball.pen&&!ball.penaltyDoubleTouch&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
+  if(ball.pen&&!ball.penaltyDoubleTouch&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3){
     const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
     if(decision==='retake')ball.penaltyRetakePending=true;else clearPenaltyLineState();
   }
-  if(ball.pen&&ball.penaltyOtherPlayerTouched){
+  if(ball.pen&&ball.penaltyOtherPlayerTouched&&!ball.penaltyDoubleTouch){
     const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
     if(decision!=='retake')clearPenaltyLineState();
   }
@@ -5565,6 +5568,43 @@ injured=function(q){
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js">
 
+
+/* --- IFAB Law 14 (2026/27): accidental penalty-kicker double touch --- */
+function resolveAccidentalPenaltyDoubleTouch(goalScored){
+  const decision=PITCH11Law.penaltyAccidentalDoubleTouchDecision({
+    doubleTouch:ball.penaltyDoubleTouch,completed:true,goalScored:!!goalScored
+  });
+  if(decision==='continue')return false;
+  const team=ball.penaltyTeam,kicker=ball.penaltyKicker,x=ball.x,y=ball.y;
+  clearPenaltyLineState();
+  if(decision==='retake'){
+    S.penaltyRetake=true;
+    whistleStop(1.2,'PENALTY RETAKE','Accidental double touch',()=>{
+      try{setupPen(team,kicker&&!kicker.out&&!kicker.inj?kicker:firstIn(team),false);}
+      finally{S.penaltyRetake=false;}
+    });
+  }else{
+    whistleStop(1.2,'INDIRECT FREE KICK','Accidental double touch',()=>freeKick(1-team,x,y,true));
+  }
+  return true;
+}
+const _goalLaw14AccidentalDoubleTouch=goal;
+goal=function(dr){
+  if(ball.pen&&!ball.penaltyWasShootout&&resolveAccidentalPenaltyDoubleTouch(true))return;
+  _goalLaw14AccidentalDoubleTouch(dr);
+};
+const _outOfPlayLaw14AccidentalDoubleTouch=outOfPlay;
+outOfPlay=function(){
+  if(ball.pen&&!ball.penaltyWasShootout&&resolveAccidentalPenaltyDoubleTouch(false))return;
+  _outOfPlayLaw14AccidentalDoubleTouch();
+};
+const _updateLaw14AccidentalDoubleTouch=update;
+update=function(){
+  _updateLaw14AccidentalDoubleTouch();
+  if(ball.pen&&!ball.penaltyWasShootout&&ball.penaltyDoubleTouch&&(
+    (ball.owner&&ball.owner!==ball.penaltyKicker)||(!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3)))
+    resolveAccidentalPenaltyDoubleTouch(false);
+};
 </script>
 </body>
 </html>
