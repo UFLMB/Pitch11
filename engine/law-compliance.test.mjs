@@ -75,6 +75,28 @@ test('Law 3 requires at least seven eligible players; dismissed players do not c
   assert.equal(law.hasMinimumPlayers(players, 0), false);
   assert.equal(law.hasMinimumPlayers(players, 1), false);
   assert.equal(law.hasMinimumPlayers(players, 0, 6), true);
+  players[0].tempOff = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), true, 'temporary medical assessment does not count as a dismissal');
+});
+
+test('Law 5 requires a one-minute off-field period only for applicable outfield injuries', () => {
+  const leave = { stoppedForInjury: true };
+  assert.equal(law.offFieldTreatmentDecision(leave), 'leave-one-minute');
+  assert.equal(law.offFieldTreatmentDecision({ assessedOnField: true }), 'leave-one-minute');
+  assert.equal(law.offFieldTreatmentDecision({ requestedMedicalAttention: true }), 'leave-one-minute');
+  for (const exception of [
+    { goalkeeper: true }, { sameTeamCollision: true }, { goalkeeperOutfieldCollision: true },
+    { severeInjury: true }, { foulCautionOrSendingOff: true }, { penaltyKicker: true }
+  ]) {
+    assert.equal(law.offFieldTreatmentDecision({ ...leave, ...exception }), 'remain');
+  }
+  assert.equal(law.offFieldTreatmentDecision({}), 'remain');
+});
+
+test('Law 5 permits return after one running minute or at the start of the next period', () => {
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 0.99 }), 'wait');
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 1 }), 'return');
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 0.2, periodRestart: true }), 'return');
 });
 
 
