@@ -454,3 +454,8 @@ test("Law 7 counts match stoppages, adds the lost time back, and shows added-tim
   assert.match(source, /priorMode==='subs'&&S\.ret!=='half'/);
   assert.match(source, /priorMode==='kickoff'&&S\.clock>0/);
 });
+
+
+test("Law 10 keeps temporarily off-field injury-assessment players eligible for the penalty shoot-out", () => {
+  assert.match(source, /players\.filter\(p => p\.team === team && \(!p\.out \|\| p\.tempOff === true \|\| p\.substitutionPending === true\)\)/);
+});
