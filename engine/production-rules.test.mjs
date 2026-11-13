@@ -457,5 +457,6 @@ test("Law 7 counts match stoppages, adds the lost time back, and shows added-tim
 
 
 test("Law 10 keeps temporarily off-field injury-assessment players eligible for the penalty shoot-out", () => {
-  assert.match(source, /players\.filter\(p => p\.team === team && \(!p\.out \|\| p\.tempOff === true \|\| p\.substitutionPending === true\)\)/);
+  assert.match(source, /function shootoutOrder[\s\S]*?p\.tempOff === true/);
+  assert.match(source, /function shootoutExclusions[\s\S]*?p\.tempOff === true/);
 });
