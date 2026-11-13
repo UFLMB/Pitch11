@@ -579,3 +579,14 @@ test("Law 12 preserves the goalkeeper back-pass restriction for the active repla
   assert.doesNotMatch(source, /b\.last!==P\[b\.gkNoHands\*11\]/);
   assert.match(source, /GK\[p\.team\]=replacement/);
 });
+
+
+test("Law 3 abandons after second-yellow send-offs issued by advantage and strict-referee paths", () => {
+  assert.match(source, /function queueMinimumPlayerForfeit\(p\)\{if\(p&&p\.out&&PITCH11Law\.matchAbandonmentDecision\(P,p\.team,7,!!S\.so\)==='abandon'\)S\.forfeitTeam=p\.team;\}/);
+  assert.match(source, /function finishMinimumPlayerForfeit\(\)\{[\s\S]*?S\.mode='full'[\s\S]*?MATCH ABANDONED/);
+  assert.match(source, /giveCard\(p,p\.yc>1\?3:1\);\s*queueMinimumPlayerForfeit\(p\);/);
+  assert.match(source, /_whistleStopPendingCard\(sec,big,sub,fn,hurt\);\s*finishMinimumPlayerForfeit\(\);/);
+  assert.match(source, /_outOfPlayAdvantageCards\(\);\s*finishMinimumPlayerForfeit\(\);/);
+  assert.match(source, /_endHalfPendingAdvantageCard\(\);\s*finishMinimumPlayerForfeit\(\);/);
+  assert.match(source, /giveCard\(p,3\);queueMinimumPlayerForfeit\(p\);finishMinimumPlayerForfeit\(\);/);
+});
