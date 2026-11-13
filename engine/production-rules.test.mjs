@@ -45,7 +45,7 @@ test("opponents stay two metres from a throw-in", () => {
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
   assert.match(source, /if\(rs&&rs\.p===p\)ball\.dbl=p/);
-  assert.match(source, /if\(p!==ball\.dbl\)ball\.dbl=null/);
+  assert.match(source, /if\(p!==ball\.dbl\|\|ball\.last!==ball\.dbl\)ball\.dbl=null/);
   assert.doesNotMatch(source, /ball\.dblT/);
 });
 
@@ -61,7 +61,7 @@ test("throw-ins and dropped balls cannot score without another touch", () => {
 
 test("a restart taker's second-touch restriction ends on any other player's contact", () => {
   assert.match(source, /if\(best!==b\.dbl\)\{b\.dbl=null;b\.ind=false;\}/);
-  assert.match(source, /if\(p!==ball\.dbl\)ball\.dbl=null/);
+  assert.match(source, /if\(p!==ball\.dbl\|\|ball\.last!==ball\.dbl\)ball\.dbl=null/);
 });
 
 test("penalty shootouts use the isolated whole-ball law decision helper", () => {
@@ -368,4 +368,11 @@ test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks,
   assert.match(source, /PITCH11Law\.directRestartGoalDecision\(/);
   assert.match(source, /restartKickerTeam:b\.dbl===b\.last&&b\.dbl\?b\.dbl\.team:null/);
   assert.match(source, /keeperThrowDecision==='goal'/);
+});
+
+
+test("Direct-restart touch tracking clears after a second player's deflection or control", () => {
+  assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
+  assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
+  assert.match(source, /const _aiGKDirectRestart=aiGK/);
 });
