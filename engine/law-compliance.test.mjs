@@ -395,3 +395,33 @@ test('Law 7 displays 45+ and extra-time added-time clock labels', () => {
   assert.equal(law.addedTimeClockLabel({ clock: 96, regulationSeconds: 90, secondsPerMatchMinute: 6, baseMinute: 105 }), '105+2');
   assert.equal(law.addedTimeClockLabel({ clock: 179, regulationSeconds: 180, secondsPerMatchMinute: 4, baseMinute: 45 }), '');
 });
+
+
+const completePlayerEquipment = {
+  shirtWithSleeves: true, shorts: true, socks: true,
+  shinguards: true, shinguardsCovered: true, footwear: true,
+  dangerousEquipment: false, uncoveredJewellery: false,
+  playerElectronicEquipment: false
+};
+
+test('Law 4 allows a player whose compulsory equipment is complete and safe', () => {
+  assert.deepEqual(law.playerEquipmentIssues(completePlayerEquipment), []);
+  assert.equal(law.equipmentInspectionDecision(completePlayerEquipment), 'allow');
+});
+
+test('Law 4 requires missing compulsory equipment to be replaced before entry', () => {
+  const missingBoots = { ...completePlayerEquipment, footwear: false };
+  assert.deepEqual(law.playerEquipmentIssues(missingBoots), ['footwear']);
+  assert.equal(law.equipmentInspectionDecision(missingBoots), 'replace-item');
+  const missingShinguards = { ...completePlayerEquipment, shinguardsCovered: false };
+  assert.deepEqual(law.playerEquipmentIssues(missingShinguards), ['shinguards']);
+  assert.equal(law.equipmentInspectionDecision(missingShinguards), 'replace-item');
+});
+
+test('Law 4 rejects dangerous, uncovered jewellery and player electronic equipment', () => {
+  const unsafe = { ...completePlayerEquipment, dangerousEquipment: true,
+    uncoveredJewellery: true, playerElectronicEquipment: true };
+  assert.deepEqual(law.playerEquipmentIssues(unsafe),
+    ['dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment']);
+  assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
+});
