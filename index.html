@@ -1073,7 +1073,7 @@ function foul(p,o,behind,context){
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
   // IFAB Law 3: play cannot continue once a team has fewer than seven players.
-  if(card>1&&!PITCH11Law.hasMinimumPlayers(P,p.team,7)){
+  if(PITCH11Law.matchAbandonmentDecision(P,p.team,7,!!S.so)==='abandon'){
     S.forfeitTeam=p.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
     for(const q of P){q.ix=q.iy=0;q.sp=false;}
     msg('MATCH ABANDONED',KIT[p.team].name+' has fewer than seven players',3);
@@ -4970,7 +4970,7 @@ function retakePenaltyForKeeperOffence(){
     giveCard(keeper,card);
     sanction=card===3?'Repeated offence: second yellow and sending-off':'Repeated offence: goalkeeper cautioned';
     if(card===3){
-      if(!PITCH11Law.hasMinimumPlayers(P,keeper.team,7)){
+      if(PITCH11Law.matchAbandonmentDecision(P,keeper.team,7,shootout)==='abandon'){
         S.forfeitTeam=keeper.team;S.mode='full';S.t=0;S.rs=null;S.adv=null;S.inj=null;
         msg('MATCH ABANDONED',KIT[keeper.team].name+' has fewer than seven players',3);
         clearPenaltyLineState();return;
