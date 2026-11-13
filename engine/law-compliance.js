@@ -254,7 +254,7 @@
 
   function shootoutExclusions(players) {
     const active = [0, 1].map(team =>
-      players.filter(p => p.team === team && (!p.out || p.tempOff === true || p.substitutionPending === true))
+      players.filter(p => p.team === team && p.soExcluded !== true && (!p.out || p.tempOff === true || p.substitutionPending === true))
     );
     const target = Math.min(active[0].length, active[1].length);
     const excluded = [];

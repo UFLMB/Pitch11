@@ -526,3 +526,17 @@ test('the non-kicking goalkeeper stands at the goal-line/penalty-area boundary i
   assert.equal(law.shootoutKickerGoalkeeperPosition({ ownGoalLine: 60, centerY: 400, penaltyHalfWidth: 201.5 }).y, 198.5);
   assert.equal(law.shootoutKickerGoalkeeperPosition({ ownGoalLine: 1110, centerY: 400, penaltyHalfWidth: 201.5 }).x, 1110);
 });
+
+
+test('shoot-out equalisation after a sending-off excludes one opponent and never reuses an excluded player', () => {
+  const players = Array.from({ length: 22 }, (_, i) => ({
+    team: i < 11 ? 0 : 1, num: (i % 11) + 1, role: i % 11, gk: i % 11 === 0,
+    out: false, soExcluded: false
+  }));
+  players[3].out = true;
+  const excluded = law.shootoutExclusions(players);
+  assert.equal(excluded.length, 1);
+  excluded[0].out = true;
+  excluded[0].soExcluded = true;
+  assert.equal(law.shootoutExclusions(players).length, 0);
+});

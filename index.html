@@ -14,7 +14,8 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 </head>
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
-<script src="engine/law-compliance.js"></script>
+<script src="engine/law-compliance.js">
+</script>
 <script>
 'use strict';
 /* =====================================================================
@@ -5448,8 +5449,21 @@ const _updateLaw5OffField=update;update=function(){
     if(PITCH11Law.offFieldReturnDecision({elapsedMinutes:gmin()-p.tempOffStartedAt})==='return')returnFromAssessment(p,false);
   }
 };
+/* Law 10: after a sending-off during penalties, the opponents reduce to the same number. */
+const _giveCardShootoutEqualisation=giveCard;
+giveCard=function(p,c){
+  const shootoutSendOff=!!(S.so&&c>1&&p&&!p.out);
+  _giveCardShootoutEqualisation(p,c);
+  if(!shootoutSendOff)return;
+  const excluded=PITCH11Law.shootoutExclusions(P);
+  for(const q of excluded){
+    q.out=true;q.soExcluded=true;q.x=q.px=q.y=q.py=-400;q.vx=q.vy=q.ix=q.iy=0;
+  }
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
-<script type="module" src="./stadium-runtime.js"></script>
+<script type="module" src="./stadium-runtime.js">
+
+</script>
 </body>
 </html>
