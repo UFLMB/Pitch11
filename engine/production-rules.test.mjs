@@ -399,8 +399,8 @@ test("Law 9 restarts with a dropped ball after referee contact causes a direct g
 test("Law 5 removes assessed outfield players for one running minute and restores them at a period restart", () => {
   assert.match(source, /function sendOffForAssessment\(p,state\)/);
   assert.match(source, /PITCH11Law\.offFieldTreatmentDecision\(assessment\)/);
-  assert.match(source, /foulCautionOrSendingOff:!!p\.law5FoulSanction/);
-  assert.match(source, /penaltyKicker:!!p\.law5PenaltyKicker/);
+  assert.match(source, /assessment\.foulCautionOrSendingOff=!!\(assessment\.foulCautionOrSendingOff\|\|p\.law5FoulSanction\)/);
+  assert.match(source, /assessment\.penaltyKicker=!!\(assessment\.penaltyKicker\|\|p\.law5PenaltyKicker\)/);
   assert.match(source, /hurt\.inj=true;hurt\.law5FoulSanction=card>0/);
   assert.match(source, /o\.inj=true/);
   assert.match(source, /if\(penaltyKicker\)o\.law5PenaltyKicker=true/);
