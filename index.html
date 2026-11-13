@@ -1077,7 +1077,7 @@ function foul(p,o,behind,context){
   if(card===1||card===3)p.yc++;
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
-  if(hurt){hurt.law5FoulSanction=card>0;hurt.law5PenaltyKicker=pen&&firstIn(t)===o;}
+  if(hurt){hurt.inj=true;hurt.law5FoulSanction=card>0;hurt.law5PenaltyKicker=pen&&firstIn(t)===o;}
   // IFAB Law 3: play cannot continue once a team has fewer than seven players.
   if(PITCH11Law.matchAbandonmentDecision(P,p.team,7,!!S.so)==='abandon'){
     S.forfeitTeam=p.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
@@ -2552,20 +2552,23 @@ function slideStep(p){                                      // replaces normal m
     p.stun=Math.max(p.stun,sd.rec);p.tcd=Math.max(p.tcd,0.8);p.sd=null;p.vx*=0.2;p.vy*=0.2;
   }
 }
-function slideInjury(o,tq,behind,foulSanction){                          // a hard foul can injure the victim, including when advantage is played
+function slideInjury(o,tq,behind,foulSanction,penaltyKicker){                          // a hard foul can injure the victim, including when advantage is played
   if(Math.random()>=0.1+0.25*(1-tq)+(behind?0.1:0))return;
   if(S.mode==='whistle'&&!S.inj){S.inj=o;o.down=true;S.wt=3;msg('INJURY',tag(o)+' is down',3);}
   else if(S.mode==='play'&&S.adv&&S.adv.team===o.team){const fn=S.adv.fn;S.adv=null;whistleStop(3,'FOUL','',fn,o);msg('INJURY',tag(o)+' is down',3);}
   else return;
+  o.inj=true;
   if(foulSanction)o.law5FoulSanction=true;
+  if(penaltyKicker)o.law5PenaltyKicker=true;
   D9.n.si[o.team===0?1:0]++;act8('slide','injury');
 }
 function slideFoul(p,q,tq,behind){
   p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp,speed=Math.hypot(p.vx,p.vy),previousYc=p.yc;
   const seriousFoulPlay=behind&&tq<0.12&&speed>180;
   p.sp=true;foul(p,q,behind,{reckless:behind||tq<0.55,seriousFoulPlay,attemptToPlayBall:true});
-  const foulSanction=p.out||p.yc>previousYc;
-  p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind,foulSanction);
+  const foulSanction=p.out||p.yc>previousYc,own=dirOf(p.team)>0?PX0:PX1;
+  const penaltyKicker=Math.abs(ball.x-own)<165&&Math.abs(ball.y-CY)<201.5&&firstIn(q.team)===q;
+  p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind,foulSanction,penaltyKicker);
 }
 function slideHit(p,sd){
   const K=TUNING.df.sl,b=ball,o=b.owner,def=p.st.def,rch=K.reach+K.rd*def,tq=1-clamp(Math.abs(sd.t-K.ideal)/0.25,0,1);   // tq: timing quality, 1 = contact at the ideal moment
