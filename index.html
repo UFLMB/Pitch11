@@ -498,6 +498,22 @@ function touches(){                                        // a free ball is pic
   }
   if(!best)return;
   if(best!==b.dbl){b.dbl=null;b.ind=false;}              // another player's touch ends the second-touch restriction and allows a goal after a throw-in / drop
+  if(!S.prac&&!best.off){
+    const challenger=P.find(p=>{
+      if(!p.off||p.out||p.team===best.team)return false;
+      const dx=b.x-p.x,dy=b.y-p.y;
+      const approaching=p.vx*dx+p.vy*dy>0.1||b.vx*(-dx)+b.vy*(-dy)>0.1;
+      return PITCH11Law.offsideChallengeInterference({offside:true,approaching,
+        attackerX:p.x,attackerY:p.y,opponentX:best.x,opponentY:best.y,
+        ballX:b.x,ballY:b.y,radius:15});
+    });
+    if(challenger){callOffside(challenger);return;}
+    const blocker=P.find(p=>p.off&&!p.out&&p.team!==best.team&&PITCH11Law.offsideLineOfSightInterference({
+      offside:true,attackerX:p.x,attackerY:p.y,keeperX:best.x,keeperY:best.y,
+      ballX:b.x,ballY:b.y,radius:5.5
+    }));
+    if(blocker){callOffside(blocker);return;}
+  }
   if(!S.prac&&best.off){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const previousLast=b.last,a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;

@@ -302,3 +302,13 @@ test('Law 3 appoints an eligible on-field player when a goalkeeper is sent off',
   assert.equal(law.replacementGoalkeeper(players, 1), players[3]);
   assert.equal(law.replacementGoalkeeper([], 0), null);
 });
+
+
+test('Law 11 penalises an offside attacker actively challenging an opponent for a loose ball', () => {
+  const base = { offside: true, approaching: true, attackerX: 4, attackerY: 4, opponentX: 10, opponentY: 4, ballX: 7, ballY: 4, radius: 15 };
+  assert.equal(law.offsideChallengeInterference(base), true);
+  assert.equal(law.offsideChallengeInterference({ ...base, approaching: false }), false);
+  assert.equal(law.offsideChallengeInterference({ ...base, offside: false }), false);
+  assert.equal(law.offsideChallengeInterference({ ...base, opponentX: 40 }), false);
+  assert.equal(law.offsideChallengeInterference({ ...base, radius: NaN }), false);
+});

@@ -256,5 +256,14 @@
     return players.find(player => player && player.team === team && !player.out && !player.gk) || null;
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function offsideChallengeInterference(state) {
+    const s = state || {};
+    const fields = [s.attackerX, s.attackerY, s.opponentX, s.opponentY, s.ballX, s.ballY, s.radius];
+    if (s.offside !== true || s.approaching !== true || !fields.every(Number.isFinite) || s.radius < 0) return false;
+    return Math.hypot(s.attackerX - s.ballX, s.attackerY - s.ballY) <= s.radius &&
+      Math.hypot(s.opponentX - s.ballX, s.opponentY - s.ballY) <= s.radius &&
+      Math.hypot(s.attackerX - s.opponentX, s.attackerY - s.opponentY) <= s.radius;
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
