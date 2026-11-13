@@ -137,6 +137,16 @@
     return s.isRestartKicker === true && s.approaching === true;
   }
 
+  function restartSecondTouchRestart(state) {
+    const s = state || {};
+    if (s.isKicker !== true) return 'continue';
+    if (s.handball === true) {
+      if (s.goalkeeper === true && s.insideOwnPenaltyArea === true) return 'indirect-free-kick';
+      return s.insideOwnPenaltyArea === true ? 'penalty' : 'direct-free-kick';
+    }
+    return 'indirect-free-kick';
+  }
+
   function penaltyAccidentalDoubleTouchDecision(state) {
     const s = state || {};
     if (s.doubleTouch !== true || s.completed !== true) return 'continue';
@@ -479,5 +489,5 @@
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 
-  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, restartSecondTouchRestart, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
