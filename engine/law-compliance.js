@@ -197,7 +197,7 @@
 
   function hasMinimumPlayers(players, team, minimum) {
     const limit = Number.isInteger(minimum) && minimum > 0 ? minimum : 7;
-    return players.filter(p => p.team === team && !p.out).length >= limit;
+    return players.filter(p => p.team === team && (!p.out || p.tempOff === true)).length >= limit;
   }
 
   function shootoutOrder(players, team) {
@@ -282,6 +282,21 @@
   function matchAbandonmentDecision(players, team, minimum, shootout) {
     if (shootout) return 'continue';
     return hasMinimumPlayers(players, team, minimum || 7) ? 'continue' : 'abandon';
+  }
+
+  function offFieldTreatmentDecision(state) {
+    const s = state || {};
+    if (s.goalkeeper || s.sameTeamCollision || s.goalkeeperOutfieldCollision ||
+        s.severeInjury || s.foulCautionOrSendingOff || s.penaltyKicker) return 'remain';
+    return s.stoppedForInjury || s.assessedOnField || s.requestedMedicalAttention
+      ? 'leave-one-minute'
+      : 'remain';
+  }
+
+  function offFieldReturnDecision(state) {
+    const s = state || {};
+    if (s.periodRestart === true) return 'return';
+    return Number.isFinite(s.elapsedMinutes) && s.elapsedMinutes >= 1 ? 'return' : 'wait';
   }
 
   function goalkeeperThrowGoalDecision(state) {
