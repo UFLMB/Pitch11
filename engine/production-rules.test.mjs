@@ -534,3 +534,10 @@ test("Law 10 accepts any unused named substitute as an injured shoot-out goalkee
   assert.match(source, /BENCH\[t\]\.splice\(benchIndex,1\)/);
   assert.doesNotMatch(source, /BENCH\[t\]\.find\(player=>player\.pos==='GK'\)/);
 });
+
+
+test("Law 11 snapshots the second-last opponent from live player positions at the moment of the pass", () => {
+  assert.match(source, /PITCH11Law\.secondLastOpponentPosition\(P,t,d\)/);
+  assert.match(source, /PITCH11Law\.isOffsidePosition\(/);
+  assert.doesNotMatch(source, /const t=p\.team,d=dirOf\(t\),line=TI\[t\]\.off/);
+});

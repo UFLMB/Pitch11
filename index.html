@@ -256,9 +256,15 @@ const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=fa
 /* ===================== 4. ACTIONS (kick, pass, shoot, tackle) ===================== */
 function clearOff(){for(const q of P)q.off=false;ball.ind=false;ball.refContact=null;}   // any new touch ends offside / indirect-kick status
 function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;ball.gkHoldShown=0;p.poss=0;p.force=false;clearOff();}
-function markOff(p){                                       // who is in an offside position at the moment of the pass
-  clearOff();const t=p.team,d=dirOf(t),line=TI[t].off,bx=ball.x*d;
-  for(let i=t*11;i<t*11+11;i++){const q=P[i];if(q!==p&&!q.out&&q.x*d>line&&q.x*d>bx&&(q.x-CX)*d>0)q.off=true;}
+function markOff(p){                                       // snapshot the second-last opponent at the exact moment of the team-mate's touch
+  clearOff();const t=p.team,d=dirOf(t),line=PITCH11Law.secondLastOpponentPosition(P,t,d);
+  if(line===null)return;
+  for(let i=t*11;i<t*11+11;i++){
+    const q=P[i];
+    if(q!==p&&!q.out&&PITCH11Law.isOffsidePosition({
+      attackerX:q.x,ballX:ball.x,secondLastOpponentX:line,direction:d,halfway:CX
+    }))q.off=true;
+  }
 }
 function applyOffsideTouch(p,previousLast,deliberatePlay,deliberateSave){
   const action=PITCH11Law.offsideTouchAction({
