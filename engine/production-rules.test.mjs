@@ -44,7 +44,7 @@ test("opponents stay two metres from a throw-in", () => {
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
-  assert.match(source, /if\(rs&&rs\.p===p\)ball\.dbl=p/);
+  assert.match(source, /if\(rs&&rs\.p===p\)\{ball\.dbl=p;ball\.dblKind=rs\.kind;\}/);
   assert.match(source, /if\(p!==ball\.dbl\|\|ball\.last!==ball\.dbl\)ball\.dbl=null/);
   assert.doesNotMatch(source, /ball\.dblT/);
 });
