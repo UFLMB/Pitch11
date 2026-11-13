@@ -86,10 +86,11 @@ test('Law 5 requires a one-minute off-field period only for applicable outfield 
   assert.equal(law.offFieldTreatmentDecision({ requestedMedicalAttention: true }), 'leave-one-minute');
   for (const exception of [
     { goalkeeper: true }, { sameTeamCollision: true }, { goalkeeperOutfieldCollision: true },
-    { severeInjury: true }, { foulCautionOrSendingOff: true }, { penaltyKicker: true }
+    { severeInjury: true }, { foulCautionOrSendingOff: true, assessmentCompletedQuickly: true }, { penaltyKicker: true }
   ]) {
     assert.equal(law.offFieldTreatmentDecision({ ...leave, ...exception }), 'remain');
   }
+  assert.equal(law.offFieldTreatmentDecision({ ...leave, foulCautionOrSendingOff: true }), 'leave-one-minute');
   assert.equal(law.offFieldTreatmentDecision({}), 'remain');
 });
 
