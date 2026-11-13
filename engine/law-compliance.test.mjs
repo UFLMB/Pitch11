@@ -23,6 +23,12 @@ test('shootout goal requires the whole ball to cross inside the frame', () => {
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, z: 2.40 } }), 'miss');
 });
 
+test('an accidental second touch in a shoot-out retakes a scored kick but makes a non-scored kick unsuccessful', () => {
+  assert.equal(law.shootoutDecision({ ...base, doubleTouch: true, ball: { ...base.ball, x: 100.12 } }), 'retake');
+  assert.equal(law.shootoutDecision({ ...base, doubleTouch: true, ball: { ...base.ball, x: 100.05 } }), 'live');
+  assert.equal(law.shootoutDecision({ ...base, doubleTouch: true, ball: { ...base.ball, x: 95, y: 60.2, vx: 0 } }), 'miss');
+});
+
 test('a goalkeeper catch ends the kick but a parry leaves it live', () => {
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, x: 95, owner: { team: 1 } } }), 'miss');
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, x: 95, vx: -1, owner: null, last: { team: 1 } } }), 'live');
