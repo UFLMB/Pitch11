@@ -5215,7 +5215,7 @@ function resolveRefereeContact(p){
   return false;
 }
 const _takeLaw9Referee=take;
-take=function(p,byHand=false){if(resolveRefereeContact(p))return;_takeLaw9Referee(p,byHand);};
+take=function(p,byHand){if(resolveRefereeContact(p))return;_takeLaw9Referee(p,byHand);};
 const _kickLaw9Referee=kick;
 kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){if(resolveRefereeContact(p))return;_kickLaw9Referee(p,vx,vy,vz,spin,rcv,tx,ty,mode);};
 const _goalLaw9Referee=goal;
