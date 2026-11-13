@@ -405,23 +405,22 @@ const completePlayerEquipment = {
 };
 
 test('Law 4 allows a player whose compulsory equipment is complete and safe', () => {
-  assert.deepEqual(law.playerEquipmentIssues(completePlayerEquipment), []);
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(completePlayerEquipment)), JSON.stringify([]));
   assert.equal(law.equipmentInspectionDecision(completePlayerEquipment), 'allow');
 });
 
 test('Law 4 requires missing compulsory equipment to be replaced before entry', () => {
   const missingBoots = { ...completePlayerEquipment, footwear: false };
-  assert.deepEqual(law.playerEquipmentIssues(missingBoots), ['footwear']);
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(missingBoots)), JSON.stringify(['footwear']));
   assert.equal(law.equipmentInspectionDecision(missingBoots), 'replace-item');
   const missingShinguards = { ...completePlayerEquipment, shinguardsCovered: false };
-  assert.deepEqual(law.playerEquipmentIssues(missingShinguards), ['shinguards']);
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(missingShinguards)), JSON.stringify(['shinguards']));
   assert.equal(law.equipmentInspectionDecision(missingShinguards), 'replace-item');
 });
 
 test('Law 4 rejects dangerous, uncovered jewellery and player electronic equipment', () => {
   const unsafe = { ...completePlayerEquipment, dangerousEquipment: true,
     uncoveredJewellery: true, playerElectronicEquipment: true };
-  assert.deepEqual(law.playerEquipmentIssues(unsafe),
-    ['dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment']);
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment']));
   assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
 });
