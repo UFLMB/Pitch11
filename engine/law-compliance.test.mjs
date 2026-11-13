@@ -554,3 +554,17 @@ test('a sent-off shoot-out goalkeeper is replaced only by an eligible player fro
   assert.equal(law.shootoutReplacementGoalkeeper(players, 1), players[4]);
   assert.equal(law.shootoutReplacementGoalkeeper([], 0), null);
 });
+
+
+test('shoot-out does not repeat a kicker until every currently eligible player has kicked', () => {
+  const players = [
+    { team: 0, num: 1, role: 1, gk: false, out: false },
+    { team: 0, num: 2, role: 2, gk: false, out: false },
+    { team: 0, num: 3, role: 3, gk: false, out: false },
+    { team: 0, num: 4, role: 4, gk: false, out: false }
+  ];
+  assert.equal(law.shootoutNextKicker(players, 0, [players[0], players[1]]), players[2]);
+  assert.equal(law.shootoutNextKicker(players, 0, players), players[0]);
+  players[2].out = true;
+  assert.equal(law.shootoutNextKicker(players, 0, [players[0], players[1]]), players[3]);
+});
