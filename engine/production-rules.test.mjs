@@ -331,3 +331,11 @@ test("Law 3 appoints a replacement goalkeeper after a goalkeeper sending-off whe
   assert.match(source, /GK\[team\]=replacement/);
   assert.match(source, /S\.mode==='full'/);
 });
+
+
+test("Law 11 detects an offside attacker challenging or obstructing an opponent before a loose-ball touch", () => {
+  assert.match(source, /PITCH11Law\.offsideChallengeInterference\(/);
+  assert.match(source, /PITCH11Law\.offsideLineOfSightInterference\(/);
+  assert.match(source, /if\(!S\.prac&&!best\.off\)/);
+  assert.match(source, /callOffside\(challenger\)/);
+});
