@@ -499,8 +499,12 @@ function touches(){                                        // a free ball is pic
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9;
   for(const p of P){
-    if(p.gk||p.out||p.substitutionExiting||p.kcd>0||p.stun>0||p===b.dbl)continue;
+    if(p.gk||p.out||p.substitutionExiting||p.kcd>0||p.stun>0)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
+    if(p===b.dbl){
+      if(S.so&&S.so.live&&p===S.so.shooter&&d<r)b.shootoutDoubleTouch=true;
+      continue;
+    }
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
     if(s>bs){bs=s;best=p;}
@@ -917,8 +921,18 @@ function soRules(){
     left:PX0,right:PX1,top:PY0,bottom:PY1,centerY:CY,
     goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR,elapsed:so.t,maxSeconds:8,restartActive:!!S.rs
   });
+  if(decision==='retake'){soRetake();return;}
   if(decision==='goal'){soResult(true);return;}
   if(decision==='miss'){soResult(false);return;}
+}
+function soRetake(){
+  const so=S.so,team=so.team,shooter=so.shooter;
+  so.live=false;
+  whistleStop(1.4,'PENALTY RETAKE','Accidental double touch',()=>{
+    ball.dbl=null;ball.shootoutDoubleTouch=false;
+    setupPen(team,shooter,true);
+    S.mode='play';S.t=0;so.team=team;so.shooter=shooter;so.live=true;so.t=0;
+  });
 }
 function soResult(ok){
   const so=S.so;so.live=false;so.k[so.team].push(ok);if(!so.taken)so.taken=[[],[]];if(so.shooter&&!so.taken[so.team].includes(so.shooter))so.taken[so.team].push(so.shooter);
@@ -1016,7 +1030,7 @@ function setupPen(t,sh,so){                                // everyone else wait
     else{p.x=p.px=lx+(p.team===t?-d:d)*14;p.y=p.py=PY0+40+(k++)*(PH-80)/20;}
   }
   sh.x=sh.px=sx-d*10;sh.y=sh.py=CY;sh.face=d>0?0:Math.PI;sh.poss=0;sh.freeze=1.2;
-  const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.protect=99;clearOff();
+  const b=ball;b.x=b.px=sx;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=sh;b.last=sh;b.receiver=null;b.protect=99;b.dbl=null;b.shootoutDoubleTouch=false;clearOff();
   S.rs={kind:'pen',team:t,p:sh,x:sx,y:CY};S.adv=null;
   cam.x=cam.px=sx;cam.y=cam.py=CY;
   ctrl=t===0?sh:firstIn(0);
@@ -3354,6 +3368,7 @@ function bodyCollide(){                                    // the ball bounces o
     if(p===b.last&&p.kcd>0.1)continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
+    if(p===b.dbl&&S.so&&S.so.live&&p===S.so.shooter)b.shootoutDoubleTouch=true;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
     if(!S.prac&&p.off){callOffside(p);return;}
