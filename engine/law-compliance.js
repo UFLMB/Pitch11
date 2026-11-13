@@ -219,7 +219,7 @@
     if (!Array.isArray(players)) return null;
     return players
       .filter(player => player && player.team === team && !player.out &&
-        player.gk !== true && player.soExcluded !== true &&
+        player.gk !== true && player.soExcluded !== true && player.inj !== true && player.down !== true &&
         (player.tempOff !== true || player.substitutionPending === true))
       .sort((a, b) => (b.st && Number.isFinite(b.st.def) ? b.st.def : 0) -
         (a.st && Number.isFinite(a.st.def) ? a.st.def : 0) || a.role - b.role || a.num - b.num)[0] || null;
@@ -230,7 +230,7 @@
     if (!Array.isArray(players)) return null;
     return players
       .filter(player => player && player.team === team && player.out === true &&
-        player.soExcluded === true && player.gk !== true)
+        player.soExcluded === true && player.gk !== true && player.soUnavailableInjured !== true)
       .sort((a, b) => (b.st && Number.isFinite(b.st.def) ? b.st.def : 0) -
         (a.st && Number.isFinite(a.st.def) ? a.st.def : 0) || a.role - b.role || a.num - b.num)[0] || null;
   }
