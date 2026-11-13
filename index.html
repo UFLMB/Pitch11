@@ -5188,12 +5188,12 @@ update=function(){
   _updatePenaltyLine();
   if(ball.pen&&ball.penaltyKeeperOffLine&&ball.penaltyKeeperSaved&&S.penaltyExtraTime&&ball.penaltyOtherPlayerTouched&&!ball.penaltyRetakePending)
     ball.penaltyRetakePending=true;
-  if(ball.pen&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
+  if(ball.pen&&!ball.penaltyDoubleTouch&&ball.owner===ball.penaltyKeeper&&!ball.penaltyKeeperSaved)clearPenaltyLineState();
   if(ball.pen&&!ball.penaltyDoubleTouch&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3){
     const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
     if(decision==='retake')ball.penaltyRetakePending=true;else clearPenaltyLineState();
   }
-  if(ball.pen&&ball.penaltyOtherPlayerTouched){
+  if(ball.pen&&ball.penaltyOtherPlayerTouched&&!ball.penaltyDoubleTouch){
     const decision=PITCH11Law.penaltyKeeperDecision({keeperOffLine:ball.penaltyKeeperOffLine,keeperSaved:ball.penaltyKeeperSaved,impactedKicker:ball.penaltyKeeperImpactedKicker});
     if(decision!=='retake')clearPenaltyLineState();
   }
@@ -5601,7 +5601,8 @@ outOfPlay=function(){
 const _updateLaw14AccidentalDoubleTouch=update;
 update=function(){
   _updateLaw14AccidentalDoubleTouch();
-  if(ball.pen&&!ball.penaltyWasShootout&&ball.penaltyDoubleTouch&&!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3)
+  if(ball.pen&&!ball.penaltyWasShootout&&ball.penaltyDoubleTouch&&(
+    (ball.owner&&ball.owner!==ball.penaltyKicker)||(!ball.owner&&ball.z<=1&&Math.hypot(ball.vx,ball.vy)<3)))
     resolveAccidentalPenaltyDoubleTouch(false);
 };
 </script>
