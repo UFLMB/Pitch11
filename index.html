@@ -5250,13 +5250,12 @@ aiGK=function(p){
 /* --- IFAB Law 5 (2026/27): off-field injury assessment for one running minute --- */
 function sendOffForAssessment(p,state){
   if(!p||p.gk)return false;
-  const assessment=Object.assign({stoppedForInjury:true,goalkeeper:!!p.gk},state||{}, {
-    sameTeamCollision:!!p.law5SameTeamCollision,
-    goalkeeperOutfieldCollision:!!p.law5GoalkeeperOutfieldCollision,
-    severeInjury:!!p.law5SevereInjury,
-    foulCautionOrSendingOff:!!p.law5FoulSanction,
-    penaltyKicker:!!p.law5PenaltyKicker
-  });
+  const assessment=Object.assign({stoppedForInjury:true,goalkeeper:!!p.gk},state||{});
+  assessment.sameTeamCollision=!!(assessment.sameTeamCollision||p.law5SameTeamCollision);
+  assessment.goalkeeperOutfieldCollision=!!(assessment.goalkeeperOutfieldCollision||p.law5GoalkeeperOutfieldCollision);
+  assessment.severeInjury=!!(assessment.severeInjury||p.law5SevereInjury);
+  assessment.foulCautionOrSendingOff=!!(assessment.foulCautionOrSendingOff||p.law5FoulSanction);
+  assessment.penaltyKicker=!!(assessment.penaltyKicker||p.law5PenaltyKicker);
   p.law5FoulSanction=p.law5PenaltyKicker=p.law5SameTeamCollision=p.law5GoalkeeperOutfieldCollision=p.law5SevereInjury=false;
   if(PITCH11Law.offFieldTreatmentDecision(assessment)!=='leave-one-minute')return false;
   if(p.tempOff)return true;
