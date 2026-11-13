@@ -495,9 +495,9 @@ test('Law 10 includes temporarily off-field players in shoot-out eligibility and
 
 test('shootout first kicker is respected and teams alternate in every round', () => {
   assert.equal(law.shootoutNextTeam(0, 0, 1), 1);
-  assert.equal(law.shootoutNextTeam(1, 0, 1), 0);
-  assert.equal(law.shootoutNextTeam(1, 1, 1), 0);
+  assert.equal(law.shootoutNextTeam(1, 0, 1), 1);
+  assert.equal(law.shootoutNextTeam(1, 1, 1), 1);
   assert.equal(law.shootoutNextTeam(2, 1, 1), 1);
   assert.equal(law.shootoutNextTeam(2, 2, 0), 0);
-  assert.equal(law.shootoutNextTeam(3, 3, 0), 1);
+  assert.equal(law.shootoutNextTeam(3, 3, 0), 0);
 });
