@@ -312,3 +312,12 @@ test('Law 11 penalises an offside attacker actively challenging an opponent for 
   assert.equal(law.offsideChallengeInterference({ ...base, opponentX: 40 }), false);
   assert.equal(law.offsideChallengeInterference({ ...base, radius: NaN }), false);
 });
+
+
+test('Law 10 does not abandon a match for fewer than seven players during a penalty shoot-out', () => {
+  const players = Array.from({ length: 6 }, (_, i) => ({ team: 0, out: false, id: i }));
+  assert.equal(law.matchAbandonmentDecision(players, 0, 7, false), 'abandon');
+  assert.equal(law.matchAbandonmentDecision(players, 0, 7, true), 'continue');
+  players.push({ team: 0, out: false, id: 6 });
+  assert.equal(law.matchAbandonmentDecision(players, 0, 7, false), 'continue');
+});
