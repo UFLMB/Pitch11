@@ -306,8 +306,11 @@ test("Law 11 disallows a goal when an offside attacker blocks the goalkeeper's l
 });
 
 
-test("Laws 15 and 16 count down delayed throw-ins and goal kicks, awarding the correct restart", () => {
+test("Laws 15 and 16 allow normal restart time before a referee-signalled five-second countdown", () => {
   assert.match(source, /const _updateLaw1516Delay=update/);
+  assert.match(source, /rs\.delayWait<5/);
+  assert.match(source, /rs\.delaySignalled=true/);
+  assert.match(source, /signalled:rs\.delaySignalled/);
   assert.match(source, /PITCH11Law\.restartDelayDecision\(/);
   assert.match(source, /opponent-throw-in/);
   assert.match(source, /opponent-corner/);
