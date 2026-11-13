@@ -502,3 +502,10 @@ test("Law 10 replaces a sent-off shoot-out goalkeeper with an eligible player an
   assert.match(source, /GK\[p\.team\]=replacement/);
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
 });
+
+
+test("Law 10 tracks shoot-out kickers by player so eligibility changes cannot cause premature repeat kicks", () => {
+  assert.match(source, /taken:\[\[\],\[\]\]/);
+  assert.match(source, /PITCH11Law\.shootoutNextKicker\(P,t,so\.taken\[t\]\)/);
+  assert.match(source, /so\.taken\[so\.team\]\.push\(so\.shooter\)/);
+});
