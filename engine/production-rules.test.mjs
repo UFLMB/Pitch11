@@ -397,6 +397,17 @@ test("a restart taker is penalised for a controlled second touch even when the b
   assert.match(source, /const _aiGKDirectRestart=aiGK/);
 });
 
+test("controlled second touches during penalties and shoot-outs use their own Law 10/14 decisions", () => {
+  const touchFunction = source.match(/function touches\(\)\{[\s\S]*?\n\}/);
+  assert.ok(touchFunction);
+  assert.match(touchFunction[0], /S\.so&&S\.so\.live&&secondTouchCandidate===S\.so\.shooter/);
+  assert.match(touchFunction[0], /b\.shootoutDoubleTouch=true/);
+  assert.match(touchFunction[0], /b\.pen&&!b\.penaltyWasShootout&&secondTouchCandidate===b\.penaltyKicker/);
+  assert.match(touchFunction[0], /b\.penaltyDoubleTouch=true/);
+  assert.match(source, /ball\.penaltyDoubleTouch/);
+  assert.match(source, /doubleTouch:ball\.shootoutDoubleTouch/);
+});
+
 test("Direct-restart touch tracking clears after a second player's deflection or control", () => {
   assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
   assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
