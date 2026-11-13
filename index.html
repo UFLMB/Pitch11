@@ -847,6 +847,7 @@ const gmin=()=>PERIOD.base[S.half]+S.clock/(PERIOD.len[S.half]||1)*PERIOD.mins[S
 const tag=p=>KIT[p.team].name+' '+(p.nm||'#'+p.num);
 function firstIn(t){for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out&&!p.substitutionExiting)return p;}return P[t*11+1];}
 function setupKickoff(team){
+  completeEligiblePendingSubs();
   const b=ball;
   b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.ind=false;b.pen=false;b.hcd=0;
   S.rs=null;S.adv=null;clearOff();
@@ -949,7 +950,7 @@ function whistleStop(sec,big,sub,fn,hurt){                 // freeze play, show 
 }
 function spot(team,x,y,gk,faceTo,kind){                    // place the nearest taker with the ball
   let tk=null,bd=1e9;
-  for(let i=team*11;i<team*11+11;i++){const p=P[i];if(p.gk!==gk||p.out||p.inj)continue;const d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;tk=p;}}
+  for(let i=team*11;i<team*11+11;i++){const p=P[i];if(p.gk!==gk||p.out||p.inj||p.substitutionExiting)continue;const d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;tk=p;}}
   if(!tk)tk=firstIn(team);
   tk.x=tk.px=x;tk.y=tk.py=y;tk.vx=tk.vy=0;tk.face=faceTo;tk.dive=0;tk.stun=0;tk.kcd=0;
   const b=ball;
@@ -957,6 +958,7 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
   b.owner=tk;b.last=tk;b.receiver=null;b.protect=3;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;b.gkHoldShown=0;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff();
   tk.poss=0;tk.freeze=gk?0.45:rnd(0.5,0.85);tk.force=false;
   S.rs={kind:kind||'drop',team,p:tk,x,y};S.adv=null;
+  completeEligiblePendingSubs();
 }
 function outOfPlay(){
   if(S.adv){const a=S.adv;S.adv=null;a.fn();return;}      // ball died during advantage: take the foul
@@ -1024,7 +1026,7 @@ function restartClamp(){                                   // defenders keep 9.1
     (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
     const restrictedTeam=rs.kind==='drop'?false:(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk));
-    if(p===rs.p||p.out||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
+    if(p===rs.p||p.out||p.substitutionExiting||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
     let dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy);
     if(d<R){
       if(d<1e-6){const a=P.indexOf(p)*2.399963229728653;dx=Math.cos(a);dy=Math.sin(a);d=1;}
@@ -1141,7 +1143,7 @@ function doSub(p,bn){
     applySubstitution(p,bn,position);return true;
   }
   if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
-    if(!p.yc)giveCard(p,1);
+    if(!p.yc){p.yc=1;giveCard(p,1);}
     applySubstitution(p,bn,position);return true;
   }
   // All substitutions signalled in one stoppage share the ten-second deadline from the final signal.
