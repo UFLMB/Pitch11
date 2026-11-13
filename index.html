@@ -1077,7 +1077,7 @@ function foul(p,o,behind,context){
   if(card===1||card===3)p.yc++;
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
-  if(hurt){hurt.inj=true;hurt.law5FoulSanction=card>0;hurt.law5PenaltyKicker=pen&&firstIn(t)===o;}
+  if(hurt){hurt.inj=true;hurt.law5FoulSanction=card>0;hurt.law5AssessmentQuickly=card>0;hurt.law5PenaltyKicker=pen&&firstIn(t)===o;}
   // IFAB Law 3: play cannot continue once a team has fewer than seven players.
   if(PITCH11Law.matchAbandonmentDecision(P,p.team,7,!!S.so)==='abandon'){
     S.forfeitTeam=p.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
@@ -2558,7 +2558,7 @@ function slideInjury(o,tq,behind,foulSanction,penaltyKicker){                   
   else if(S.mode==='play'&&S.adv&&S.adv.team===o.team){const fn=S.adv.fn;S.adv=null;whistleStop(3,'FOUL','',fn,o);msg('INJURY',tag(o)+' is down',3);}
   else return;
   o.inj=true;
-  if(foulSanction)o.law5FoulSanction=true;
+  if(foulSanction){o.law5FoulSanction=true;o.law5AssessmentQuickly=true;}
   if(penaltyKicker)o.law5PenaltyKicker=true;
   D9.n.si[o.team===0?1:0]++;act8('slide','injury');
 }
@@ -5255,8 +5255,9 @@ function sendOffForAssessment(p,state){
   assessment.goalkeeperOutfieldCollision=!!(assessment.goalkeeperOutfieldCollision||p.law5GoalkeeperOutfieldCollision);
   assessment.severeInjury=!!(assessment.severeInjury||p.law5SevereInjury);
   assessment.foulCautionOrSendingOff=!!(assessment.foulCautionOrSendingOff||p.law5FoulSanction);
+  assessment.assessmentCompletedQuickly=!!(assessment.assessmentCompletedQuickly||p.law5AssessmentQuickly);
   assessment.penaltyKicker=!!(assessment.penaltyKicker||p.law5PenaltyKicker);
-  p.law5FoulSanction=p.law5PenaltyKicker=p.law5SameTeamCollision=p.law5GoalkeeperOutfieldCollision=p.law5SevereInjury=false;
+  p.law5FoulSanction=p.law5AssessmentQuickly=p.law5PenaltyKicker=p.law5SameTeamCollision=p.law5GoalkeeperOutfieldCollision=p.law5SevereInjury=false;
   if(PITCH11Law.offFieldTreatmentDecision(assessment)!=='leave-one-minute')return false;
   if(p.tempOff)return true;
   p.tempOff=true;p.tempOffStartedAt=gmin();p.tempOffUntil=p.tempOffStartedAt+1;p.tempOffHalf=S.half;
