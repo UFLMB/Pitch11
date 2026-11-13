@@ -540,3 +540,17 @@ test('shoot-out equalisation after a sending-off excludes one opponent and never
   excluded[0].soExcluded = true;
   assert.equal(law.shootoutExclusions(players).length, 0);
 });
+
+
+test('a sent-off shoot-out goalkeeper is replaced only by an eligible player from the same team', () => {
+  const players = [
+    { team: 0, num: 1, gk: true, out: true, st: { def: 1 } },
+    { team: 0, num: 2, gk: false, out: false, st: { def: 0.7 }, role: 2 },
+    { team: 0, num: 3, gk: false, out: false, soExcluded: true, st: { def: 1 }, role: 1 },
+    { team: 0, num: 4, gk: false, out: true, st: { def: 1 }, role: 3 },
+    { team: 1, num: 5, gk: false, out: false, st: { def: 1 }, role: 0 }
+  ];
+  assert.equal(law.shootoutReplacementGoalkeeper(players, 0), players[1]);
+  assert.equal(law.shootoutReplacementGoalkeeper(players, 1), players[4]);
+  assert.equal(law.shootoutReplacementGoalkeeper([], 0), null);
+});
