@@ -626,3 +626,15 @@ test('offside position requires the attacker to be beyond both the ball and seco
   assert.equal(law.isOffsidePosition({ ...base, attackerX: 40 }), false);
   assert.equal(law.isOffsidePosition({ ...base, attackerX: 20, ballX: 40, secondLastOpponentX: 30, direction: -1 }), true);
 });
+
+
+test('DOGSO rejects invalid player counts and negative lateral distances', () => {
+  const base = { distanceToGoal: 240, lateralDistance: 80, defendersAhead: 1, attackersAhead: 0, ballControl: true, towardGoal: true };
+  assert.equal(law.dogsoOpportunity({ ...base, defendersAhead: -1 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: -1 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, defendersAhead: 1.5 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: 0.5 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, lateralDistance: -1 }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, lateralDistance: NaN }), false);
+  assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: undefined }), false);
+});

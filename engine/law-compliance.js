@@ -142,11 +142,14 @@
 
   function dogsoOpportunity(state) {
     const s = state || {};
-    const numericalAdvantage = Number.isFinite(s.attackersAhead) &&
-      Number.isFinite(s.defendersAhead) && s.attackersAhead > s.defendersAhead;
-    return Number.isFinite(s.distanceToGoal) && s.distanceToGoal > 0 && s.distanceToGoal <= 380 &&
-      Number.isFinite(s.lateralDistance) && s.lateralDistance <= 250 &&
-      Number.isFinite(s.defendersAhead) && (s.defendersAhead <= 1 || numericalAdvantage) &&
+    const validPlayerCounts = Number.isInteger(s.attackersAhead) && s.attackersAhead >= 0 &&
+      Number.isInteger(s.defendersAhead) && s.defendersAhead >= 0;
+    if (!validPlayerCounts || !Number.isFinite(s.distanceToGoal) ||
+        !Number.isFinite(s.lateralDistance) || s.lateralDistance < 0) return false;
+    const numericalAdvantage = s.attackersAhead > s.defendersAhead;
+    return s.distanceToGoal > 0 && s.distanceToGoal <= 380 &&
+      s.lateralDistance <= 250 &&
+      (s.defendersAhead <= 1 || numericalAdvantage) &&
       s.ballControl === true && s.towardGoal === true;
   }
 
