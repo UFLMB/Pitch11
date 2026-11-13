@@ -438,7 +438,9 @@ test("Law 9 restarts with a dropped ball after referee contact causes a direct g
   assert.match(source, /dropBall\(contact\.team,contact\.recipientTeam\)/);
   assert.match(source, /touches=function\(\)\{const previousLast=ball\.last/);
   assert.match(source, /bodyCollide=function\(\)\{const previousLast=ball\.last/);
-  assert.match(source, /slideHit=function\(p,sd\)\{const previousLast=ball\.last/);
+  assert.match(source, /slideHit=function\(p,sd\)\{const previousLast=ball\.last,refContact=ball\.refContact/);
+  assert.match(source, /bodyCollide=function\(\)\{const previousLast=ball\.last,refContact=ball\.refContact/);
+  assert.match(source, /if\(refContact\)ball\.refContact=refContact;resolveRefereeContact\(ball\.last\)/);
   assert.match(source, /outOfPlay=function\(\)\{ball\.refContact=null/);
 });
 
