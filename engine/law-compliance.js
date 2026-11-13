@@ -232,6 +232,12 @@
       Number.isFinite(s.elapsedSinceRestart) && s.elapsedSinceRestart >= 60 ? 'allow' : 'wait';
   }
 
+  function goalkeeperSubstitutionDelayDecision(state) {
+    const s = state || {};
+    if (s.exceededTenSeconds !== true) return 'continue';
+    return s.alreadyCautioned === true ? 'send-off' : 'caution-and-replace';
+  }
+
   function hasMinimumPlayers(players, team, minimum) {
     const limit = Number.isInteger(minimum) && minimum > 0 ? minimum : 7;
     return players.filter(p => p.team === team &&
@@ -488,5 +494,5 @@
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 
-  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, restartSecondTouchRestart, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, goalkeeperSubstitutionDelayDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, restartSecondTouchRestart, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
