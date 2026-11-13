@@ -408,6 +408,7 @@ test("Law 7 counts match stoppages, adds the lost time back, and shows added-tim
   assert.match(source, /lostTime:0,addedTime:0,addedTimeAnnounced:0/);
   assert.match(source, /PITCH11Law\.addedTimeSeconds\(S\.lostTime,unit\)/);
   assert.match(source, /PITCH11Law\.periodEndDecision\(/);
+  assert.match(source, /inPlay:S\.mode==='play'/);
   assert.match(source, /PITCH11Law\.addedTimeClockLabel\(/);
   assert.match(source, /function refreshLaw7AddedTime\(\)/);
   assert.match(source, /S\.lostTime\+=DT/);
