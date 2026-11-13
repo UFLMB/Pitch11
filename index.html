@@ -1171,7 +1171,7 @@ function rules(){
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;b.gkHoldShown=0;}
   const goalDirection=b.x>PX1?1:-1,scoringTeam=dirOf(0)===goalDirection?0:1;
   const keeperThrowDecision=PITCH11Law.goalkeeperThrowGoalDecision({releasedByGoalkeeper:!!b.gkReleasedBy,lastTouchIsThrower:b.gkReleasedBy===b.last,keeperTeam:b.gkReleasedBy&&b.gkReleasedBy.team,scoringTeam});
-  const directRestartDecision=PITCH11Law.directRestartGoalDecision({restartKickerTeam:b.dbl===b.last&&b.dbl?b.dbl.team:null,scoringTeam});
+  const directRestartDecision=PITCH11Law.directRestartGoalDecision({restartKickerTeam:b.dbl===b.last&&b.dbl?b.dbl.team:null,restartKind:b.dbl===b.last&&b.dbl?b.dblKind:null,scoringTeam});
   if(!b.ind&&keeperThrowDecision==='goal'&&directRestartDecision==='goal'&&ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){goal(goalDirection);return;}
   if(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)){outOfPlay();return;}
   if(S.adv){
@@ -4057,7 +4057,7 @@ const _ha23=humanAct;humanAct=function(p){
   }
 };
 /* set pieces: the taker cannot touch the ball again until someone else has (no dribbling off from a throw-in / kick-off) */
-const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p)ball.dbl=p;};
+const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p){ball.dbl=p;ball.dblKind=rs.kind;}};
 const _tk23=take;take=function(p,byHand=false){if(p!==ball.dbl||ball.last!==ball.dbl)ball.dbl=null;_tk23(p,byHand);};
 /* throw-in: the three nearest team-mates come to offer a short, a forward and a safe option along the touchline */
 function throwSup23(p,rs){
