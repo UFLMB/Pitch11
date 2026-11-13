@@ -513,7 +513,8 @@ test("Law 10 tracks shoot-out kickers by player so eligibility changes cannot ca
 
 test("Law 10 does not replace an injured outfield shoot-out player and equalises the opponents", () => {
   assert.match(source, /const _injuredShootoutLaw10=injured/);
-  assert.match(source, /if\(!q\.gk\)\{[\s\S]*?removePlayer\(q\)/);\n  assert.match(source, /const removePlayer=player=>\{[\s\S]*?player\.soExcluded=true/);
+  assert.match(source, /if\(!q\.gk\)\{[\s\S]*?removePlayer\(q\)/);
+  assert.match(source, /const removePlayer=player=>\{[\s\S]*?player\.soExcluded=true/);
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
 });
 
