@@ -626,3 +626,18 @@ test('offside position requires the attacker to be beyond both the ball and seco
   assert.equal(law.isOffsidePosition({ ...base, attackerX: 40 }), false);
   assert.equal(law.isOffsidePosition({ ...base, attackerX: 20, ballX: 40, secondLastOpponentX: 30, direction: -1 }), true);
 });
+
+
+test('Law 11 identifies a field-player deliberate save only when a shot is travelling into the goal frame', () => {
+  const base = {
+    shot: true, hasOwner: false, x: 0, y: 0, z: 0, vx: 200, vy: 0, vz: 0,
+    goalLine: 100, attackDirection: 1, centerY: 0, goalHalfWidth: 36.6,
+    goalHeight: 24, radius: 4, gravity: 98.1, drag: 0.12
+  };
+  assert.equal(law.offsideDeliberateSave(base), true);
+  assert.equal(law.offsideDeliberateSave({ ...base, y: 60 }), false);
+  assert.equal(law.offsideDeliberateSave({ ...base, vz: 100 }), false);
+  assert.equal(law.offsideDeliberateSave({ ...base, vx: -200 }), false);
+  assert.equal(law.offsideDeliberateSave({ ...base, shot: false }), false);
+  assert.equal(law.offsideDeliberateSave({ ...base, hasOwner: true }), false);
+});
