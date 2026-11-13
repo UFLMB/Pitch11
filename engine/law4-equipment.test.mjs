@@ -16,7 +16,7 @@ const complete = {
 };
 
 test('Law 4 permits complete and safe compulsory player equipment', () => {
-  assert.deepEqual(law.playerEquipmentIssues(complete), []);
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(complete)), JSON.stringify([]));
   assert.equal(law.equipmentInspectionDecision(complete), 'allow');
 });
 
