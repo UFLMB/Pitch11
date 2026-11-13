@@ -324,7 +324,8 @@ test('Law 10 does not abandon a match for fewer than seven players during a pena
 
 
 test('Law 10 does not award a goal directly from a goalkeeper throw', () => {
-  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: true }), 'goal-kick');
-  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: false }), 'goal');
-  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: false, lastTouchIsThrower: true }), 'goal');
+  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: true, keeperTeam: 0, scoringTeam: 1 }), 'goal-kick');
+  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: true, keeperTeam: 0, scoringTeam: 0 }), 'corner');
+  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: false, keeperTeam: 0, scoringTeam: 1 }), 'goal');
+  assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: false, lastTouchIsThrower: true, keeperTeam: 0, scoringTeam: 1 }), 'goal');
 });
