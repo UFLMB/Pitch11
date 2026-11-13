@@ -5068,6 +5068,20 @@ endHalf=function(){
 };
 const _newMatchPendingAdvantageCard=newMatch;
 newMatch=function(){S.pendingCard=null;_newMatchPendingAdvantageCard();};
+
+/* --- IFAB Law 11: an offside attacker may not clearly obstruct the goalkeeper's line of sight --- */
+const _goalLaw11Sight=goal;
+goal=function(dr){
+  const scoringTeam=dirOf(0)===dr?0:1,keeper=GK[1-scoringTeam];
+  if(keeper&&!keeper.out){
+    const blocker=P.find(p=>p.team===scoringTeam&&!p.out&&p.off&&PITCH11Law.offsideLineOfSightInterference({
+      offside:true,attackerX:p.x,attackerY:p.y,keeperX:keeper.x,keeperY:keeper.y,
+      ballX:ball.x,ballY:ball.y,radius:4.8
+    }));
+    if(blocker){callOffside(blocker);return;}
+  }
+  _goalLaw11Sight(dr);
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>

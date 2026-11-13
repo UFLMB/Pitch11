@@ -259,3 +259,13 @@ test('DOGSO also considers numerical attacking support under the 2026/27 Law 12 
   assert.equal(law.dogsoOpportunity(base), true);
   assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: 3 }), false);
 });
+
+
+test('Law 11 detects an offside attacker clearly blocking the goalkeeper\'s line of sight', () => {
+  const base = { offside: true, attackerX: 5, attackerY: 5, keeperX: 0, keeperY: 0, ballX: 10, ballY: 10, radius: 1 };
+  assert.equal(law.offsideLineOfSightInterference(base), true);
+  assert.equal(law.offsideLineOfSightInterference({ ...base, attackerY: 8 }), false);
+  assert.equal(law.offsideLineOfSightInterference({ ...base, attackerX: -1, attackerY: -1 }), false);
+  assert.equal(law.offsideLineOfSightInterference({ ...base, offside: false }), false);
+  assert.equal(law.offsideLineOfSightInterference({ ...base, radius: NaN }), false);
+});

@@ -212,5 +212,20 @@
     return excluded;
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function offsideLineOfSightInterference(state) {
+    const s = state || {};
+    const fields = [s.attackerX, s.attackerY, s.keeperX, s.keeperY, s.ballX, s.ballY, s.radius];
+    if (s.offside !== true || !fields.every(Number.isFinite) || s.radius < 0) return false;
+    const dx = s.ballX - s.keeperX;
+    const dy = s.ballY - s.keeperY;
+    const lengthSquared = dx * dx + dy * dy;
+    if (lengthSquared <= 1e-9) return false;
+    const projection = ((s.attackerX - s.keeperX) * dx + (s.attackerY - s.keeperY) * dy) / lengthSquared;
+    if (projection <= 0 || projection >= 1) return false;
+    const nearestX = s.keeperX + projection * dx;
+    const nearestY = s.keeperY + projection * dy;
+    return Math.hypot(s.attackerX - nearestX, s.attackerY - nearestY) <= s.radius;
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
