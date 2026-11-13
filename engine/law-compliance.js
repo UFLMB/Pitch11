@@ -287,7 +287,8 @@
   function offFieldTreatmentDecision(state) {
     const s = state || {};
     if (s.goalkeeper || s.sameTeamCollision || s.goalkeeperOutfieldCollision ||
-        s.severeInjury || s.foulCautionOrSendingOff || s.penaltyKicker) return 'remain';
+        s.severeInjury || s.penaltyKicker) return 'remain';
+    if (s.foulCautionOrSendingOff && s.assessmentCompletedQuickly === true) return 'remain';
     return s.stoppedForInjury || s.assessedOnField || s.requestedMedicalAttention
       ? 'leave-one-minute'
       : 'remain';
