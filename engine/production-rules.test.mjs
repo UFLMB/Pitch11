@@ -535,6 +535,12 @@ test("Law 10 equalises team numbers immediately after a shoot-out sending-off", 
 });
 
 
+test("Law 3 defers shoot-out goalkeeper replacement to the dedicated Law 10 handler", () => {
+  assert.match(source, /if\(c<=1\|\|!wasGoalkeeper\|\|S\.mode==='full'\|\|S\.so\)return/);
+  assert.match(source, /const _giveCardShootoutEqualisation=giveCard/);
+  assert.match(source, /PITCH11Law\.shootoutReplacementGoalkeeper\(P,p\.team\)/);
+});
+
 test("Law 10 replaces a sent-off shoot-out goalkeeper with an eligible player and then equalises numbers", () => {
   assert.match(source, /PITCH11Law\.shootoutReplacementGoalkeeper\(P,p\.team\)/);
   assert.match(source, /const wasShootoutGoalkeeper=!!\(S\.so&&p&&p\.gk&&c>1/);
