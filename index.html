@@ -931,7 +931,7 @@ function soRules(){
   const decision=PITCH11Law.shootoutDecision({
     ball:b,shooterTeam:so.team,targetDirection:dirOf(so.team),
     left:PX0,right:PX1,top:PY0,bottom:PY1,centerY:CY,
-    goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR,elapsed:so.t,maxSeconds:8,restartActive:!!S.rs,doubleTouch:ball.shootoutDoubleTouch
+    goalHalfWidth:GOALH,goalHeight:GOALZ,radius:BR,elapsed:so.t,restartActive:!!S.rs,doubleTouch:ball.shootoutDoubleTouch
   });
   if(decision==='retake'){soRetake();return;}
   if(decision==='goal'){soResult(true);return;}
