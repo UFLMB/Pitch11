@@ -15,7 +15,7 @@
       Math.abs(b.y - state.centerY) <= state.goalHalfWidth - state.radius &&
       b.z <= state.goalHeight - state.radius;
 
-    if (crossedTarget && insideFrame) return 'goal';
+    if (crossedTarget && insideFrame) return state.doubleTouch === true ? 'retake' : 'goal';
 
     const out =
       b.x < state.left - state.radius ||
