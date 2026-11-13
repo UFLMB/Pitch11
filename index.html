@@ -1015,7 +1015,7 @@ function outOfPlay(){
 function dropBall(t,recipientTeam){
   const x=clamp(ball.x,PX0+BR+0.1,PX1-BR-0.1),y=clamp(ball.y,PY0+BR+0.1,PY1-BR-0.1);
   const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t,possessionTeam:recipientTeam});
-  const keeper=P[recipient.team*11],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
+  const keeper=GK[recipient.team],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
   spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
   ball.x=ball.px=x;ball.y=ball.py=y;S.rs.r=40;                                                   // Law 8: everyone else remains at least 4 m away
 }
