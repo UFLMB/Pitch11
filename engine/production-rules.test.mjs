@@ -386,7 +386,7 @@ test("Laws 8, 13, 16 and 17 prevent direct own goals from kick-offs, free kicks,
 
 
 test("a restart taker is penalised for a controlled second touch even when the ball is stationary", () => {
-  const touchFunction = source.match(/function touches\(\)\{[\\s\\S]*?\\n\\}/);
+  const touchFunction = source.match(/function touches\(\)\{[\s\S]*?\n\}/);
   assert.ok(touchFunction, "production ball-control routine must be present");
   assert.match(touchFunction[0], /secondTouchCandidate=null,secondTouchScore=-1e9/);
   assert.match(touchFunction[0], /p===b\.dbl&&b\.last===p/);
