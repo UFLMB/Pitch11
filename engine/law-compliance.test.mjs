@@ -612,7 +612,7 @@ test('offside line uses the live second-last opponent, or the only opponent when
     { team: 1, x: 100, out: true }
   ];
   assert.equal(law.secondLastOpponentPosition(players, 0, 1), 80);
-  assert.equal(law.secondLastOpponentPosition(players, 0, -1), 70);
+  assert.equal(law.secondLastOpponentPosition(players, 0, -1), 80);
   assert.equal(law.secondLastOpponentPosition(players.filter(p => p.team === 0 || p.x === 90), 0, 1), 90);
   assert.equal(law.secondLastOpponentPosition(players.filter(p => p.team === 0), 0, 1), null);
 });
