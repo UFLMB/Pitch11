@@ -355,5 +355,7 @@ test('Laws 8, 13, 16 and 17 award a corner instead of an own goal from a direct 
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 1 }), 'corner');
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 1, scoringTeam: 0 }), 'corner');
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 0 }), 'goal');
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 0, restartKind: 'drop' }), 'goal-kick');
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 1, restartKind: 'drop' }), 'corner');
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: null, scoringTeam: 0 }), 'goal');
 });
