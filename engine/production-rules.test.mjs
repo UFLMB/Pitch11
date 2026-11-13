@@ -237,7 +237,7 @@ test("Law 14 checks the goalkeeper's goal-line position at the kick and retakes 
   assert.match(source, /PENALTY RETAKE/);
   assert.match(source, /First offence: goalkeeper warned/);
   assert.match(source, /Repeated offence: goalkeeper cautioned/);
-  assert.match(source, /GK\[keeper\.team\]=replacement/);
+  assert.match(source, /GK\[team\]=replacement/);
   assert.match(source, /varCheck\('goal',\{clearAndObviousError:true\}\)/);
   assert.match(source, /S\.penaltyRetake\?'PENALTY RETAKE'/);
 });
