@@ -394,3 +394,17 @@ test("Law 9 restarts with a dropped ball after referee contact causes a direct g
   assert.match(source, /slideHit=function\(p,sd\)\{const previousLast=ball\.last/);
   assert.match(source, /outOfPlay=function\(\)\{ball\.refContact=null/);
 });
+
+
+test("Law 5 removes assessed outfield players for one running minute and restores them at a period restart", () => {
+  assert.match(source, /function sendOffForAssessment\(p\)/);
+  assert.match(source, /PITCH11Law\.offFieldTreatmentDecision\(\{stoppedForInjury:true/);
+  assert.match(source, /p\.tempOffStartedAt=gmin\(\)/);
+  assert.match(source, /p\.out=true/);
+  assert.match(source, /function returnFromAssessment\(p,periodRestart\)/);
+  assert.match(source, /PITCH11Law\.offFieldReturnDecision\(\{elapsedMinutes:gmin\(\)-p\.tempOffStartedAt\}\)/);
+  assert.match(source, /const _setupKickoffLaw5=setupKickoff/);
+  assert.match(source, /const _startShootoutLaw5=startShootout/);
+  assert.match(source, /if\(p\.inj&&!p\.out\)\{p\.limp=true;sendOffForAssessment\(p\);\}/);
+  assert.match(source, /if\(q\.inj&&!q\.out\)sendOffForAssessment\(q\)/);
+});
