@@ -511,3 +511,11 @@ test('shoot-out goalkeeper warnings and cautions do not inherit match sanctions'
   const third = law.shootoutKeeperOffenceSanction(second.offences, second.cautions);
   assert.equal(JSON.stringify(third), JSON.stringify({ offences: 3, cautions: 2, card: 'second-yellow' }));
 });
+
+
+test('shoot-out end selection reverses both teams directions together', () => {
+  assert.equal(law.shootoutDirection(0, false), 1);
+  assert.equal(law.shootoutDirection(1, false), -1);
+  assert.equal(law.shootoutDirection(0, true), -1);
+  assert.equal(law.shootoutDirection(1, true), 1);
+});

@@ -47,7 +47,7 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 function rollResistance(vx,vy){const sp=Math.hypot(vx,vy);if(sp<=0)return[0,0];const next=Math.max(0,sp-ROLL_DECEL*DT),k=next/sp;return[vx*k,vy*k];}
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const angd=(a,b)=>{let d=a-b;while(d>Math.PI)d-=TAU;while(d<-Math.PI)d+=TAU;return d;};
-const dirOf=t=>S.half%2?(t?-1:1):(t?1:-1);              // +1 = team attacks towards the right goal (halves 1,3,5 vs 2,4)
+const dirOf=t=>S.so?PITCH11Law.shootoutDirection(t,S.so.flipEnds):(S.half%2?(t?-1:1):(t?1:-1));              // +1 = team attacks towards the right goal (halves 1,3,5 vs 2,4)
 const plen=()=>PERIOD.len[S.half]||HALF_SECS;
 const periodSecondsPerMatchMinute=()=>plen()/(PERIOD.mins[S.half]||45);
 // player stats 0..1: pace, shooting, passing, dribbling, defending (GK: handling), physical, stamina
@@ -888,7 +888,7 @@ function startShootout(){
   if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
-  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1};for(const p of P){p.shootoutPenaltyLineOffences=0;p.shootoutYC=0;}S.half=5;S.clock=0;soNext();
+  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1,flipEnds:Math.random()<0.5?true:false};for(const p of P){p.shootoutPenaltyLineOffences=0;p.shootoutYC=0;}S.half=5;S.clock=0;soNext();
 }
 function soNext(){
   const so=S.so,t=PITCH11Law.shootoutNextTeam(so.k[0].length,so.k[1].length,so.firstTeam),list=[];

@@ -473,3 +473,10 @@ test("Law 10 resets goalkeeper penalty-offence warnings for the shoot-out and tr
   assert.match(source, /PITCH11Law\.shootoutKeeperOffenceSanction\(/);
   assert.match(source, /const offenceCount=shootout[\s\S]*?keeper\.shootoutPenaltyLineOffences/);
 });
+
+
+test("Law 10 independently selects the shoot-out end and first-kicking team", () => {
+  assert.match(source, /flipEnds:Math\.random\(\)<0\.5\?true:false/);
+  assert.match(source, /firstTeam:Math\.random\(\)<0\.5\?0:1/);
+  assert.match(source, /PITCH11Law\.shootoutDirection\(t,S\.so\.flipEnds\)/);
+});
