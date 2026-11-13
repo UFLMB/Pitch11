@@ -5482,16 +5482,18 @@ const _injuredShootoutLaw10=injured;
 injured=function(q){
   if(!S.so||!S.so.live||!q)return _injuredShootoutLaw10(q);
   const t=q.team,so=S.so,keeperHadKicked=!!(so.taken&&so.taken[t]&&so.taken[t].includes(q));
-  const removePlayer=player=>{
-    player.out=true;player.soExcluded=true;player.inj=true;player.down=false;
+  const removePlayer=(player,injuredPlayer=false)=>{
+    player.out=true;player.soExcluded=true;
+    if(injuredPlayer)player.soUnavailableInjured=true;
+    player.inj=injuredPlayer;player.down=false;
     player.x=player.px=player.y=player.py=-400;
     player.vx=player.vy=player.ix=player.iy=0;
     if(ctrl===player)ctrl=null;
   };
   if(!q.gk){
-    removePlayer(q);
+    removePlayer(q,true);
     const excluded=PITCH11Law.shootoutExclusions(P);
-    for(const player of excluded)removePlayer(player);
+    for(const player of excluded)removePlayer(player,false);
     msg('PLAYER CANNOT CONTINUE','No replacement during the shoot-out; opponents reduced to equal numbers',2.4);
     return false;
   }
@@ -5505,8 +5507,8 @@ injured=function(q){
   let replacement=null;
   if(decision==='excluded-player'){
     replacement=excludedKeeper;
-    removePlayer(q);
-    replacement.out=false;replacement.soExcluded=false;replacement.inj=false;replacement.down=false;
+    removePlayer(q,true);
+    replacement.out=false;replacement.soExcluded=false;replacement.soUnavailableInjured=false;replacement.inj=false;replacement.down=false;
     replacement.tempOff=false;replacement.substitutionPending=false;
   }else if(decision==='named-substitute'){
     const position={x:q.x,y:q.y},benchIndex=BENCH[t].indexOf(namedSubstitute);
@@ -5516,11 +5518,11 @@ injured=function(q){
       replacement=q;
     }else{
       replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,t);
-      removePlayer(q);
+      removePlayer(q,true);
     }
   }else{
     replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,t);
-    removePlayer(q);
+    removePlayer(q,true);
   }
   if(replacement){
     q.gk=false;
