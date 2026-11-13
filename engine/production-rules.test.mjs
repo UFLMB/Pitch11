@@ -406,6 +406,9 @@ test("Law 5 removes assessed outfield players for one running minute and restore
   assert.match(source, /p\.out=true/);
   assert.match(source, /function returnFromAssessment\(p,periodRestart\)/);
   assert.match(source, /PITCH11Law\.offFieldReturnDecision\(\{elapsedMinutes:gmin\(\)-p\.tempOffStartedAt\}\)/);
+  assert.match(source, /p\.tempOffHalf=S\.half/);
+  assert.match(source, /function restorePeriodTempOff\(\)/);
+  assert.match(source, /setupKickoff=function\(team\)\{restorePeriodTempOff\(\);/);
   assert.match(source, /const _setupKickoffLaw5=setupKickoff/);
   assert.match(source, /const _startShootoutLaw5=startShootout/);
   assert.match(source, /if\(p\.inj&&!p\.out\)\{p\.limp=true;sendOffForAssessment\(p\);\}/);
