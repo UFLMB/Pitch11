@@ -541,3 +541,11 @@ test("Law 11 snapshots the second-last opponent from live player positions at th
   assert.match(source, /PITCH11Law\.isOffsidePosition\(/);
   assert.doesNotMatch(source, /const t=p\.team,d=dirOf\(t\),line=TI\[t\]\.off/);
 });
+
+
+test("Law 11 preserves an existing offside phase when a field defender deliberately saves an on-target shot", () => {
+  assert.match(source, /function law11DeliberateSave\(p\)/);
+  assert.match(source, /PITCH11Law\.offsideDeliberateSave\(/);
+  assert.match(source, /applyOffsideTouch\(p,previousLast,true,deliberateSave\)/);
+  assert.match(source, /restoreOffsideAfterSave\(offsideSnapshot\)/);
+});
