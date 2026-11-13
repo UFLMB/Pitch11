@@ -31,7 +31,7 @@ update=function(){
   const priorMode=S.mode,priorHalf=S.half,practice=!!S.prac;
   _updateLaw7StoppageClock();
   if(practice||S.prac||priorHalf<1||priorHalf>4||S.half!==priorHalf||H>W)return;
-  const stopped=priorMode==='whistle'||priorMode==='goal'||priorMode==='subs'||priorMode==='replay'||
+  const stopped=priorMode==='whistle'||priorMode==='goal'||(priorMode==='subs'&&S.ret!=='half')||priorMode==='replay'||
     (priorMode==='kickoff'&&S.clock>0);
   if(!stopped)return;
   S.clock+=DT;
