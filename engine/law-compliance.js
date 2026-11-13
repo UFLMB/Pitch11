@@ -290,6 +290,28 @@
     return hasMinimumPlayers(players, team, minimum || 7) ? 'continue' : 'abandon';
   }
 
+  function playerEquipmentIssues(equipment) {
+    const e = equipment && typeof equipment === 'object' ? equipment : {};
+    const missing = [];
+    if (e.shirtWithSleeves !== true) missing.push('shirt');
+    if (e.shorts !== true) missing.push('shorts');
+    if (e.socks !== true) missing.push('socks');
+    if (e.shinguards !== true || e.shinguardsCovered !== true) missing.push('shinguards');
+    if (e.footwear !== true) missing.push('footwear');
+    if (e.dangerousEquipment === true) missing.push('dangerous-equipment');
+    if (e.uncoveredJewellery === true) missing.push('uncovered-jewellery');
+    if (e.playerElectronicEquipment === true) missing.push('electronic-equipment');
+    return missing;
+  }
+
+  function equipmentInspectionDecision(equipment) {
+    const issues = playerEquipmentIssues(equipment);
+    if (!issues.length) return 'allow';
+    return issues.some(issue => issue === 'dangerous-equipment' ||
+      issue === 'uncovered-jewellery' || issue === 'electronic-equipment')
+      ? 'remove-item' : 'replace-item';
+  }
+
   function addedTimeSeconds(lostSeconds, secondsPerMatchMinute) {
     if (!Number.isFinite(lostSeconds) || lostSeconds <= 0) return 0;
     const unit = Number.isFinite(secondsPerMatchMinute) && secondsPerMatchMinute > 0
@@ -329,5 +351,5 @@
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 
-  root.PITCH11Law = Object.freeze({ addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
