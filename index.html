@@ -888,7 +888,7 @@ function startShootout(){
   if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
-  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1};S.half=5;S.clock=0;soNext();
+  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1};for(const p of P){p.shootoutPenaltyLineOffences=0;p.shootoutYC=0;}S.half=5;S.clock=0;soNext();
 }
 function soNext(){
   const so=S.so,t=PITCH11Law.shootoutNextTeam(so.k[0].length,so.k[1].length,so.firstTeam),list=[];
@@ -5114,9 +5114,17 @@ function retakePenaltyForKeeperOffence(){
   const team=ball.penaltyTeam,kicker=ball.penaltyKicker,keeper=ball.penaltyKeeper,shootout=ball.penaltyWasShootout;
   ball.penaltyRetakePending=false;
   if(team==null||!keeper){clearPenaltyLineState();return;}
-  keeper.penaltyLineOffences=(keeper.penaltyLineOffences||0)+1;
+  const offenceCount=shootout
+    ? (keeper.shootoutPenaltyLineOffences=(keeper.shootoutPenaltyLineOffences||0)+1)
+    : (keeper.penaltyLineOffences=(keeper.penaltyLineOffences||0)+1);
   let sanction='First offence: goalkeeper warned';
-  if(keeper.penaltyLineOffences>1){
+  if(shootout){
+    const decision=PITCH11Law.shootoutKeeperOffenceSanction(offenceCount-1,keeper.shootoutYC||0);
+    keeper.shootoutPenaltyLineOffences=decision.offences;keeper.shootoutYC=decision.cautions;
+    if(decision.card==='yellow'||decision.card==='second-yellow')giveCard(keeper,decision.card==='second-yellow'?3:1);
+    if(decision.card==='yellow')sanction='Repeated shoot-out offence: goalkeeper cautioned';
+    if(decision.card==='second-yellow')sanction='Repeated shoot-out offence: second yellow and sending-off';
+  }else if(offenceCount>1){
     keeper.yc++;
     const card=keeper.yc>=2?3:1;
     giveCard(keeper,card);
