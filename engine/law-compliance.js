@@ -39,11 +39,20 @@
     const insideY = Math.abs(state.y - state.centerY) <= state.penaltyHalfWidth;
     const inLeft = state.x >= state.left && state.x <= state.left + state.penaltyDepth && insideY;
     const inRight = state.x <= state.right && state.x >= state.right - state.penaltyDepth && insideY;
-    let team = state.lastTouchedTeam === 1 ? 1 : 0;
+    let team = state.possessionTeam === 0 || state.possessionTeam === 1
+      ? state.possessionTeam
+      : state.lastTouchedTeam === 1 ? 1 : 0;
     let goalkeeper = false;
     if (inLeft) { team = dirs[0] > 0 ? 0 : 1; goalkeeper = true; }
     else if (inRight) { team = dirs[0] < 0 ? 0 : 1; goalkeeper = true; }
     return { team, goalkeeper };
+  }
+
+  function refereeContactDecision(state) {
+    const s = state || {};
+    return s.directGoal === true || s.possessionChanged === true || s.promisingAttack === true
+      ? 'dropped-ball'
+      : 'continue';
   }
 
   function goalKickOpponentPosition(state) {
@@ -288,5 +297,5 @@
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, restartDelayDecision, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

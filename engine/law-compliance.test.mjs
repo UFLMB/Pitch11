@@ -119,8 +119,17 @@ test('dropped balls in either penalty area go to the defending goalkeeper', () =
   assert.deepEqual({ ...decide({ x: 90, y: 50, left: 0, right: 100, centerY: 50, penaltyDepth: 20, penaltyHalfWidth: 20, directions: [1, -1], lastTouchedTeam: 0 }) }, { team: 1, goalkeeper: true });
   assert.deepEqual({ ...decide({ x: 10, y: 50, left: 0, right: 100, centerY: 50, penaltyDepth: 20, penaltyHalfWidth: 20, directions: [-1, 1], lastTouchedTeam: 0 }) }, { team: 1, goalkeeper: true });
   assert.deepEqual({ ...decide({ x: 50, y: 50, left: 0, right: 100, centerY: 50, penaltyDepth: 20, penaltyHalfWidth: 20, directions: [1, -1], lastTouchedTeam: 1 }) }, { team: 1, goalkeeper: false });
+  assert.deepEqual({ ...decide({ x: 50, y: 50, left: 0, right: 100, centerY: 50, penaltyDepth: 20, penaltyHalfWidth: 20, directions: [1, -1], lastTouchedTeam: 0, possessionTeam: 1 }) }, { team: 1, goalkeeper: false });
 });
 
+
+
+test('Law 9 stops play for referee contact only when possession changes, a promising attack starts or a goal is scored directly', () => {
+  assert.equal(law.refereeContactDecision({}), 'continue');
+  assert.equal(law.refereeContactDecision({ possessionChanged: true }), 'dropped-ball');
+  assert.equal(law.refereeContactDecision({ promisingAttack: true }), 'dropped-ball');
+  assert.equal(law.refereeContactDecision({ directGoal: true }), 'dropped-ball');
+});
 
 test('goal-kick opponents are moved outside the penalty area, while players outside stay put', () => {
   const place = state => ({ ...law.goalKickOpponentPosition(state) });

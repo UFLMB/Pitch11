@@ -251,7 +251,7 @@ function updateInput(){
 const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=false;I.svar=I.pvar=I.tvar='';I.ppow=0;I.skd=-1;};
 
 /* ===================== 4. ACTIONS (kick, pass, shoot, tackle) ===================== */
-function clearOff(){for(const q of P)q.off=false;ball.ind=false;}   // any new touch ends offside / indirect-kick status
+function clearOff(){for(const q of P)q.off=false;ball.ind=false;ball.refContact=null;}   // any new touch ends offside / indirect-kick status
 function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;ball.gkHoldShown=0;p.poss=0;p.force=false;clearOff();}
 function markOff(p){                                       // who is in an offside position at the moment of the pass
   clearOff();const t=p.team,d=dirOf(t),line=TI[t].off,bx=ball.x*d;
@@ -968,9 +968,9 @@ function outOfPlay(){
     spot(1-lt,x,y,false,Math.atan2(CY-y,(CX-x)*0.3),'throw');
   }
 }
-function dropBall(t){
+function dropBall(t,recipientTeam){
   const x=clamp(ball.x,PX0+BR+0.1,PX1-BR-0.1),y=clamp(ball.y,PY0+BR+0.1,PY1-BR-0.1);
-  const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t});
+  const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t,possessionTeam:recipientTeam});
   const keeper=P[recipient.team*11],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
   spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
   ball.x=ball.px=x;ball.y=ball.py=y;S.rs.r=40;                                                   // Law 8: everyone else remains at least 4 m away
@@ -3472,8 +3472,10 @@ function refTick(){const R=REF,b=ball;if(!G.rf.show||S.mode==='menu'||S.mode==='
   if(R.pose==='wave'&&S.inj)R.pa=Math.atan2(S.inj.y-R.y,S.inj.x-R.x);
   const fa=(R.pose==='point'||R.pose==='pointC'||R.pose==='card'||R.pose==='wave')?R.pa:spd>10?Math.atan2(R.vy,R.vx):Math.atan2(b.y-R.y,b.x-R.x);
   R.face+=angd(fa,R.face)*Math.min(1,DT*(R.pose==='point'?9:6));
-  if(G.rf.hit&&!b.owner&&b.z<16&&R.hop<=0){const e=Math.hypot(b.x-R.x,b.y-R.y),sp=Math.hypot(b.vx,b.vy);
-    if(e<BR+4&&sp>90){const an=rnd(-.9,.9),c=Math.cos(an),s=Math.sin(an),nx=b.vx*c-b.vy*s;b.vy=(b.vx*s+b.vy*c)*.5;b.vx=nx*.5;b.vz=Math.max(b.vz,35);R.hop=.4;cm('The ball hits the referee!');}}
+  if(G.rf.hit&&!(S.so&&S.so.live)&&!b.owner&&b.z<16&&R.hop<=0){const e=Math.hypot(b.x-R.x,b.y-R.y),sp=Math.hypot(b.vx,b.vy);
+    if(e<BR+4&&sp>90){const contactTeam=b.last&&b.last.team===1?1:0,recipientTeam=b.receiver&&(b.receiver.team===0||b.receiver.team===1)?b.receiver.team:contactTeam;
+      b.refContact={x:b.x,y:b.y,team:contactTeam,recipientTeam};
+      const an=rnd(-.9,.9),c=Math.cos(an),s=Math.sin(an),nx=b.vx*c-b.vy*s;b.vy=(b.vx*s+b.vy*c)*.5;b.vx=nx*.5;b.vz=Math.max(b.vz,35);R.hop=.4;cm('The ball hits the referee!');}}
   if(!G.rf.adv&&S.adv&&S.mode==='play'){const ad=S.adv;S.adv=null;whistleStop(1.4,'FOUL','',ad.fn);}
   if(SPRAY.l){const l=SPRAY.l;l.t+=DT;if(S.rs!==l.rs){l.fade-=DT*1.3;if(l.fade<=0)SPRAY.l=null;}}
   if(G.rf.ar)arTick();}
@@ -5190,6 +5192,40 @@ giveCard=function(p,c){
 /* Reset repeated goalkeeper time-wasting sanctions for each new match. */
 const _newMatchGkHoldSanction=newMatch;
 newMatch=function(){_newMatchGkHoldSanction();for(const p of P)p.gkHoldOffences=0;};
+
+/* --- IFAB Law 9: referee contact can require a dropped ball --- */
+function refereeContactPromisingAttack(p){
+  if(!p||p.out)return false;
+  const d=dirOf(p.team),gx=d>0?PX1:PX0;
+  return (p.x-CX)*d>PW*.12&&(gx-p.x)*d<PW*.4&&Math.abs(p.y-CY)<PH*.45&&ball.vx*d>25;
+}
+function stopForRefereeContact(contact){
+  if(!contact)return;
+  ball.refContact=null;ball.x=ball.px=contact.x;ball.y=ball.py=contact.y;ball.z=ball.pz=0;
+  ball.vx=ball.vy=ball.vz=ball.spin=0;ball.owner=null;ball.receiver=null;
+  whistleStop(1.4,'REFEREE CONTACT','Dropped ball',()=>dropBall(contact.team,contact.recipientTeam));
+}
+function resolveRefereeContact(p){
+  const contact=ball.refContact;if(!contact)return false;
+  const possessionChanged=!!p&&p.team!==contact.team;
+  const promisingAttack=!!p&&p.team===contact.team&&refereeContactPromisingAttack(p);
+  const decision=PITCH11Law.refereeContactDecision({possessionChanged,promisingAttack});
+  if(decision==='dropped-ball'){stopForRefereeContact(contact);return true;}
+  ball.refContact=null;
+  return false;
+}
+const _takeLaw9Referee=take;
+take=function(p,byHand){if(resolveRefereeContact(p))return;_takeLaw9Referee(p,byHand);};
+const _kickLaw9Referee=kick;
+kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){if(resolveRefereeContact(p))return;_kickLaw9Referee(p,vx,vy,vz,spin,rcv,tx,ty,mode);};
+const _goalLaw9Referee=goal;
+goal=function(dr){
+  const contact=ball.refContact;
+  if(contact&&PITCH11Law.refereeContactDecision({directGoal:true})==='dropped-ball'){stopForRefereeContact(contact);return;}
+  _goalLaw9Referee(dr);
+};
+const _outOfPlayLaw9Referee=outOfPlay;
+outOfPlay=function(){ball.refContact=null;_outOfPlayLaw9Referee();};
 
 /* A second player's deflection clears the direct-restart/second-touch marker, including goalkeeper parries. */
 const _aiGKDirectRestart=aiGK;
