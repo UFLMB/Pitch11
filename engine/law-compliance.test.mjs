@@ -269,3 +269,12 @@ test('Law 11 detects an offside attacker clearly blocking the goalkeeper\'s line
   assert.equal(law.offsideLineOfSightInterference({ ...base, offside: false }), false);
   assert.equal(law.offsideLineOfSightInterference({ ...base, radius: NaN }), false);
 });
+
+
+test('2026/27 Laws 15 and 16 apply the five-second restart delay outcome', () => {
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 4.999 }), 'continue');
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: 5 }), 'opponent-throw-in');
+  assert.equal(law.restartDelayDecision({ kind: 'gk', seconds: 5 }), 'opponent-corner');
+  assert.equal(law.restartDelayDecision({ kind: 'corner', seconds: 8 }), 'continue');
+  assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: NaN }), 'continue');
+});
