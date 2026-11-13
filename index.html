@@ -266,6 +266,21 @@ function markOff(p){                                       // snapshot the secon
     }))q.off=true;
   }
 }
+function law11DeliberateSave(p){
+  if(!p||p.gk||ball.owner)return false;
+  const d=dirOf(1-p.team),gx=d>0?PX1:PX0;
+  return PITCH11Law.offsideDeliberateSave({
+    shot:ball.pmode==='shot',hasOwner:!!ball.owner,
+    x:ball.x,y:ball.y,z:ball.z,vx:ball.vx,vy:ball.vy,vz:ball.vz,
+    goalLine:gx,attackDirection:d,centerY:CY,goalHalfWidth:GOALH,
+    goalHeight:GOALZ,radius:BR,gravity:BALL_GRAV,drag:ball.z>2?KA:KG
+  });
+}
+function restoreOffsideAfterSave(snapshot){
+  if(!snapshot)return;
+  for(const q of P)q.off=snapshot.includes(q);
+  ball.ind=false;
+}
 function applyOffsideTouch(p,previousLast,deliberatePlay,deliberateSave){
   const action=PITCH11Law.offsideTouchAction({
     sameTeam:!!previousLast&&previousLast.team===p.team,
@@ -507,6 +522,7 @@ function touches(){                                        // a free ball is pic
   }
   if(!best)return;
   if(best!==b.dbl){b.dbl=null;b.ind=false;}              // another player's touch ends the second-touch restriction and allows a goal after a throw-in / drop
+  const deliberateSave=law11DeliberateSave(best),offsideSnapshot=deliberateSave?P.filter(q=>q.off):null;
   if(!S.prac&&!best.off){
     const challenger=P.find(p=>{
       if(!p.off||p.out||p.team===best.team)return false;
@@ -529,14 +545,14 @@ function touches(){                                        // a free ball is pic
     b.vx=vx*c-b.vy*0.45*s;b.vy=vx*s+b.vy*0.45*c;best.kcd=0.35;b.last=best;b.receiver=null;applyOffsideTouch(best,previousLast,false,false);
     return;
   }
-  if(air)airPlay(best);
+  if(air){airPlay(best);restoreOffsideAfterSave(offsideSnapshot);}
   else{
     const sp=Math.hypot(b.vx,b.vy);
     if(sp>240&&!S.rs&&Math.random()<0.5-0.4*best.st.drib+(sp-240)/1500+(best.team?0.08:-0.06)){      // heavy first touch: the ball bobbles away instead of sticking
       const previousLast=b.last,a=rnd(-.55,.55),c=Math.cos(a),sn=Math.sin(a),nx=(b.vx*c-b.vy*sn)*.32,ny=(b.vx*sn+b.vy*c)*.32;
-      b.vx=nx;b.vy=ny;b.vz=rnd(20,45);applyOffsideTouch(best,previousLast,true,false);b.last=best;best.kcd=.22;return;
+      b.vx=nx;b.vy=ny;b.vz=rnd(20,45);applyOffsideTouch(best,previousLast,true,deliberateSave);b.last=best;best.kcd=.22;return;
     }
-    take(best);
+    take(best);restoreOffsideAfterSave(offsideSnapshot);
   }
 }
 function airPlay(p){                                       // ball in the air: volley / chest control low down, header higher up
@@ -2724,8 +2740,9 @@ function slideHit(p,sd){
     }
   }else if(!o&&b.z<10&&p.kcd<=0&&!(b.receiver&&b.receiver.team===p.team)&&Math.hypot(b.x-p.x,b.y-p.y)<rch&&Math.abs(angd(Math.atan2(b.y-p.y,b.x-p.x),sd.a))<1.5){
     sd.res=1;sd.rec=K.recHit;act8('slide','ball');                               // loose ball: block or win it
-    if(Math.hypot(b.vx,b.vy)<350&&Math.random()<0.7)take(p);
-    else{b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;clearOff();}
+    const deliberateSave=law11DeliberateSave(p),offsideSnapshot=deliberateSave?P.filter(q=>q.off):null;
+    if(Math.hypot(b.vx,b.vy)<350&&Math.random()<0.7){take(p);restoreOffsideAfterSave(offsideSnapshot);}
+    else{const previousLast=b.last;b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;applyOffsideTouch(p,previousLast,true,deliberateSave);}
     return;
   }
   for(let i=(1-p.team)*11+1;i<(1-p.team)*11+11;i++){        // took the man, not the ball
