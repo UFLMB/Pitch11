@@ -329,3 +329,11 @@ test('Law 10 does not award a goal directly from a goalkeeper throw', () => {
   assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: true, lastTouchIsThrower: false, keeperTeam: 0, scoringTeam: 1 }), 'goal');
   assert.equal(law.goalkeeperThrowGoalDecision({ releasedByGoalkeeper: false, lastTouchIsThrower: true, keeperTeam: 0, scoringTeam: 1 }), 'goal');
 });
+
+
+test('Laws 8, 13, 16 and 17 award a corner instead of an own goal from a direct restart', () => {
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 1 }), 'corner');
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 1, scoringTeam: 0 }), 'corner');
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 0 }), 'goal');
+  assert.equal(law.directRestartGoalDecision({ restartKickerTeam: null, scoringTeam: 0 }), 'goal');
+});
