@@ -417,3 +417,16 @@ test("Law 5 removes assessed outfield players for one running minute and restore
   assert.match(source, /if\(p\.inj&&!p\.out\)\{p\.limp=true;sendOffForAssessment\(p\);\}/);
   assert.match(source, /if\(q\.inj&&!q\.out\)sendOffForAssessment\(q\)/);
 });
+
+
+test("Law 3 applies the ten-second exit deadline and one-minute delayed substitute entry in production", () => {
+  assert.match(source, /function substitutionExitTarget\(p\)/);
+  assert.match(source, /PITCH11Law\.timeLimitedSubstitutionExitDecision\(/);
+  assert.match(source, /PITCH11Law\.timeLimitedSubstitutionEntryDecision\(/);
+  assert.match(source, /function tickSubstitutionExits\(\)/);
+  assert.match(source, /function startPendingSubstitutionClocks\(\)/);
+  assert.match(source, /function completeEligiblePendingSubs\(\)/);
+  assert.match(source, /substitutionPending=true/);
+  assert.match(source, /tickSubstitutionExits\(\);tickPendingSubstitutionClocks\(\)/);
+  assert.match(source, /completeEligiblePendingSubs\(\);/);
+});
