@@ -1172,7 +1172,7 @@ function tickSubstitutionExits(){
     }else if(exitDecision==='delay-substitute'){
       p.out=true;p.substitutionPending=true;p.x=p.px=p.y=p.py=-400;
       p.vx=p.vy=p.ix=p.iy=0;
-      S.pendingSubs.push({player:p,bench:e.bench,position:e.position,team:e.team,running:false,elapsed:0});
+      S.pendingSubs.push({player:p,bench:e.bench,position:e.position,team:e.team,running:S.mode==='play',elapsed:0});
       S.subExits.splice(i,1);
       msg('SUBSTITUTE DELAYED','May enter at the first stoppage after one minute',2.2);
     }
