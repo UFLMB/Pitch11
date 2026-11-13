@@ -237,7 +237,7 @@ test("Law 14 checks the goalkeeper's goal-line position at the kick and retakes 
   assert.match(source, /PENALTY RETAKE/);
   assert.match(source, /First offence: goalkeeper warned/);
   assert.match(source, /Repeated offence: goalkeeper cautioned/);
-  assert.match(source, /GK\[keeper\.team\]=replacement/);
+  assert.match(source, /GK\[team\]=replacement/);
   assert.match(source, /varCheck\('goal',\{clearAndObviousError:true\}\)/);
   assert.match(source, /S\.penaltyRetake\?'PENALTY RETAKE'/);
 });
@@ -265,6 +265,15 @@ test("Law 14 rejects a backward penalty kick and awards an indirect free kick", 
   assert.match(source, /penalty=!!\(rs&&rs\.kind==='pen'&&rs\.p===p&&!S\.so\)/);
   assert.match(source, /INDIRECT FREE KICK','The penalty kick must be taken forward'/);
   assert.match(source, /freeKick\(1-team,x,y,true\)/);
+});
+
+test("Law 14 repeated goalkeeper penalty-line offences rely on the single Law 3 replacement path", () => {
+  const offence=source.slice(source.indexOf("function retakePenaltyForKeeperOffence"),source.indexOf("const _goalPenaltyLine"));
+  assert.match(offence, /giveCard\(keeper,card\)/);
+  assert.match(source, /const _law3ReplacementGoalkeeper=giveCard/);
+  assert.match(source, /PITCH11Law\.replacementGoalkeeper\(P,team\)/);
+  assert.doesNotMatch(offence, /const replacement=firstIn\(keeper\.team\)/);
+  assert.doesNotMatch(offence, /replacement\.gk=true/);
 });
 
 test("Law 14 does not retake for an off-line goalkeeper touching a penalty that was going wide or high", () => {
