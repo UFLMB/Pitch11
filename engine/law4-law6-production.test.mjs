@@ -32,4 +32,5 @@ test('Law 6 includes two assistant referees and a fourth official with substitut
   assert.match(script, /FO\.board='\+'\+announced/);
   assert.match(script, /drawFig2\(figO\(FO,a\)\)/);
   assert.match(script, /drawFig3\(figO\(FO,a\)\)/);
+  assert.match(script, /if\(o\.fourth&&FO\.boardT>0\)\{pj\(o\.x,o\.y,25\)/);
 });
