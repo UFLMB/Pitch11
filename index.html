@@ -5476,6 +5476,68 @@ giveCard=function(p,c){
     q.out=true;q.soExcluded=true;q.x=q.px=q.y=q.py=-400;q.vx=q.vy=q.ix=q.iy=0;
   }
 };
+
+/* Law 10: injured players cannot be replaced during kicks; an injured goalkeeper has the specific replacement options. */
+const _injuredShootoutLaw10=injured;
+injured=function(q){
+  if(!S.so||!S.so.live||!q)return _injuredShootoutLaw10(q);
+  const t=q.team,so=S.so,keeperHadKicked=!!(so.taken&&so.taken[t]&&so.taken[t].includes(q));
+  const removePlayer=player=>{
+    player.out=true;player.soExcluded=true;player.inj=true;player.down=false;
+    player.x=player.px=player.y=player.py=-400;
+    player.vx=player.vy=player.ix=player.iy=0;
+    if(ctrl===player)ctrl=null;
+  };
+  if(!q.gk){
+    removePlayer(q);
+    const excluded=PITCH11Law.shootoutExclusions(P);
+    for(const player of excluded)removePlayer(player);
+    msg('PLAYER CANNOT CONTINUE','No replacement during the shoot-out; opponents reduced to equal numbers',2.4);
+    return false;
+  }
+  const excludedKeeper=PITCH11Law.shootoutExcludedGoalkeeper(P,t);
+  const namedGoalkeeper=S.subs[t]<5?BENCH[t].find(player=>player.pos==='GK'):null;
+  const decision=PITCH11Law.shootoutInjuryDecision({
+    goalkeeper:true,
+    excludedPlayerAvailable:!!excludedKeeper,
+    namedSubstituteAvailable:!!namedGoalkeeper&&S.subs[t]<5
+  });
+  let replacement=null;
+  if(decision==='excluded-player'){
+    replacement=excludedKeeper;
+    removePlayer(q);
+    replacement.out=false;replacement.soExcluded=false;replacement.inj=false;replacement.down=false;
+    replacement.tempOff=false;replacement.substitutionPending=false;
+  }else if(decision==='named-substitute'){
+    const position={x:q.x,y:q.y};
+    BENCH[t].splice(BENCH[t].indexOf(namedGoalkeeper),1);
+    S.subs[t]++;
+    applySubstitution(q,namedGoalkeeper,position);
+    replacement=q;
+  }else{
+    replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,t);
+    removePlayer(q);
+  }
+  if(replacement){
+    q.gk=false;
+    replacement.gk=true;replacement.pos='GK';replacement.line=0;
+    replacement.st=mkStats('GK');replacement.inj=false;replacement.down=false;
+    replacement.x=replacement.px=t===0?PX0+28:PX1-28;
+    replacement.y=replacement.py=CY;
+    GK[t]=replacement;
+    if(keeperHadKicked){
+      if(!so.taken)so.taken=[[],[]];
+      if(!so.taken[t].includes(replacement))so.taken[t].push(replacement);
+    }
+    msg('GOALKEEPER REPLACED',tag(replacement)+' takes over in goal',2.2);
+  }else{
+    GK[t]=q;
+  }
+  const excluded=PITCH11Law.shootoutExclusions(P);
+  for(const player of excluded)removePlayer(player);
+  return false;
+};
+
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js">
