@@ -402,3 +402,17 @@ test("Law 9 restarts with a dropped ball after referee contact causes a direct g
   assert.match(source, /slideHit=function\(p,sd\)\{const previousLast=ball\.last/);
   assert.match(source, /outOfPlay=function\(\)\{ball\.refContact=null/);
 });
+
+
+test("Law 7 counts match stoppages, adds the lost time back, and shows added-time clock labels", () => {
+  assert.match(source, /lostTime:0,addedTime:0,addedTimeAnnounced:0/);
+  assert.match(source, /PITCH11Law\.addedTimeSeconds\(S\.lostTime,unit\)/);
+  assert.match(source, /PITCH11Law\.periodEndDecision\(/);
+  assert.match(source, /inPlay:S\.mode==='play'/);
+  assert.match(source, /PITCH11Law\.addedTimeClockLabel\(/);
+  assert.match(source, /function refreshLaw7AddedTime\(\)/);
+  assert.match(source, /S\.lostTime\+=DT/);
+  assert.match(source, /priorMode==='whistle'/);
+  assert.match(source, /priorMode==='subs'&&S\.ret!=='half'/);
+  assert.match(source, /priorMode==='kickoff'&&S\.clock>0/);
+});
