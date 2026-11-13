@@ -5449,12 +5449,23 @@ const _updateLaw5OffField=update;update=function(){
     if(PITCH11Law.offFieldReturnDecision({elapsedMinutes:gmin()-p.tempOffStartedAt})==='return')returnFromAssessment(p,false);
   }
 };
-/* Law 10: after a sending-off during penalties, the opponents reduce to the same number. */
+/* Law 10: replace a sent-off shoot-out goalkeeper and equalise player numbers. */
 const _giveCardShootoutEqualisation=giveCard;
 giveCard=function(p,c){
   const shootoutSendOff=!!(S.so&&c>1&&p&&!p.out);
+  const wasShootoutGoalkeeper=!!(S.so&&p&&p.gk&&c>1&&!p.out);
   _giveCardShootoutEqualisation(p,c);
   if(!shootoutSendOff)return;
+  if(wasShootoutGoalkeeper){
+    const replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,p.team);
+    if(replacement){
+      p.gk=false;replacement.gk=true;replacement.pos='GK';replacement.line=0;
+      replacement.st=mkStats('GK');GK[p.team]=replacement;
+      replacement.x=replacement.px=p.team===0?PX0+28:PX1-28;
+      replacement.y=replacement.py=CY;
+      msg('GOALKEEPER REPLACED',tag(replacement)+' takes over in goal',2);
+    }
+  }
   const excluded=PITCH11Law.shootoutExclusions(P);
   for(const q of excluded){
     q.out=true;q.soExcluded=true;q.x=q.px=q.y=q.py=-400;q.vx=q.vy=q.ix=q.iy=0;
