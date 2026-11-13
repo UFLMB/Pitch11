@@ -380,3 +380,28 @@ test('Laws 8, 13, 16 and 17 award a corner instead of an own goal from a direct 
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 0 }), 'goal');
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: null, scoringTeam: 0 }), 'goal');
 });
+
+
+test('Law 3 enforces the ten-second substitution exit deadline and its exceptions', () => {
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 9.99 }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10 }), 'delay-substitute');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, injuryPreventsExit: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, safetyPreventsExit: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, goalkeeperReplacement: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, nearOrCrossingExit: true }), 'allow');
+});
+
+test('Law 3 delays a substitute until the first stoppage at least one running minute after restart', () => {
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 59.99, firstStoppage: true }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: false }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true }), 'allow');
+});
+
+test('Law 3 minimum-player exception includes a player temporarily off under the time-limited substitution protocol', () => {
+  const players = Array.from({ length: 7 }, (_, i) => ({ team: 0, out: false }));
+  players[6].out = true;
+  players[6].substitutionPending = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), true);
+  players[6].substitutionPending = false;
+  assert.equal(law.hasMinimumPlayers(players, 0), false);
+});
