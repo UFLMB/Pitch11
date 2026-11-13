@@ -218,7 +218,7 @@
   function shootoutOrder(players, team) {
     // Every eligible player may take a kick, including the goalkeeper.
     return players
-      .filter(p => p.team === team && (!p.out || p.tempOff === true || p.substitutionPending === true))
+      .filter(p => p.team === team && p.soExcluded !== true && (!p.out || p.tempOff === true || p.substitutionPending === true))
       .sort((a, b) => (a.role === 0 ? 1 : 0) - (b.role === 0 ? 1 : 0) || a.role - b.role || a.num - b.num);
   }
 
