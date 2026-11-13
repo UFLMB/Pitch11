@@ -367,3 +367,31 @@ test('Laws 8, 13, 16 and 17 award a corner instead of an own goal from a direct 
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: 0, scoringTeam: 1, restartKind: 'drop' }), 'goal-kick');
   assert.equal(law.directRestartGoalDecision({ restartKickerTeam: null, scoringTeam: 0 }), 'goal');
 });
+
+
+test('Law 7 calculates minimum additional time from time lost, rounded up to whole match minutes', () => {
+  assert.equal(law.addedTimeSeconds(0, 4), 0);
+  assert.equal(law.addedTimeSeconds(0.01, 4), 4);
+  assert.equal(law.addedTimeSeconds(4, 4), 4);
+  assert.equal(law.addedTimeSeconds(4.01, 4), 8);
+  assert.equal(law.addedTimeSeconds(7.9, 4), 8);
+  assert.equal(law.addedTimeSeconds(7.9, 6), 12);
+  assert.equal(law.addedTimeSeconds(-1, 4), 0);
+});
+
+test('Law 7 ends a period only after regulation time plus the accumulated added time', () => {
+  const base = { regulationSeconds: 180, addedSeconds: 8 };
+  assert.equal(law.periodEndDecision({ ...base, clock: 179.99, inPlay: true }), 'continue');
+  assert.equal(law.periodEndDecision({ ...base, clock: 187.99, inPlay: true }), 'continue');
+  assert.equal(law.periodEndDecision({ ...base, clock: 188, inPlay: false }), 'wait-for-play');
+  assert.equal(law.periodEndDecision({ ...base, clock: 188, inPlay: true }), 'end');
+  assert.equal(law.periodEndDecision({ ...base, clock: 180, addedSeconds: 0, inPlay: true }), 'end');
+});
+
+test('Law 7 displays 45+ and extra-time added-time clock labels', () => {
+  assert.equal(law.addedTimeClockLabel({ clock: 180, regulationSeconds: 180, secondsPerMatchMinute: 4, baseMinute: 45 }), '45+1');
+  assert.equal(law.addedTimeClockLabel({ clock: 183.99, regulationSeconds: 180, secondsPerMatchMinute: 4, baseMinute: 45 }), '45+1');
+  assert.equal(law.addedTimeClockLabel({ clock: 184, regulationSeconds: 180, secondsPerMatchMinute: 4, baseMinute: 45 }), '45+2');
+  assert.equal(law.addedTimeClockLabel({ clock: 96, regulationSeconds: 90, secondsPerMatchMinute: 6, baseMinute: 105 }), '105+2');
+  assert.equal(law.addedTimeClockLabel({ clock: 179, regulationSeconds: 180, secondsPerMatchMinute: 4, baseMinute: 45 }), '');
+});
