@@ -505,9 +505,9 @@ test('shootout first kicker is respected and teams alternate in every round', ()
 
 test('shoot-out goalkeeper warnings and cautions do not inherit match sanctions', () => {
   const first = law.shootoutKeeperOffenceSanction(0, 0);
-  assert.deepEqual(first, { offences: 1, cautions: 0, card: 'warning' });
+  assert.equal(JSON.stringify(first), JSON.stringify({ offences: 1, cautions: 0, card: 'warning' }));
   const second = law.shootoutKeeperOffenceSanction(first.offences, first.cautions);
-  assert.deepEqual(second, { offences: 2, cautions: 1, card: 'yellow' });
+  assert.equal(JSON.stringify(second), JSON.stringify({ offences: 2, cautions: 1, card: 'yellow' }));
   const third = law.shootoutKeeperOffenceSanction(second.offences, second.cautions);
-  assert.deepEqual(third, { offences: 3, cautions: 2, card: 'second-yellow' });
+  assert.equal(JSON.stringify(third), JSON.stringify({ offences: 3, cautions: 2, card: 'second-yellow' }));
 });
