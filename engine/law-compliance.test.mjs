@@ -393,8 +393,9 @@ test('Law 3 enforces the ten-second substitution exit deadline and its exception
 
 test('Law 3 delays a substitute until the first stoppage at least one running minute after restart', () => {
   assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 59.99, firstStoppage: true }), 'wait');
-  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: false }), 'wait');
-  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: false, playerExited: true }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true, playerExited: false }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true, playerExited: true }), 'allow');
 });
 
 test('Law 3 minimum-player exception includes a player temporarily off under the time-limited substitution protocol', () => {
