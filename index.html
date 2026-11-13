@@ -1183,15 +1183,29 @@ function doSub(p,bn){
   if(PITCH11Law.equipmentInspectionDecision(incomingEquipment)!=='allow'){
     msg('EQUIPMENT CHECK',PITCH11Law.equipmentInspectionDecision(incomingEquipment)==='remove-item'?'UNSAFE ITEM MUST BE REMOVED':'COMPULSORY KIT MUST BE REPLACED',2);return false;
   }
-  if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
-  S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
   const position={x:p.x,y:p.y},exit=substitutionExitTarget(p);
   const exitSeconds=exit.distance/28;
-  if(p.inj||p.safetyExitException)return applySubstitution(p,bn,position);
-  if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
-    if(!p.yc){p.yc++;giveCard(p,1);}
+  if(p.inj||p.safetyExitException){
+    if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
+    S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
     return applySubstitution(p,bn,position);
   }
+  if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
+    const delayDecision=PITCH11Law.goalkeeperSubstitutionDelayDecision({
+      exceededTenSeconds:true,alreadyCautioned:p.yc>0
+    });
+    if(delayDecision==='send-off'){
+      p.yc++;giveCard(p,3);
+      msg('GOALKEEPER SENT OFF','Second caution for delaying the substitution',2);
+      return false;
+    }
+    p.yc++;giveCard(p,1);
+    if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
+    S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
+    return applySubstitution(p,bn,position);
+  }
+  if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
+  S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
   for(const e of S.subExits)e.elapsed=0;
   S.subExits.push({player:p,bench:bn,position,target:exit,elapsed:0,team:t,exitSeconds});
   p.inj=p.down=p.limp=false;p.substitutionExiting=true;p.vx=p.vy=p.ix=p.iy=0;p.sp=false;
