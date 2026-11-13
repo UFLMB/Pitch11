@@ -300,7 +300,7 @@ test("Law 12 advantage is resolved before period end and before a subsequent whi
 
 
 test("Law 11 disallows a goal when an offside attacker blocks the goalkeeper's line of sight", () => {
-  assert.match(source, /PITCH11Law\\.offsideLineOfSightInterference\\(/);
+  assert.match(source, /PITCH11Law\.offsideLineOfSightInterference\(/);
   assert.match(source, /const _goalLaw11Sight=goal/);
-  assert.match(source, /callOffside\\(blocker\\);return/);
+  assert.match(source, /callOffside\(blocker\);return/);
 });
