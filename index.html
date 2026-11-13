@@ -1153,7 +1153,7 @@ function rules(){
       msg('8-SECOND VIOLATION','CORNER KICK',2);return;
     }
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;}
-  const keeperThrowDecision=PITCH11Law.goalkeeperThrowGoalDecision({releasedByGoalkeeper:!!b.gkReleasedBy,lastTouchIsThrower:b.gkReleasedBy===b.last});
+  const keeperThrowDecision=PITCH11Law.goalkeeperThrowGoalDecision({releasedByGoalkeeper:!!b.gkReleasedBy,lastTouchIsThrower:b.gkReleasedBy===b.last,keeperTeam:b.gkReleasedBy&&b.gkReleasedBy.team,scoringTeam:dirOf(0)===(b.x>PX1?1:-1)?0:1});
   if(!b.ind&&keeperThrowDecision!=='goal-kick'&&ballInsideGoalFrame(b)&&(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1))){goal(b.x>PX1?1:-1);return;}
   if(ballBeyondLine(b.x,PX0,-1)||ballBeyondLine(b.x,PX1,1)||ballBeyondLine(b.y,PY0,-1)||ballBeyondLine(b.y,PY1,1)){outOfPlay();return;}
   if(S.adv){
