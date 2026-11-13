@@ -1187,7 +1187,7 @@ function rules(){
     }
   }
   if(!S.prac)S.clock+=DT;
-  if(!S.prac){refreshLaw7AddedTime();if(PITCH11Law.periodEndDecision({clock:S.clock,regulationSeconds:plen(),addedSeconds:S.addedTime,inPlay:true})==='end')endHalf();}
+  if(!S.prac){refreshLaw7AddedTime();if(PITCH11Law.periodEndDecision({clock:S.clock,regulationSeconds:plen(),addedSeconds:S.addedTime,inPlay:S.mode==='play'})==='end')endHalf();}
 }
 
 /* ===================== 10. LOOP (fixed 60 Hz step, interpolated render) ===================== */
