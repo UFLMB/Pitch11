@@ -513,16 +513,24 @@ test("Law 10 tracks shoot-out kickers by player so eligibility changes cannot ca
 
 test("Law 10 does not replace an injured outfield shoot-out player and equalises the opponents", () => {
   assert.match(source, /const _injuredShootoutLaw10=injured/);
-  assert.match(source, /if\(!q\.gk\)\{[\s\S]*?removePlayer\(q\)/);
-  assert.match(source, /const removePlayer=player=>\{[\s\S]*?player\.soExcluded=true/);
+  assert.match(source, /if\(!q\.gk\)\{[\s\S]*?removePlayer\(q,true\)/);
+  assert.match(source, /const removePlayer=\(player,injuredPlayer=false\)=>\{[\s\S]*?player\.soExcluded=true/);
   assert.match(source, /PITCH11Law\.shootoutExclusions\(P\)/);
 });
 
 test("Law 10 replaces an injured shoot-out goalkeeper using an excluded player, an available named substitute, or a player changing places", () => {
   assert.match(source, /PITCH11Law\.shootoutExcludedGoalkeeper\(P,t\)/);
   assert.match(source, /PITCH11Law\.shootoutInjuryDecision\(/);
-  assert.match(source, /namedGoalkeeper&&S\.subs\[t\]<5/);
+  assert.ok(source.includes('namedSubstituteAvailable:!!namedSubstitute&&S.subs[t]<5'));
   assert.match(source, /replacement\.gk=true/);
   assert.match(source, /GK\[t\]=replacement/);
   assert.match(source, /keeperHadKicked/);
+});
+
+
+test("Law 10 accepts any unused named substitute as an injured shoot-out goalkeeper replacement", () => {
+  assert.ok(source.includes('const namedSubstitute=S.subs[t]<5?(BENCH[t][0]||null):null'));
+  assert.ok(source.includes('if(applySubstitution(q,namedSubstitute,position))'));
+  assert.match(source, /BENCH\[t\]\.splice\(benchIndex,1\)/);
+  assert.doesNotMatch(source, /BENCH\[t\]\.find\(player=>player\.pos==='GK'\)/);
 });
