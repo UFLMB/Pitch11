@@ -325,6 +325,27 @@
       progress(s.attackerX) > progress(s.secondLastOpponentX);
   }
 
+
+  function offsideDeliberateSave(state) {
+    const s = state || {};
+    const fields = [s.x, s.y, s.z, s.vx, s.vy, s.vz, s.goalLine, s.attackDirection,
+      s.centerY, s.goalHalfWidth, s.goalHeight, s.radius, s.gravity, s.drag];
+    if (s.shot !== true || s.hasOwner === true || !fields.every(Number.isFinite) ||
+        ![1, -1].includes(s.attackDirection) || s.radius < 0 || s.drag <= 0 || s.gravity < 0) return false;
+    const distance = (s.goalLine - s.x) * s.attackDirection;
+    const speed = s.vx * s.attackDirection;
+    if (distance <= 0 || speed <= 0) return false;
+    const ratio = distance * s.drag / speed;
+    if (ratio <= 0 || ratio >= 1) return false;
+    const time = -Math.log(1 - ratio) / s.drag;
+    const yAtGoal = s.y + (s.vy / s.vx) * (s.goalLine - s.x);
+    const zAtGoal = s.z <= 0 && s.vz <= 0
+      ? 0
+      : s.z + s.vz * time - 0.5 * s.gravity * time * time;
+    return Math.abs(yAtGoal - s.centerY) <= s.goalHalfWidth + s.radius &&
+      zAtGoal >= -s.radius && zAtGoal <= s.goalHeight + s.radius;
+  }
+
   function offsideLineOfSightInterference(state) {
     const s = state || {};
     const fields = [s.attackerX, s.attackerY, s.keeperX, s.keeperY, s.ballX, s.ballY, s.radius];
@@ -465,5 +486,5 @@
     return s.restartKickerTeam === 1 - s.scoringTeam ? 'corner' : 'goal';
   }
 
-  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, offsideDeliberateSave, restartDelayDecision, goalKickDelayCornerY, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
