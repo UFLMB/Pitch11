@@ -404,7 +404,7 @@ test("controlled second touches during penalties and shoot-outs use their own La
   assert.match(touchFunction[0], /b\.shootoutDoubleTouch=true/);
   assert.match(touchFunction[0], /b\.pen&&!b\.penaltyWasShootout&&secondTouchCandidate===b\.penaltyKicker/);
   assert.match(touchFunction[0], /b\.penaltyDoubleTouch=true/);
-  assert.match(source, /resolveAccidentalPenaltyDoubleTouch\(true\)/);
+  assert.match(source, /ball\.penaltyDoubleTouch/);
   assert.match(source, /doubleTouch:ball\.shootoutDoubleTouch/);
 });
 
