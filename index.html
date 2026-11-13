@@ -58,7 +58,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,lostTime:0,addedTime:0,addedTimeAnnounced:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
-  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null};
+  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],subExitRunners:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
 const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,px:CX,py:CY,pz:0};
 function standardPlayerEquipment(){return{shirtWithSleeves:true,shorts:true,socks:true,shinguards:true,shinguardsCovered:true,footwear:true,dangerousEquipment:false,uncoveredJewellery:false,playerElectronicEquipment:false,inspected:false};}
 const P=[];
@@ -430,9 +430,9 @@ function integrate(p){
 function clampPos(p){p.x=clamp(p.x,PX0-18,PX1+18);p.y=clamp(p.y,PY0-18,PY1+18);}
 function separate(){                                       // soft player-player collision
   for(let i=0;i<22;i++){
-    const a=P[i];if(a.dive>0||a.out)continue;
+    const a=P[i];if(a.dive>0||a.out||a.substitutionExiting)continue;
     for(let j=i+1;j<22;j++){
-      const b=P[j];if(b.dive>0||b.out)continue;
+      const b=P[j];if(b.dive>0||b.out||b.substitutionExiting)continue;
       const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
       if(d2<144&&d2>0.01){const d=Math.sqrt(d2),k=(12-d)/d,s=a.st.phys+b.st.phys,ka=k*b.st.phys/s,kb=k*a.st.phys/s;a.x-=dx*ka;a.y-=dy*ka;b.x+=dx*kb;b.y+=dy*kb;}   // stronger player gets pushed less
     }
@@ -492,7 +492,7 @@ function touches(){                                        // a free ball is pic
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9;
   for(const p of P){
-    if(p.gk||p.out||p.kcd>0||p.stun>0||p===b.dbl)continue;
+    if(p.gk||p.out||p.substitutionExiting||p.kcd>0||p.stun>0||p===b.dbl)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
@@ -615,7 +615,7 @@ function teamInfo(){
   for(let t=0;t<2;t++){
     const ti=TI[t];ti.c1=ti.c2=null;let d1=1e9,d2=1e9;
     for(let i=t*11+1;i<t*11+11;i++){
-      const p=P[i];if(p.out)continue;
+      const p=P[i];if(p.out||p.substitutionExiting)continue;
       const d=(p.x-b.x)*(p.x-b.x)+(p.y-b.y)*(p.y-b.y);
       if(d<d1){d2=d1;ti.c2=ti.c1;d1=d;ti.c1=p;}else if(d<d2){d2=d;ti.c2=p;}
     }
@@ -662,7 +662,7 @@ function assignMarks(t){                                   // greedy one-to-one 
   const o=1-t,gx=dirOf(t)>0?PX0:PX1,ti=TI[t],pairs=[];
   for(let i=t*11+1;i<t*11+11;i++){
     const p=P[i];p.mk=null;
-    if(p.out||p.line>=3||p===ti.c1||p===ti.c2)continue;
+    if(p.out||p.substitutionExiting||p.line>=3||p===ti.c1||p===ti.c2)continue;
     homePos(p);
     for(let j=o*11+1;j<o*11+11;j++){
       const q=P[j];if(q.out||q===ball.owner)continue;
@@ -847,13 +847,14 @@ function aiGK(p){
 const msg=(big,sub,t)=>{S.msg={big,sub:sub||'',t:t||1.4};};
 const gmin=()=>PERIOD.base[S.half]+S.clock/(PERIOD.len[S.half]||1)*PERIOD.mins[S.half];
 const tag=p=>KIT[p.team].name+' '+(p.nm||'#'+p.num);
-function firstIn(t){for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out)return p;}return P[t*11+1];}
+function firstIn(t){for(const r of [9,10,8,7,6,5,4,3,2,1]){const p=P[t*11+r];if(!p.out&&!p.substitutionExiting)return p;}return P[t*11+1];}
 function setupKickoff(team){
+  completeEligiblePendingSubs();
   const b=ball;
   b.x=b.px=CX;b.y=b.py=CY;b.z=b.pz=b.vx=b.vy=b.vz=b.spin=0;b.owner=null;b.receiver=null;b.last=null;b.ind=false;b.pen=false;b.hcd=0;
   S.rs=null;S.adv=null;clearOff();
   for(const p of P){
-    if(p.out)continue;
+    if(p.out||p.substitutionExiting)continue;
     const d=dirOf(p.team),f=FRM[p.team][p.role];
     let along=f[0]*PW*0.9;
     if(!p.gk)along=Math.min(along,PW/2-(p.team===team?22:110));
@@ -868,11 +869,11 @@ function setupKickoff(team){
   S.mode='kickoff';S.t=0;
 }
 function newMatch(){
-  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.lostTime=0;S.addedTime=0;S.addedTimeAnnounced=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;
+  S.score[0]=S.score[1]=0;S.half=1;S.clock=0;S.lostTime=0;S.addedTime=0;S.addedTimeAnnounced=0;S.kick=0;S.subs=[0,0];S.subWindows=[0,0];S.subWindowUsed=[false,false];S.reds=[0,0];S.so=null;S.card=null;S.msg=null;S.forfeitTeam=null;S.subExits=[];S.subExitRunners=[];S.pendingSubs=[];S.pendingPeriodAction=null;S.pendingSubsResume=false;
   applyTeam(0,G.club);applyTeam(1,M.opp);if(!inspectMatchEquipment())return;setupKickoff(0);
 }
-function nextPeriod(n){S.half=n;S.clock=0;S.lostTime=0;S.addedTime=0;S.addedTimeAnnounced=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
-function brk(title,btn,fn){S.mode='half';S.t=0;S.brk={title,btn,fn};aiSubs(1,2);}
+function nextPeriod(n){if(S.subExits.length){S.pendingPeriodAction=()=>nextPeriod(n);return;}S.half=n;S.clock=0;S.lostTime=0;S.addedTime=0;S.addedTimeAnnounced=0;S.kick=n%2?0:1;setupKickoff(S.kick);}
+function brk(title,btn,fn){completeEligiblePendingSubs();S.mode='half';S.t=0;S.brk={title,btn,fn};aiSubs(1,2);}
 function endHalf(){
   for(const p of P){p.ix=p.iy=0;p.sp=false;}I.shoot=false;I.chargeT=0;S.adv=null;S.rs=null;
   const tie=S.score[0]===S.score[1],h=S.half;
@@ -884,6 +885,7 @@ function endHalf(){
 }
 /* --- penalty shootout: 5 kicks each, early finish, then sudden death --- */
 function startShootout(){
+  if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
   S.so={k:[[],[]],live:false,t:0,team:0,shooter:null};S.half=5;S.clock=0;soNext();
@@ -935,13 +937,14 @@ function celebrate(){
   const sc=S.scorer,gt=S.goalTeam,dr=dirOf(gt);
   for(const p of P){
     p.ix=p.iy=0;p.sp=false;
-    if(p.gk||p.out||p.team!==gt)continue;
+    if(p.gk||p.out||p.substitutionExiting||p.team!==gt)continue;
     if(p===sc){if(S.t<1.8)goTo(p,dr>0?PX1-20:PX0+20,sc.y<CY?PY0+25:PY1-25,true);}
     else if(sc){const dx=sc.x-p.x,dy=sc.y-p.y,d=Math.hypot(dx,dy);if(d>30){p.ix=dx/d;p.iy=dy/d;p.sp=true;}}
   }
 }
 /* --- stoppages --- */
 function whistleStop(sec,big,sub,fn,hurt){                 // freeze play, show a message, then run fn
+  completeEligiblePendingSubs();
   S.subWindowUsed=[false,false];
   S.mode='whistle';S.t=0;S.wt=sec;S.after=fn;S.inj=hurt||null;S.adv=null;msg(big,sub,sec);
   if(hurt)hurt.down=true;
@@ -949,7 +952,7 @@ function whistleStop(sec,big,sub,fn,hurt){                 // freeze play, show 
 }
 function spot(team,x,y,gk,faceTo,kind){                    // place the nearest taker with the ball
   let tk=null,bd=1e9;
-  for(let i=team*11;i<team*11+11;i++){const p=P[i];if(p.gk!==gk||p.out||p.inj)continue;const d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;tk=p;}}
+  for(let i=team*11;i<team*11+11;i++){const p=P[i];if(p.gk!==gk||p.out||p.inj||p.substitutionExiting)continue;const d=(p.x-x)*(p.x-x)+(p.y-y)*(p.y-y);if(d<bd){bd=d;tk=p;}}
   if(!tk)tk=firstIn(team);
   tk.x=tk.px=x;tk.y=tk.py=y;tk.vx=tk.vy=0;tk.face=faceTo;tk.dive=0;tk.stun=0;tk.kcd=0;
   const b=ball;
@@ -957,6 +960,7 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
   b.owner=tk;b.last=tk;b.receiver=null;b.protect=3;b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false;b.gkHoldShown=0;b.gkNoHands=null;b.gkNoHandsFrom=null;b.gkReleasedBy=null;clearOff();
   tk.poss=0;tk.freeze=gk?0.45:rnd(0.5,0.85);tk.force=false;
   S.rs={kind:kind||'drop',team,p:tk,x,y};S.adv=null;
+  completeEligiblePendingSubs();
 }
 function outOfPlay(){
   if(S.adv){const a=S.adv;S.adv=null;a.fn();return;}      // ball died during advantage: take the foul
@@ -1010,21 +1014,21 @@ function restartClamp(){                                   // defenders keep 9.1
   if(rs.kind==='pen'&&!S.so){                              // penalty: outside the area and at least 9.15 m from the spot
     const gx=dirOf(rs.team)>0?PX1:PX0,d=dirOf(rs.team),minArc=ARC_R+2;
     for(const p of P){
-      if(p===rs.p||p.gk||p.out)continue;
+      if(p===rs.p||p.gk||p.out||p.substitutionExiting)continue;
       if((gx-p.x)*d<PEN_DEPTH+12&&Math.abs(p.y-CY)<PEN_WIDTH/2+12)p.x=gx-d*(PEN_DEPTH+12);
       const dx=p.x-rs.x,dy=p.y-rs.y,dist=Math.hypot(dx,dy);
       if(dist<minArc){const k=minArc/(dist||1);p.x=rs.x+dx*k;p.y=rs.y+dy*k;}
     }
     return;
   }
-  if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // all players except the kicker stay in their own half
+  if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out||p.substitutionExiting)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // all players except the kicker stay in their own half
   const R=rs.r||({ko:91.5,throw:20,gk:91.5,drop:40})[rs.kind];if(!R)return;     // Law 8 dropped ball: all players except the recipient keep 4 m clear
   const attackDirection=dirOf(rs.team),ownGoalLine=attackDirection>0?PX0:PX1;
   const ownPenaltyRestart=rs.kind==='fk'&&(rs.x-ownGoalLine)*attackDirection>=0&&
     (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
     const restrictedTeam=rs.kind==='drop'?false:(rs.kind==='ko'?p.team===rs.team:(p.team===rs.team||p.gk));
-    if(p===rs.p||p.out||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
+    if(p===rs.p||p.out||p.substitutionExiting||restrictedTeam||(rs.wall&&rs.wall.includes(p)))continue;
     let dx=p.x-rs.x,dy=p.y-rs.y,d=Math.hypot(dx,dy);
     if(d<R){
       if(d<1e-6){const a=P.indexOf(p)*2.399963229728653;dx=Math.cos(a);dy=Math.sin(a);d=1;}
@@ -1079,6 +1083,7 @@ function foul(p,o,behind,context){
   if(card===1||card===3)p.yc++;
   const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false);
   if(card)giveCard(p,card);
+  if(hurt){hurt.inj=true;hurt.law5FoulSanction=card>0;hurt.law5AssessmentQuickly=card>0;hurt.law5PenaltyKicker=pen&&firstIn(t)===o;}
   // IFAB Law 3: play cannot continue once a team has fewer than seven players.
   if(PITCH11Law.matchAbandonmentDecision(P,p.team,7,!!S.so)==='abandon'){
     S.forfeitTeam=p.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
@@ -1104,23 +1109,107 @@ function randInjury(){
   whistleStop(3,'INJURY',tag(p)+' is down',()=>dropBall(t),p);
 }
 /* --- substitutions (5 per team, bench of 7) --- */
+function applySubstitution(p,bn,position){
+  if(!p||!bn)return false;
+  const wasCaptain=!!p.captain,oldNum=p.num,t=p.team;
+  const incomingEquipment=bn.equipment||standardPlayerEquipment();
+  const equipmentDecision=PITCH11Law.equipmentInspectionDecision(incomingEquipment);
+  if(equipmentDecision!=='allow'){msg('EQUIPMENT CHECK',equipmentDecision==='remove-item'?'UNSAFE ITEM MUST BE REMOVED':'COMPULSORY KIT MUST BE REPLACED',2);return false;}
+  p.num=bn.num;p.nm=bn.nm||'';p.skin=bn.skin;p.st=bn.st;p.equipment={...incomingEquipment,inspected:true};p.captain=false;
+  p.winded=false;p.stam=1;p.fat=0;p.yc=0;p.inj=p.down=p.limp=false;p.out=false;
+  p.substitutionPending=false;p.substitutionExiting=false;p.vx=p.vy=p.ix=p.iy=0;
+  p.x=p.px=CX;p.y=p.py=clamp(position.y,PY0+20,PY1-20);
+  if(wasCaptain)assignCaptain(t,p);
+  if(typeof FO!=='undefined'){FO.board=oldNum+' > '+bn.num;FO.boardT=3;}
+  msg('SUBSTITUTION',KIT[t].name+' #'+bn.num+' on',1.6);
+  return true;
+}
+function substitutionExitTarget(p){
+  const candidates=[
+    {x:PX0,y:clamp(p.y,PY0,PY1)},
+    {x:PX1,y:clamp(p.y,PY0,PY1)},
+    {x:clamp(p.x,PX0,PX1),y:PY0},
+    {x:clamp(p.x,PX0,PX1),y:PY1}
+  ];
+  let best=candidates[0],distance=Infinity;
+  for(const q of candidates){const d=Math.hypot(q.x-p.x,q.y-p.y);if(d<distance){distance=d;best=q;}}
+  return {x:best.x,y:best.y,distance};
+}
 function doSub(p,bn){
   const t=p.team;
   const halftime=S.mode==='half'||(S.mode==='subs'&&S.ret==='half');
   const inStoppage=S.mode==='whistle'||(S.mode==='subs'&&S.ret==='whistle');
   const eligibility=PITCH11Law.substitutionEligibility({used:S.subs[t],windows:S.subWindows[t],inStoppage,halftime,windowUsed:S.subWindowUsed[t]});
-  if(p.out||!eligibility.allowed||p.gk!==(bn.pos==='GK'))return false;
+  if(p.out||!eligibility.allowed||p.gk!==(bn.pos==='GK')||BENCH[t].indexOf(bn)<0)return false;
   const incomingEquipment=bn.equipment||standardPlayerEquipment();
-  const equipmentDecision=PITCH11Law.equipmentInspectionDecision(incomingEquipment);
-  if(equipmentDecision!=='allow'){msg('EQUIPMENT CHECK',equipmentDecision==='remove-item'?'UNSAFE ITEM MUST BE REMOVED':'COMPULSORY KIT MUST BE REPLACED',2);return false;}
-  const wasCaptain=!!p.captain,oldNum=p.num;
+  if(PITCH11Law.equipmentInspectionDecision(incomingEquipment)!=='allow'){
+    msg('EQUIPMENT CHECK',PITCH11Law.equipmentInspectionDecision(incomingEquipment)==='remove-item'?'UNSAFE ITEM MUST BE REMOVED':'COMPULSORY KIT MUST BE REPLACED',2);return false;
+  }
   if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
-  p.num=bn.num;p.nm=bn.nm||'';p.skin=bn.skin;p.st=bn.st;p.equipment={...incomingEquipment,inspected:true};p.captain=false;p.winded=false;p.stam=1;p.fat=0;p.yc=0;p.inj=p.down=p.limp=false;
-  BENCH[t].splice(BENCH[t].indexOf(bn),1);S.subs[t]++;
-  if(wasCaptain)assignCaptain(t,p);
-  if(typeof FO!=='undefined'){FO.board=oldNum+' > '+bn.num;FO.boardT=3;}
-  msg('SUBSTITUTION',KIT[t].name+' #'+bn.num+' on',1.6);
+  S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
+  const position={x:p.x,y:p.y},exit=substitutionExitTarget(p);
+  const exitSeconds=exit.distance/28;
+  if(p.inj||p.safetyExitException)return applySubstitution(p,bn,position);
+  if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
+    if(!p.yc){p.yc++;giveCard(p,1);}
+    return applySubstitution(p,bn,position);
+  }
+  for(const e of S.subExits)e.elapsed=0;
+  S.subExits.push({player:p,bench:bn,position,target:exit,elapsed:0,team:t,exitSeconds});
+  p.inj=p.down=p.limp=false;p.substitutionExiting=true;p.vx=p.vy=p.ix=p.iy=0;p.sp=false;
+  msg('SUBSTITUTION','Player leaving at nearest touchline',1.2);
   return true;
+}
+function tickSubstitutionExits(){
+  if(!S.subExits.length)return;
+  for(let i=S.subExits.length-1;i>=0;i--){
+    const e=S.subExits[i],p=e.player;
+    if(!p||!e.bench){S.subExits.splice(i,1);continue;}
+    e.elapsed+=DT;
+    const dx=e.target.x-p.x,dy=e.target.y-p.y,d=Math.hypot(dx,dy),step=28*DT;
+    if(d>step){p.x+=dx/d*step;p.y+=dy/d*step;p.px=p.x;p.py=p.y;}
+    else{p.x=p.px=e.target.x;p.y=p.py=e.target.y;}
+    const remaining=Math.max(0,d-step);
+    const decision=PITCH11Law.timeLimitedSubstitutionExitDecision({
+      elapsedSeconds:e.elapsed,
+      nearOrCrossingExit:e.elapsed>=10&&remaining<=12
+    });
+    if(decision==='allow'||(d<=step&&e.elapsed<10)){
+      applySubstitution(p,e.bench,e.position);S.subExits.splice(i,1);
+    }else if(decision==='delay-substitute'){
+      p.substitutionPending=true;S.subExitRunners.push(e);
+      S.pendingSubs.push({player:p,bench:e.bench,position:e.position,team:e.team,running:false,elapsed:0});
+      S.subExits.splice(i,1);
+      msg('SUBSTITUTE DELAYED','Player must still leave; substitute waits one minute',2.2);
+    }
+  }
+  if(!S.subExits.length&&S.pendingSubsResume){S.pendingSubsResume=false;S.mode=S.ret;}
+  if(!S.subExits.length&&S.pendingPeriodAction){const fn=S.pendingPeriodAction;S.pendingPeriodAction=null;fn();}
+}
+function tickSubExitRunners(){
+  for(let i=S.subExitRunners.length-1;i>=0;i--){
+    const e=S.subExitRunners[i],p=e.player;
+    if(!p){S.subExitRunners.splice(i,1);continue;}
+    const dx=e.target.x-p.x,dy=e.target.y-p.y,d=Math.hypot(dx,dy),step=28*DT;
+    if(d>step){p.x+=dx/d*step;p.y+=dy/d*step;p.px=p.x;p.py=p.y;}
+    else{
+      p.x=p.px=p.y=p.py=-400;p.out=true;p.substitutionExiting=false;p.vx=p.vy=p.ix=p.iy=0;
+      S.subExitRunners.splice(i,1);
+    }
+  }
+}
+function startPendingSubstitutionClocks(){for(const q of S.pendingSubs)q.running=false;}
+function tickPendingSubstitutionClocks(){
+  if(S.mode!=='play'||S.rs)return;
+  for(const q of S.pendingSubs){if(!q.running){q.running=true;q.elapsed=0;}else q.elapsed+=DT;}
+}
+function completeEligiblePendingSubs(){
+  for(let i=S.pendingSubs.length-1;i>=0;i--){
+    const q=S.pendingSubs[i];
+    if(PITCH11Law.timeLimitedSubstitutionEntryDecision({elapsedSinceRestart:q.elapsed,firstStoppage:true,playerExited:q.player&&q.player.out===true})!=='allow')continue;
+    applySubstitution(q.player,q.bench,q.position);S.pendingSubs.splice(i,1);
+    msg('SUBSTITUTE ENTERED','One-minute delay completed',1.8);
+  }
 }
 function aiSubs(t,max,q){                                  // swap injured / tired players
   let n=0;
@@ -1133,15 +1222,15 @@ function aiSubs(t,max,q){                                  // swap injured / tir
     n++;q=null;
   }
 }
-function injured(q){                                       // after the stoppage: sub him, or he plays on limping
+function injured(q){                                       // after the stoppage: substitute, or apply the one-minute off-field protocol
   const t=q.team;q.down=false;
   const eligibility=PITCH11Law.substitutionEligibility({used:S.subs[t],windows:S.subWindows[t],inStoppage:true,halftime:false,windowUsed:S.subWindowUsed[t]});
-  if(!eligibility.allowed||!BENCH[t].length){q.limp=true;return false;}
-  if(t===1){aiSubs(1,1,q);return false;}
+  if(!eligibility.allowed||!BENCH[t].length){q.limp=true;sendOffForAssessment(q);return false;}
+  if(t===1){aiSubs(1,1,q);if(q.inj&&!q.out)sendOffForAssessment(q);return false;}
   S.sel=q;openSubs('whistle');return true;
 }
 function openSubs(ret){S.ret=ret;S.mode='subs';M.conf=0;}
-function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out)p.limp=true;S.sel=null;S.pv=null;S.mode=S.ret;}
+function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out){p.limp=true;sendOffForAssessment(p);}S.sel=null;S.pv=null;if(S.subExits.length){S.pendingSubsResume=true;return;}S.mode=S.ret;}
 function rules(){
   const b=ball;
   if(S.so&&S.so.live){soRules();return;}
@@ -1220,6 +1309,7 @@ function update(){
   if(S.card&&S.card.t>0)S.card.t-=DT;
   if(toast.t>0)toast.t-=DT;
   if(H>W)return;                                           // portrait: paused
+  tickSubstitutionExits();tickPendingSubstitutionClocks();tickSubExitRunners();
   if(FX.hit>0){FX.hit--;camUpdate();return;}               // brief hit-stop on big tackles
   FX.shake=Math.max(0,FX.shake-0.8);
   updateInput();gestureTick();
@@ -1227,14 +1317,15 @@ function update(){
   if(m==='menu'||m==='half'||m==='full'||m==='subs'){camUpdate();endEdges();return;}
   if(m==='kickoff'){
     stepBall();
-    if(S.t>1.5){S.mode='play';S.t=0;}
+    if(S.t>1.5){S.mode='play';S.t=0;startPendingSubstitutionClocks();}
     camUpdate();endEdges();return;
   }
   if(m==='whistle'){
     camUpdate();
     if(S.t>S.wt){
+      if(S.subExits.length){endEdges();return;}
       if(S.inj){const q=S.inj;S.inj=null;if(injured(q)){endEdges();return;}}
-      S.mode='play';S.t=0;
+      S.mode='play';S.t=0;startPendingSubstitutionClocks();
       if(!S.so&&S.half===2&&gmin()>60&&Math.random()<0.35)aiSubs(1,1);
       const f=S.after;S.after=null;if(f)f();
     }
@@ -1251,7 +1342,7 @@ function update(){
     autoSwitch();
     const pen=S.rs&&S.rs.kind==='pen';
     for(const p of P){
-      if(p.out)continue;
+      if(p.out||p.substitutionExiting)continue;
       if(S.so&&S.so.live&&p!==S.so.shooter&&!(p.gk&&p.team!==S.so.team)){p.ix=p.iy=0;p.sp=false;continue;} // shootout: only the kicker and defending goalkeeper may move
       if(pen&&p!==S.rs.p&&!p.gk){p.ix=p.iy=0;p.sp=false;continue;}   // penalty: everyone else waits
       if(p===ctrl)humanAct(p);else if(S.prac&&p.team&&!p.gk){p.ix=p.iy=0;p.sp=false;p.kcd=9;}else aiPlayer(p);
@@ -1583,7 +1674,7 @@ function drawSubs(){
     const p=P[r],y=y0+r*rh,x=W*0.06,w=W*0.44;
     UI.r.push({x,y,w,h:rh-2,fn:()=>{if(!p.out){S.sel=p;S.pv=p;}}});
     ctx.fillStyle=S.sel===p?'rgba(255,230,0,.35)':'rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);
-    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+(p.out?'  SENT OFF':p.inj?'  INJURED':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
+    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+((S.subExits.some(e=>e.player===p)||S.subExitRunners.some(e=>e.player===p))?'  LEAVING':p.substitutionPending?'  SUB DELAYED':p.tempOff?'  OFF FIELD':p.out?'  SENT OFF':p.inj?'  INJURED':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
     ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32,rh*0.35);
     ctx.fillStyle=p.fat>0.5?'#ff6040':p.fat>0.3?'#ffc040':'#5cff8a';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32*(1-p.fat),rh*0.35);
   }
@@ -1593,7 +1684,7 @@ function drawSubs(){
     ctx.fillStyle='rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);fit((bn.nm||'#'+bn.num)+'  '+bn.pos+'  '+ovr(bn.st),x+8,y+rh/2,w-16,fs,'#fff','left');
   });
   ctx.textAlign='center';
-  if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
+  if(S.subExits.length)txt('PLAYERS LEAVING · '+Math.max(0,10-Math.max(...S.subExits.map(e=>e.elapsed))).toFixed(1)+'s',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subExitRunners.length)txt('PLAYER STILL EXITING · SUBSTITUTE DELAYED',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.pendingSubs.length)txt('SUBSTITUTE DELAYED · 1 MINUTE',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.subs[0]>=5)txt('No substitutions left',W*0.74,y0+7.35*rh,fs,'#ff9a80',700);else if(S.ret!=='half'&&!atStoppage)txt('Subs only at a stoppage or half-time',W*.74,y0+7.35*rh,fs*.82,'#ffcf70',700);else if(S.ret!=='half'&&S.subWindows[0]>=3)txt('No substitution windows left',W*.74,y0+7.35*rh,fs*.82,'#ff9a80',700);
   drawStats(S.pv||S.sel);
   ubtn(W*0.4,H*0.84,W*0.22,H*0.11,'RESUME',resumeSubs,'rgba(255,230,0,.35)');UI.def=resumeSubs;
   ubtn(W*0.04,H*0.84,W*0.22,H*0.11,M.conf?'TAP TO CONFIRM':'QUIT MATCH',()=>{if(M.conf)quitMatch();else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
@@ -2580,20 +2671,26 @@ function slideStep(p){                                      // replaces normal m
     p.stun=Math.max(p.stun,sd.rec);p.tcd=Math.max(p.tcd,0.8);p.sd=null;p.vx*=0.2;p.vy*=0.2;
   }
 }
-function slideInjury(o,tq,behind){                          // a hard foul can injure the victim (on top of foul()'s own 12%), even when foul() chose to play the advantage
+function slideInjury(o,tq,behind,foulSanction,penaltyKicker){                          // a hard foul can injure the victim, including when advantage is played
   if(Math.random()>=0.1+0.25*(1-tq)+(behind?0.1:0))return;
   if(S.mode==='whistle'&&!S.inj){S.inj=o;o.down=true;S.wt=3;msg('INJURY',tag(o)+' is down',3);}
   else if(S.mode==='play'&&S.adv&&S.adv.team===o.team){const fn=S.adv.fn;S.adv=null;whistleStop(3,'FOUL','',fn,o);msg('INJURY',tag(o)+' is down',3);}
   else return;
+  o.inj=true;
+  if(foulSanction){o.law5FoulSanction=true;o.law5AssessmentQuickly=true;}
+  if(penaltyKicker)o.law5PenaltyKicker=true;
   D9.n.si[o.team===0?1:0]++;act8('slide','injury');
 }
 function slideFoul(p,q,tq,behind){
-  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp,speed=Math.hypot(p.vx,p.vy);
+  p.sd.res=2;p.sd.rec=0.5;const sp0=p.sp,speed=Math.hypot(p.vx,p.vy),previousYc=p.yc;
   const seriousFoulPlay=behind&&tq<0.12&&speed>180;
   p.sp=true;foul(p,q,behind,{reckless:behind||tq<0.55,seriousFoulPlay,attemptToPlayBall:true});
-  p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind);
+  const foulSanction=p.out||p.yc>previousYc,own=dirOf(p.team)>0?PX0:PX1;
+  const penaltyKicker=Math.abs(ball.x-own)<165&&Math.abs(ball.y-CY)<201.5&&firstIn(q.team)===q;
+  p.sp=sp0;D9.n.sf[p.team]++;act8('slide','foul');slideInjury(q,tq,behind,foulSanction,penaltyKicker);
 }
 function slideHit(p,sd){
+  if(p.substitutionExiting)return;
   const K=TUNING.df.sl,b=ball,o=b.owner,def=p.st.def,rch=K.reach+K.rd*def,tq=1-clamp(Math.abs(sd.t-K.ideal)/0.25,0,1);   // tq: timing quality, 1 = contact at the ideal moment
   if(!S.prac&&p.off&&Math.hypot(b.x-p.x,b.y-p.y)<rch){callOffside(p);return;}
   if(o&&o.team!==p.team&&!o.gk&&b.protect<=0){
@@ -3241,7 +3338,7 @@ MS.layout=function(){
 function bodyCollide(){                                    // the ball bounces off bodies it cannot be controlled by (blocked passes, keepers, stunned players)
   const b=ball;if(b.owner||b.z>16||H>W)return;
   for(const p of P){
-    if(p.out)continue;
+    if(p.out||p.substitutionExiting)continue;
     if(p===b.last&&p.kcd>0.1)continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
@@ -5300,6 +5397,49 @@ update=function(){
   refreshLaw7AddedTime();
 };
 
+/* --- IFAB Law 5 (2026/27): one running minute off field after injury assessment --- */
+function sendOffForAssessment(p,state){
+  if(!p||p.gk)return false;
+  const assessment=Object.assign({stoppedForInjury:true,goalkeeper:!!p.gk},state||{});
+  assessment.sameTeamCollision=!!(assessment.sameTeamCollision||p.law5SameTeamCollision);
+  assessment.goalkeeperOutfieldCollision=!!(assessment.goalkeeperOutfieldCollision||p.law5GoalkeeperOutfieldCollision);
+  assessment.severeInjury=!!(assessment.severeInjury||p.law5SevereInjury);
+  assessment.foulCautionOrSendingOff=!!(assessment.foulCautionOrSendingOff||p.law5FoulSanction);
+  assessment.penaltyKicker=!!(assessment.penaltyKicker||p.law5PenaltyKicker);
+  p.law5FoulSanction=p.law5PenaltyKicker=p.law5SameTeamCollision=p.law5GoalkeeperOutfieldCollision=p.law5SevereInjury=false;
+  if(PITCH11Law.offFieldTreatmentDecision(assessment)!=='leave-one-minute')return false;
+  if(p.tempOff)return true;
+  p.tempOff=true;p.tempOffStartedAt=null;p.tempOffAwaitingRestart=true;p.tempOffHalf=S.half;
+  p.tempOffX=p.x;p.tempOffY=p.y;p.out=true;p.down=false;p.limp=true;
+  p.vx=p.vy=p.ix=p.iy=0;p.x=p.px=p.y=p.py=-400;
+  msg('PLAYER OFF FIELD','One-minute injury assessment',1.8);
+  return true;
+}
+function returnFromAssessment(p,periodRestart){
+  if(!p||!p.tempOff)return false;
+  const x=clamp(Number.isFinite(p.tempOffX)?p.tempOffX:CX,PX0+8,PX1-8),savedY=Number.isFinite(p.tempOffY)?p.tempOffY:CY;
+  p.out=false;p.tempOff=false;p.inj=false;p.down=false;p.limp=true;p.vx=p.vy=p.ix=p.iy=0;
+  if(periodRestart){p.x=p.px=x;p.y=p.py=clamp(savedY,PY0+8,PY1-8);}
+  else{p.x=p.px=x;p.y=p.py=Math.abs(savedY-PY0)<=Math.abs(savedY-PY1)?PY0+2:PY1-2;msg('PLAYER READY TO RETURN',tag(p)+' may re-enter',1.6);}
+  p.tempOffStartedAt=p.tempOffUntil=p.tempOffX=p.tempOffY=p.tempOffHalf=null;p.tempOffAwaitingRestart=false;
+  return true;
+}
+function restoreAllTempOff(periodRestart){for(const p of P)if(p.tempOff)returnFromAssessment(p,!!periodRestart);}
+function restorePeriodTempOff(){for(const p of P)if(p.tempOff&&p.tempOffHalf!==S.half)returnFromAssessment(p,true);}
+const _setupKickoffLaw5=setupKickoff;setupKickoff=function(team){restorePeriodTempOff();_setupKickoffLaw5(team);};
+const _startShootoutLaw5=startShootout;startShootout=function(){restoreAllTempOff(true);_startShootoutLaw5();};
+const _updateLaw5OffField=update;update=function(){
+  const restartWasLive=!!S.rs;
+  _updateLaw5OffField();
+  if(S.mode==='play'&&!S.rs&&restartWasLive){
+    for(const p of P)if(p.tempOff&&p.tempOffAwaitingRestart){p.tempOffStartedAt=gmin();p.tempOffAwaitingRestart=false;}
+  }
+  if(S.mode!=='play')return;
+  for(const p of P){
+    if(!p.tempOff||p.tempOffAwaitingRestart||!Number.isFinite(p.tempOffStartedAt))continue;
+    if(PITCH11Law.offFieldReturnDecision({elapsedMinutes:gmin()-p.tempOffStartedAt})==='return')returnFromAssessment(p,false);
+  }
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>

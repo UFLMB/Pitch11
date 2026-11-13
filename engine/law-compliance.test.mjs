@@ -424,3 +424,49 @@ test('Law 4 rejects dangerous, uncovered jewellery and player electronic equipme
   assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment']));
   assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
 });
+
+
+test('Law 3 enforces the ten-second substitution exit deadline and its exceptions', () => {
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 9.99 }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10 }), 'delay-substitute');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, injuryPreventsExit: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, safetyPreventsExit: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, goalkeeperReplacement: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, nearOrCrossingExit: true }), 'allow');
+});
+
+test('Law 3 delays substitute entry until the first stoppage after one running minute', () => {
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 59.99, firstStoppage: true, playerExited: true }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: false, playerExited: true }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true, playerExited: false }), 'wait');
+  assert.equal(law.timeLimitedSubstitutionEntryDecision({ elapsedSinceRestart: 60, firstStoppage: true, playerExited: true }), 'allow');
+});
+
+test('Law 3 counts a temporary off-field or pending substitution player for the seven-player threshold', () => {
+  const players = Array.from({ length: 7 }, (_, i) => ({ team: 0, out: false }));
+  players[6].out = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), false);
+  players[6].tempOff = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), true);
+  players[6].tempOff = false;
+  players[6].substitutionPending = true;
+  assert.equal(law.hasMinimumPlayers(players, 0), true);
+});
+
+test('Law 5 applies one minute off field except for the stated IFAB exceptions', () => {
+  const leave = { stoppedForInjury: true };
+  assert.equal(law.offFieldTreatmentDecision(leave), 'leave-one-minute');
+  assert.equal(law.offFieldTreatmentDecision({ assessedOnField: true }), 'leave-one-minute');
+  assert.equal(law.offFieldTreatmentDecision({ requestedMedicalAttention: true }), 'leave-one-minute');
+  for (const exception of [
+    { goalkeeper: true }, { sameTeamCollision: true }, { goalkeeperOutfieldCollision: true },
+    { severeInjury: true }, { foulCautionOrSendingOff: true }, { penaltyKicker: true }
+  ]) assert.equal(law.offFieldTreatmentDecision({ ...leave, ...exception }), 'remain');
+  assert.equal(law.offFieldTreatmentDecision({}), 'remain');
+});
+
+test('Law 5 allows return after one running minute or at the next period restart', () => {
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 0.99 }), 'wait');
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 1 }), 'return');
+  assert.equal(law.offFieldReturnDecision({ elapsedMinutes: 0.2, periodRestart: true }), 'return');
+});

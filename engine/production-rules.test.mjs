@@ -404,6 +404,44 @@ test("Law 9 restarts with a dropped ball after referee contact causes a direct g
 });
 
 
+test("Law 5 removes assessed outfield players for one running minute and restores them at a period restart", () => {
+  assert.match(source, /function sendOffForAssessment\(p,state\)/);
+  assert.match(source, /PITCH11Law\.offFieldTreatmentDecision\(assessment\)/);
+  assert.match(source, /assessment\.foulCautionOrSendingOff=!!\(assessment\.foulCautionOrSendingOff\|\|p\.law5FoulSanction\)/);
+  assert.match(source, /assessment\.penaltyKicker=!!\(assessment\.penaltyKicker\|\|p\.law5PenaltyKicker\)/);
+  assert.match(source, /hurt\.inj=true;hurt\.law5FoulSanction=card>0;hurt\.law5AssessmentQuickly=card>0/);
+  assert.match(source, /o\.inj=true/);
+  assert.match(source, /if\(penaltyKicker\)o\.law5PenaltyKicker=true/);
+  assert.match(source, /p\.tempOffStartedAt=gmin\(\)/);
+  assert.match(source, /restartWasLive=!!S\.rs/);
+  assert.match(source, /p\.out=true/);
+  assert.match(source, /function returnFromAssessment\(p,periodRestart\)/);
+  assert.match(source, /PITCH11Law\.offFieldReturnDecision\(\{elapsedMinutes:gmin\(\)-p\.tempOffStartedAt\}\)/);
+  assert.match(source, /p\.tempOffHalf=S\.half/);
+  assert.match(source, /function restorePeriodTempOff\(\)/);
+  assert.match(source, /setupKickoff=function\(team\)\{restorePeriodTempOff\(\);/);
+  assert.match(source, /const _setupKickoffLaw5=setupKickoff/);
+  assert.match(source, /const _startShootoutLaw5=startShootout/);
+  assert.match(source, /if\(p\.inj&&!p\.out\)\{p\.limp=true;sendOffForAssessment\(p\);\}/);
+  assert.match(source, /if\(q\.inj&&!q\.out\)sendOffForAssessment\(q\)/);
+});
+
+
+test("Law 3 applies the ten-second exit deadline and one-minute delayed substitute entry in production", () => {
+  assert.match(source, /function substitutionExitTarget\(p\)/);
+  assert.match(source, /PITCH11Law\.timeLimitedSubstitutionExitDecision\(/);
+  assert.match(source, /PITCH11Law\.timeLimitedSubstitutionEntryDecision\(/);
+  assert.match(source, /function tickSubstitutionExits\(\)/);
+  assert.match(source, /function startPendingSubstitutionClocks\(\)/);
+  assert.match(source, /function completeEligiblePendingSubs\(\)/);
+  assert.match(source, /function tickSubExitRunners\(\)/);
+  assert.match(source, /playerExited:q\.player&&q\.player\.out===true/);
+  assert.match(source, /substitutionPending=true/);
+  assert.match(source, /tickSubstitutionExits\(\);tickPendingSubstitutionClocks\(\)/);
+  assert.match(source, /completeEligiblePendingSubs\(\);/);
+});
+
+
 test("Law 7 counts match stoppages, adds the lost time back, and shows added-time clock labels", () => {
   assert.match(source, /lostTime:0,addedTime:0,addedTimeAnnounced:0/);
   assert.match(source, /PITCH11Law\.addedTimeSeconds\(S\.lostTime,unit\)/);
