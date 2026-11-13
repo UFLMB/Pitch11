@@ -267,6 +267,15 @@ test("Law 14 rejects a backward penalty kick and awards an indirect free kick", 
   assert.match(source, /freeKick\(1-team,x,y,true\)/);
 });
 
+test("Law 14 repeated goalkeeper penalty-line offences rely on the single Law 3 replacement path", () => {
+  const offence=source.slice(source.indexOf("function retakePenaltyForKeeperOffence"),source.indexOf("const _goalPenaltyLine"));
+  assert.match(offence, /giveCard\(keeper,card\)/);
+  assert.match(source, /const _law3ReplacementGoalkeeper=giveCard/);
+  assert.match(source, /PITCH11Law\.replacementGoalkeeper\(P,team\)/);
+  assert.doesNotMatch(offence, /const replacement=firstIn\(keeper\.team\)/);
+  assert.doesNotMatch(offence, /replacement\.gk=true/);
+});
+
 test("Law 14 does not retake for an off-line goalkeeper touching a penalty that was going wide or high", () => {
   assert.match(source, /PITCH11Law\.penaltyShotOnTarget\(/);
   assert.match(source, /const onTarget=!!\(ball\.pen&&ball\.penaltyKeeperOffLine/);
