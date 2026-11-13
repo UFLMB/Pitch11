@@ -5257,7 +5257,7 @@ function sendOffForAssessment(p,state){
   p.law5FoulSanction=p.law5PenaltyKicker=p.law5SameTeamCollision=p.law5GoalkeeperOutfieldCollision=p.law5SevereInjury=false;
   if(PITCH11Law.offFieldTreatmentDecision(assessment)!=='leave-one-minute')return false;
   if(p.tempOff)return true;
-  p.tempOff=true;p.tempOffStartedAt=gmin();p.tempOffUntil=p.tempOffStartedAt+1;
+  p.tempOff=true;p.tempOffStartedAt=gmin();p.tempOffUntil=p.tempOffStartedAt+1;p.tempOffHalf=S.half;
   p.tempOffX=p.x;p.tempOffY=p.y;p.out=true;p.down=false;p.limp=true;
   p.vx=p.vy=p.ix=p.iy=0;p.x=p.px=p.y=p.py=-400;
   msg('PLAYER OFF FIELD','One-minute injury assessment',1.8);
@@ -5275,14 +5275,17 @@ function returnFromAssessment(p,periodRestart){
     p.y=p.py=Math.abs(savedY-PY0)<=Math.abs(savedY-PY1)?PY0+2:PY1-2;
     msg('PLAYER READY TO RETURN',tag(p)+' may re-enter',1.6);
   }
-  p.tempOffStartedAt=p.tempOffUntil=p.tempOffX=p.tempOffY=null;
+  p.tempOffStartedAt=p.tempOffUntil=p.tempOffX=p.tempOffY=p.tempOffHalf=null;
   return true;
 }
 function restoreAllTempOff(periodRestart){
   for(const p of P)if(p.tempOff)returnFromAssessment(p,!!periodRestart);
 }
+function restorePeriodTempOff(){
+  for(const p of P)if(p.tempOff&&p.tempOffHalf!==S.half)returnFromAssessment(p,true);
+}
 const _setupKickoffLaw5=setupKickoff;
-setupKickoff=function(team){restoreAllTempOff(true);_setupKickoffLaw5(team);};
+setupKickoff=function(team){restorePeriodTempOff();_setupKickoffLaw5(team);};
 const _startShootoutLaw5=startShootout;
 startShootout=function(){restoreAllTempOff(true);_startShootoutLaw5();};
 const _updateLaw5OffField=update;
