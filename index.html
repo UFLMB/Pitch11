@@ -1257,9 +1257,14 @@ function rules(){
   const b=ball;
   if(b.restartDoubleTouchPending){
     const event=b.restartDoubleTouchPending;b.restartDoubleTouchPending=null;b.dbl=null;
-    const decision=PITCH11Law.restartSecondTouchRestart({isKicker:true});
-    if(decision==='indirect-free-kick'){
-      whistleStop(1.2,'SECOND TOUCH','Indirect free kick',()=>freeKick(1-event.player.team,event.x,event.y,true));
+    const decision=event.decision||PITCH11Law.restartSecondTouchRestart({isKicker:true});
+    if(decision==='indirect-free-kick'||decision==='direct-free-kick'){
+      whistleStop(1.2,'SECOND TOUCH',decision==='indirect-free-kick'?'Indirect free kick':'Direct free kick',
+        ()=>freeKick(1-event.player.team,event.x,event.y,decision==='indirect-free-kick'));
+      return;
+    }
+    if(decision==='penalty'){
+      whistleStop(1.2,'PENALTY','Second-touch handball offence',()=>setupPen(1-event.player.team,firstIn(1-event.player.team),false));
       return;
     }
   }
