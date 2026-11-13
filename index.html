@@ -5226,6 +5226,12 @@ goal=function(dr){
 };
 const _outOfPlayLaw9Referee=outOfPlay;
 outOfPlay=function(){ball.refContact=null;_outOfPlayLaw9Referee();};
+const _touchesLaw9Referee=touches;
+touches=function(){const previousLast=ball.last;_touchesLaw9Referee();if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
+const _bodyCollideLaw9Referee=bodyCollide;
+bodyCollide=function(){const previousLast=ball.last;_bodyCollideLaw9Referee();if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
+const _slideHitLaw9Referee=slideHit;
+slideHit=function(p,sd){const previousLast=ball.last;_slideHitLaw9Referee(p,sd);if(ball.last!==previousLast&&ball.last&&ball.last!==ball.dbl)resolveRefereeContact(ball.last);};
 
 /* A second player's deflection clears the direct-restart/second-touch marker, including goalkeeper parries. */
 const _aiGKDirectRestart=aiGK;
