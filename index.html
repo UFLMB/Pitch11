@@ -1154,7 +1154,18 @@ function rules(){
     if(!b.gkHoldWarned&&b.gkHold>=3){b.gkHoldWarned=true;b.gkHoldShown=5;msg('GOALKEEPER 5-SECOND COUNTDOWN','5',1.1);}else if(b.gkHoldWarned){const remaining=Math.max(1,Math.ceil(8-b.gkHold));if(remaining!==b.gkHoldShown){b.gkHoldShown=remaining;msg('GOALKEEPER 5-SECOND COUNTDOWN',String(remaining),1.1);}}
     if(PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'){
       const x=gx===PX0?PX0+3:PX1-3,y=b.y<CY?PY0+3:PY1-3;
-      spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
+      const topY=PY0+3,bottomY=PY1-3;
+      const cy=!keeper?bottomY:(Math.hypot(keeper.x-x,keeper.y-topY)<=Math.hypot(keeper.x-x,keeper.y-bottomY)?topY:bottomY);
+      const violations=(keeper.gkHoldOffences||0)+1;keeper.gkHoldOffences=violations;
+      const sanction=PITCH11Law.goalkeeperHoldSanction(violations);
+      if(sanction!=='none'){
+        keeper.yc++;giveCard(keeper,keeper.yc>=2?3:1);
+        if(PITCH11Law.matchAbandonmentDecision(P,keeper.team,7,!!S.so)==='abandon'){
+          S.forfeitTeam=keeper.team;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
+          msg('MATCH ABANDONED',KIT[keeper.team].name+' has fewer than seven players',3);return;
+        }
+      }
+      spot(1-keeper.team,x,cy,false,Math.atan2(CY-cy,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
       msg('8-SECOND VIOLATION','CORNER KICK',2);return;
     }
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;b.gkHoldShown=0;}
@@ -5175,6 +5186,10 @@ giveCard=function(p,c){
   replacement.dive=0;replacement.freeze=0;GK[team]=replacement;
   msg('GOALKEEPER SENT OFF',tag(replacement)+' takes over in goal',2);
 };
+
+/* Reset repeated goalkeeper time-wasting sanctions for each new match. */
+const _newMatchGkHoldSanction=newMatch;
+newMatch=function(){_newMatchGkHoldSanction();for(const p of P)p.gkHoldOffences=0;};
 
 /* A second player's deflection clears the direct-restart/second-touch marker, including goalkeeper parries. */
 const _aiGKDirectRestart=aiGK;
