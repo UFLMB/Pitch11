@@ -5380,7 +5380,7 @@ const _law3ReplacementGoalkeeper=giveCard;
 giveCard=function(p,c){
   const wasGoalkeeper=!!(p&&p.gk),team=p&&p.team;
   _law3ReplacementGoalkeeper(p,c);
-  if(c<=1||!wasGoalkeeper||S.mode==='full')return;
+  if(c<=1||!wasGoalkeeper||S.mode==='full'||S.so)return;
   const replacement=PITCH11Law.replacementGoalkeeper(P,team);
   if(!replacement)return;
   replacement.gk=true;replacement.pos='GK';replacement.line=0;replacement.st=mkStats('GK');
