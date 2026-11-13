@@ -14,31 +14,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 </head>
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
-<script src="engine/law-compliance.js">/* --- IFAB Law 7: match clock includes stoppages and adds the lost time back on top --- */
-function refreshLaw7AddedTime(){
-  if(S.prac||S.half<1||S.half>4)return;
-  const unit=periodSecondsPerMatchMinute();
-  const required=PITCH11Law.addedTimeSeconds(S.lostTime,unit);
-  if(required>S.addedTime)S.addedTime=required;
-  const announced=Math.ceil(S.addedTime/unit);
-  if(S.clock>=plen()&&announced>S.addedTimeAnnounced){
-    S.addedTimeAnnounced=announced;
-    msg('ADDED TIME','+'+announced+' MIN',2);
-  }
-}
-const _updateLaw7StoppageClock=update;
-update=function(){
-  const priorMode=S.mode,priorHalf=S.half,practice=!!S.prac;
-  _updateLaw7StoppageClock();
-  if(practice||S.prac||priorHalf<1||priorHalf>4||S.half!==priorHalf||H>W)return;
-  const stopped=priorMode==='whistle'||priorMode==='goal'||(priorMode==='subs'&&S.ret!=='half')||priorMode==='replay'||
-    (priorMode==='kickoff'&&S.clock>0);
-  if(!stopped)return;
-  S.clock+=DT;
-  S.lostTime+=DT;
-  refreshLaw7AddedTime();
-};
-</script>
+<script src="engine/law-compliance.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -5269,6 +5245,31 @@ aiGK=function(p){
   _aiGKDirectRestart(p);
   if(ball.last!==previousLast&&ball.last!==ball.dbl)ball.dbl=null;
 };
+/* --- IFAB Law 7: match clock includes stoppages and adds the lost time back on top --- */
+function refreshLaw7AddedTime(){
+  if(S.prac||S.half<1||S.half>4)return;
+  const unit=periodSecondsPerMatchMinute();
+  const required=PITCH11Law.addedTimeSeconds(S.lostTime,unit);
+  if(required>S.addedTime)S.addedTime=required;
+  const announced=Math.ceil(S.addedTime/unit);
+  if(S.clock>=plen()&&announced>S.addedTimeAnnounced){
+    S.addedTimeAnnounced=announced;
+    msg('ADDED TIME','+'+announced+' MIN',2);
+  }
+}
+const _updateLaw7StoppageClock=update;
+update=function(){
+  const priorMode=S.mode,priorHalf=S.half,practice=!!S.prac;
+  _updateLaw7StoppageClock();
+  if(practice||S.prac||priorHalf<1||priorHalf>4||S.half!==priorHalf||H>W)return;
+  const stopped=priorMode==='whistle'||priorMode==='goal'||(priorMode==='subs'&&S.ret!=='half')||priorMode==='replay'||
+    (priorMode==='kickoff'&&S.clock>0);
+  if(!stopped)return;
+  S.clock+=DT;
+  S.lostTime+=DT;
+  refreshLaw7AddedTime();
+};
+
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>
