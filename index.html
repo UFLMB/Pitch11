@@ -4045,7 +4045,7 @@ const _ha23=humanAct;humanAct=function(p){
 };
 /* set pieces: the taker cannot touch the ball again until someone else has (no dribbling off from a throw-in / kick-off) */
 const _kk23=kick;kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){const rs=S.rs;_kk23(p,vx,vy,vz,spin,rcv,tx,ty,mode);if(rs&&rs.p===p)ball.dbl=p;};
-const _tk23=take;take=function(p,byHand=false){if(p!==ball.dbl)ball.dbl=null;_tk23(p,byHand);};
+const _tk23=take;take=function(p,byHand=false){if(p!==ball.dbl||ball.last!==ball.dbl)ball.dbl=null;_tk23(p,byHand);};
 /* throw-in: the three nearest team-mates come to offer a short, a forward and a safe option along the touchline */
 function throwSup23(p,rs){
   const t=p.team,d=dirOf(t),n=rs.y<CY?1:-1,tk=rs.p,L=[];
@@ -5057,9 +5057,9 @@ take=function(p,byHand=false){
 const _touchesPenaltyAddedTime=touches;
 touches=function(){const previousLast=ball.last;_touchesPenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
 const _bodyCollidePenaltyAddedTime=bodyCollide;
-bodyCollide=function(){const previousLast=ball.last;_bodyCollidePenaltyAddedTime();notePenaltyOtherTouch(previousLast);};
+bodyCollide=function(){const previousLast=ball.last;_bodyCollidePenaltyAddedTime();if(ball.last!==previousLast&&ball.last!==ball.dbl)ball.dbl=null;notePenaltyOtherTouch(previousLast);};
 const _slideHitPenaltyAddedTime=slideHit;
-slideHit=function(p,sd){const previousLast=ball.last;_slideHitPenaltyAddedTime(p,sd);notePenaltyOtherTouch(previousLast);};
+slideHit=function(p,sd){const previousLast=ball.last;_slideHitPenaltyAddedTime(p,sd);if(ball.last!==previousLast&&ball.last!==ball.dbl)ball.dbl=null;notePenaltyOtherTouch(previousLast);};
 const _kickPenaltyAddedTime=kick;
 kick=function(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   const penaltyTouch=ball.pen&&p!==ball.penaltyKeeper;
@@ -5169,6 +5169,14 @@ giveCard=function(p,c){
   replacement.gk=true;replacement.pos='GK';replacement.line=0;replacement.st=mkStats('GK');
   replacement.dive=0;replacement.freeze=0;GK[team]=replacement;
   msg('GOALKEEPER SENT OFF',tag(replacement)+' takes over in goal',2);
+};
+
+/* A second player's deflection clears the direct-restart/second-touch marker, including goalkeeper parries. */
+const _aiGKDirectRestart=aiGK;
+aiGK=function(p){
+  const previousLast=ball.last;
+  _aiGKDirectRestart(p);
+  if(ball.last!==previousLast&&ball.last!==ball.dbl)ball.dbl=null;
 };
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
