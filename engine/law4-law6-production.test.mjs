@@ -8,7 +8,7 @@ const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1] || '';
 test('Law 4 initializes compulsory equipment for starters and substitutes', () => {
   assert.match(script, /function standardPlayerEquipment\(\)/);
   assert.match(script, /equipment:standardPlayerEquipment\(\),captain:false/);
-  assert.match(script, /equipment:standardPlayerEquipment\(\)\}\);\}\);/);
+  assert.match(script, /BENCH\[t\]=lu\.slice\(11\).*equipment:standardPlayerEquipment\(\)/);
   assert.match(script, /function inspectMatchEquipment\(\)/);
   assert.match(script, /if\(!inspectMatchEquipment\(\)\)return;setupKickoff\(0\)/);
 });
