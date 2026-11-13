@@ -227,5 +227,11 @@
     return Math.hypot(s.attackerX - nearestX, s.attackerY - nearestY) <= s.radius;
   }
 
-  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
+  function restartDelayDecision(state) {
+    const s = state || {};
+    if (!['throw', 'gk'].includes(s.kind) || !Number.isFinite(s.seconds) || s.seconds < 5) return 'continue';
+    return s.kind === 'throw' ? 'opponent-throw-in' : 'opponent-corner';
+  }
+
+  root.PITCH11Law = Object.freeze({ dogsoOpportunity, offsideLineOfSightInterference, restartDelayDecision, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHandControlDecision, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);
