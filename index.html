@@ -888,10 +888,10 @@ function startShootout(){
   if(S.subExits.length){S.pendingPeriodAction=startShootout;return;}
   // IFAB: both teams must have the same number of eligible players before kicks.
   for(const p of PITCH11Law.shootoutExclusions(P)){p.out=true;p.soExcluded=true;p.x=p.px=p.y=p.py=-400;p.vx=p.vy=p.ix=p.iy=0;}
-  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null};S.half=5;S.clock=0;soNext();
+  S.so={k:[[],[]],live:false,t:0,team:0,shooter:null,firstTeam:Math.random()<0.5?0:1};S.half=5;S.clock=0;soNext();
 }
 function soNext(){
-  const so=S.so,t=so.k[0].length<=so.k[1].length?0:1,list=[];
+  const so=S.so,t=PITCH11Law.shootoutNextTeam(so.k[0].length,so.k[1].length,so.firstTeam),list=[];
   list.push(...PITCH11Law.shootoutOrder(P,t));
   so.team=t;so.shooter=list[so.k[t].length%list.length];so.live=true;so.t=0;
   setupPen(t,so.shooter,true);S.mode='play';S.t=0;
