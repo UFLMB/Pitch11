@@ -85,6 +85,13 @@ test("penalty shootout rotation includes eligible goalkeepers and tracks repeat-
 });
 
 
+test("Law 12 foul context survives stadium, referee and cinematic wrappers", () => {
+  assert.ok(source.includes("foul=function(p,o,b,context){_stadiumFoul(p,o,b,context);emitStadiumEvent('foul');}"));
+  assert.ok(source.includes("foul=function(p,o,b,context){REF.awT=o.team;const st=G.rf.strict;"));
+  assert.ok(source.includes("_foR(p,o,b,context);"));
+  assert.ok(source.includes("foul=function(p,o,b,context){FL26.p=p;FL26.o=o;try{_fo26(p,o,b,context);}"));
+});
+
 test("Law 12 foul discipline uses event severity instead of random card rolls", () => {
   assert.match(source, /PITCH11Law\.foulCardDecision\(/);
   assert.match(source, /reckless:behind&&!!\(context&&context\.sprinting\)/);
