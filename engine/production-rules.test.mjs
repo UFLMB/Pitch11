@@ -79,9 +79,9 @@ test("offside position is recorded for shots as well as passes", () => {
 });
 
 
-test("penalty shootout rotation includes eligible goalkeepers", () => {
-  assert.match(source, /list\.push\(\.\.\.PITCH11Law\.shootoutOrder\(P,t\)\)/);
-  assert.match(source, /PITCH11Law\.shootoutOrder/);
+test("penalty shootout rotation includes eligible goalkeepers and tracks repeat-kick eligibility", () => {
+  assert.match(source, /PITCH11Law\.shootoutOrder\(P,t\)/);
+  assert.match(source, /PITCH11Law\.shootoutNextKicker\(P,t,so\.taken\[t\]\)/);
 });
 
 
