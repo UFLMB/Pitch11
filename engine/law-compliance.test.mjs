@@ -519,3 +519,10 @@ test('shoot-out end selection reverses both teams directions together', () => {
   assert.equal(law.shootoutDirection(0, true), -1);
   assert.equal(law.shootoutDirection(1, true), 1);
 });
+
+
+test('the non-kicking goalkeeper stands at the goal-line/penalty-area boundary intersection', () => {
+  assert.equal(law.shootoutKickerGoalkeeperPosition({ ownGoalLine: 60, centerY: 400, penaltyHalfWidth: 201.5 }).x, 60);
+  assert.equal(law.shootoutKickerGoalkeeperPosition({ ownGoalLine: 60, centerY: 400, penaltyHalfWidth: 201.5 }).y, 198.5);
+  assert.equal(law.shootoutKickerGoalkeeperPosition({ ownGoalLine: 1110, centerY: 400, penaltyHalfWidth: 201.5 }).x, 1110);
+});
