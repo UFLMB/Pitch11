@@ -278,3 +278,14 @@ test('2026/27 Laws 15 and 16 apply the five-second restart delay outcome', () =>
   assert.equal(law.restartDelayDecision({ kind: 'corner', seconds: 8 }), 'continue');
   assert.equal(law.restartDelayDecision({ kind: 'throw', seconds: NaN }), 'continue');
 });
+
+
+test('Law 13 moves an attacking indirect free kick out of the opponents goal area', () => {
+  const decide = state => ({ ...law.freeKickGoalAreaPosition(state) });
+  assert.deepEqual(decide({ x: 980, y: 30, goalLine: 1000, direction: 1, centerY: 50, depth: 55, halfWidth: 91.5, indirect: true }),
+    { x: 945, y: 30, adjusted: true });
+  assert.deepEqual(decide({ x: 20, y: 30, goalLine: 0, direction: 1, centerY: 50, depth: 55, halfWidth: 91.5, indirect: true }),
+    { x: 20, y: 30, adjusted: false });
+  assert.deepEqual(decide({ x: 980, y: 30, goalLine: 1000, direction: 1, centerY: 50, depth: 55, halfWidth: 91.5, indirect: false }),
+    { x: 980, y: 30, adjusted: false });
+});
