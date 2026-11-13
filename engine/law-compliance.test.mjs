@@ -62,7 +62,7 @@ test('a post rebound remains live until it stops or leaves the field', () => {
   assert.equal(law.shootoutDecision({ ...base, ball: { ...base.ball, x: 95, y: 60.2, vx: 0 } }), 'miss');
   assert.equal(law.shootoutDecision({ ...base, elapsed: 8, ball: { ...base.ball, x: 95, vx: 1 } }), 'live');
   assert.equal(law.shootoutDecision({ ...base, elapsed: 30, ball: { ...base.ball, x: 95, vx: 1 } }), 'live');
-  assert.equal(law.shootoutDecision({ ...base, elapsed: 30, ball: { ...base.ball, x: 95, vx: 0 } }), 'miss');
+  assert.equal(law.shootoutDecision({ ...base, elapsed: 30, ball: { ...base.ball, x: 95, z: 0, vz: 0, vx: 0, vy: 0 } }), 'miss');
   assert.equal(law.shootoutDecision({ ...base, elapsed: 30, restartActive: true, ball: { ...base.ball, x: 95, owner: { team: 0 } } }), 'live');
 });
 
