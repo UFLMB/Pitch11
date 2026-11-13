@@ -40,7 +40,7 @@ test("offside exemptions are limited to throw-ins, corners and goal kicks", () =
 });
 
 test("opponents stay two metres from a throw-in", () => {
-  assert.match(source, /\{ko:91\.5,throw:20,gk:91\.5\}/);
+  assert.match(source, /\{ko:91\.5,throw:20,gk:91\.5,drop:40\}/);
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
