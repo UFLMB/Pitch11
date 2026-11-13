@@ -5496,11 +5496,11 @@ injured=function(q){
     return false;
   }
   const excludedKeeper=PITCH11Law.shootoutExcludedGoalkeeper(P,t);
-  const namedGoalkeeper=S.subs[t]<5?BENCH[t].find(player=>player.pos==='GK'):null;
+  const namedSubstitute=S.subs[t]<5?(BENCH[t][0]||null):null;
   const decision=PITCH11Law.shootoutInjuryDecision({
     goalkeeper:true,
     excludedPlayerAvailable:!!excludedKeeper,
-    namedSubstituteAvailable:!!namedGoalkeeper&&S.subs[t]<5
+    namedSubstituteAvailable:!!namedSubstitute&&S.subs[t]<5
   });
   let replacement=null;
   if(decision==='excluded-player'){
@@ -5509,11 +5509,15 @@ injured=function(q){
     replacement.out=false;replacement.soExcluded=false;replacement.inj=false;replacement.down=false;
     replacement.tempOff=false;replacement.substitutionPending=false;
   }else if(decision==='named-substitute'){
-    const position={x:q.x,y:q.y};
-    BENCH[t].splice(BENCH[t].indexOf(namedGoalkeeper),1);
-    S.subs[t]++;
-    applySubstitution(q,namedGoalkeeper,position);
-    replacement=q;
+    const position={x:q.x,y:q.y},benchIndex=BENCH[t].indexOf(namedSubstitute);
+    if(applySubstitution(q,namedSubstitute,position)){
+      BENCH[t].splice(benchIndex,1);
+      S.subs[t]++;
+      replacement=q;
+    }else{
+      replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,t);
+      removePlayer(q);
+    }
   }else{
     replacement=PITCH11Law.shootoutReplacementGoalkeeper(P,t);
     removePlayer(q);
