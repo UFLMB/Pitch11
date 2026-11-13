@@ -5082,6 +5082,38 @@ goal=function(dr){
   }
   _goalLaw11Sight(dr);
 };
+
+/* --- IFAB Laws 15/16 (2026/27): five-second restart countdown for delayed throw-ins and goal kicks --- */
+const _updateLaw1516Delay=update;
+update=function(){
+  _updateLaw1516Delay();
+  const rs=S.rs;
+  if(S.mode!=='play'||!rs||ball.owner!==rs.p||(rs.kind!=='throw'&&rs.kind!=='gk'))return;
+  if(!Number.isFinite(rs.delayElapsed)){
+    rs.delayElapsed=0;rs.delayShown=5;
+    msg('5-SECOND COUNTDOWN','5',1.1);
+  }
+  rs.delayElapsed+=DT;
+  const remaining=Math.max(0,Math.ceil(5-rs.delayElapsed));
+  if(remaining>0&&remaining!==rs.delayShown){
+    rs.delayShown=remaining;msg('5-SECOND COUNTDOWN',String(remaining),1.1);
+  }
+  const decision=PITCH11Law.restartDelayDecision({kind:rs.kind,seconds:rs.delayElapsed});
+  if(decision==='continue')return;
+  const team=rs.team,x=rs.x,y=rs.y;
+  if(decision==='opponent-throw-in'){
+    const nx=clamp(x,PX0+12,PX1-12),ny=y<PY0?PY0-4:PY1+4;
+    spot(1-team,nx,ny,false,Math.atan2(CY-ny,(CX-nx)*.3),'throw');
+    msg('DELAYED THROW-IN','Opponents awarded the throw-in',2);
+    return;
+  }
+  const keeper=GK[team],gx=dirOf(team)>0?PX0:PX1,cx=gx===PX0?PX0+3:PX1-3;
+  const topY=PY0+3,bottomY=PY1-3;
+  const cy=!keeper?bottomY:(Math.hypot(keeper.x-cx,keeper.y-topY)<=Math.hypot(keeper.x-cx,keeper.y-bottomY)?topY:bottomY);
+  spot(1-team,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');
+  S.rs.box=true;S.rs.r=91.5;
+  msg('DELAYED GOAL KICK','CORNER KICK',2);
+};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script type="module" src="./stadium-runtime.js"></script>
