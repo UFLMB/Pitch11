@@ -94,7 +94,7 @@ test("Law 12 foul discipline uses event severity instead of random card rolls", 
 });
 
 test("a team is forfeited only after a sending-off leaves fewer than seven players", () => {
-  assert.match(source, /if\(card>1&&!PITCH11Law\.hasMinimumPlayers\(P,p\.team,7\)\)/);
+  assert.match(source, /PITCH11Law\.matchAbandonmentDecision\(P,p\.team,7,!!S\.so\)==='abandon'/);
   assert.match(source, /S\.forfeitTeam=p\.team;S\.mode='full'/);
   assert.match(source, /MATCH ABANDONED/);
   assert.match(source, /S\.forfeitTeam=null/);
