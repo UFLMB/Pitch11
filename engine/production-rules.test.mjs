@@ -316,7 +316,7 @@ test("Laws 15 and 16 count down delayed throw-ins and goal kicks, awarding the c
 
 
 test("Law 13 applies goal-area placement, own-penalty-area clearance and the one-metre wall exclusion", () => {
-  assert.match(source, /PITCH11Law\\.freeKickGoalAreaPosition\\(/);
+  assert.match(source, /PITCH11Law\.freeKickGoalAreaPosition\(/);
   assert.match(source, /ownPenaltyRestart/);
   assert.match(source, /rs\.kind==='gk'\|\|ownPenaltyRestart/);
   assert.match(source, /rs\.wall\.length>=3/);
