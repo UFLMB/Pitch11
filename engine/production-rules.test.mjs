@@ -426,6 +426,8 @@ test("Law 3 applies the ten-second exit deadline and one-minute delayed substitu
   assert.match(source, /function tickSubstitutionExits\(\)/);
   assert.match(source, /function startPendingSubstitutionClocks\(\)/);
   assert.match(source, /function completeEligiblePendingSubs\(\)/);
+  assert.match(source, /function tickSubExitRunners\(\)/);
+  assert.match(source, /playerExited:q\.player&&q\.player\.out===true/);
   assert.match(source, /substitutionPending=true/);
   assert.match(source, /tickSubstitutionExits\(\);tickPendingSubstitutionClocks\(\)/);
   assert.match(source, /completeEligiblePendingSubs\(\);/);
