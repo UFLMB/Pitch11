@@ -1141,7 +1141,7 @@ function doSub(p,bn){
     applySubstitution(p,bn,position);return true;
   }
   if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
-    giveCard(p,p.yc>=1?3:1);
+    if(!p.yc)giveCard(p,1);
     applySubstitution(p,bn,position);return true;
   }
   // All substitutions signalled in one stoppage share the ten-second deadline from the final signal.
@@ -1650,7 +1650,7 @@ function drawSubs(){
     const p=P[r],y=y0+r*rh,x=W*0.06,w=W*0.44;
     UI.r.push({x,y,w,h:rh-2,fn:()=>{if(!p.out){S.sel=p;S.pv=p;}}});
     ctx.fillStyle=S.sel===p?'rgba(255,230,0,.35)':'rgba(255,255,255,.1)';ctx.fillRect(x,y,w,rh-2);
-    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+(p.out?'  SENT OFF':p.inj?'  INJURED':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
+    fit((p.nm||'#'+p.num)+'  '+p.pos+'  '+ovr(p.st)+(p.substitutionPending?'  SUB DELAYED':p.tempOff?'  OFF FIELD':p.out?'  SENT OFF':p.inj?'  INJURED':S.subExits.some(e=>e.player===p)?'  LEAVING':p.yc?'  YELLOW':''),x+8,y+rh/2,w*.6,fs,p.out?'#888':'#fff','left');
     ctx.fillStyle='rgba(255,255,255,.2)';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32,rh*0.35);
     ctx.fillStyle=p.fat>0.5?'#ff6040':p.fat>0.3?'#ffc040':'#5cff8a';ctx.fillRect(x+w*0.64,y+rh*0.3,w*0.32*(1-p.fat),rh*0.35);
   }
