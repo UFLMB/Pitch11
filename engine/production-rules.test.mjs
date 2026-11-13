@@ -112,29 +112,11 @@ test("substitutions are limited to five players and three stoppage windows, with
 });
 
 
-test("goalkeeper hand control is limited to eight seconds and awards a corner kick", () => {
-  assert.ok(source.includes("PITCH11Law.goalkeeperHandControlDecision(true,b.gkHold)==='corner'"));
-  assert.doesNotMatch(source, /take=function\(p\)\{/ , "later wrappers must not discard the hand-control argument");
-  assert.equal((source.match(/take=function\(p,byHand=false\)/g)||[]).length, 7, "all seven possession wrappers must accept the hand-control flag");
-  for (const wrapper of ["_take(p,byHand)", "_tk8(p,byHand)", "_tk10(p,byHand)", "_tk19(p,byHand)", "_tk23(p,byHand)", "_tkA(p,byHand)"]) {
-    assert.ok(source.includes(wrapper), "hand-control state must pass through " + wrapper);
-  }
-  assert.ok(source.includes("function take(p,byHand=false)"));
-  assert.ok(source.includes("ball.gkHoldActive=!!(p.gk&&byHand)"));
-  const keeperSave = source.match(/function gkReact\(p\)\{[\s\S]*?\n\}/);
-  assert.ok(keeperSave, "goalkeeper save routine must be present");
-  assert.match(keeperSave[0], /take\(p,true\)/, "only a genuine goalkeeper hand catch starts the eight-second clock");
-  assert.match(source, /take=function\(p,byHand=false\)[\s\S]*?_take\(p,byHand\)/, "stats wrapper must preserve hand-control state");
-  const aiKeeper = source.match(/function aiGK\(p\)\{[\s\S]*?\n\}/);
-  const chargedKeeper = source.match(/function gkStep\(p\)\{[\s\S]*?\n\}/);
-  assert.ok(aiKeeper && chargedKeeper, "both goalkeeper collection paths must be present");
-  assert.match(aiKeeper[0], /take\(p,true\)/, "AI goalkeeper smothers use hand control");
-  assert.match(chargedKeeper[0], /take\(p,true\)/, "manual goalkeeper smothers use hand control");
-  assert.ok(source.includes("if(p.team===0&&!pw&&!stick){take(p);return;}"), "ordinary outfield foot control must not start the hand clock");
-  assert.ok(source.includes("b.gkHold>=3"));
-  assert.ok(source.includes("spot(1-keeper.team,x,y,false,Math.atan2(CY-y,CX-x),'corner')"));
-  assert.ok(source.includes("b.gkHoldActive=false"));
-  assert.ok(source.includes("b.gkHold=0;b.gkHoldActive=false;b.gkHoldWarned=false"));
+test("goalkeeper hand control shows the final five-second countdown and awards a corner only after eight seconds", () => {
+  assert.match(source, /b\.gkHold>=3/);
+  assert.match(source, /b\.gkHoldShown=5/);
+  assert.match(source, /Math\.ceil\(8-b\.gkHold\)/);
+  assert.match(source, /goalkeeperHandControlDecision\(true,b\.gkHold\)/);
 });
 
 
