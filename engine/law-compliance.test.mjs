@@ -725,3 +725,17 @@ test('Law 9 chooses the boundary crossed first when a fast diagonal ball crosses
   assert.equal(law.firstOutBoundary({ ...base, currentX: 102.01, currentY: 90 }), 'goal-line');
   assert.equal(law.firstOutBoundary({ ...base, currentX: 90, currentY: 102.01 }), 'touchline');
 });
+
+
+test('Law 10 records a shoot-out kicker second touch after an intervening goalkeeper touch as missed', () => {
+  const base = {
+    ball: { x: 101.01, y: 50, z: 0, vx: 1, vy: 0, vz: 0, owner: null },
+    targetDirection: 1, left: 0, right: 100, top: 0, bottom: 100,
+    centerY: 50, goalHalfWidth: 10, goalHeight: 10, radius: 1
+  };
+  assert.equal(law.shootoutDecision({ ...base, deliberateDoubleTouch: true }), 'miss');
+  assert.equal(law.shootoutDecision({ ...base, doubleTouch: true }), 'retake',
+    'an immediate accidental double touch retains the retake exception');
+  assert.equal(law.shootoutDecision({ ...base, deliberateDoubleTouch: true, doubleTouch: true }), 'miss',
+    'a later deliberate second touch is not treated as accidental');
+});
