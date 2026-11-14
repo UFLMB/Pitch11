@@ -1007,7 +1007,7 @@ function outOfPlay(){
   if(b.x<PX0-BR||b.x>PX1+BR){
     const left=b.x<PX0,def=(dirOf(0)>0)===left?0:1;
     const crossingY=PITCH11Law.goalLineCrossingY({previousX:b.px,previousY:b.py,currentX:b.x,currentY:b.y,goalLine:left?PX0:PX1,direction:left?-1:1,radius:BR});
-    if(lt===def){const cx=left?PX0+3:PX1-3,cy=crossingY<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=91.5;}
+    if(lt===def){const cx=left?PX0+3:PX1-3,cy=crossingY<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=PITCH11Law.cornerKickOpponentClearance({ballOffsetX:3,ballOffsetY:3,arcRadius:10,requiredDistance:91.5});}
     else {spot(def,left?PX0+40:PX1-40,CY,true,left?0:Math.PI,'gk');S.rs.goalLineCrossY=crossingY;}
   }else{
     const top=b.y<PY0;
@@ -1344,7 +1344,7 @@ function rules(){
           msg('MATCH ABANDONED',KIT[keeper.team].name+' has fewer than seven players',3);return;
         }
       }
-      spot(1-keeper.team,x,cy,false,Math.atan2(CY-cy,CX-x),'corner');S.rs.box=true;S.rs.r=91.5;
+      spot(1-keeper.team,x,cy,false,Math.atan2(CY-cy,CX-x),'corner');S.rs.box=true;S.rs.r=PITCH11Law.cornerKickOpponentClearance({ballOffsetX:3,ballOffsetY:3,arcRadius:10,requiredDistance:91.5});
       msg('8-SECOND VIOLATION','CORNER KICK',2);return;
     }
   }else if(!b.gkHoldActive){b.gkHold=0;b.gkHoldWarned=false;b.gkHoldShown=0;}
@@ -5405,7 +5405,7 @@ update=function(){
   const topY=PY0+3,bottomY=PY1-3;
   const cy=PITCH11Law.goalKickDelayCornerY({crossingY:rs.goalLineCrossY,topY,bottomY});
   spot(1-team,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');
-  S.rs.box=true;S.rs.r=91.5;
+  S.rs.box=true;S.rs.r=PITCH11Law.cornerKickOpponentClearance({ballOffsetX:3,ballOffsetY:3,arcRadius:10,requiredDistance:91.5});
   msg('DELAYED GOAL KICK','CORNER KICK',2);
 };
 
