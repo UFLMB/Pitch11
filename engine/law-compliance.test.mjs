@@ -659,6 +659,19 @@ test('injured players cannot be selected as shoot-out goalkeeper replacements', 
 });
 
 
+test('Law 17 measures the required clearance from the corner arc, not the ball centre', () => {
+  const clearance = law.cornerKickOpponentClearance({
+    ballOffsetX: 3, ballOffsetY: 3, arcRadius: 10, requiredDistance: 91.5
+  });
+  assert.ok(Math.abs(clearance - (91.5 + 10 - Math.hypot(3, 3))) < 1e-9);
+  assert.equal(law.cornerKickOpponentClearance({
+    ballOffsetX: 12, ballOffsetY: 0, arcRadius: 10, requiredDistance: 91.5
+  }), 91.5);
+  assert.equal(law.cornerKickOpponentClearance({
+    ballOffsetX: NaN, ballOffsetY: 3, arcRadius: 10, requiredDistance: 91.5
+  }), 91.5);
+});
+
 test('offside line uses the live second-last opponent, or the only opponent when fewer than two remain', () => {
   const players = [
     { team: 0, x: 10, out: false },
