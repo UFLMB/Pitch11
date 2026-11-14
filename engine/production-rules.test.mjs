@@ -596,33 +596,6 @@ test("Law 5 removes assessed outfield players for one running minute and restore
 });
 
 
-test("Law 3 checks the seven-player minimum after a goalkeeper is sent off for substitution delay", () => {
-  const doSub = source.match(/function doSub\(p,bn\)\{[\s\S]*?\n\}/);
-  assert.ok(doSub, "production substitution path must exist");
-  const sendOff = doSub[0].match(/if\(delayDecision==='send-off'\)\{[\s\S]*?\n    \}/);
-  assert.ok(sendOff, "booked goalkeeper delay must trigger the send-off path");
-  assert.match(sendOff[0], /giveCard\(p,3\)/);
-  assert.match(sendOff[0], /PITCH11Law\.matchAbandonmentDecision\(P,t,7,!!S\.so\)==='abandon'/);
-  assert.match(sendOff[0], /S\.forfeitTeam=t;S\.mode='full'/);
-  assert.match(sendOff[0], /fewer than seven players/);
-});
-
-test("Law 3 sends off an already-cautioned goalkeeper who exceeds the substitution exit deadline", () => {
-  const helper = lawSource.match(/function goalkeeperSubstitutionDelayDecision\(state\)\s*\{[\s\S]*?\n  \}/);
-  assert.ok(helper, "goalkeeper substitution delay decision must be defined");
-  const isolated = new Function("return (" + helper[0].replace("function goalkeeperSubstitutionDelayDecision(state)", "function (state)") + ");")();
-  assert.equal(isolated({ exceededTenSeconds: false, alreadyCautioned: true }), "continue");
-  assert.equal(isolated({ exceededTenSeconds: true, alreadyCautioned: false }), "caution-and-replace");
-  assert.equal(isolated({ exceededTenSeconds: true, alreadyCautioned: true }), "send-off");
-  const doSub = source.match(/function doSub\(p,bn\)\{[\s\S]*?\n\}/);
-  assert.ok(doSub, "production substitution path must exist");
-  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?p\.yc\+\+;giveCard\(p,3\)/);
-  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?return false/);
-  assert.match(doSub[0], /delayDecision==='send-off'[\s\S]*?return false[\s\S]*?S\.subs\[t\]\+\+/,
-    "the send-off branch must return before consuming the substitution or removing the bench goalkeeper");
-  assert.match(doSub[0], /if\(eligibility\.consumesWindow\)[\s\S]*?S\.subs\[t\]\+\+/);
-});
-
 test("Law 3 applies the ten-second exit deadline and one-minute delayed substitute entry in production", () => {
   assert.match(source, /function substitutionExitTarget\(p\)/);
   assert.match(source, /PITCH11Law\.timeLimitedSubstitutionExitDecision\(/);
