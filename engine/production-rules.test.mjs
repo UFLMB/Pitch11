@@ -454,6 +454,12 @@ test("Law 16 requires goal-kick opponents to leave the penalty area, not to stan
 });
 
 
+test("Law 13 moves opponents outside the penalty area for free kicks inside either penalty area", () => {
+  assert.ok(source.includes("const opponentPenaltyRestart=rs.kind==='fk'&&(rs.x-opponentGoalLine)*(-attackDirection)>=0"));
+  assert.ok(source.includes("if(rs.kind==='gk'||ownPenaltyRestart||opponentPenaltyRestart)"));
+  assert.ok(source.includes("const gx=opponentPenaltyRestart?opponentGoalLine:ownGoalLine,dir=opponentPenaltyRestart?-attackDirection:attackDirection"));
+});
+
 test("Law 13 and restart laws enforce opponent distances except the free-kick goal-line exception", () => {
   const helper = lawSource.match(/function restartGoalLineDistanceExemption\(state\)\s*\{[\s\S]*?\n  \}/);
   assert.ok(helper, "the goal-line distance exception must be explicit");
