@@ -707,3 +707,15 @@ test('DOGSO rejects invalid player counts and negative lateral distances', () =>
   assert.equal(law.dogsoOpportunity({ ...base, lateralDistance: NaN }), false);
   assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: undefined }), false);
 });
+
+
+test('Law 10 records a shoot-out kicker second touch after an intervening goalkeeper touch as missed', () => {
+  const base = {
+    ball: { x: 101, y: 50, z: 0, vx: 1, vy: 0, vz: 0, owner: null },
+    targetDirection: 1, left: 0, right: 100, top: 0, bottom: 100,
+    centerY: 50, goalHalfWidth: 10, goalHeight: 10, radius: 1
+  };
+  assert.equal(law.shootoutDecision({ ...base, deliberateDoubleTouch: true }), 'miss');
+  assert.equal(law.shootoutDecision({ ...base, doubleTouch: true }), 'retake',
+    'the separate accidental double-touch exception is preserved');
+});
