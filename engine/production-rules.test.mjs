@@ -380,7 +380,7 @@ test("Law 14 applies the forward-kick requirement to shootouts without awarding 
 
 test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advantage is played", () => {
   assert.match(source, /attackersAhead=P\.filter/);
-  assert.match(source, /const advantagePossible=!pen&&!hurt&&prog>0\.45/);
+  assert.match(source, /const advantagePossible=!hurt&&prog>0\.45&&\(!pen\|\|!dogso\)/);
   assert.match(source, /S\.adv=\{team:t,t:2\.5,fn,offender:p,dogso:advDogso,caution:deferCaution\}/);
   assert.doesNotMatch(source, /cardOnFailure/);
   assert.match(source, /const deferCaution=advantagePossible&&card===1/);
@@ -389,6 +389,12 @@ test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advan
   assert.match(source, /if\(a\.dogso\|\|a\.caution\)issueAdvantageCaution\(a\.offender\)/);
   assert.match(source, /function issueAdvantageCaution\(p\)/);
   assert.match(source, /goal=function\(dr\)\{if\(S\.pendingCard\)\{if\(!S\.pendingCard\.goalExempt\)issueAdvantageCaution/);
+});
+
+test("Law 12 allows advantage for non-DOGSO fouls inside the penalty area while retaining the penalty fallback", () => {
+  assert.match(source, /const advantagePossible=!hurt&&prog>0\\.45&&\\(!pen\\|\\|!dogso\\)/);
+  assert.match(source, /const fn=pen\\?\\(\\)=>setupPen\\(t,firstIn\\(t\\),false\\):\\(\\)=>freeKick\\(t,x,y,false\\)/);
+  assert.match(source, /const deferCaution=advantagePossible&&card===1/);
 });
 
 test("Law 12 advantage is resolved before period end and before a subsequent whistle", () => {
