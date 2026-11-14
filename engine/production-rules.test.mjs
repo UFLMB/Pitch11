@@ -423,6 +423,11 @@ test("Law 17 interpolates the whole-ball crossing point for both normal and dela
   assert.match(source, /PITCH11Law\.goalKickDelayCornerY\(\{crossingY:rs\.goalLineCrossY,topY,bottomY\}\)/);
 });
 
+test("Law 15 places a throw-in at the interpolated whole-ball touchline crossing point", () => {
+  assert.match(source, /PITCH11Law\.touchlineCrossingX\(\{previousX:b\.px,previousY:b\.py,currentX:b\.x,currentY:b\.y,touchline:top\?PY0:PY1,direction:top\?-1:1,radius:BR\}\)/);
+  assert.match(source, /const x=clamp\(crossingX,PX0\+12,PX1-12\)/);
+});
+
 
 test("Law 13 applies goal-area placement, own-penalty-area clearance and the one-metre wall exclusion", () => {
   assert.match(source, /PITCH11Law\.freeKickGoalAreaPosition\(/);
