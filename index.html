@@ -3058,8 +3058,10 @@ const buzz=ms=>{if(!G.haptic||!navigator.vibrate)return;try{navigator.vibrate(ty
 /* ---------- control presets & layout ---------- */
 const PRESETS={
   classic:null,
-  fc:[[-0.96,0.9,1.0],[1.04,0.88,1.14],[0.7,-0.86,0.95],[1.08,-0.6,1.14]],
-  efoot:[[-0.84,0.94,1.06],[0.98,0.78,1.08],[0.62,-0.94,1.0],[1.12,-0.72,1.16]]
+  // dx/dy are distances from the right/bottom edges in units of H*0.09.
+  // Keep the four action targets in a compact 2x2 cluster with safe edge clearance.
+  fc:[[4.0,4.9,1.0],[1.8,4.9,1.14],[4.0,2.5,0.95],[1.8,2.5,1.14]],
+  efoot:[[4.5,5.0,1.06],[2.0,5.0,1.08],[4.5,2.45,1.0],[2.0,2.45,1.16]]
 };
 function applyPreset(k){
   G.preset=k;
@@ -3071,6 +3073,24 @@ function defaultBTN(i){return{id:i,dx:TUNING.btnRight+(i&1?-1:1)*TUNING.btnOff,d
 function syncLayout(){
   if(G.btns){for(let i=0;i<4;i++){const c=G.btns[i];if(c)Object.assign(BTN[i],{id:i,dx:c[0],dy:c[1],m:c[2]});}}
   else{for(let i=0;i<4;i++)Object.assign(BTN[i],defaultBTN(i));}
+  const u=H*0.09;
+  for(const b of BTN){
+    b.m=clamp(Number.isFinite(b.m)?b.m:1,0.6,2.2);
+    const r=b.m*u,pad=Math.max(8,r*0.35);
+    const minX=r+pad,maxX=W-r-pad,minY=r+pad,maxY=H-r-pad;
+    const x=minX<=maxX?clamp(W-b.dx*u,minX,maxX):W*0.5;
+    const y=minY<=maxY?clamp(H-b.dy*u,minY,maxY):H*0.5;
+    b.dx=(W-x)/u;b.dy=(H-y)/u;
+  }
+  if(G.btns)G.btns=BTN.map(b=>[b.dx,b.dy,b.m]);
+  clampJoyLayout();
+}
+function clampJoyLayout(){
+  if(!Array.isArray(G.joy)||!Number.isFinite(G.joy[0])||!Number.isFinite(G.joy[1]))G.joy=[0.15,0.7];
+  const jr=H*0.13,px=jr+8;
+  const minX=px/W,maxX=1-px/W,minY=px/H,maxY=1-px/H;
+  G.joy[0]=minX<=maxX?clamp(G.joy[0],minX,maxX):0.5;
+  G.joy[1]=minY<=maxY?clamp(G.joy[1],minY,maxY):0.5;
 }
 const _dc10=drawControls;drawControls=function(){const p=ctx.globalAlpha;ctx.globalAlpha=clamp(G.op,0.2,1);_dc10();ctx.globalAlpha=p;};
 
@@ -3190,6 +3210,10 @@ let layoutDrag=null,layoutSel=0;
 MS.layout=function(){
   mt('LAYOUT EDITOR');mbk();
   const u=H*0.09,lab=GLAB[GS.att?'att':'def'];
+  const jx=W*G.joy[0],jy=H*G.joy[1],jr=H*0.13;
+  drawJoy(jx,jy,jr,jx,jy,jr*0.42,false);
+  ctx.strokeStyle='rgba(120,220,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(jx,jy,jr+5,0,TAU);ctx.stroke();
+  txt('JOYSTICK',jx,jy+jr+H*.035,H*.025,'#8de7ff',800);
   for(let i=0;i<4;i++){
     const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
     ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
@@ -3203,16 +3227,32 @@ MS.layout=function(){
   txt('OPACITY',W*.08,H*.34,H*.04,'#fff',800);
   seg(W*.2,H*.3,W*.5,H*.08,['LOW','MID','HIGH'],G.op<0.4?0:G.op<0.75?1:2,i=>{G.op=[0.35,0.55,0.85][i];save();});
   txt('JOYSTICK',W*.08,H*.46,H*.04,'#fff',800);
-  ubtn(W*.2,H*.42,W*.12,H*.08,'◀',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);save();});
-  ubtn(W*.34,H*.42,W*.12,H*.08,'▶',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);save();});
-  ubtn(W*.48,H*.42,W*.12,H*.08,'▲',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);save();});
-  ubtn(W*.62,H*.42,W*.12,H*.08,'▼',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);save();});
+  ubtn(W*.2,H*.42,W*.12,H*.08,'◀',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);clampJoyLayout();save();});
+  ubtn(W*.34,H*.42,W*.12,H*.08,'▶',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);clampJoyLayout();save();});
+  ubtn(W*.48,H*.42,W*.12,H*.08,'▲',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);clampJoyLayout();save();});
+  ubtn(W*.62,H*.42,W*.12,H*.08,'▼',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);clampJoyLayout();save();});
   ubtn(W*.1,H*.92,W*.4,H*.07,'RESET LAYOUT',()=>{G.btns=null;G.joy=[0.15,0.7];syncLayout();save();},'rgba(255,60,40,.4)');
   ubtn(W*.55,H*.92,W*.4,H*.07,'DONE',back,Y);
 };
-addEventListener('pointerdown',e=>{if(M.scr==='layout'&&S.mode==='menu'){const u=H*0.09;for(let i=0;i<4;i++){const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;if(Math.hypot(e.clientX-x,e.clientY-y)<r*1.7){layoutDrag={i,x,y};layoutSel=i;break;}}}});
-addEventListener('pointermove',e=>{if(layoutDrag){const u=H*0.09;const L=G.btns||BTN.map(b=>[b.dx,b.dy,b.m]);L[layoutDrag.i]=[(W-e.clientX)/u,(H-e.clientY)/u,L[layoutDrag.i][2]];G.btns=L;syncLayout();layoutDrag.x=e.clientX;layoutDrag.y=e.clientY;save();}});
-addEventListener('pointerup',()=>{layoutDrag=null;});
+addEventListener('pointerdown',e=>{
+  if(M.scr!=='layout'||S.mode!=='menu'||layoutDrag)return;
+  const u=H*0.09;
+  for(let i=0;i<4;i++){
+    const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
+    if(Math.hypot(e.clientX-x,e.clientY-y)<r*1.7){layoutDrag={i,pid:e.pointerId};layoutSel=i;break;}
+  }
+});
+addEventListener('pointermove',e=>{
+  if(!layoutDrag||e.pointerId!==layoutDrag.pid)return;
+  const u=H*0.09,b=BTN[layoutDrag.i],r=b.m*u,pad=Math.max(8,r*0.35);
+  const x=clamp(e.clientX,r+pad,W-r-pad),y=clamp(e.clientY,r+pad,H-r-pad);
+  const L=G.btns||BTN.map(q=>[q.dx,q.dy,q.m]);
+  L[layoutDrag.i]=[(W-x)/u,(H-y)/u,L[layoutDrag.i][2]];
+  G.btns=L;syncLayout();save();
+});
+function endLayoutDrag(e){if(layoutDrag&&e.pointerId===layoutDrag.pid)layoutDrag=null;}
+addEventListener('pointerup',endLayoutDrag);
+addEventListener('pointercancel',endLayoutDrag);
 
 /* ---------- cheat sheet + training screens ---------- */
 MS.cheat=function(){
@@ -3262,14 +3302,18 @@ function stage10Hud(){
   }
 }
 
-/* swipe-anywhere right side (FC Mobile style) */
+/* swipe-anywhere right side (FC Mobile style).
+   Use the real pointer id and origin so normal pointermove/up/cancel handling
+   drives the same gesture state machine as the visible action buttons. */
 {
-  let __swP=0,__sw=null;
-  addEventListener('pointerdown',e=>{if(S.mode!=='play'||e.clientX<=W*0.5||G.swAnywhere!==1)return;if(btnAt(e.clientX,e.clientY))return;
-    const fy=e.clientY/H,slot=fy<0.32?1:fy<0.62?0:fy<0.82?2:3;
-    __swP++;press(slot,'sw'+__swP);__sw={slot,pid:'sw'+__swP};});
-  addEventListener('pointermove',e=>{if(__sw)gMove(__sw.pid,e.clientX,e.clientY);});
-  addEventListener('pointerup',e=>{if(__sw){release(__sw.pid,false);__sw=null;}});
+  cv.addEventListener('pointerdown',e=>{
+    if(S.mode!=='play'||e.clientX<=W*0.5||G.swAnywhere!==1)return;
+    if(btnAt(e.clientX,e.clientY))return;
+    if(Math.hypot(e.clientX-pauseBtn.x,e.clientY-pauseBtn.y)<pauseBtn.r*1.4)return;
+    if(Math.hypot(e.clientX-camBtn.x,e.clientY-camBtn.y)<camBtn.r*1.4)return;
+    const fy=clamp(e.clientY/H,0,1),slot=fy<0.32?1:fy<0.62?0:fy<0.82?2:3;
+    gDown(slot,e.pointerId,e.clientX,e.clientY);
+  });
 }
 
 /* ===================== 18. POLISH: grass texture, shaded ball, soft particles, vignette, dust ===================== */
@@ -3405,6 +3449,10 @@ MS.adv=function(){
 MS.layout=function(){
   mt('LAYOUT EDITOR');mbk();
   const u=H*0.09,lab=GLAB[GS.att?'att':'def'];
+  const jx=W*G.joy[0],jy=H*G.joy[1],jr=H*0.11,jhit=H*0.13;
+  drawJoy(jx,jy,jr,jx,jy,H*0.045,false);
+  ctx.strokeStyle='rgba(120,220,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(jx,jy,jhit+5,0,TAU);ctx.stroke();
+  txt('JOYSTICK',jx,jy-jr*.68,H*.025,'#8de7ff',800);
   for(let i=0;i<4;i++){
     const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
     ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
@@ -3416,8 +3464,8 @@ MS.layout=function(){
   ubtn(W*.2,H*.2,W*.1,H*.08,'-',sz(v=>v-0.1));ubtn(W*.31,H*.2,W*.1,H*.08,'1',sz(()=>1));ubtn(W*.42,H*.2,W*.1,H*.08,'+',sz(v=>v+0.1));
   txt(lab[layoutSel].replace('|',' ')+'  x'+BTN[layoutSel].m.toFixed(2),W*.7,H*.24,H*.036,'#ffe600',800);
   seg(W*.2,H*.34,W*.32,H*.08,['LOW','MID','HIGH'],G.op<0.4?0:G.op<0.75?1:2,i=>{G.op=[0.35,0.55,0.85][i];save();});
-  ubtn(W*.2,H*.48,W*.075,H*.08,'<',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);save();});ubtn(W*.285,H*.48,W*.075,H*.08,'>',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);save();});
-  ubtn(W*.37,H*.48,W*.075,H*.08,'^',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);save();});ubtn(W*.455,H*.48,W*.075,H*.08,'v',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);save();});
+  ubtn(W*.2,H*.48,W*.075,H*.08,'<',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);clampJoyLayout();save();});ubtn(W*.285,H*.48,W*.075,H*.08,'>',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);clampJoyLayout();save();});
+  ubtn(W*.37,H*.48,W*.075,H*.08,'^',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);clampJoyLayout();save();});ubtn(W*.455,H*.48,W*.075,H*.08,'v',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);clampJoyLayout();save();});
   txt('TAP A CIRCLE TO PICK IT: DRAG = MOVE,  - 1 + = ITS OWN SIZE',W*.4,H*.68,H*.032,'#ffe600',800);
   ubtn(W*.05,H*.84,W*.24,H*.09,'RESET',()=>{G.btns=null;G.joy=[0.15,0.7];syncLayout();save();},'rgba(255,60,40,.4)');
   ubtn(W*.32,H*.84,W*.24,H*.09,'DONE',back,Y);
