@@ -515,7 +515,7 @@
     const issues = playerEquipmentIssues(equipment);
     if (!issues.length) return 'allow';
     return issues.some(issue => issue === 'dangerous-equipment' ||
-      issue === 'uncovered-jewellery' || issue === 'electronic-equipment')
+      issue === 'uncovered-accessories' || issue === 'electronic-communication-equipment')
       ? 'remove-item' : 'replace-item';
   }
 
