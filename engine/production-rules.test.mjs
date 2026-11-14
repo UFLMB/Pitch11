@@ -29,7 +29,7 @@ test("Law 4 equipment inspection rejects missing compulsory kit and unsafe items
 
   const unsafe = { ...compliant, dangerousEquipment: true, uncoveredAccessories: true, playerElectronicCommunicationEquipment: true };
   assert.deepEqual(Array.from(law.playerEquipmentIssues(unsafe)), [
-    "dangerous-equipment", "uncovered-jewellery", "electronic-equipment"
+    "dangerous-equipment", "uncovered-accessories", "electronic-communication-equipment"
   ]);
   assert.equal(law.equipmentInspectionDecision(unsafe), "remove-item");
 });
