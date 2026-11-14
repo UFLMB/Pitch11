@@ -3206,6 +3206,10 @@ let layoutDrag=null,layoutSel=0;
 MS.layout=function(){
   mt('LAYOUT EDITOR');mbk();
   const u=H*0.09,lab=GLAB[GS.att?'att':'def'];
+  const jx=W*G.joy[0],jy=H*G.joy[1],jr=H*0.13;
+  drawJoy(jx,jy,jr,jx,jy,jr*0.42,false);
+  ctx.strokeStyle='rgba(120,220,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(jx,jy,jr+5,0,TAU);ctx.stroke();
+  txt('JOYSTICK PREVIEW',jx,jy+jr+H*.035,H*.025,'#8de7ff',800);
   for(let i=0;i<4;i++){
     const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
     ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
