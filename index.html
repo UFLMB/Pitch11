@@ -3083,6 +3083,9 @@ function syncLayout(){
     b.dx=(W-x)/u;b.dy=(H-y)/u;
   }
   if(G.btns)G.btns=BTN.map(b=>[b.dx,b.dy,b.m]);
+  clampJoyLayout();
+}
+function clampJoyLayout(){
   if(!Array.isArray(G.joy)||!Number.isFinite(G.joy[0])||!Number.isFinite(G.joy[1]))G.joy=[0.15,0.7];
   const jr=H*0.13,px=jr+8;
   const minX=px/W,maxX=1-px/W,minY=px/H,maxY=1-px/H;
@@ -3224,10 +3227,10 @@ MS.layout=function(){
   txt('OPACITY',W*.08,H*.34,H*.04,'#fff',800);
   seg(W*.2,H*.3,W*.5,H*.08,['LOW','MID','HIGH'],G.op<0.4?0:G.op<0.75?1:2,i=>{G.op=[0.35,0.55,0.85][i];save();});
   txt('JOYSTICK',W*.08,H*.46,H*.04,'#fff',800);
-  ubtn(W*.2,H*.42,W*.12,H*.08,'◀',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);save();});
-  ubtn(W*.34,H*.42,W*.12,H*.08,'▶',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);save();});
-  ubtn(W*.48,H*.42,W*.12,H*.08,'▲',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);save();});
-  ubtn(W*.62,H*.42,W*.12,H*.08,'▼',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);save();});
+  ubtn(W*.2,H*.42,W*.12,H*.08,'◀',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);clampJoyLayout();save();});
+  ubtn(W*.34,H*.42,W*.12,H*.08,'▶',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);clampJoyLayout();save();});
+  ubtn(W*.48,H*.42,W*.12,H*.08,'▲',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);clampJoyLayout();save();});
+  ubtn(W*.62,H*.42,W*.12,H*.08,'▼',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);clampJoyLayout();save();});
   ubtn(W*.1,H*.92,W*.4,H*.07,'RESET LAYOUT',()=>{G.btns=null;G.joy=[0.15,0.7];syncLayout();save();},'rgba(255,60,40,.4)');
   ubtn(W*.55,H*.92,W*.4,H*.07,'DONE',back,Y);
 };
@@ -3457,8 +3460,8 @@ MS.layout=function(){
   ubtn(W*.2,H*.2,W*.1,H*.08,'-',sz(v=>v-0.1));ubtn(W*.31,H*.2,W*.1,H*.08,'1',sz(()=>1));ubtn(W*.42,H*.2,W*.1,H*.08,'+',sz(v=>v+0.1));
   txt(lab[layoutSel].replace('|',' ')+'  x'+BTN[layoutSel].m.toFixed(2),W*.7,H*.24,H*.036,'#ffe600',800);
   seg(W*.2,H*.34,W*.32,H*.08,['LOW','MID','HIGH'],G.op<0.4?0:G.op<0.75?1:2,i=>{G.op=[0.35,0.55,0.85][i];save();});
-  ubtn(W*.2,H*.48,W*.075,H*.08,'<',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);save();});ubtn(W*.285,H*.48,W*.075,H*.08,'>',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);save();});
-  ubtn(W*.37,H*.48,W*.075,H*.08,'^',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);save();});ubtn(W*.455,H*.48,W*.075,H*.08,'v',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);save();});
+  ubtn(W*.2,H*.48,W*.075,H*.08,'<',()=>{G.joy[0]=Math.max(0.06,G.joy[0]-0.05);clampJoyLayout();save();});ubtn(W*.285,H*.48,W*.075,H*.08,'>',()=>{G.joy[0]=Math.min(0.94,G.joy[0]+0.05);clampJoyLayout();save();});
+  ubtn(W*.37,H*.48,W*.075,H*.08,'^',()=>{G.joy[1]=Math.max(0.1,G.joy[1]-0.06);clampJoyLayout();save();});ubtn(W*.455,H*.48,W*.075,H*.08,'v',()=>{G.joy[1]=Math.min(0.9,G.joy[1]+0.06);clampJoyLayout();save();});
   txt('TAP A CIRCLE TO PICK IT: DRAG = MOVE,  - 1 + = ITS OWN SIZE',W*.4,H*.68,H*.032,'#ffe600',800);
   ubtn(W*.05,H*.84,W*.24,H*.09,'RESET',()=>{G.btns=null;G.joy=[0.15,0.7];syncLayout();save();},'rgba(255,60,40,.4)');
   ubtn(W*.32,H*.84,W*.24,H*.09,'DONE',back,Y);
