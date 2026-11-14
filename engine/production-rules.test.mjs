@@ -388,7 +388,7 @@ test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advan
   assert.match(source, /if\(a\.dogso\|\|a\.caution\)S\.pendingCard=\{player:a\.offender,card:1,goalExempt:!!a\.dogso\}/);
   assert.match(source, /if\(a\.dogso\|\|a\.caution\)issueAdvantageCaution\(a\.offender\)/);
   assert.match(source, /function issueAdvantageCaution\(p\)/);
-  assert.match(source, /goal=function\(dr\)\{S\.pendingCard=null;/);
+  assert.match(source, /goal=function\(dr\)\{if\(S\.pendingCard\)\{if\(!S\.pendingCard\.goalExempt\)issueAdvantageCaution/);
 });
 
 test("Law 12 advantage is resolved before period end and before a subsequent whistle", () => {
