@@ -46,11 +46,12 @@ test('a restart kicker second contact is only detected when the ball is physical
   assert.equal(law.isRestartKickerSecondContact({ isRestartKicker: true, approaching: undefined }), false);
 });
 
-test('Law 14 accidental double touch retakes a scored penalty and awards an indirect free kick otherwise', () => {
+test('Law 14 accidental double touch retakes a scored penalty or a no-goal kick when the goalkeeper also offends', () => {
   assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: false, goalScored: false }), 'continue');
   assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: true, goalScored: true }), 'retake');
   assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: true, goalScored: false }), 'indirect-free-kick');
-  assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: false, completed: true, goalScored: true }), 'continue');
+  assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: true, completed: true, goalScored: false, goalkeeperOffence: true }), 'retake');
+  assert.equal(law.penaltyAccidentalDoubleTouchDecision({ doubleTouch: false, completed: true, goalScored: true, goalkeeperOffence: true }), 'continue');
 });
 
 test('a goalkeeper catch ends the kick but a parry leaves it live', () => {
