@@ -1004,7 +1004,8 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
 function outOfPlay(){
   if(S.adv){const a=S.adv;S.adv=null;a.fn();return;}      // ball died during advantage: take the foul
   const b=ball,lt=b.last?b.last.team:0;
-  if(b.x<PX0-BR||b.x>PX1+BR){
+  const boundary=PITCH11Law.firstOutBoundary({previousX:b.px,previousY:b.py,currentX:b.x,currentY:b.y,left:PX0,right:PX1,top:PY0,bottom:PY1,radius:BR});
+  if(boundary==='goal-line'){
     const left=b.x<PX0,def=(dirOf(0)>0)===left?0:1;
     const crossingY=PITCH11Law.goalLineCrossingY({previousX:b.px,previousY:b.py,currentX:b.x,currentY:b.y,goalLine:left?PX0:PX1,direction:left?-1:1,radius:BR});
     if(lt===def){const cx=left?PX0+3:PX1-3,cy=crossingY<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=PITCH11Law.cornerKickOpponentClearance({ballOffsetX:3,ballOffsetY:3,arcRadius:10,requiredDistance:91.5});}
