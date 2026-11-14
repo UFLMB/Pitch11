@@ -507,7 +507,7 @@
     if (e.footwear !== true) missing.push('footwear');
     if (e.dangerousEquipment === true) missing.push('dangerous-equipment');
     if (e.uncoveredJewellery === true) missing.push('uncovered-jewellery');
-    if (e.playerElectronicEquipment === true) missing.push('electronic-equipment');
+    if (e.playerElectronicCommunicationEquipment === true) missing.push('electronic-communication-equipment');
     return missing;
   }
 
