@@ -717,5 +717,7 @@ test('Law 10 records a shoot-out kicker second touch after an intervening goalke
   };
   assert.equal(law.shootoutDecision({ ...base, deliberateDoubleTouch: true }), 'miss');
   assert.equal(law.shootoutDecision({ ...base, doubleTouch: true }), 'retake',
-    'the separate accidental double-touch exception is preserved');
+    'an immediate accidental double touch retains the retake exception');
+  assert.equal(law.shootoutDecision({ ...base, deliberateDoubleTouch: true, doubleTouch: true }), 'miss',
+    'a later deliberate second touch is not treated as accidental');
 });
