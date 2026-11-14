@@ -77,7 +77,7 @@ test("offside exemptions are limited to throw-ins, corners and goal kicks", () =
 });
 
 test("opponents stay two metres from a throw-in", () => {
-  assert.match(source, /\{ko:91\.5,throw:20,gk:91\.5,drop:40\}/);
+  assert.match(source, /\{ko:91\.5,throw:20,gk:0,drop:40\}/);
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
@@ -205,8 +205,8 @@ test("dropped balls use the defending goalkeeper inside a penalty area and prese
 });
 
 
-test("goal-kick opponents are kept outside the penalty area and at least 9.15m from the ball", () => {
-  assert.ok(source.includes("gk:91.5"));
+test("goal-kick opponents are kept outside the penalty area without an extra 9.15m restriction", () => {
+  assert.ok(source.includes("gk:0"));
   assert.ok(source.includes("PITCH11Law.goalKickOpponentPosition("));
   assert.ok(source.includes("penaltyDepth:PEN_DEPTH"));
   assert.ok(source.includes("halfWidth:PEN_WIDTH/2"));
