@@ -15,28 +15,40 @@ test("FC and eFootball presets use valid in-screen edge offsets", () => {
   assert.match(match[1], /efoot:\[\[/);
 });
 
-test("syncLayout clamps action buttons and joystick to safe screen bounds", () => {
+test("syncLayout clamps action buttons and delegates joystick bounds", () => {
   const start = html.indexOf("function syncLayout()");
-  const end = html.indexOf("\nconst _dc10", start);
+  const end = html.indexOf("\nfunction clampJoyLayout()", start);
   assert.ok(start >= 0 && end > start, "syncLayout function must exist");
   const source = html.slice(start, end);
   assert.match(source, /const r=b\.m\*u,pad=Math\.max\(8,r\*0\.35\)/);
   assert.match(source, /b\.dx=\(W-x\)\/u;b\.dy=\(H-y\)\/u/);
-  assert.match(source, /G\.joy\[0\]=minX<=maxX\?clamp/);
-  assert.match(source, /G\.joy\[1\]=minY<=maxY\?clamp/);
+  assert.match(source, /clampJoyLayout\(\)/);
+  const joyStart = end + 1;
+  const joyEnd = html.indexOf("\n}", joyStart);
+  assert.ok(joyEnd > joyStart, "joystick clamp helper must exist");
+  const joySource = html.slice(joyStart, joyEnd);
+  assert.match(joySource, /G\.joy\[0\]=minX<=maxX\?clamp/);
+  assert.match(joySource, /G\.joy\[1\]=minY<=maxY\?clamp/);
 });
 
-test("layout editor previews the joystick and constrains drags to the viewport", () => {
+test("active layout editor previews the joystick and constrains drags", () => {
   const start = html.indexOf("let layoutDrag=null,layoutSel=0;");
   const end = html.indexOf("/* ---------- cheat sheet", start);
-  assert.ok(start >= 0 && end > start, "layout editor block must exist");
+  assert.ok(start >= 0 && end > start, "layout pointer handling must exist");
   const source = html.slice(start, end);
-  assert.match(source, /drawJoy\(jx,jy,jr,jx,jy,jr\*0\.42,false\)/);
   assert.match(source, /layoutDrag=\{i,pid:e\.pointerId\}/);
   assert.match(source, /e\.pointerId!==layoutDrag\.pid/);
   assert.match(source, /clamp\(e\.clientX,r\+pad,W-r-pad\)/);
   assert.match(source, /clamp\(e\.clientY,r\+pad,H-r-pad\)/);
   assert.match(source, /addEventListener\('pointercancel',endLayoutDrag\)/);
+
+  const activeStart = html.lastIndexOf("MS.layout=function()");
+  const activeEnd = html.indexOf("/* ===================== 20.", activeStart);
+  assert.ok(activeStart >= 0 && activeEnd > activeStart, "active layout editor must exist");
+  const active = html.slice(activeStart, activeEnd);
+  assert.match(active, /drawJoy\(jx,jy,jr,jx,jy,jr\*0\.42,false\)/);
+  assert.match(active, /JOYSTICK PREVIEW/);
+  assert.match(active, /clampJoyLayout\(\);save\(\)/);
 });
 
 test("swipe-anywhere starts from the real pointer and uses shared cancellation handling", () => {
