@@ -424,7 +424,7 @@ test("Laws 15 and 16 allow normal restart time before a referee-signalled five-s
 
 
 test("Law 17 keeps opponents 9.15 m from the corner arc at normal, delayed and goalkeeper-sanction corners", () => {
-  assert.equal((source.match(/PITCH11Law\\.cornerKickOpponentClearance\\(/g)||[]).length,3);
+  assert.equal(source.split("PITCH11Law.cornerKickOpponentClearance(").length - 1, 3);
   assert.match(source, /ballOffsetX:3,ballOffsetY:3,arcRadius:10,requiredDistance:91\.5/);
 });
 
