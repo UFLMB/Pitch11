@@ -46,7 +46,7 @@ test("active layout editor previews the joystick and constrains drags", () => {
   const activeEnd = html.indexOf("/* ===================== 20.", activeStart);
   assert.ok(activeStart >= 0 && activeEnd > activeStart, "active layout editor must exist");
   const active = html.slice(activeStart, activeEnd);
-  assert.match(active, /drawJoy\(jx,jy,jr,jx,jy,jr\*0\.42,false\)/);
+  assert.match(active, /drawJoy\\(jx,jy,jr,jx,jy,H\\*0\\.045,false\\)/);
   assert.match(active, /JOYSTICK/);
   assert.match(active, /clampJoyLayout\(\);save\(\)/);
 });
