@@ -116,7 +116,7 @@ test("Law 10 immediately records an accidental shoot-out double touch as missed 
 });
 
 test("goal-line versus touchline restarts are classified after full crossing", () => {
-  assert.match(source, /if\(b\.x<PX0-BR\|\|b\.x>PX1\+BR\)\{/);
+  assert.match(source, /const boundary=PITCH11Law\.firstOutBoundary\(\{previousX:b\.px,previousY:b\.py,currentX:b\.x,currentY:b\.y,left:PX0,right:PX1,top:PY0,bottom:PY1,radius:BR\}\);[\s\S]*?if\(boundary===['"]goal-line['"]\)\{/);
 });
 
 test("offside position is recorded for shots as well as passes", () => {

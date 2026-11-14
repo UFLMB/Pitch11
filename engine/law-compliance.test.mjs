@@ -712,3 +712,16 @@ test('DOGSO rejects invalid player counts and negative lateral distances', () =>
   assert.equal(law.dogsoOpportunity({ ...base, lateralDistance: NaN }), false);
   assert.equal(law.dogsoOpportunity({ ...base, attackersAhead: undefined }), false);
 });
+
+
+test('Law 9 chooses the boundary crossed first when a fast diagonal ball crosses both lines in one step', () => {
+  const base = { previousX: 90, previousY: 90, currentX: 112, currentY: 112,
+    left: 0, right: 100, top: 0, bottom: 100, radius: 2 };
+  assert.equal(law.firstOutBoundary(base), 'goal-line',
+    'the whole ball reaches the goal line before the touchline');
+  assert.equal(law.firstOutBoundary({ ...base, previousX: 99, previousY: 80,
+    currentX: 103, currentY: 120 }), 'touchline',
+    'the whole ball reaches the touchline first');
+  assert.equal(law.firstOutBoundary({ ...base, currentX: 102.01, currentY: 90 }), 'goal-line');
+  assert.equal(law.firstOutBoundary({ ...base, currentX: 90, currentY: 102.01 }), 'touchline');
+});
