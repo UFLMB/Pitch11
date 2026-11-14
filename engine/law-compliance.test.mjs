@@ -32,6 +32,7 @@ test('Law 10 retakes an accidental shoot-out double touch only when the ball ent
 
 test('outfield handball is disabled and restart second touches remain indirect free kicks', () => {
   assert.equal(law.restartSecondTouchRestart({ isKicker: true }), 'indirect-free-kick');
+  assert.equal(law.restartSecondTouchRestart({ isKicker: true, restartKind: 'drop' }), 'continue', 'a dropped-ball recipient may dribble');
   assert.equal(law.restartSecondTouchRestart({ isKicker: false }), 'continue');
   assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: true }), 'indirect-free-kick');
   assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: false }), 'indirect-free-kick');
