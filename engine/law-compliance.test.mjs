@@ -339,6 +339,13 @@ test('Law 17 places a delayed-goal-kick corner nearest the original goal-line cr
   assert.equal(law.goalKickDelayCornerY({ crossingY: NaN, topY: 0, bottomY: 100 }), 100);
 });
 
+test('Law 17 interpolates the whole-ball goal-line crossing point in both directions', () => {
+  assert.equal(law.goalLineCrossingY({ previousX: 90, previousY: 40, currentX: 110, currentY: 80, goalLine: 100, direction: 1, radius: 2 }), 64);
+  assert.equal(law.goalLineCrossingY({ previousX: 110, previousY: 40, currentX: 90, currentY: 80, goalLine: 100, direction: -1, radius: 2 }), 64);
+  assert.equal(law.goalLineCrossingY({ previousX: 90, previousY: 40, currentX: 110, currentY: 80, goalLine: 100, direction: 1, radius: 0 }), 60);
+  assert.equal(law.goalLineCrossingY({ previousX: 100, previousY: 40, currentX: 100, currentY: 80, goalLine: 100, direction: 1, radius: 2 }), 80);
+});
+
 
 test('Law 13 moves an attacking indirect free kick out of the opponents goal area', () => {
   const decide = state => ({ ...law.freeKickGoalAreaPosition(state) });
