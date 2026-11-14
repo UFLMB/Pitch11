@@ -1003,10 +1003,11 @@ function spot(team,x,y,gk,faceTo,kind){                    // place the nearest 
 function outOfPlay(){
   if(S.adv){const a=S.adv;S.adv=null;a.fn();return;}      // ball died during advantage: take the foul
   const b=ball,lt=b.last?b.last.team:0;
+  const crossingY=b.y;
   if(b.x<PX0-BR||b.x>PX1+BR){
     const left=b.x<PX0,def=(dirOf(0)>0)===left?0:1;       // team defending that goal
     if(lt===def){const cx=left?PX0+3:PX1-3,cy=b.y<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=91.5;}
-    else spot(def,left?PX0+40:PX1-40,CY,true,left?0:Math.PI,'gk');
+    else {spot(def,left?PX0+40:PX1-40,CY,true,left?0:Math.PI,'gk');S.rs.goalLineCrossY=crossingY;}
   }else{
     const x=clamp(b.x,PX0+12,PX1-12),y=b.y<CY?PY0-4:PY1+4;
     spot(1-lt,x,y,false,Math.atan2(CY-y,(CX-x)*0.3),'throw');
@@ -5395,7 +5396,7 @@ update=function(){
   if(decision!=='opponent-corner')return;
   const gx=dirOf(team)>0?PX0:PX1,cx=gx===PX0?PX0+3:PX1-3;
   const topY=PY0+3,bottomY=PY1-3;
-  const cy=PITCH11Law.goalKickDelayCornerY({restartY:rs.y,topY,bottomY});
+  const cy=PITCH11Law.goalKickDelayCornerY({crossingY:rs.goalLineCrossY,topY,bottomY});
   spot(1-team,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');
   S.rs.box=true;S.rs.r=91.5;
   msg('DELAYED GOAL KICK','CORNER KICK',2);
