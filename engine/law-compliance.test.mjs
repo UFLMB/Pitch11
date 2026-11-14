@@ -347,6 +347,13 @@ test('Law 17 interpolates the whole-ball goal-line crossing point in both direct
   assert.equal(law.goalLineCrossingY({ previousX: 100, previousY: 40, currentX: 100, currentY: 80, goalLine: 100, direction: 1, radius: 2 }), 80);
 });
 
+test('Law 15 interpolates the whole-ball touchline crossing point at the top and bottom touchlines', () => {
+  assert.equal(law.touchlineCrossingX({ previousX: 40, previousY: 90, currentX: 80, currentY: 110, touchline: 100, direction: 1, radius: 2 }), 64);
+  assert.equal(law.touchlineCrossingX({ previousX: 40, previousY: 10, currentX: 80, currentY: -10, touchline: 0, direction: -1, radius: 2 }), 64);
+  assert.equal(law.touchlineCrossingX({ previousX: 40, previousY: 90, currentX: 80, currentY: 110, touchline: 100, direction: 1, radius: 0 }), 60);
+  assert.equal(law.touchlineCrossingX({ previousX: 40, previousY: 100, currentX: 80, currentY: 100, touchline: 100, direction: 1, radius: 2 }), 80);
+});
+
 
 test('Law 13 moves an attacking indirect free kick out of the opponents goal area', () => {
   const decide = state => ({ ...law.freeKickGoalAreaPosition(state) });
