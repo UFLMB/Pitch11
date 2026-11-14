@@ -506,7 +506,7 @@
     if (e.shinguards !== true || e.shinguardsCovered !== true) missing.push('shinguards');
     if (e.footwear !== true) missing.push('footwear');
     if (e.dangerousEquipment === true) missing.push('dangerous-equipment');
-    if (e.uncoveredJewellery === true) missing.push('uncovered-jewellery');
+    if (e.uncoveredAccessories === true) missing.push('uncovered-accessories');
     if (e.playerElectronicCommunicationEquipment === true) missing.push('electronic-communication-equipment');
     return missing;
   }
