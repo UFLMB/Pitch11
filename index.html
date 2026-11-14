@@ -284,7 +284,8 @@ function kick(p,vx,vy,vz,spin,rcv,tx,ty,mode){
   b.protect=0;b.gkHold=0;b.gkReleasedBy=PITCH11Law.goalkeeperReleaseMarker(p,b.gkHoldActive);b.gkHoldActive=false;b.gkHoldWarned=false;b.gkHoldShown=0;
   b.gkNoHands=p.gk?null:(rcv&&rcv.gk&&rcv.team===p.team?p.team:null);b.gkNoHandsFrom=b.gkNoHands===null?null:p;
   b.owner=null;b.last=p;b.vx=vx;b.vy=vy;b.vz=vz;b.spin=spin||0;b.receiver=rcv||null;b.tx=tx||0;b.ty=ty||0;b.pmode=mode||'';
-  p.face=a;p.kcd=0.35;p.poss=0;
+  p.face=a;p.kcd=(S.so&&S.so.live&&p===S.so.shooter)?0:0.35;p.poss=0;
+  if(S.so&&S.so.live&&p===S.so.shooter)S.so.kickAt=S.so.t;
 }
 function doShoot(p,power,ang,lift,em){
   const pen=!!(S.rs&&S.rs.kind==='pen');
@@ -500,11 +501,12 @@ function touches(){                                        // a free ball is pic
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9,secondTouchCandidate=null,secondTouchScore=-1e9;
   for(const p of P){
-    if(p.gk||p.out||p.substitutionExiting||p.kcd>0||p.stun>0)continue;
+    const shootoutKicker=!!(S.so&&S.so.live&&p===S.so.shooter);
+    if(p.gk||p.out||p.substitutionExiting||(p.kcd>0&&!shootoutKicker)||p.stun>0)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
-    if(S.so&&S.so.live&&p===S.so.shooter){
+    if(shootoutKicker){
       if(s>secondTouchScore){secondTouchScore=s;secondTouchCandidate=p;}
       continue;
     }
@@ -515,7 +517,8 @@ function touches(){                                        // a free ball is pic
   // by that same player is still an offence even when the ball has stopped moving.
   if(secondTouchCandidate&&secondTouchScore>bs){
     if(S.so&&S.so.live&&secondTouchCandidate===S.so.shooter){
-      if(b.last===secondTouchCandidate)b.shootoutDoubleTouch=true;
+      const accidental=b.last===secondTouchCandidate&&Number.isFinite(S.so.kickAt)&&S.so.t-S.so.kickAt<=0.25;
+      if(accidental)b.shootoutDoubleTouch=true;
       else b.shootoutDeliberateDoubleTouch=true;
       best=secondTouchCandidate;bs=secondTouchScore;
     }else if(b.pen&&!b.penaltyWasShootout&&secondTouchCandidate===b.penaltyKicker){
@@ -1044,6 +1047,7 @@ function freeKick(t,x,y,ind){
 }
 function setupPen(t,sh,so){                                // everyone else waits outside the box (or at the halfway line in a shootout)
   const d=dirOf(t),gx=d>0?PX1:PX0,sx=gx-d*110,lx=so?CX:gx-d*205;let k=0;
+  if(so&&S.so)S.so.kickAt=null;
   for(const p of P){
     p.vx=p.vy=p.ix=p.iy=0;p.dive=0;p.stun=p.kcd=p.freeze=0;p.force=false;p.down=false;
     if(p.out||p===sh)continue;
@@ -3428,7 +3432,7 @@ function bodyCollide(){                                    // the ball bounces o
   const b=ball;if(b.owner||b.z>16||H>W)return;
   for(const p of P){
     if(p.out||p.substitutionExiting)continue;
-    if(p===b.last&&p.kcd>0.1)continue;
+    if(p===b.last&&p.kcd>0.1&&!(S.so&&S.so.live&&p===S.so.shooter))continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
@@ -3439,7 +3443,8 @@ function bodyCollide(){                                    // the ball bounces o
       approaching:true
     })){
       if(shootoutKickerContact){
-        if(b.last===p)b.shootoutDoubleTouch=true;
+        const accidental=b.last===p&&Number.isFinite(S.so.kickAt)&&S.so.t-S.so.kickAt<=0.25;
+        if(accidental)b.shootoutDoubleTouch=true;
         else b.shootoutDeliberateDoubleTouch=true;
       }else if(ball.pen&&!ball.penaltyWasShootout&&p===ball.penaltyKicker)ball.penaltyDoubleTouch=true;
       else if(!ball.pen&&!S.so)b.restartDoubleTouchPending={player:p,x:b.x,y:b.y,kind:b.dblKind};
