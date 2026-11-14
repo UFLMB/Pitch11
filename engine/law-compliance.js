@@ -379,8 +379,8 @@
 
   function goalKickDelayCornerY(state) {
     const s = state || {};
-    if (![s.restartY, s.topY, s.bottomY].every(Number.isFinite)) return s.bottomY;
-    return Math.abs(s.restartY - s.topY) <= Math.abs(s.restartY - s.bottomY) ? s.topY : s.bottomY;
+    if (![s.crossingY, s.topY, s.bottomY].every(Number.isFinite)) return s.bottomY;
+    return Math.abs(s.crossingY - s.topY) <= Math.abs(s.crossingY - s.bottomY) ? s.topY : s.bottomY;
   }
 
   function freeKickGoalAreaPosition(state) {

@@ -406,8 +406,10 @@ test("Laws 15 and 16 allow normal restart time before a referee-signalled five-s
 });
 
 
-test("Law 16 chooses the delayed-goal-kick corner from the original restart position", () => {
-  assert.match(source, /PITCH11Law\.goalKickDelayCornerY\(\{restartY:rs\.y,topY,bottomY\}\)/);
+test("Law 17 uses the goal-line crossing point for a delayed-goal-kick corner", () => {
+  assert.match(source, /const crossingY=b\.y/);
+  assert.match(source, /S\.rs\.goalLineCrossY=crossingY/);
+  assert.match(source, /PITCH11Law\.goalKickDelayCornerY\(\{crossingY:rs\.goalLineCrossY,topY,bottomY\}\)/);
 });
 
 
