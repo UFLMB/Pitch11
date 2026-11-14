@@ -139,10 +139,7 @@
   function restartSecondTouchRestart(state) {
     const s = state || {};
     if (s.isKicker !== true) return 'continue';
-    if (s.handball === true) {
-      if (s.goalkeeper === true && s.insideOwnPenaltyArea === true) return 'indirect-free-kick';
-      return s.insideOwnPenaltyArea === true ? 'penalty' : 'direct-free-kick';
-    }
+    // Outfield handball is intentionally disabled in PITCH 11; a second touch remains an indirect-free-kick offence.
     return 'indirect-free-kick';
   }
 
