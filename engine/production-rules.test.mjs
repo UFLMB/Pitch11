@@ -204,6 +204,26 @@ test("goal-kick opponents are kept outside the penalty area and at least 9.15m f
   assert.ok(source.includes("halfWidth:PEN_WIDTH/2"));
 });
 
+test("outfield handball is disabled and never upgrades a restart second-touch offence", () => {
+  const context = {};
+  vm.runInNewContext(lawSource, context, { filename: "law-compliance.js" });
+  const law = context.PITCH11Law;
+  assert.ok(law, "Law 12/13 rule helpers must be exposed");
+  assert.equal(law.restartSecondTouchRestart({
+    isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: true
+  }), "indirect-free-kick");
+  assert.equal(law.restartSecondTouchRestart({
+    isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: false
+  }), "indirect-free-kick");
+  assert.equal(law.restartSecondTouchRestart({
+    isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: false
+  }), "indirect-free-kick");
+  assert.equal(law.restartSecondTouchRestart({ isKicker: false, handball: true }), "continue");
+  assert.doesNotMatch(source, /Second-touch handball offence/);
+  assert.match(source, /Second-touch offence/);
+  assert.doesNotMatch(source, /isKicker:true,handball:!!byHand/);
+});
+
 test("goalkeeper handball outside the penalty area awards a direct free kick at the contact point", () => {
   assert.ok(source.includes("const insideArea=(b.x-gx)*d>=0"));
   assert.ok(source.includes("whistleStop(1.4,label,'Goalkeeper handled the ball illegally',()=>freeKick(1-keeper.team,x,y,handlingRestart==='indirect-free-kick'))"));
