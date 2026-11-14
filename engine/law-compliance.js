@@ -169,7 +169,8 @@
 
   function restartSecondTouchRestart(state) {
     const s = state || {};
-    if (s.isKicker !== true) return 'continue';
+    if (s.isKicker !== true || s.restartKind === 'drop') return 'continue';
+    // A dropped-ball recipient may play the ball repeatedly; other restart kickers may not touch it again first.
     // Outfield handball is intentionally disabled in PITCH 11; a second touch remains an indirect-free-kick offence.
     return 'indirect-free-kick';
   }
