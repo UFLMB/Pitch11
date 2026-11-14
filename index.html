@@ -5632,11 +5632,16 @@ injured=function(q){
 
 /* --- IFAB Law 14 (2026/27): accidental penalty-kicker double touch --- */
 function resolveAccidentalPenaltyDoubleTouch(goalScored){
+  const goalkeeperOffence=!!ball.penaltyKeeperOffLine;
   const decision=PITCH11Law.penaltyAccidentalDoubleTouchDecision({
-    doubleTouch:ball.penaltyDoubleTouch,completed:true,goalScored:!!goalScored
+    doubleTouch:ball.penaltyDoubleTouch,completed:true,goalScored:!!goalScored,goalkeeperOffence
   });
   if(decision==='continue')return false;
   const team=ball.penaltyTeam,kicker=ball.penaltyKicker,x=ball.x,y=ball.y;
+  if(decision==='retake'&&!goalScored&&goalkeeperOffence){
+    retakePenaltyForKeeperOffence();
+    return true;
+  }
   clearPenaltyLineState();
   if(decision==='retake'){
     S.penaltyRetake=true;
