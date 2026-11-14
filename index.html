@@ -1018,7 +1018,12 @@ function outOfPlay(){
 }
 function dropBall(t,recipientTeam){
   const x=clamp(ball.x,PX0+BR+0.1,PX1-BR-0.1),y=clamp(ball.y,PY0+BR+0.1,PY1-BR-0.1);
-  const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t,possessionTeam:recipientTeam});
+  const inferredTeam=recipientTeam??(ball.owner&&[0,1].includes(ball.owner.team)?ball.owner.team:PITCH11Law.predictedRestartTeam({
+    x:ball.x,y:ball.y,vx:ball.vx,vy:ball.vy,z:ball.z,vz:ball.vz,gravity:BALL_GRAV,
+    left:PX0,right:PX1,top:PY0,bottom:PY1,radius:BR,centerY:CY,goalHalfWidth:GOALH,goalHeight:GOALZ,
+    lastTouchedTeam:t,directions:[dirOf(0),dirOf(1)]
+  }));
+  const recipient=PITCH11Law.droppedBallRecipient({x,y,left:PX0,right:PX1,centerY:CY,penaltyDepth:PEN_DEPTH,penaltyHalfWidth:PEN_WIDTH/2,directions:[dirOf(0),dirOf(1)],lastTouchedTeam:t,possessionTeam:inferredTeam});
   const keeper=GK[recipient.team],useKeeper=recipient.goalkeeper&&keeper&&!keeper.out&&!keeper.inj;
   spot(recipient.team,x,y,!!useKeeper,dirOf(recipient.team)>0?0:Math.PI,'drop');
   ball.dbl=null;ball.dblKind=null;ball.ind=true; // dropped-ball recipient may dribble, but a goal still needs another player's touch
