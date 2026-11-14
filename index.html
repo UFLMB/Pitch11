@@ -3447,6 +3447,10 @@ MS.adv=function(){
 MS.layout=function(){
   mt('LAYOUT EDITOR');mbk();
   const u=H*0.09,lab=GLAB[GS.att?'att':'def'];
+  // Show the joystick at its real gameplay position while editing the button layout.
+  ctx.save();ctx.globalAlpha=0.72;
+  drawJoy(W*G.joy[0],H*G.joy[1],H*0.11,W*G.joy[0],H*G.joy[1],H*0.045,false);
+  ctx.restore();
   for(let i=0;i<4;i++){
     const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
     ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
