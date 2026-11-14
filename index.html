@@ -3256,17 +3256,37 @@ addEventListener('pointercancel',endLayoutDrag);
 
 /* ---------- cheat sheet + training screens ---------- */
 MS.cheat=function(){
-  mt('CONTROLS');mbk();
-  const rows=[
-    ['LEFT SIDE / JOYSTICK','move, aim, sprint'],
-    ['SHOOT','hold to charge, release to fire'],
-    ['PASS','tap / swipe for variants'],
-    ['THROUGH','tap / swipe for through balls'],
-    ['SPRINT','hold; swipe = skill move'],
-    ['SWITCH','tap during play; slide to tackle'],
-    ['FAKE SHOT','swipe back while charging shoot']
+  mt('CONTROL GUIDE');mbk();
+  const panelY=H*.17,panelH=H*.69;
+  gpanel(W*.045,panelY,W*.56,panelH,'MOVEMENT & ATTACK');
+  gpanel(W*.625,panelY,W*.33,panelH,'DEFENDING');
+  const left=W*.075,top=H*.245;
+  txt('LEFT JOYSTICK',left,top,H*.034,'#8de7ff',800);
+  txt('Move in any direction. Push farther for faster movement.',left,top+H*.055,H*.027,'#dfe7ee',600);
+  const attack=[
+    ['THROUGH','Tap: through ball  ·  Swipe ↑ lob  ↓ driven  ← / → curl'],
+    ['SHOOT','Hold: charge  ·  Swipe ↑ chip  ↓ driven  ← finesse  → power'],
+    ['PASS','Tap: pass  ·  Swipe ↑ lob  ↓ driven  ← / → wall pass'],
+    ['SPRINT','Hold: sprint  ·  Swipe: skill move  ·  Double tap: knock-on']
   ];
-  rows.forEach((r,i)=>mtx((i+1)+'. '+r[0]+'  —  '+r[1],.3+i*.07,'#dfe7ee',.034));
+  attack.forEach((r,i)=>{
+    const y=H*(.405+i*.105);
+    txt(r[0],left,y,H*.03,'#ffe36a',800);
+    fit(r[1],W*.335,y,W*.49,H*.026,'#dfe7ee','left');
+  });
+  const right=W*.655,def=[
+    ['2ND PRESS','Tap to call a teammate to press'],
+    ['SLIDE','Tap to attempt a slide tackle'],
+    ['SWITCH','Tap to change the controlled player'],
+    ['SPRINT + TACKLE','Hold to sprint; tap to tackle']
+  ];
+  def.forEach((r,i)=>{
+    const y=H*(.27+i*.135);
+    txt(r[0],right,y,H*.03,'#ffe36a',800);
+    fit(r[1],right,y+H*.05,W*.27,H*.026,'#dfe7ee','left');
+  });
+  txt('The four right-side buttons change labels automatically when possession changes.',W*.5,H*.82,H*.026,'#9fb0c0',600);
+  txt('Swipe Anywhere is optional and can be enabled in Advanced settings.',W*.5,H*.87,H*.026,'#9fb0c0',600);
 };
 MS.train=function(){
   mt('TRAINING');mbk();
