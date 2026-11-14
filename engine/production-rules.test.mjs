@@ -107,6 +107,14 @@ test("penalty shootouts use the isolated whole-ball law decision helper", () => 
   assert.match(source, /const ballBeyondLine=/);
 });
 
+test("Law 10 immediately records an accidental shoot-out double touch as missed unless it entered the goal", () => {
+  const rules = source.match(/function soRules\(\)\{[\s\S]*?\n\}/);
+  assert.ok(rules);
+  assert.match(rules[0], /doubleTouch:ball\.shootoutDoubleTouch/);
+  assert.match(rules[0], /if\(decision==='retake'\)\{?soRetake\(\)/);
+  assert.match(rules[0], /if\(decision==='miss'\)\{?soResult\(false\)/);
+});
+
 test("goal-line versus touchline restarts are classified after full crossing", () => {
   assert.match(source, /if\(b\.x<PX0-BR\|\|b\.x>PX1\+BR\)\{/);
 });

@@ -15,7 +15,12 @@
       Math.abs(b.y - state.centerY) <= state.goalHalfWidth - state.radius &&
       b.z <= state.goalHeight - state.radius;
 
-    if (crossedTarget && insideFrame) return state.doubleTouch === true ? 'retake' : 'goal';
+    if (state.doubleTouch === true) {
+      // IFAB 2026/27 Law 10: accidental double touch retakes only if the ball
+      // enters the goal; otherwise the kick is immediately recorded as missed.
+      return crossedTarget && insideFrame ? 'retake' : 'miss';
+    }
+    if (crossedTarget && insideFrame) return 'goal';
 
     const out =
       b.x < state.left - state.radius ||
