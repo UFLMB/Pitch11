@@ -1065,11 +1065,12 @@ function restartClamp(){                                   // defenders keep 9.1
   }
   if(rs.kind==='ko')for(const p of P){if(p===rs.p||p.out||p.substitutionExiting)continue;if(dirOf(p.team)>0){if(p.x>CX-2)p.x=CX-2;}else if(p.x<CX+2)p.x=CX+2;}   // all players except the kicker stay in their own half
   const R=rs.r??({ko:91.5,throw:20,gk:0,drop:40})[rs.kind];if(R===undefined)return;
-  const attackDirection=dirOf(rs.team),ownGoalLine=attackDirection>0?PX0:PX1;
+  const attackDirection=dirOf(rs.team),ownGoalLine=attackDirection>0?PX0:PX1,opponentGoalLine=attackDirection>0?PX1:PX0;
   const ownPenaltyRestart=rs.kind==='fk'&&(rs.x-ownGoalLine)*attackDirection>=0&&
     (rs.x-ownGoalLine)*attackDirection<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
+  const opponentPenaltyRestart=rs.kind==='fk'&&(rs.x-opponentGoalLine)*(-attackDirection)>=0&&
+    (rs.x-opponentGoalLine)*(-attackDirection)<=PEN_DEPTH&&Math.abs(rs.y-CY)<=PEN_WIDTH/2;
   for(const p of P){
-    const opponentGoalLine=attackDirection>0?PX1:PX0;
     const goalLineDistanceException=PITCH11Law.restartGoalLineDistanceExemption({
       restartKind:rs.kind,
       onOwnGoalLine:Math.abs(p.x-opponentGoalLine)<=4.5*PLAYER_SCALE,
@@ -1082,8 +1083,8 @@ function restartClamp(){                                   // defenders keep 9.1
       if(d<1e-6){const a=P.indexOf(p)*2.399963229728653;dx=Math.cos(a);dy=Math.sin(a);d=1;}
       p.x=rs.x+dx/d*R;p.y=rs.y+dy/d*R;p.vx=p.vy=0;
     }
-    if(rs.kind==='gk'||ownPenaltyRestart){
-      const gx=ownGoalLine,dir=attackDirection;
+    if(rs.kind==='gk'||ownPenaltyRestart||opponentPenaltyRestart){
+      const gx=opponentPenaltyRestart?opponentGoalLine:ownGoalLine,dir=opponentPenaltyRestart?-attackDirection:attackDirection;
       const legal=PITCH11Law.goalKickOpponentPosition({x:p.x,y:p.y,goalLine:gx,direction:dir,penaltyDepth:PEN_DEPTH,halfWidth:PEN_WIDTH/2,centerY:CY,clearance:12});
       if(legal.x!==p.x){p.x=legal.x;p.vx=0;}
     }
