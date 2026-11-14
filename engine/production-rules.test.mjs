@@ -347,6 +347,15 @@ test("Law 14 does not retake for an off-line goalkeeper touching a penalty that 
   assert.match(source, /if\(onTarget&&ball\.penaltyKeeperOffLine&&keeperTouched\)/);
 });
 
+test("Law 14 retakes an accidental double-touch penalty without a goal when the goalkeeper also offends", () => {
+  const resolver = html.match(/function resolveAccidentalPenaltyDoubleTouch\(goalScored\)\{[\s\S]*?\n\}/);
+  assert.ok(resolver);
+  assert.match(resolver[0], /const goalkeeperOffence=!!ball\.penaltyKeeperOffLine/);
+  assert.match(resolver[0], /goalkeeperOffence\s*\}/);
+  assert.match(resolver[0], /if\(decision==='retake'&&!goalScored&&goalkeeperOffence\)/);
+  assert.match(resolver[0], /retakePenaltyForKeeperOffence\(\)/);
+});
+
 test("Law 14 additional time waits for penalty completion and honours retakes", () => {
   assert.match(source, /const _endHalfPenaltyAddedTime=endHalf/);
   assert.match(source, /PITCH11Law\.penaltyAdditionalTimeDecision\(/);
