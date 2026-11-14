@@ -502,7 +502,7 @@ function touches(){                                        // a free ball is pic
   let best=null,bs=-1e9,secondTouchCandidate=null,secondTouchScore=-1e9;
   for(const p of P){
     const shootoutKicker=!!(S.so&&S.so.live&&p===S.so.shooter);
-    if(p.gk||p.out||p.substitutionExiting||(p.kcd>0&&!shootoutKicker)||p.stun>0)continue;
+    if((p.gk&&!shootoutKicker)||p.out||p.substitutionExiting||(p.kcd>0&&!shootoutKicker)||p.stun>0)continue;
     const d=Math.hypot(b.x-p.x,b.y-p.y),r=(p===b.receiver?TUNING.rcv.r:11)+(p.st.drib-0.65)*4+(air?3:0);
     if(d>=r)continue;
     const s=air?p.st.phys*8+p.st.def*2+(p===b.receiver?2:0)-d*0.4+rnd(0,6):-d+(p===b.receiver?TUNING.rcv.bonus:0);   // aerial duel: strength and timing win it; the intended receiver wins a ground 50/50
