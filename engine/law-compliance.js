@@ -248,7 +248,7 @@
 
   function timeLimitedSubstitutionExitDecision(state) {
     const s = state || {};
-    if (s.injuryPreventsExit || s.safetyPreventsExit || s.goalkeeperReplacement) return 'allow';
+    if (s.injuryPreventsExit || s.safetyPreventsExit) return 'allow';
     if (s.nearOrCrossingExit) return 'allow';
     if (!Number.isFinite(s.elapsedSeconds) || s.elapsedSeconds < 10) return 'wait';
     return 'delay-substitute';
@@ -258,12 +258,6 @@
     const s = state || {};
     return s.firstStoppage === true && s.playerExited === true &&
       Number.isFinite(s.elapsedSinceRestart) && s.elapsedSinceRestart >= 60 ? 'allow' : 'wait';
-  }
-
-  function goalkeeperSubstitutionDelayDecision(state) {
-    const s = state || {};
-    if (s.exceededTenSeconds !== true) return 'continue';
-    return s.alreadyCautioned === true ? 'send-off' : 'caution-and-replace';
   }
 
   function hasMinimumPlayers(players, team, minimum) {
@@ -564,5 +558,5 @@
       s.onOwnGoalLine === true && s.betweenPosts === true;
   }
 
-  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, goalkeeperSubstitutionDelayDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, cornerKickOpponentClearance, goalLineCrossingY, touchlineCrossingX, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, restartSecondTouchRestart, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, predictedRestartTeam, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, restartGoalLineDistanceExemption, droppedBallRecipient, goalKickOpponentPosition });
+  root.PITCH11Law = Object.freeze({ timeLimitedSubstitutionExitDecision, timeLimitedSubstitutionEntryDecision, offFieldTreatmentDecision, offFieldReturnDecision, playerEquipmentIssues, equipmentInspectionDecision, addedTimeSeconds, periodEndDecision, addedTimeClockLabel, dogsoOpportunity, offsideLineOfSightInterference, offsideChallengeInterference, secondLastOpponentPosition, isOffsidePosition, restartDelayDecision, goalKickDelayCornerY, cornerKickOpponentClearance, goalLineCrossingY, touchlineCrossingX, freeKickGoalAreaPosition, replacementGoalkeeper, penaltyAdditionalTimeDecision, penaltyShotOnTarget, penaltyKickDirectionLegal, penaltyAccidentalDoubleTouchDecision, isRestartKickerSecondContact, restartSecondTouchRestart, offsideTouchAction, goalkeeperPenaltyLineOffence, penaltyKeeperDecision, varReviewDecision, foulCardDecision, hasMinimumPlayers, matchAbandonmentDecision, isBeyond, shootoutDecision, shootoutExclusions, shootoutOrder, shootoutNextKicker, shootoutNextTeam, shootoutDirection, shootoutReplacementGoalkeeper, shootoutExcludedGoalkeeper, shootoutInjuryDecision, shootoutKickerGoalkeeperPosition, shootoutKeeperOffenceSanction, substitutionEligibility, goalkeeperHoldExpired, goalkeeperHoldSanction, goalkeeperHandControlDecision, refereeContactDecision, predictedRestartTeam, goalkeeperIllegalHandlingRestart, goalkeeperReleaseMarker, goalkeeperThrowGoalDecision, directRestartGoalDecision, restartGoalLineDistanceExemption, droppedBallRecipient, goalKickOpponentPosition });
 })(globalThis);

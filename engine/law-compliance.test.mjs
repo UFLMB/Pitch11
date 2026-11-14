@@ -482,12 +482,12 @@ test('Law 4 rejects dangerous, uncovered jewellery and player electronic equipme
 });
 
 
-test('Law 3 enforces the ten-second substitution exit deadline and its exceptions', () => {
+test('Law 3 enforces the ten-second substitution exit deadline for all players, including goalkeepers', () => {
   assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 9.99 }), 'wait');
   assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10 }), 'delay-substitute');
   assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, injuryPreventsExit: true }), 'allow');
   assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, safetyPreventsExit: true }), 'allow');
-  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, goalkeeperReplacement: true }), 'allow');
+  assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, goalkeeperReplacement: true }), 'delay-substitute');
   assert.equal(law.timeLimitedSubstitutionExitDecision({ elapsedSeconds: 10, nearOrCrossingExit: true }), 'allow');
 });
 

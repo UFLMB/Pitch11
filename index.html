@@ -1196,28 +1196,7 @@ function doSub(p,bn){
     msg('EQUIPMENT CHECK',PITCH11Law.equipmentInspectionDecision(incomingEquipment)==='remove-item'?'UNSAFE ITEM MUST BE REMOVED':'COMPULSORY KIT MUST BE REPLACED',2);return false;
   }
   const position={x:p.x,y:p.y},exit=substitutionExitTarget(p);
-  const exitSeconds=exit.distance/28;
   if(p.inj||p.safetyExitException){
-    if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
-    S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
-    return applySubstitution(p,bn,position);
-  }
-  if(p.gk&&bn.pos==='GK'&&exitSeconds>10){
-    const delayDecision=PITCH11Law.goalkeeperSubstitutionDelayDecision({
-      exceededTenSeconds:true,alreadyCautioned:p.yc>0
-    });
-    if(delayDecision==='send-off'){
-      p.yc++;giveCard(p,3);
-      if(PITCH11Law.matchAbandonmentDecision(P,t,7,!!S.so)==='abandon'){
-        S.forfeitTeam=t;S.mode='full';S.t=0;S.adv=null;S.rs=null;S.inj=null;
-        for(const q of P){q.ix=q.iy=0;q.sp=false;}
-        msg('MATCH ABANDONED',KIT[t].name+' has fewer than seven players',3);
-        return false;
-      }
-      msg('GOALKEEPER SENT OFF','Second caution for delaying the substitution',2);
-      return false;
-    }
-    p.yc++;giveCard(p,1);
     if(eligibility.consumesWindow){S.subWindows[t]++;S.subWindowUsed[t]=true;}
     S.subs[t]++;BENCH[t].splice(BENCH[t].indexOf(bn),1);
     return applySubstitution(p,bn,position);
