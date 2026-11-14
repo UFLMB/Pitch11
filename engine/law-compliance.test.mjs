@@ -718,5 +718,5 @@ test('Law 9 chooses the boundary crossed first when a fast diagonal ball crosses
     currentX: 103, currentY: 120 }), 'touchline',
     'the whole ball reaches the touchline first');
   assert.equal(law.firstOutBoundary({ ...base, currentX: 102.01, currentY: 90 }), 'goal-line');
-  assert.equal(law.firstOutBoundary({ ...base, currentX: 90, currentY: 102 }), 'touchline');
+  assert.equal(law.firstOutBoundary({ ...base, currentX: 90, currentY: 102.01 }), 'touchline');
 });
