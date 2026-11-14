@@ -1467,7 +1467,7 @@ function rebuildLines(){
   L.moveTo(CX+ARC_R,CY);L.arc(CX,CY,ARC_R,0,TAU);
   L.rect(PX0,CY-PEN_WIDTH/2,PEN_DEPTH,PEN_WIDTH);L.rect(PX1-PEN_DEPTH,CY-PEN_WIDTH/2,PEN_DEPTH,PEN_WIDTH);
   L.rect(PX0,CY-SIX_WIDTH/2,SIX_DEPTH,SIX_WIDTH);L.rect(PX1-SIX_DEPTH,CY-SIX_WIDTH/2,SIX_DEPTH,SIX_WIDTH);
-  const a=Math.acos(SIX_WIDTH/ARC_R);
+  const a=Math.acos((PEN_DEPTH-SPOT)/ARC_R);
   L.moveTo(PX0+SPOT+ARC_R*Math.cos(-a),CY+ARC_R*Math.sin(-a));L.arc(PX0+SPOT,CY,ARC_R,-a,a);
   L.moveTo(PX1-SPOT+ARC_R*Math.cos(Math.PI-a),CY+ARC_R*Math.sin(Math.PI-a));L.arc(PX1-SPOT,CY,ARC_R,Math.PI-a,Math.PI+a);
   L.moveTo(PX0+10,PY0);L.arc(PX0,PY0,10,0,Math.PI/2);
@@ -2167,7 +2167,7 @@ function rebuildPLN(){
   r(PX0,PY0,PX1,PY1);PLN.push([CX,PY0,CX,PY1]);ar(CX,CY,ARC_R,0,TAU,44);
   r(PX0,CY-PEN_WIDTH/2,PX0+PEN_DEPTH,CY+PEN_WIDTH/2);r(PX1-PEN_DEPTH,CY-PEN_WIDTH/2,PX1,CY+PEN_WIDTH/2);
   r(PX0,CY-SIX_WIDTH/2,PX0+SIX_DEPTH,CY+SIX_WIDTH/2);r(PX1-SIX_DEPTH,CY-SIX_WIDTH/2,PX1,CY+SIX_WIDTH/2);
-  const a=Math.acos(SIX_WIDTH/ARC_R);ar(PX0+SPOT,CY,ARC_R,-a,a,16);ar(PX1-SPOT,CY,ARC_R,Math.PI-a,Math.PI+a,16);
+  const a=Math.acos((PEN_DEPTH-SPOT)/ARC_R);ar(PX0+SPOT,CY,ARC_R,-a,a,16);ar(PX1-SPOT,CY,ARC_R,Math.PI-a,Math.PI+a,16);
   for(let i=0;i<420;i++)CROWD.push([PX0-80+Math.random()*(PW+160),Math.random(),CC[i%6]]);
 }
 function sortOrd(){for(let i=1;i<22;i++){const v=ORD[i];let j=i-1;while(j>=0&&ORD[j].y>v.y){ORD[j+1]=ORD[j];j--;}ORD[j+1]=v;}}
