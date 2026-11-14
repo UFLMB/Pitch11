@@ -481,7 +481,7 @@ test('Law 4 requires missing compulsory equipment to be replaced before entry', 
 test('Law 4 rejects dangerous or uncovered accessories and player electronic communication', () => {
   const unsafe = { ...completePlayerEquipment, dangerousEquipment: true,
     uncoveredAccessories: true, playerElectronicCommunicationEquipment: true };
-  assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-jewellery', 'electronic-communication-equipment']));
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-accessories', 'electronic-communication-equipment']));
   assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
 });
 
