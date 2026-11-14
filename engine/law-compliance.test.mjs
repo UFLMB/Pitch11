@@ -167,7 +167,7 @@ test('Law 9 stops play for referee contact only when possession changes, a promi
 test('Law 8 gives a referee-contact dropped ball to the team that would have received the out-of-play restart', () => {
   const base = { x: 50, y: 90, vx: 0, vy: 10, z: 0, vz: 0, gravity: 0, left: 0, right: 100, top: 0, bottom: 100, radius: 2, centerY: 50, goalHalfWidth: 8, goalHeight: 12, directions: [1, -1] };
   assert.equal(law.predictedRestartTeam({ ...base, lastTouchedTeam: 0 }), 1, 'throw-in goes to the opponents of the last touch');
-  assert.equal(law.predictedRestartTeam({ ...base, x: 90, y: 50, vx: 10, vy: 0, lastTouchedTeam: 0 }), 1, 'goal kick goes to the defending team');
+  assert.equal(law.predictedRestartTeam({ ...base, x: 90, y: 5, vx: 10, vy: 0, lastTouchedTeam: 0 }), 1, 'goal kick goes to the defending team');
   assert.equal(law.predictedRestartTeam({ ...base, x: 90, y: 5, vx: 10, vy: 0, lastTouchedTeam: 1 }), 0, 'corner goes to the attacking team after a defender last touched');
   assert.equal(law.predictedRestartTeam({ ...base, x: 90, y: 50, vx: 10, vy: 0, lastTouchedTeam: 0, goalHalfWidth: 20 }), null, 'a direct goal is not treated as an out-of-play restart');
   assert.equal(law.predictedRestartTeam({ ...base, vx: 0, vy: 0, lastTouchedTeam: 0 }), null);
