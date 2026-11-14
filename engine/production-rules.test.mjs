@@ -381,17 +381,19 @@ test("Law 14 applies the forward-kick requirement to shootouts without awarding 
 test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advantage is played", () => {
   assert.match(source, /attackersAhead=P\.filter/);
   assert.match(source, /const advantagePossible=!pen&&!hurt&&prog>0\.45/);
-  assert.match(source, /S\.adv=\{team:t,t:2\.5,fn,offender:p,dogso:advDogso\}/);
+  assert.match(source, /S\.adv=\{team:t,t:2\.5,fn,offender:p,dogso:advDogso,caution:deferCaution\}/);
   assert.doesNotMatch(source, /cardOnFailure/);
-  assert.match(source, /if\(a\.dogso\)S\.pendingCard=\{player:a\.offender,card:1\}/);
-  assert.match(source, /if\(a\.dogso\)issueAdvantageCaution\(a\.offender\)/);
+  assert.match(source, /const deferCaution=advantagePossible&&card===1/);
+  assert.match(source, /if\(S\.pendingCard\)\{if\(!S\.pendingCard\.goalExempt\)issueAdvantageCaution/);
+  assert.match(source, /if\(a\.dogso\|\|a\.caution\)S\.pendingCard=\{player:a\.offender,card:1,goalExempt:!!a\.dogso\}/);
+  assert.match(source, /if\(a\.dogso\|\|a\.caution\)issueAdvantageCaution\(a\.offender\)/);
   assert.match(source, /function issueAdvantageCaution\(p\)/);
-  assert.match(source, /goal=function\(dr\)\{S\.pendingCard=null;/);
+  assert.match(source, /goal=function\(dr\)\{if\(S\.pendingCard\)\{if\(!S\.pendingCard\.goalExempt\)issueAdvantageCaution/);
 });
 
 test("Law 12 advantage is resolved before period end and before a subsequent whistle", () => {
   assert.match(source, /if\(S\.adv\)\{S\.clock=plen\(\);return;\}/);
-  assert.match(source, /if\(S\.adv&&S\.adv\.dogso\)/);
+  assert.match(source, /if\(S\.adv&&\(S\.adv\.dogso\|\|S\.adv\.caution\)\)/);
   assert.match(source, /if\(S\.pendingCard\)\{issueAdvantageCaution/);
 });
 
