@@ -3689,7 +3689,9 @@ function refTick(){const R=REF,b=ball;if(!G.rf.show||S.mode==='menu'||S.mode==='
   const fa=(R.pose==='point'||R.pose==='pointC'||R.pose==='card'||R.pose==='wave')?R.pa:spd>10?Math.atan2(R.vy,R.vx):Math.atan2(b.y-R.y,b.x-R.x);
   R.face+=angd(fa,R.face)*Math.min(1,DT*(R.pose==='point'?9:6));
   if(G.rf.hit&&!(S.so&&S.so.live)&&!b.owner&&b.z<16&&R.hop<=0){const e=Math.hypot(b.x-R.x,b.y-R.y),sp=Math.hypot(b.vx,b.vy);
-    if(e<BR+4&&sp>90){const contactTeam=b.last&&b.last.team===1?1:0,recipientTeam=b.receiver&&(b.receiver.team===0||b.receiver.team===1)?b.receiver.team:contactTeam;
+    if(e<BR+4&&sp>90){const contactTeam=b.last&&b.last.team===1?1:0;
+       const predictedRestartTeam=PITCH11Law.predictedRestartTeam({x:b.x,y:b.y,vx:b.vx,vy:b.vy,z:b.z,vz:b.vz,gravity:BALL_GRAV,left:PX0,right:PX1,top:PY0,bottom:PY1,radius:BR,centerY:CY,goalHalfWidth:GOALH,goalHeight:GOALZ,lastTouchedTeam:contactTeam,directions:[dirOf(0),dirOf(1)]});
+       const recipientTeam=predictedRestartTeam===0||predictedRestartTeam===1?predictedRestartTeam:(b.receiver&&(b.receiver.team===0||b.receiver.team===1)?b.receiver.team:contactTeam);
       b.refContact={x:b.x,y:b.y,team:contactTeam,recipientTeam};
       const an=rnd(-.9,.9),c=Math.cos(an),s=Math.sin(an),nx=b.vx*c-b.vy*s;b.vy=(b.vx*s+b.vy*c)*.5;b.vx=nx*.5;b.vz=Math.max(b.vz,35);R.hop=.4;cm('The ball hits the referee!');}}
   if(!G.rf.adv&&S.adv&&S.mode==='play'){const ad=S.adv;S.adv=null;whistleStop(1.4,'FOUL','',ad.fn);}
