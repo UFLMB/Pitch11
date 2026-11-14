@@ -456,13 +456,17 @@ test('Law 7 displays 45+ and extra-time added-time clock labels', () => {
 const completePlayerEquipment = {
   shirtWithSleeves: true, shorts: true, socks: true,
   shinguards: true, shinguardsCovered: true, footwear: true,
-  dangerousEquipment: false, uncoveredJewellery: false,
-  playerElectronicEquipment: false
+  dangerousEquipment: false, uncoveredAccessories: false,
+  playerElectronicCommunicationEquipment: false,
+  approvedEPTS: false
 };
 
-test('Law 4 allows a player whose compulsory equipment is complete and safe', () => {
+test('Law 4 allows complete safe equipment and approved EPTS', () => {
   assert.equal(JSON.stringify(law.playerEquipmentIssues(completePlayerEquipment)), JSON.stringify([]));
   assert.equal(law.equipmentInspectionDecision(completePlayerEquipment), 'allow');
+  const withApprovedEPTS = { ...completePlayerEquipment, approvedEPTS: true };
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(withApprovedEPTS)), JSON.stringify([]));
+  assert.equal(law.equipmentInspectionDecision(withApprovedEPTS), 'allow');
 });
 
 test('Law 4 requires missing compulsory equipment to be replaced before entry', () => {
@@ -474,10 +478,10 @@ test('Law 4 requires missing compulsory equipment to be replaced before entry', 
   assert.equal(law.equipmentInspectionDecision(missingShinguards), 'replace-item');
 });
 
-test('Law 4 rejects dangerous, uncovered jewellery and player electronic equipment', () => {
+test('Law 4 rejects dangerous or uncovered accessories and player electronic communication', () => {
   const unsafe = { ...completePlayerEquipment, dangerousEquipment: true,
-    uncoveredJewellery: true, playerElectronicEquipment: true };
-  assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment']));
+    uncoveredAccessories: true, playerElectronicCommunicationEquipment: true };
+  assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify(['dangerous-equipment', 'uncovered-accessories', 'electronic-communication-equipment']));
   assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
 });
 

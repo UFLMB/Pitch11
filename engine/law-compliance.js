@@ -500,8 +500,8 @@
     if (e.shinguards !== true || e.shinguardsCovered !== true) missing.push('shinguards');
     if (e.footwear !== true) missing.push('footwear');
     if (e.dangerousEquipment === true) missing.push('dangerous-equipment');
-    if (e.uncoveredJewellery === true) missing.push('uncovered-jewellery');
-    if (e.playerElectronicEquipment === true) missing.push('electronic-equipment');
+    if (e.uncoveredAccessories === true) missing.push('uncovered-accessories');
+    if (e.playerElectronicCommunicationEquipment === true) missing.push('electronic-communication-equipment');
     return missing;
   }
 
@@ -509,7 +509,7 @@
     const issues = playerEquipmentIssues(equipment);
     if (!issues.length) return 'allow';
     return issues.some(issue => issue === 'dangerous-equipment' ||
-      issue === 'uncovered-jewellery' || issue === 'electronic-equipment')
+      issue === 'uncovered-accessories' || issue === 'electronic-communication-equipment')
       ? 'remove-item' : 'replace-item';
   }
 

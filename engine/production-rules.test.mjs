@@ -17,8 +17,8 @@ test("Law 4 equipment inspection rejects missing compulsory kit and unsafe items
   const compliant = {
     shirtWithSleeves: true, shorts: true, socks: true,
     shinguards: true, shinguardsCovered: true, footwear: true,
-    dangerousEquipment: false, uncoveredJewellery: false,
-    playerElectronicEquipment: false
+    dangerousEquipment: false, uncoveredAccessories: false,
+    playerElectronicCommunicationEquipment: false
   };
   assert.deepEqual(Array.from(law.playerEquipmentIssues(compliant)), []);
   assert.equal(law.equipmentInspectionDecision(compliant), "allow");
@@ -27,9 +27,9 @@ test("Law 4 equipment inspection rejects missing compulsory kit and unsafe items
   assert.deepEqual(Array.from(law.playerEquipmentIssues(incomplete)), ["shirt", "shinguards", "footwear"]);
   assert.equal(law.equipmentInspectionDecision(incomplete), "replace-item");
 
-  const unsafe = { ...compliant, dangerousEquipment: true, uncoveredJewellery: true, playerElectronicEquipment: true };
+  const unsafe = { ...compliant, dangerousEquipment: true, uncoveredAccessories: true, playerElectronicCommunicationEquipment: true };
   assert.deepEqual(Array.from(law.playerEquipmentIssues(unsafe)), [
-    "dangerous-equipment", "uncovered-jewellery", "electronic-equipment"
+    "dangerous-equipment", "uncovered-accessories", "electronic-communication-equipment"
   ]);
   assert.equal(law.equipmentInspectionDecision(unsafe), "remove-item");
 });

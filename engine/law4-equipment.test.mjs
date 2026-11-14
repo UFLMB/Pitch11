@@ -11,8 +11,8 @@ const law = context.globalThis.PITCH11Law;
 const complete = {
   shirtWithSleeves: true, shorts: true, socks: true,
   shinguards: true, shinguardsCovered: true, footwear: true,
-  dangerousEquipment: false, uncoveredJewellery: false,
-  playerElectronicEquipment: false
+  dangerousEquipment: false, uncoveredAccessories: false,
+  playerElectronicCommunicationEquipment: false
 };
 
 test('Law 4 permits complete and safe compulsory player equipment', () => {
@@ -28,9 +28,9 @@ test('Law 4 requires missing compulsory equipment to be replaced before entry', 
 });
 
 test('Law 4 rejects dangerous equipment, uncovered jewellery and player electronic equipment', () => {
-  const unsafe = { ...complete, dangerousEquipment: true, uncoveredJewellery: true, playerElectronicEquipment: true };
+  const unsafe = { ...complete, dangerousEquipment: true, uncoveredAccessories: true, playerElectronicCommunicationEquipment: true };
   assert.equal(JSON.stringify(law.playerEquipmentIssues(unsafe)), JSON.stringify([
-    'dangerous-equipment', 'uncovered-jewellery', 'electronic-equipment'
+    'dangerous-equipment', 'uncovered-accessories', 'electronic-communication-equipment'
   ]));
   assert.equal(law.equipmentInspectionDecision(unsafe), 'remove-item');
 });
