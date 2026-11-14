@@ -437,6 +437,14 @@ test("Law 13 applies goal-area placement, own-penalty-area clearance and the one
   assert.match(source, /const wallClearance=10/);
 });
 
+test("Law 16 requires goal-kick opponents to leave the penalty area, not to stand 9.15 m away", () => {
+  const clamp = source.match(/function restartClamp\(\)\{[\s\S]*?\n\}/);
+  assert.ok(clamp);
+  assert.match(clamp[0], /const R=rs\.r\?\?\(\{ko:91\.5,throw:20,gk:0,drop:40\}\)\[rs\.kind\]/);
+  assert.match(clamp[0], /if\(R===undefined\)return/);
+  assert.match(clamp[0], /if\(rs\.kind==='gk'\|\|ownPenaltyRestart\)/);
+});
+
 
 test("Law 13 and restart laws enforce opponent distances except the free-kick goal-line exception", () => {
   const helper = lawSource.match(/function restartGoalLineDistanceExemption\(state\)\s*\{[\s\S]*?\n  \}/);
