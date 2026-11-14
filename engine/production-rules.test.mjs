@@ -419,7 +419,7 @@ test("Laws 15 and 16 allow normal restart time before a referee-signalled five-s
   assert.match(source, /PITCH11Law\.restartDelayDecision\(/);
   assert.match(source, /opponent-throw-in/);
   assert.match(source, /opponent-corner/);
-  assert.match(source, /S\.rs\.r=91\.5/);
+  assert.match(source, /S\.rs\.r=PITCH11Law\.cornerKickOpponentClearance\(/);
 });
 
 
