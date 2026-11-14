@@ -1009,7 +1009,9 @@ function outOfPlay(){
     if(lt===def){const cx=left?PX0+3:PX1-3,cy=crossingY<CY?PY0+3:PY1-3;spot(1-def,cx,cy,false,Math.atan2(CY-cy,CX-cx),'corner');S.rs.box=true;S.rs.r=91.5;}
     else {spot(def,left?PX0+40:PX1-40,CY,true,left?0:Math.PI,'gk');S.rs.goalLineCrossY=crossingY;}
   }else{
-    const x=clamp(b.x,PX0+12,PX1-12),y=b.y<CY?PY0-4:PY1+4;
+    const top=b.y<PY0;
+    const crossingX=PITCH11Law.touchlineCrossingX({previousX:b.px,previousY:b.py,currentX:b.x,currentY:b.y,touchline:top?PY0:PY1,direction:top?-1:1,radius:BR});
+    const x=clamp(crossingX,PX0+12,PX1-12),y=top?PY0-4:PY1+4;
     spot(1-lt,x,y,false,Math.atan2(CY-y,(CX-x)*0.3),'throw');
   }
 }
