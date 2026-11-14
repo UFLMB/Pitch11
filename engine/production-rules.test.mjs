@@ -131,8 +131,8 @@ test("penalty shootout rotation includes eligible goalkeepers and tracks repeat-
 
 
 test("shoot-out goalkeeper kicker remains eligible for second-touch detection", () => {
-  assert.match(source, /const shootoutKicker=!!\\(S\\.so&&S\\.so\\.live&&p===S\\.so\\.shooter\\)/);
-  assert.match(source, /if\\(\\(p\\.gk&&!shootoutKicker\\)\\|\\|p\\.out\\|\\|p\\.substitutionExiting/);
+  assert.ok(source.includes("const shootoutKicker=!!(S.so&&S.so.live&&p===S.so.shooter);"));
+  assert.ok(source.includes("if((p.gk&&!shootoutKicker)||p.out||p.substitutionExiting"));
 });
 
 test("Law 12 foul context survives stadium, referee and cinematic wrappers", () => {
