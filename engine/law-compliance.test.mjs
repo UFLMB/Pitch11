@@ -29,13 +29,13 @@ test('an accidental second touch in a shoot-out retakes a scored kick but makes 
   assert.equal(law.shootoutDecision({ ...base, doubleTouch: true, ball: { ...base.ball, x: 95, y: 60.2, vx: 0 } }), 'miss');
 });
 
-test('a restart kicker second touch awards an indirect free kick unless a handball offence changes the restart', () => {
+test('outfield handball is disabled and restart second touches remain indirect free kicks', () => {
   assert.equal(law.restartSecondTouchRestart({ isKicker: true }), 'indirect-free-kick');
   assert.equal(law.restartSecondTouchRestart({ isKicker: false }), 'continue');
   assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: true }), 'indirect-free-kick');
-  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: false }), 'direct-free-kick');
-  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: true }), 'penalty');
-  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: false }), 'direct-free-kick');
+  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: true, insideOwnPenaltyArea: false }), 'indirect-free-kick');
+  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: true }), 'indirect-free-kick');
+  assert.equal(law.restartSecondTouchRestart({ isKicker: true, handball: true, goalkeeper: false, insideOwnPenaltyArea: false }), 'indirect-free-kick');
 });
 
 test('a restart kicker second contact is only detected when the ball is physically approaching', () => {
