@@ -3633,10 +3633,12 @@ const _wsR=whistleStop;whistleStop=function(sec,big,sub,fn,hurt){_wsR(sec,big,su
   else if(REF.card&&REF.card.t>0)rDo('whistle',.5,0,{pose:'card',t:2.2,next:{pose:'point',t:Math.max(.5,sec-2.7),pa:ang}});
   else if(big==='FOUL'||big==='PENALTY'||big==='OFFSIDE'||big==='NO ADVANTAGE')rDo('whistle',.5,ang,{pose:'point',t:hold});
   else rDo('whistle',.5);};
-const _foR=foul;foul=function(p,o,b,context){REF.awT=o.team;const st=G.rf.strict;
+const _foR=foul;foul=function(p,o,b,context){REF.awT=o.team;
+  // Strictness must not manufacture cautions: cards come only from the actual foul decision.
+  const st=G.rf.strict;
   if(st===0&&Math.random()<.3&&!(S.rs&&S.rs.kind==='pen')){rDo('adv',1,0);msg('PLAY ON','',1);return;}
   _foR(p,o,b,context);
-  if(st===2&&S.mode==='whistle'&&p&&!p.out&&!(S.card&&S.card.t>2.4)&&Math.random()<.3){if(++p.yc>=2){giveCard(p,3);queueMinimumPlayerForfeit(p);finishMinimumPlayerForfeit();}else giveCard(p,1);}};
+};
 const _gcR=giveCard;giveCard=function(p,c){const px=p.x,py=p.y,old=S.card;_gcR(p,c);if(S.card===old||!G.rf.show)return;REF.card={c:c===1?'#ffd400':'#e5342b',px,py,t:3.2};};
 const _coR=callOffside;callOffside=function(p){REF.awT=1-p.team;const a=REF.ar[p.y<CY?0:1];a.fup=2.6;a.fa=dirOf(1-p.team)>0?0:Math.PI;_coR(p);};
 const _goR=goal;goal=function(dr){_goR(dr);if(G.rf.show)rDo('pointC',2.6);};

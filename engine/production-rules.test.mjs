@@ -132,7 +132,7 @@ test("penalty shootout rotation includes eligible goalkeepers and tracks repeat-
 
 test("Law 12 foul context survives stadium, referee and cinematic wrappers", () => {
   assert.ok(source.includes("foul=function(p,o,b,context){_stadiumFoul(p,o,b,context);emitStadiumEvent('foul');}"));
-  assert.ok(source.includes("foul=function(p,o,b,context){REF.awT=o.team;const st=G.rf.strict;"));
+  assert.match(source, /foul=function\(p,o,b,context\)\{REF\.awT=o\.team;[\s\S]{0,240}?const st=G\.rf\.strict;/);
   assert.ok(source.includes("_foR(p,o,b,context);"));
   assert.ok(source.includes("foul=function(p,o,b,context){FL26.p=p;FL26.o=o;try{_fo26(p,o,b,context);}"));
 });
@@ -740,7 +740,7 @@ test("Law 3 abandons after second-yellow send-offs issued by advantage and stric
   assert.match(source, /_whistleStopPendingCard\(sec,big,sub,fn,hurt\);\s*finishMinimumPlayerForfeit\(\);/);
   assert.match(source, /_outOfPlayAdvantageCards\(\);\s*finishMinimumPlayerForfeit\(\);/);
   assert.match(source, /_endHalfPendingAdvantageCard\(\);\s*finishMinimumPlayerForfeit\(\);/);
-  assert.match(source, /giveCard\(p,3\);queueMinimumPlayerForfeit\(p\);finishMinimumPlayerForfeit\(\);/);
+  assert.match(source, /giveCard\(p,3\);[\s\S]*?PITCH11Law\.matchAbandonmentDecision\(P,t,7,!!S\.so\)==='abandon'/);
 });
 
 
