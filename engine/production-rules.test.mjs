@@ -392,8 +392,8 @@ test("Law 12 includes supporting attackers and delays DOGSO/SPA cards when advan
 });
 
 test("Law 12 allows advantage for non-DOGSO fouls inside the penalty area while retaining the penalty fallback", () => {
-  assert.match(source, /const advantagePossible=!hurt&&prog>0\\.45&&\\(!pen\\|\\|!dogso\\)/);
-  assert.match(source, /const fn=pen\\?\\(\\)=>setupPen\\(t,firstIn\\(t\\),false\\):\\(\\)=>freeKick\\(t,x,y,false\\)/);
+  assert.ok(source.includes("const advantagePossible=!hurt&&prog>0.45&&(!pen||!dogso)"));
+  assert.ok(source.includes("const fn=pen?()=>setupPen(t,firstIn(t),false):()=>freeKick(t,x,y,false)"));
   assert.match(source, /const deferCaution=advantagePossible&&card===1/);
 });
 
