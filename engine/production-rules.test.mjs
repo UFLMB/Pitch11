@@ -750,3 +750,11 @@ test("Law 3 abandons after second-yellow send-offs issued by advantage and stric
   assert.match(source, /_endHalfPendingAdvantageCard\(\);\s*finishMinimumPlayerForfeit\(\);/);
   assert.match(source, /giveCard\(p,3\);queueMinimumPlayerForfeit\(p\);finishMinimumPlayerForfeit\(\);/);
 });
+
+
+test("Law 11 snapshots offside from the ball's actual kick/release contact point", () => {
+  const kick = source.match(/function kick\(p,vx,vy,vz,spin,rcv,tx,ty,mode\)\{[\s\S]*?\n\}/);
+  assert.ok(kick);
+  assert.ok(kick[0].indexOf("b.x=p.x+Math.cos(a)*9;b.y=p.y+Math.sin(a)*9") < kick[0].indexOf("else markOff(p)"));
+  assert.match(kick[0], /b\.x=p\.x\+Math\.cos\(a\)\*9;b\.y=p\.y\+Math\.sin\(a\)\*9;[\s\S]*?else markOff\(p\)/);
+});
