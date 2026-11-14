@@ -151,7 +151,7 @@
   function penaltyAccidentalDoubleTouchDecision(state) {
     const s = state || {};
     if (s.doubleTouch !== true || s.completed !== true) return 'continue';
-    return s.goalScored === true ? 'retake' : 'indirect-free-kick';
+    return s.goalScored === true || s.goalkeeperOffence === true ? 'retake' : 'indirect-free-kick';
   }
 
   function penaltyKeeperDecision(state) {
