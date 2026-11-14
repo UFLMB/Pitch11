@@ -81,7 +81,7 @@ test("opponents stay two metres from a throw-in", () => {
 });
 
 test("the restart kicker cannot touch the ball twice before another player", () => {
-  assert.match(source, /if\(rs&&rs\.p===p\)\{ball\.dbl=p;ball\.dblKind=rs\.kind;\}/);
+  assert.match(source, /const _kk23=kick;kick=function\(p,vx,vy,vz,spin,rcv,tx,ty,mode\)\{const rs=S\.rs;_kk23\(p,vx,vy,vz,spin,rcv,tx,ty,mode\);if\(rs&&rs\.p===p&&rs\.kind!==['"]drop['"]\)\{ball\.dbl=p;ball\.dblKind=rs\.kind;\}\};/);
   assert.match(source, /if\(p!==ball\.dbl\|\|ball\.last!==ball\.dbl\)ball\.dbl=null/);
   assert.doesNotMatch(source, /ball\.dblT/);
 });
@@ -535,7 +535,7 @@ test("a restart taker is penalised for a controlled second touch even when the b
   assert.match(touchFunction[0], /secondTouchCandidate=null,secondTouchScore=-1e9/);
   assert.match(touchFunction[0], /p===b\.dbl&&b\.last===p/);
   assert.match(touchFunction[0], /secondTouchScore>bs/);
-  assert.match(touchFunction[0], /restartSecondTouchRestart\(\{isKicker:true,insideOwnPenaltyArea\}\)/);
+  assert.match(touchFunction[0], /restartSecondTouchRestart\(\{\s*isKicker:true,insideOwnPenaltyArea,restartKind:b\.dblKind\s*\}\)/);
   assert.match(source, /p!==ball\.dbl\|\|ball\.last!==ball\.dbl/);
   assert.match(source, /ball\.last!==previousLast&&ball\.last!==ball\.dbl/);
   assert.match(source, /const _aiGKDirectRestart=aiGK/);
