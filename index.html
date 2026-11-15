@@ -110,7 +110,7 @@ const GACT={att:['through','shoot','pass','sprint'],def:['press2','slide','switc
 const GS={att:true,flash:0,now:0,spy:null,s:[0,1,2,3].map(()=>({on:false,pid:null,x0:0,y0:0,x:0,y:0,t0:0,t:0,thr:1,sw:false,done:false,held:false,act:'',dir:-1,pend:false,pendT:0,pdir:-1}))};
 const GDX=[0,0.7071,1,0.7071,0,-0.7071,-1,-0.7071],GDY=[-1,-0.7071,0,0.7071,1,0.7071,0,-0.7071];   // dir used: 0=up 2=right 4=down 6=left (odd slots kept only so old indexing still works)
 const btnPos=b=>{
-  const u=H*0.09,r=b.m*u,pad=Math.min(r+8,Math.min(W,H)*0.42);
+  const u=H*0.09,r=b.m*u,pad=Math.min(r*1.5+8,Math.min(W,H)*0.42);
   return{x:clamp(W-b.dx*u,pad,W-pad),y:clamp(H-b.dy*u,pad,H-pad),r};
 };
 const joyBasePos=()=>{
@@ -3205,7 +3205,7 @@ MS.layout=function(){
   mt('LAYOUT EDITOR');mbk();
   const u=H*0.09,lab=GLAB[GS.att?'att':'def'];
   for(let i=0;i<4;i++){
-    const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;
+    const c=BTN[i],p=btnPos(c),x=p.x,y=p.y,r=p.r;
     ctx.fillStyle='rgba(255,255,255,.12)';ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
     if(i===layoutSel||(layoutDrag&&layoutDrag.i===i)){ctx.strokeStyle='#ffe600';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,r+6,0,TAU);ctx.stroke();}
     txt(lab[i],x,y,r*0.3,'#fff',700);
@@ -3224,8 +3224,8 @@ MS.layout=function(){
   ubtn(W*.1,H*.92,W*.4,H*.07,'RESET LAYOUT',()=>{G.btns=null;G.joy=[0.15,0.7];syncLayout();save();},'rgba(255,60,40,.4)');
   ubtn(W*.55,H*.92,W*.4,H*.07,'DONE',back,Y);
 };
-addEventListener('pointerdown',e=>{if(M.scr==='layout'&&S.mode==='menu'){const u=H*0.09;for(let i=0;i<4;i++){const c=BTN[i],x=W-c.dx*u,y=H-c.dy*u,r=c.m*u;if(Math.hypot(e.clientX-x,e.clientY-y)<r*1.7){layoutDrag={i,x,y};layoutSel=i;break;}}}});
-addEventListener('pointermove',e=>{if(layoutDrag){const u=H*0.09;const L=G.btns||BTN.map(b=>[b.dx,b.dy,b.m]);L[layoutDrag.i]=[(W-e.clientX)/u,(H-e.clientY)/u,L[layoutDrag.i][2]];G.btns=L;syncLayout();layoutDrag.x=e.clientX;layoutDrag.y=e.clientY;save();}});
+addEventListener('pointerdown',e=>{if(M.scr==='layout'&&S.mode==='menu'){for(let i=0;i<4;i++){const c=BTN[i],p=btnPos(c),x=p.x,y=p.y,r=p.r;if(Math.hypot(e.clientX-x,e.clientY-y)<r*1.7){layoutDrag={i,x,y};layoutSel=i;break;}}}});
+addEventListener('pointermove',e=>{if(layoutDrag){const u=H*0.09,L=G.btns||BTN.map(b=>[b.dx,b.dy,b.m]),r=L[layoutDrag.i][2]*u,pad=Math.min(r*1.5+8,Math.min(W,H)*0.42),x=clamp(e.clientX,pad,W-pad),y=clamp(e.clientY,pad,H-pad);L[layoutDrag.i]=[(W-x)/u,(H-y)/u,L[layoutDrag.i][2]];G.btns=L;syncLayout();layoutDrag.x=x;layoutDrag.y=y;save();}});
 addEventListener('pointerup',()=>{layoutDrag=null;});
 
 /* ---------- cheat sheet + training screens ---------- */
