@@ -109,7 +109,14 @@ const GLAB={att:['THROUGH','SHOOT','PASS','SPRINT'],def:['2ND|PRESS','SLIDE','SW
 const GACT={att:['through','shoot','pass','sprint'],def:['press2','slide','switch','sprtack']};
 const GS={att:true,flash:0,now:0,spy:null,s:[0,1,2,3].map(()=>({on:false,pid:null,x0:0,y0:0,x:0,y:0,t0:0,t:0,thr:1,sw:false,done:false,held:false,act:'',dir:-1,pend:false,pendT:0,pdir:-1}))};
 const GDX=[0,0.7071,1,0.7071,0,-0.7071,-1,-0.7071],GDY=[-1,-0.7071,0,0.7071,1,0.7071,0,-0.7071];   // dir used: 0=up 2=right 4=down 6=left (odd slots kept only so old indexing still works)
-const btnPos=b=>{const u=H*0.09;return{x:W-b.dx*u,y:H-b.dy*u,r:b.m*u};};
+const btnPos=b=>{
+  const u=H*0.09,r=b.m*u,pad=Math.min(r+8,Math.min(W,H)*0.42);
+  return{x:clamp(W-b.dx*u,pad,W-pad),y:clamp(H-b.dy*u,pad,H-pad),r};
+};
+const joyBasePos=()=>{
+  const r=H*0.11,pad=Math.min(r+8,Math.min(W,H)*0.42);
+  return{x:clamp(W*G.joy[0],pad,W-pad),y:clamp(H*G.joy[1],pad,H-pad)};
+};
 function btnAt(x,y){let best=null,bd=1e9;for(const b of BTN){const c=btnPos(b),d=Math.hypot(x-c.x,y-c.y);if(d<c.r*TUNING.hitK&&d<bd){bd=d;best=b;}}return best;}
 const gDir=(dx,dy)=>Math.abs(dx)>Math.abs(dy)?(dx>0?2:6):(dy<0?0:4);   // 4-way swipes only: 0=up 2=right 4=down 6=left
 function gAtk(){const o=ball.owner;if(o)return o.team===0;const l=ball.last;return !l||l.team===0;}   // my ball, or loose and I touched it last
@@ -1792,7 +1799,13 @@ function drawHud(){
     ctx.fillStyle='rgba(12,18,30,.8)';ctx.strokeStyle='rgba(255,255,255,.4)';ctx.lineWidth=2;
     ctx.beginPath();ctx.arc(pauseBtn.x,pauseBtn.y,pauseBtn.r,0,TAU);ctx.fill();ctx.stroke();
     txt('II',pauseBtn.x,pauseBtn.y,pauseBtn.r*0.9,'#fff',900);
-  camBtn.x=pauseBtn.x-pauseBtn.r*2.5;camBtn.y=pauseBtn.y;camBtn.r=pauseBtn.r;ctx.fillStyle='rgba(12,18,30,.8)';ctx.beginPath();ctx.arc(camBtn.x,camBtn.y,camBtn.r,0,TAU);ctx.fill();ctx.stroke();txt('CAM',camBtn.x,camBtn.y,camBtn.r*0.6,'#fff',900);
+  camBtn.x=pauseBtn.x-pauseBtn.r*2.5;camBtn.y=pauseBtn.y;camBtn.r=pauseBtn.r;
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=camBtn.r*.35;
+    ctx.fillStyle='rgba(9,15,25,.88)';ctx.beginPath();ctx.arc(camBtn.x,camBtn.y,camBtn.r,0,TAU);ctx.fill();
+    ctx.shadowBlur=0;ctx.lineWidth=Math.max(1.5,camBtn.r*.055);ctx.strokeStyle='rgba(255,255,255,.48)';ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(camBtn.x,camBtn.y,camBtn.r*.78,0,TAU);ctx.stroke();
+    drawCameraControlIcon(camBtn.x,camBtn.y,camBtn.r*.48);
+    ctx.restore();
   }else pauseBtn.r=camBtn.r=0;
   if(S.so){                                                // shootout tracker
     for(let t=0;t<2;t++){
@@ -1822,7 +1835,8 @@ function drawHud(){
   if(m==='subs')drawSubs();
 }
 function drawControls(){
-  if(joy.on)drawJoy(joy.bx,joy.by,H*0.13,joy.kx,joy.ky,H*0.06,true);else drawJoy(W*G.joy[0],H*G.joy[1],H*0.11,W*G.joy[0],H*G.joy[1],H*0.045,false);
+  if(joy.on)drawJoy(joy.bx,joy.by,H*0.13,joy.kx,joy.ky,H*0.06,true);
+  else{const jp=joyBasePos();drawJoy(jp.x,jp.y,H*0.11,jp.x,jp.y,H*0.045,false);}
   const lab=GLAB[GS.att?'att':'def'],fl=GS.flash>0?GS.flash/TUNING.relabel:0;
   for(const b of BTN){
     const i=b.id,q=GS.s[i],c=btnPos(b),on=q.on||(i===3&&I.sprint),r=c.r*(1+fl*0.12);
@@ -4733,18 +4747,33 @@ const BTN_ICO={
   'SWITCH':(x,y,s)=>{ctx.beginPath();ctx.arc(x,y,s*.72,Math.PI*1.1,Math.PI*1.85);ctx.stroke();icoArrow(x+s*.72*Math.cos(Math.PI*1.85),y+s*.72*Math.sin(Math.PI*1.85),Math.PI*1.85+Math.PI/2,s*.36);ctx.beginPath();ctx.arc(x,y,s*.72,Math.PI*.1,Math.PI*.85);ctx.stroke();icoArrow(x+s*.72*Math.cos(Math.PI*.85),y+s*.72*Math.sin(Math.PI*.85),Math.PI*.85+Math.PI/2,s*.36);},
 };
 BTN_ICO['SPRINT+TACKLE']=(x,y,s)=>{BTN_ICO.SPRINT(x-s*.2,y,s*.9);ctx.beginPath();ctx.moveTo(x+s*.45,y+s*.15);ctx.lineTo(x+s*1.0,y+s*.7);ctx.moveTo(x+s*1.0,y+s*.15);ctx.lineTo(x+s*.45,y+s*.7);ctx.stroke();};
+function drawCameraControlIcon(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.lineWidth=Math.max(1.7,s*.13);ctx.lineCap='round';ctx.lineJoin='round';
+  ctx.strokeStyle='rgba(255,255,255,.96)';ctx.fillStyle='rgba(255,255,255,.08)';
+  ctx.beginPath();ctx.moveTo(-s*.92,-s*.42);ctx.lineTo(-s*.52,-s*.42);ctx.lineTo(-s*.32,-s*.7);ctx.lineTo(s*.22,-s*.7);ctx.lineTo(s*.42,-s*.42);ctx.lineTo(s*.82,-s*.42);ctx.quadraticCurveTo(s,-s*.42,s,s*.0);ctx.lineTo(s,s*.52);ctx.quadraticCurveTo(s,s*.78,s*.76,s*.78);ctx.lineTo(-s*.76,s*.78);ctx.quadraticCurveTo(-s,s*.78,-s,s*.52);ctx.lineTo(-s,-s*.12);ctx.quadraticCurveTo(-s,-s*.42,-s*.92,-s*.42);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(0,s*.15,s*.34,0,TAU);ctx.stroke();
+  ctx.beginPath();ctx.arc(0,s*.15,s*.17,0,TAU);ctx.strokeStyle='rgba(255,255,255,.48)';ctx.lineWidth=Math.max(1,s*.07);ctx.stroke();
+  ctx.fillStyle='#a3e635';ctx.beginPath();ctx.arc(s*.62,-s*.13,s*.065,0,TAU);ctx.fill();
+  ctx.restore();
+}
 function drawBtnFace(i,c,r,on,L,col){
   const key=L.replace('|','').replace(/ /g,''),ico=BTN_ICO[key];
   ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.shadowColor=col;ctx.shadowBlur=on?r*.55:r*.22;
-  let g=ctx.createRadialGradient(c.x,c.y-r*.4,r*.08,c.x,c.y,r);
-  g.addColorStop(0,on?'rgba(255,255,255,.6)':'rgba(52,70,98,.85)');g.addColorStop(1,on?'rgba(255,255,255,.28)':'rgba(8,12,22,.88)');
+  ctx.shadowColor=col;ctx.shadowBlur=on?r*.62:r*.24;
+  let g=ctx.createRadialGradient(c.x-r*.22,c.y-r*.48,r*.06,c.x,c.y,r*1.08);
+  g.addColorStop(0,on?'rgba(255,255,255,.72)':'rgba(66,83,111,.92)');
+  g.addColorStop(.48,on?'rgba(255,255,255,.34)':'rgba(25,36,54,.94)');
+  g.addColorStop(1,on?'rgba(255,255,255,.2)':'rgba(5,9,17,.96)');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(c.x,c.y,r,0,TAU);ctx.fill();
-  ctx.shadowBlur=0;ctx.lineWidth=Math.max(3,r*.07);ctx.strokeStyle=col;ctx.stroke();
-  ctx.lineWidth=1.5;ctx.strokeStyle='rgba(255,255,255,.2)';ctx.beginPath();ctx.arc(c.x,c.y,r*.84,0,TAU);ctx.stroke();
+  ctx.shadowBlur=0;ctx.lineWidth=Math.max(2.5,r*.065);ctx.strokeStyle=col;ctx.stroke();
+  ctx.lineWidth=Math.max(1,r*.018);ctx.strokeStyle='rgba(255,255,255,.28)';ctx.beginPath();ctx.arc(c.x,c.y,r*.86,0,TAU);ctx.stroke();
   ctx.save();ctx.beginPath();ctx.arc(c.x,c.y,r*.96,0,TAU);ctx.clip();
-  g=ctx.createLinearGradient(0,c.y-r,0,c.y);g.addColorStop(0,'rgba(255,255,255,.3)');g.addColorStop(1,'rgba(255,255,255,0)');
-  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(c.x,c.y-r*.52,r*.8,r*.46,0,0,TAU);ctx.fill();ctx.restore();
+  g=ctx.createLinearGradient(0,c.y-r,0,c.y+r*.35);
+  g.addColorStop(0,'rgba(255,255,255,.34)');g.addColorStop(.38,'rgba(255,255,255,.07)');g.addColorStop(1,'rgba(0,0,0,.16)');
+  ctx.fillStyle=g;ctx.fillRect(c.x-r,c.y-r,r*2,r*2);
+  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=Math.max(1,r*.025);
+  ctx.beginPath();ctx.arc(c.x,c.y+r*.04,r*.72,.18*Math.PI,.82*Math.PI);ctx.stroke();
+  ctx.restore();
   if(ico){ctx.fillStyle='#fff';ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(2,r*.075);ctx.lineCap='round';ctx.lineJoin='round';ico(c.x,c.y-r*.17,r*.3);ctx.lineCap='butt';}
   if(L.includes('|')){const q=L.split('|');txt(q[0],c.x,c.y+r*.5,r*.2,'#fff',800);txt(q[1],c.x,c.y+r*.74,r*.2,'#fff',800);}   // two short lines fit the round face at a readable size
   else txt(L,c.x,c.y+r*.57,r*(ico?.24:.3),'#fff',800);
