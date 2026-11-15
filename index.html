@@ -4552,15 +4552,11 @@ MS.main=function(){
   const mx=W*.038,my=H*.052,bottom=H-my;
   const logoX=mx,logoSize=H*.115,logoY=my+logoSize*.53;
   ctx.save();
-  ctx.translate(logoX,logoY);ctx.rotate(-.035);
-  ctx.font='italic 900 '+logoSize+'px sans-serif';
+  ctx.font='900 '+logoSize+'px sans-serif';
   ctx.textAlign='left';ctx.textBaseline='middle';
   const logo='PITCH 11',logoW=ctx.measureText(logo).width;
-  const lg=ctx.createLinearGradient(0,-logoSize*.58,0,logoSize*.58);
-  lg.addColorStop(0,'#fff8df');lg.addColorStop(.2,'#dfe5eb');lg.addColorStop(.48,'#b8c2ce');
-  lg.addColorStop(.7,'#d7b66d');lg.addColorStop(1,'#fff0c4');
   ctx.shadowColor='rgba(0,0,0,.72)';ctx.shadowBlur=H*.022;ctx.shadowOffsetY=H*.004;
-  ctx.fillStyle=lg;ctx.fillText(logo,0,0);ctx.restore();
+  ctx.fillStyle='#fff';ctx.fillText(logo,logoX,logoY);ctx.restore();
 
   // Fine gold underline, measured to the actual wordmark width.
   const underlineW=Math.min(logoW,W*.34),underlineY=logoY+logoSize*.57;
