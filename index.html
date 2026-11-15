@@ -4505,40 +4505,12 @@ function modeRows(R){R.forEach((b,i)=>{const y=H*(.17+i*.15),x=W*.1,w=W*.8,h=H*.
   ctx.textAlign='left';txt(b[0],x+w*.14,y+h*.36,H*.045,'#fff',800);txt(b[1],x+w*.14,y+h*.72,H*.03,'rgba(210,222,240,.75)',600);ctx.textAlign='center';
   glass(x+w*.9,y+h*.25,h*.5,h*.5,h*.25,{hl:.1});txt('\u203a',x+w*.9+h*.25,y+h*.5,H*.06,'#ffe600',800);});}
 MS.main=function(){
-  // Brand lockup: metallic silver-to-gold wordmark. The menu background remains owned by drawMenu().
-  const lx=W*.075,ly=H*.245,logoW=W*.36;
-  ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=H*.035;ctx.shadowOffsetY=H*.012;
-  ctx.font='italic 900 '+(H*.145)+'px system-ui, sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
-  const metal=ctx.createLinearGradient(lx,ly-H*.09,lx+logoW,ly+H*.04);
-  metal.addColorStop(0,'#aeb9c4');metal.addColorStop(.28,'#ffffff');metal.addColorStop(.56,'#c5ccd2');metal.addColorStop(.78,'#f6d77b');metal.addColorStop(1,'#b98732');
-  ctx.fillStyle=metal;ctx.fillText('PITCH 11',lx,ly);
-  ctx.shadowColor='transparent';ctx.strokeStyle='rgba(255,255,255,.34)';ctx.lineWidth=Math.max(1,H*.002);ctx.strokeText('PITCH 11',lx,ly);
-  ctx.restore();
-  const logoLine=ctx.createLinearGradient(lx,0,lx+logoW*.72,0);
-  logoLine.addColorStop(0,'rgba(255,255,255,.08)');logoLine.addColorStop(.42,'rgba(255,224,130,.95)');logoLine.addColorStop(1,'rgba(255,255,255,.08)');
-  ctx.fillStyle=logoLine;rr(lx,ly+H*.085,logoW*.72,H*.006,H*.003);ctx.fill();
-  ctx.textAlign='left';txt('FOOTBALL  ·  TACTICS  ·  LEGACY',lx,ly+H*.145,H*.024,'rgba(220,230,240,.72)',700);ctx.textAlign='center';
-
-  // Live HUD values always come from the current saved game state, never fixed display copy.
-  const clubName=(CL[G.club]&&CL[G.club][0])||'—';
-  const formation=(FORMS[G.form]&&FORMS[G.form][0])||'—';
-  const difficulty=(DIF[G.diff]&&DIF[G.diff].n)||'—';
-  const record=Array.isArray(G.rec)?G.rec:[0,0,0];
-  const metrics=[['CLUB',clubName],['FORMATION',formation],['DIFFICULTY',difficulty],['RECORD','W'+(record[0]||0)+'  D'+(record[1]||0)+'  L'+(record[2]||0)]];
-  const hx=W*.445,hy=H*.055,hw=W*.49,hh=H*.155,cell=hw/4;
-  glass(hx,hy,hw,hh,hh*.24,{top:'rgba(255,255,255,.15)',bot:'rgba(5,12,22,.48)',hl:.14,bd:'rgba(255,255,255,.42)'});
-  metrics.forEach((m,i)=>{
-    const cx=hx+cell*i+cell/2;
-    if(i){ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(hx+cell*i,hy+hh*.23);ctx.lineTo(hx+cell*i,hy+hh*.78);ctx.stroke();}
-    txt(m[0],cx,hy+hh*.36,H*.019,'rgba(190,205,220,.72)',800);
-    fit(m[1],cx,hy+hh*.68,cell*.88,H*.031,i===3?'#ffe18a':'#ffffff');
-  });
-
-  // Secondary destinations remain on the lower left; the primary match action owns the lower right.
-  ubtn(W*.075,H*.755,W*.205,H*.135,'MY TEAM',()=>go('club'),0);
-  ubtn(W*.295,H*.755,W*.205,H*.135,'SETTINGS',()=>go('set'),0);
-  ubtn(W*.69,H*.705,W*.245,H*.205,'PLAY',()=>go('play'),Y);
+  ctx.save();ctx.shadowColor='rgba(110,190,255,.7)';ctx.shadowBlur=H*.06;txt('PITCH 11',W/2,H*.2,H*.2,'#fff',900);ctx.restore();
+  const info=CL[G.club][0]+'  ·  '+FORMS[G.form][0]+'  ·  '+DIF[G.diff].n+'  ·  W'+G.rec[0]+' D'+G.rec[1]+' L'+G.rec[2];
+  glass(W*.25,H*.34,W*.5,H*.075,H*.0375,{top:'rgba(255,255,255,.12)',bot:'rgba(255,255,255,.04)',hl:.08});fit(info,W/2,H*.3775,W*.46,H*.035,'rgba(255,224,110,.95)');
+  ubtn(W*.3,H*.5,W*.4,H*.17,'PLAY',()=>go('play'),Y);
+  ubtn(W*.3,H*.75,W*.19,H*.11,'MY CLUB',()=>go('club'),0);
+  ubtn(W*.51,H*.75,W*.19,H*.11,'SETTINGS',()=>go('set'),0);
   UI.def=()=>pre('quick');
 };
 MS.play=function(){
