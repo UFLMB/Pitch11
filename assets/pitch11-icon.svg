@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="112" fill="#05090a"/>
+<path d="M80 346 256 72l176 274-176 94Z" fill="#10211e" stroke="#c9a64b" stroke-width="12" stroke-linejoin="round"/>
+<path d="m256 72 0 368M80 346l352 0M168 209l176 0M168 209l-88 137M344 209l88 137" fill="none" stroke="#d7c17d" stroke-width="9" opacity=".72"/>
+<text x="256" y="292" text-anchor="middle" fill="#f4f2e9" font-family="Arial,sans-serif" font-size="82" font-weight="900" letter-spacing="-5">P11</text>
+</svg>

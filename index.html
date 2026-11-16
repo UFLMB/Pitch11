@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#05090a">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="./manifest.webmanifest">
 <title>Pitch 11</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
@@ -5864,6 +5868,40 @@ take=function(p,byHand=false){
   }
   _takeRestartSecondTouch(p,byHand);
 };
+</script>
+<script>
+/* Mobile-only immersive display: installed PWA starts fullscreen;
+   regular mobile browsers request fullscreen on the first user gesture. */
+(()=>{
+  const coarse=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+  const smallScreen=Math.min(screen.width||innerWidth,screen.height||innerHeight)<=600;
+  const mobile=(navigator.userAgentData&&navigator.userAgentData.mobile===true)||
+    /Android.*Mobile|iPhone|iPod|Windows Phone/i.test(navigator.userAgent)||
+    (coarse&&smallScreen);
+  if(!mobile)return;
+  const standalone=()=>(
+    (window.matchMedia&&(
+      window.matchMedia('(display-mode:standalone)').matches||
+      window.matchMedia('(display-mode:fullscreen)').matches
+    ))||navigator.standalone===true
+  );
+  const enterFullscreen=()=>{
+    if(standalone()||document.fullscreenElement)return;
+    const root=document.documentElement;
+    if(typeof root.requestFullscreen!=='function')return;
+    root.requestFullscreen().then(()=>{
+      document.removeEventListener('pointerdown',enterFullscreen,true);
+      document.removeEventListener('touchstart',enterFullscreen,true);
+    }).catch(()=>{});
+  };
+  if(!standalone()){
+    const gestureEvent='PointerEvent' in window?'pointerdown':'touchstart';
+    document.addEventListener(gestureEvent,enterFullscreen,true);
+  }
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}),{once:true});
+  }
+})();
 </script>
 </body>
 </html>
