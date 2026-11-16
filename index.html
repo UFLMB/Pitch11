@@ -19,6 +19,206 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <script src="engine/law-compliance.js">
+
+/* ===================== SETTINGS 2.0 — responsive category navigation =====================
+   Existing settings state and actions remain authoritative. This layer only reorganises
+   the menu UI; camera preview is a live schematic driven by the selected camera mode.
+   ================================================================================ */
+const SETTINGS_NAV=[
+  {name:'GAMEPLAY',sub:'Difficulty and pitch dimensions',key:'game',abbr:'GP',kind:'game'},
+  {name:'CAMERA',sub:'Nine match camera profiles',key:'camera',abbr:'CM',kind:'camera'},
+  {name:'SOUND & VISUALS',sub:'Audio, stadium and display',key:'opt',abbr:'AV',kind:'sound'},
+  {name:'CONTROLS',sub:'Input, assists and layout',key:'ctl',abbr:'CT',kind:'controls'},
+  {name:'MATCH SETTINGS',sub:'Rules, gameplay tuning and kits',key:'cust',abbr:'MT',kind:'match'},
+  {name:'DATA MANAGEMENT',sub:'Saved progress and reset',key:'data',abbr:'DM',kind:'data'}
+];
+function settingsNavIcon(kind,cx,cy,r,color){
+  ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.5,r*.12);ctx.lineCap='round';ctx.lineJoin='round';
+  if(kind==='game'){
+    ctx.beginPath();for(let i=0;i<8;i++){const a=i*TAU/8,rr=i%2?r*.68:r*.88,x=cx+Math.cos(a)*rr,y=cy+Math.sin(a)*rr;if(!i)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.28,0,TAU);ctx.stroke();
+  }else if(kind==='camera'){
+    rr(cx-r*.82,cy-r*.58,r*1.64,r*1.16,r*.2);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.34,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.55,cy-r*.8);ctx.lineTo(cx-r*.2,cy-r*.8);ctx.stroke();
+  }else if(kind==='sound'){
+    ctx.beginPath();ctx.moveTo(cx-r*.75,cy-r*.25);ctx.lineTo(cx-r*.35,cy-r*.25);ctx.lineTo(cx+r*.05,cy-r*.62);ctx.lineTo(cx+r*.05,cy+r*.62);ctx.lineTo(cx-r*.35,cy+r*.25);ctx.lineTo(cx-r*.75,cy+r*.25);ctx.closePath();ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,r*.52,-.85,.85);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.82,-.8,.8);ctx.stroke();
+  }else if(kind==='controls'){
+    rr(cx-r*.25,cy-r*.25,r*.5,r*.5,r*.08);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.78,cy);ctx.lineTo(cx+r*.78,cy);ctx.moveTo(cx,cy-r*.78);ctx.lineTo(cx,cy+r*.78);ctx.stroke();
+  }else if(kind==='match'){
+    ctx.beginPath();ctx.arc(cx,cy,r*.72,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.7,cy-r*.2);ctx.lineTo(cx-r*.2,cy-r*.5);ctx.lineTo(cx+r*.25,cy-r*.35);ctx.lineTo(cx+r*.62,cy-r*.65);ctx.moveTo(cx-r*.55,cy+r*.42);ctx.lineTo(cx-r*.1,cy+r*.12);ctx.lineTo(cx+r*.35,cy+r*.38);ctx.stroke();
+  }else{
+    ctx.beginPath();ctx.ellipse(cx,cy-r*.42,r*.7,r*.25,0,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.7,cy-r*.42);ctx.lineTo(cx-r*.7,cy+r*.48);ctx.ellipse(cx,cy+r*.48,r*.7,r*.25,0,Math.PI,0);ctx.lineTo(cx+r*.7,cy-r*.42);ctx.stroke();ctx.beginPath();ctx.ellipse(cx,cy,r*.7,r*.25,0,0,Math.PI);ctx.stroke();
+  }
+  ctx.restore();
+}
+function settingsSelect(key){M.scr=key;M.conf=0;}
+function settingsSidebar(active,collapsed){
+  const x=collapsed?W*.018:W*.035,w=collapsed?W*.078:W*.235,y0=H*.19,rowH=collapsed?H*.105:H*.105;
+  SETTINGS_NAV.forEach((n,i)=>{
+    const y=y0+i*rowH,sel=n.key===active,fn=()=>settingsSelect(n.key);
+    UI.r.push({x,y,w,h:rowH*.86,fn});
+    if(sel){glass(x,y,w,rowH*.86,collapsed?H*.018:H*.022,{top:'rgba(255,224,120,.24)',bot:'rgba(255,190,45,.08)',bd:'rgba(255,220,120,.72)',glow:'rgba(255,196,55,.18)'});}
+    else glass(x,y,w,rowH*.86,collapsed?H*.018:H*.022,{top:'rgba(255,255,255,.10)',bot:'rgba(255,255,255,.035)',bd:'rgba(255,255,255,.16)',hl:.06});
+    const cx=x+(collapsed?w/2:w*.17),cy=y+rowH*.43,ir=collapsed?rowH*.22:rowH*.2;
+    settingsNavIcon(n.kind,cx,cy,ir,sel?'#ffe08a':'rgba(230,238,245,.8)');
+    if(!collapsed){
+      ctx.textAlign='left';fit(n.name,x+w*.32,cy-rowH*.045,w*.64,H*.031,sel?'#ffe08a':'#f3f6fa','left');
+      fit(n.sub,x+w*.32,cy+rowH*.19,w*.64,H*.022,'rgba(190,205,218,.72)','left');ctx.textAlign='center';
+    }
+  });
+}
+function settingsPage(title,active){
+  mt(title);mbk();settingsSidebar(active,true);
+}
+function settingsPanel(x,y,w,h,title){
+  glass(x,y,w,h,H*.025,{top:'rgba(255,255,255,.105)',bot:'rgba(255,255,255,.035)',bd:'rgba(255,255,255,.18)',hl:.07});
+  if(title){ctx.textAlign='left';txt(title,x+W*.022,y+H*.045,H*.028,'#ffe08a',800);ctx.textAlign='center';}
+}
+function settingsRow(label,x,y,segX,segW,options,value,fn){
+  ctx.textAlign='left';fit(label,x,y+H*.035,W*.22,H*.033,'#f4f6fa','left');ctx.textAlign='center';
+  seg(segX,y,segW,H*.07,options,value,fn);
+}
+function drawCameraProfilePreview(x,y,w,h){
+  settingsPanel(x,y,w,h,'CAMERA PROFILE PREVIEW');
+  const ix=x+w*.07,iy=y+H*.13,iw=w*.86,ih=h*.69,mode=G.cam|0,name=CAMN[mode]||'CAMERA';
+  ctx.save();rr(ix,iy,iw,ih,H*.014);ctx.clip();
+  const sky=ctx.createLinearGradient(0,iy,0,iy+ih);sky.addColorStop(0,'#13283a');sky.addColorStop(.48,'#173b35');sky.addColorStop(1,'#0b241b');ctx.fillStyle=sky;ctx.fillRect(ix,iy,iw,ih);
+  const top=mode===0?iy+ih*.12:iy+ih*(.28+Math.min(.12,mode*.012));
+  const zoom=mode===0?1:clamp((CAMS[mode]&&CAMS[mode].fm)||2.2,1.5,4.8);
+  const pw=mode===0?iw*.78:iw*clamp(1.05/zoom,.42,.82),ph=mode===0?ih*.72:ih*.48;
+  const cx=ix+iw/2,py=top+ih*.12,nearY=py+ph;
+  let pts;
+  if(mode===0)pts=[[cx-pw/2,py],[cx+pw/2,py],[cx+pw/2,nearY],[cx-pw/2,nearY]];
+  else{const far=pw*.72,near=pw;pts=[[cx-far/2,py],[cx+far/2,py],[cx+near/2,nearY],[cx-near/2,nearY]];}
+  ctx.fillStyle='#286b3c';ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<4;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.78)';ctx.lineWidth=Math.max(1,H*.002);
+  ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();
+  const lerp=(a,b,t)=>a+(b-a)*t;
+  const line=(t)=>{ctx.beginPath();ctx.moveTo(lerp(pts[0][0],pts[3][0],t),lerp(pts[0][1],pts[3][1],t));ctx.lineTo(lerp(pts[1][0],pts[2][0],t),lerp(pts[1][1],pts[2][1],t));ctx.stroke();};
+  line(.5);
+  if(mode===0){ctx.beginPath();ctx.ellipse(cx,py+ph*.5,pw*.13,ph*.13,0,0,TAU);ctx.stroke();}
+  else{ctx.beginPath();ctx.ellipse(cx,py+ph*.52,pw*.105,ph*.09,0,0,TAU);ctx.stroke();}
+  const dots=[[.18,.25],[.34,.3],[.5,.22],[.66,.3],[.82,.25],[.28,.52],[.5,.58],[.72,.52],[.35,.78],[.5,.83],[.65,.78]];
+  dots.forEach((d,i)=>{const t=d[1],left=lerp(pts[0][0],pts[3][0],t),right=lerp(pts[1][0],pts[2][0],t),xx=left+(right-left)*d[0],yy=lerp(pts[0][1],pts[3][1],t);ctx.fillStyle=i<5?'#dce8f2':'#e6bd4c';ctx.beginPath();ctx.arc(xx,yy,Math.max(2,H*.008),0,TAU);ctx.fill();});
+  const bx=cx+Math.sin(performance.now()/850)*pw*.08,by=py+ph*.62;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(bx,by,Math.max(2,H*.007),0,TAU);ctx.fill();
+  ctx.restore();
+  fit(name,x+w/2,y+h*.89,w*.88,H*.034,'#fff');
+  txt('Selection updates the match camera setting.',x+w/2,y+h*.96,H*.021,'rgba(190,205,218,.75)',600);
+}
+MS.set=function(){
+  mt('SETTINGS');mbk();settingsSidebar('set',false);
+  const x=W*.3,y=H*.19,w=W*.66,h=H*.69;
+  settingsPanel(x,y,w,h,'PERSONALISE YOUR MATCH');
+  fit('SETTINGS',x+w*.5,y+h*.35,w*.8,H*.095,'#fff');
+  fit('Configure gameplay, camera, controls and match presentation.',x+w*.5,y+h*.48,w*.82,H*.035,'rgba(220,230,240,.88)');
+  fit('Choose a category from the left to get started.',x+w*.5,y+h*.58,w*.82,H*.03,'#ffe08a');
+  const values=[
+    ['GAMEPLAY',String(DIF[G.diff].n)],
+    ['CAMERA',String(CAMN[G.cam]||'TOP-DOWN')],
+    ['SOUND & VISUALS',G.vol===0?'SOUND OFF':'AUDIO / DISPLAY'],
+    ['CONTROLS',String((G.preset||'FC STYLE').toUpperCase())],
+    ['MATCH SETTINGS','CUSTOM RULES'],
+    ['DATA MANAGEMENT','SAVE & RESET']
+  ];
+  values.forEach((v,i)=>{const yy=y+h*.68+(i%3)*H*.055,xx=x+w*(i<3?.28:.72);if(i===0||i===3||i===1||i===4||i===2||i===5)fit(v[0]+'  ·  '+v[1],xx,yy,w*.43,H*.023,'rgba(220,230,240,.72)');});
+};
+MS.game=function(){
+  settingsPage('GAMEPLAY','game');
+  const x=W*.135,y=H*.17,w=W*.83,h=H*.74;settingsPanel(x,y,w,h,'MATCH EXPERIENCE');
+  settingsRow('DIFFICULTY',x+W*.025,y+H*.11,x+W*.28,w*.66,DIF.map(d=>d.n.split(' ')[0]),G.diff,i=>{G.diff=i;save();});
+  const opts=['SMALL','STANDARD','LARGE'];
+  [['PITCH SIZE','pitch'],['GOAL SIZE','goal'],['BALL SIZE','ball'],['PLAYER SIZE','player']].forEach((r,i)=>{
+    settingsRow(r[0],x+W*.025,y+H*(.235+i*.12),x+W*.28,w*.66,opts,G.cfg[r[1]],v=>{G.cfg[r[1]]=v;save();applyConfig();});
+  });
+};
+MS.camera=function(){
+  settingsPage('CAMERA','camera');
+  const x=W*.135,y=H*.17,w=W*.48,h=H*.74;settingsPanel(x,y,w,h,'MATCH CAMERA');
+  const labels=['TOP-DOWN','SIDE WIDE','SIDE MEDIUM','SIDE CLOSE','BROADCAST HIGH','LOW STADIUM','ACTION CAM','AUTO DIRECTOR','GOAL TO GOAL'];
+  labels.forEach((label,i)=>{const col=i%2,row=Math.floor(i/2),bx=x+W*(.025+col*.235),by=y+H*(.13+row*.135),bw=w*.46,bh=H*.105;
+    ubtn(bx,by,bw,bh,label,()=>{G.cam=i;save();},G.cam===i?Y:0);
+  });
+  drawCameraProfilePreview(W*.635,y,W*.33,h);
+};
+MS.opt=function(){
+  settingsPage('SOUND & VISUALS','opt');
+  const x=W*.135,y=H*.16,w=W*.83,h=H*.76;settingsPanel(x,y,w,h,'AUDIO & PRESENTATION');
+  const rows=[
+    ['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],
+    ['SOUND FX','vol',['OFF','LOW','MED','HIGH']],
+    ['MUSIC','mus',['OFF','ON']],
+    ['CROWD','crowd',['OFF','LOW','FULL']],
+    ['SCREEN SHAKE','shk',['OFF','LOW','FULL']],
+    ['MINI-MAP','radar',['OFF','SMALL','LARGE']],
+    ['GOAL REPLAYS','rep',['OFF','ON']],
+    ['COMMENTARY','com',['OFF','ON']],
+    ['DOUBLE-TAP SHOT','ftap',['OFF','ON']]
+  ];
+  rows.forEach((r,i)=>{const yy=y+H*(.095+i*.071);settingsRow(r[0],x+W*.025,yy,x+W*.28,w*.66,r[2],G[r[1]],v=>{G[r[1]]=v;syncDbl();save();AU.init();AU.vol();});});
+  const yy=y+H*.755,hb=H*.065;ctx.textAlign='left';fit('MENU BACKGROUND',x+W*.025,yy+hb*.5,W*.22,H*.03,'#f4f6fa','left');ctx.textAlign='center';
+  const step=d=>{G.mbg=((Number.isInteger(G.mbg)?G.mbg:0)+d+21)%21;save();};
+  ubtn(x+W*.28,yy,W*.09,hb,'‹',()=>step(-1));ubtn(x+W*.84,yy,W*.09,hb,'›',()=>step(1));
+  fit(G.mbg>=1&&G.mbg<=20?G.mbg+'. '+BG27[G.mbg-1][0]:'AUTO (CYCLES)',x+W*.64,yy+hb*.5,w*.43,H*.028,'#fff');
+};
+MS.ctl=function(){
+  settingsPage('CONTROLS','ctl');
+  const x=W*.135,y=H*.17,w=W*.83,h=H*.74;settingsPanel(x,y,w,h,'INPUT & ASSISTANCE');
+  const rows=[
+    ['PASS / SHOT ASSIST','Aiming assistance settings','assist'],
+    ['CONTROL PRESET','Choose the on-screen action layout','preset'],
+    ['LAYOUT EDITOR','Move and resize the mobile controls','layout'],
+    ['TRAINING','Practise the core match actions','train'],
+    ['CHEAT SHEET','Review gestures and controls','cheat'],
+    ['ADVANCED INPUT','Haptics, swipe input and hints','adv']
+  ];
+  rows.forEach((r,i)=>{const yy=y+H*(.09+i*.105),bx=x+W*.025,bw=w*.94,bh=H*.082;
+    UI.r.push({x:bx,y:yy,w:bw,h:bh,fn:()=>go(r[2])});glass(bx,yy,bw,bh,bh*.38,{top:'rgba(255,255,255,.13)',bot:'rgba(255,255,255,.045)',hl:.07});
+    ctx.textAlign='left';txt(r[0],bx+W*.025,yy+bh*.38,H*.032,'#fff',800);txt(r[1],bx+W*.025,yy+bh*.73,H*.023,'rgba(195,208,220,.78)',600);ctx.textAlign='center';
+    txt('›',bx+bw-W*.025,yy+bh*.55,H*.055,'#ffe08a',800);
+  });
+};
+MS.adv=function(){
+  settingsPage('ADVANCED INPUT','ctl');
+  const x=W*.135,y=H*.19,w=W*.83,h=H*.69;settingsPanel(x,y,w,h,'INPUT & FEEDBACK');
+  settingsRow('HAPTICS',x+W*.025,y+H*.13,x+W*.42,w*.48,['ON','OFF'],G.haptic?0:1,i=>{G.haptic=i?0:1;save();});
+  settingsRow('SWIPE ANYWHERE',x+W*.025,y+H*.27,x+W*.42,w*.48,['ON','OFF'],G.swAnywhere?0:1,i=>{G.swAnywhere=i?0:1;save();});
+  settingsRow('FIRST-TIME HINTS',x+W*.025,y+H*.41,x+W*.42,w*.48,[G.tut?'ON':'SHOW AGAIN'],0,()=>{G.tut=0;S.tutT=0;save();});
+  settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.55,x+W*.42,w*.48,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();});
+};
+MS.cust=function(){
+  settingsPage('MATCH SETTINGS','cust');
+  const x=W*.135,y=H*.15,w=W*.83,h=H*.77;settingsPanel(x,y,w,h,'MATCH RULES & CUSTOMISATION');
+  const data=X(),tb=M.ctab|0;
+  seg(x+W*.02,y+H*.075,w*.95,H*.065,CTABS,tb,i=>{M.ctab=i;});
+  if(tb<3){
+    CROWS[tb].forEach((r,i)=>{const yy=y+H*(.17+i*.105);settingsRow(r[0],x+W*.025,yy,x+W*.28,w*.66,r[2],data[r[1]],j=>{data[r[1]]=j;chgX();});});
+    if(tb===0)fit('Golden goal: first goal wins. Mercy: match ends at a 4-goal gap.',x+w*.5,y+h*.94,w*.9,H*.022,'rgba(190,205,218,.72)');
+    if(tb===2)fit('Pitch themes and mowing are visible in the top-down camera.',x+w*.5,y+h*.94,w*.9,H*.022,'rgba(190,205,218,.72)');
+  }else{
+    const names=['SHIRT','SHORTS','KEEPER'],keys=['shirt','shorts','keeper'];
+    names.forEach((nm,r)=>{
+      const yy=y+H*(.2+r*.17),swatches=SWC.length+1,bw=w*.68/swatches;
+      ctx.textAlign='left';txt(nm,x+W*.025,yy+H*.045,H*.032,'#fff',800);ctx.textAlign='center';
+      for(let i=0;i<swatches;i++){
+        const club=i===swatches-1,c=club?null:SWC[i],sel=club?!data.kit[r]:data.kit[r]===c,bx=x+W*.25+i*bw;
+        ubtn(bx+1,yy,bw-3,H*.09,club?'CLUB':'',()=>{data.kit[r]=c;chgX();},club?(sel?Y:0):c);
+        if(sel&&!club){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2;rr(bx+1,yy,bw-3,H*.09,H*.015);ctx.stroke();}
+      }
+    });
+    const py=y+H*.75,sh=data.kit[0]||CL[G.club][2],sk=data.kit[1]||CL[G.club][3],gk=data.kit[2]||CL[G.club][4];
+    fit('KIT PREVIEW',x+w*.5,py-H*.025,w*.5,H*.03,'#ffe08a');
+    [[sh,'OUTFIELD',-.13],[gk,'GOALKEEPER',.13]].forEach(([c,l,o])=>{const cx=x+w/2+W*o;ctx.fillStyle=c;rr(cx-W*.027,py,W*.054,H*.085,H*.012);ctx.fill();ctx.fillStyle=sk;ctx.fillRect(cx-W*.022,py+H*.085,W*.044,H*.035);fit(l,cx,py+H*.15,W*.2,H*.023,'#dfe7ee');});
+  }
+  ubtn(x+w-W*.14,y+H*.015,W*.12,H*.06,M.conf?'CONFIRM RESET':'RESET',()=>{if(M.conf){G.x=Object.assign({},DX,{kit:[null,null,null]});M.conf=0;chgX();}else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
+};
+MS.data=function(){
+  settingsPage('DATA MANAGEMENT','data');
+  const x=W*.23,y=H*.23,w=W*.7,h=H*.56;settingsPanel(x,y,w,h,'SAVE DATA');
+  fit('RESET ALL SAVED PROGRESS?',x+w/2,y+H*.19,w*.88,H*.05,'#fff');
+  fit('This resets your club, records, career, cups, leagues',x+w/2,y+H*.31,w*.9,H*.028,'rgba(205,216,228,.85)');
+  fit('and every saved setting back to its default.',x+w/2,y+H*.37,w*.9,H*.028,'rgba(205,216,228,.85)');
+  ubtn(x+w*.28,y+H*.47,w*.44,H*.1,M.conf?'TAP AGAIN TO ERASE':'RESET SAVE DATA',()=>{if(M.conf)resetSave();else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
+};
+
 </script>
 <script>
 'use strict';
