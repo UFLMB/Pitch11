@@ -332,7 +332,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    else if(weather===3){scene.background.set(0x89949b);if(scene.fog){scene.fog.color.set(0xc1c9ce);scene.fog.near=28;scene.fog.far=145;}key.intensity*=.72;fill.intensity*=.82;}
    // PITCH 11 original corner-flag composition: low sideline perspective,
    // looking diagonally across the pitch rather than copying a broadcast preset.
-   previewCamera.aspect=w/h;previewCamera.fov=49;
+   // On narrow mobile viewports, widen the vertical FOV to preserve the same
+   // horizontal scene coverage inside the smaller preview window. Desktop stays unchanged.
+   const previewAspect=w/h,basePreviewFov=49,mobilePreview=matchMedia('(max-width: 800px)').matches;
+   const mobileFitFov=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(basePreviewFov/2))*1.5/Math.max(.45,previewAspect))*180/Math.PI;
+   previewCamera.aspect=previewAspect;previewCamera.fov=mobilePreview?Math.min(82,Math.max(basePreviewFov,mobileFitFov)):basePreviewFov;
    previewCamera.position.set(-59,4.6,-41);
    previewCamera.lookAt(-13,0,0);
    previewCamera.updateProjectionMatrix();
