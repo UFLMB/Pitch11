@@ -58,25 +58,39 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
  let activePitchKey='';
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
   if(key===activePitchKey||!pitchTextureCanvas||!pitchTexture)return;
-  activePitchKey=key;
-  const palettes=[
-   ['#347b40','#2e7139','#286637'],['#183c2c','#123323','#0c261b'],['#9b8750','#b49b5c','#75643b'],
-   ['#dce6e8','#f2f5f4','#b9c9d0'],['#064c73','#087f9c','#042d66']
-  ];
-  const c=pitchTextureCanvas,g=c.getContext('2d',{alpha:false}),size=c.width,pal=palettes[p];
-  const grad=g.createLinearGradient(0,0,size,size);grad.addColorStop(0,pal[0]);grad.addColorStop(.5,pal[1]);grad.addColorStop(1,pal[2]);
-  g.fillStyle=grad;g.fillRect(0,0,size,size);
-  if(m===0){const band=size/2;for(let n=0;n<2;n++){g.fillStyle=n%2?'rgba(0,0,0,.11)':'rgba(225,255,210,.07)';g.fillRect(n*band,0,band+1,size);}}
-  else if(m===1){const cw=size/4,ch=size/2;for(let x=0;x<4;x++)for(let y=0;y<2;y++)if((x+y)&1){g.fillStyle='rgba(0,0,0,.09)';g.fillRect(x*cw,y*ch,cw+1,ch+1);}}
-  else if(m===2){const band=size/2;g.fillStyle='rgba(0,0,0,.10)';g.fillRect(0,0,size,band);}
-  let seed=110711+p*7919+m*131;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  const blades=p===3?12000:22000;
-  for(let n=0;n<blades;n++){const x=rnd()*size,y=rnd()*size,len=1+rnd()*4;g.strokeStyle=p===3?'rgba(255,255,255,.22)':p===4?'rgba(105,255,245,.22)':rnd()>.5?'rgba(190,230,155,.17)':'rgba(0,20,0,.2)';g.lineWidth=.5+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*2,y-len);g.stroke();}
+  activePitchKey=key;pitchSettings={pitch:p,mowing:m};
+  const c=pitchTextureCanvas,g=c.getContext('2d',{alpha:false}),size=c.width;
+  if(pitchBaseImage)g.drawImage(pitchBaseImage,0,0,size,size);
+  else{
+   const fallback=g.createLinearGradient(0,0,size,size);
+   fallback.addColorStop(0,'#347b40');fallback.addColorStop(.5,'#2e7139');fallback.addColorStop(1,'#286637');
+   g.fillStyle=fallback;g.fillRect(0,0,size,size);
+  }
+  // Grass presets tint the photographic sports-turf albedo; the separate
+  // fixed line-marking texture is never recoloured or redrawn here.
+  const tints=['#e7f2df','#8eaa91','#b6a16b','#dce5e7','#78a9c4'];
+  if(p!==0){
+   g.save();g.globalCompositeOperation='multiply';g.globalAlpha=p===1?.72:p===2?.68:p===3?.58:.62;
+   g.fillStyle=tints[p];g.fillRect(0,0,size,size);g.restore();
+  }else{
+   g.save();g.globalCompositeOperation='multiply';g.globalAlpha=.12;
+   g.fillStyle=tints[0];g.fillRect(0,0,size,size);g.restore();
+  }
+  // Mowing presets are subtle directional treatments over the same real turf.
+  g.save();g.globalCompositeOperation='multiply';
+  if(m===0){
+   for(let n=0;n<2;n++){g.fillStyle=n%2?'rgba(0,0,0,.10)':'rgba(255,255,255,.045)';g.fillRect(n*size/2,0,size/2+1,size);}
+  }else if(m===1){
+   for(let n=0;n<4;n++){g.fillStyle=n%2?'rgba(0,0,0,.075)':'rgba(255,255,255,.035)';g.fillRect(n*size/4,0,size/4+1,size);}
+  }else if(m===2){
+   for(let n=0;n<4;n++){g.fillStyle=n%2?'rgba(0,0,0,.065)':'rgba(255,255,255,.025)';g.fillRect(0,n*size/4,size,size/4+1);}
+  }
+  g.restore();
   pitchTexture.needsUpdate=true;
  }
  function createPreviewWeather(){
@@ -274,104 +288,104 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const on=mode===2?1:mode===1?.22:0;
   for(const lamp of floodlightFixtures){lamp.material.emissiveIntensity=on?2.4*on:0;lamp.material.color.setHex(on?0xfff5dc:0x7d858b);}
  }
- // Guarantee regulation pitch markings even when the source GLB's grass material
- // is replaced by the runtime turf texture above.
+ // One transparent, regulation-sized texture carries every field marking.
+ // It is independent of the grass material, so pitch presets cannot alter it.
  function addPitchMarkings(){
-  const group=new THREE.Group();
-  const white=new THREE.MeshBasicMaterial({color:0xf5f5ed,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,side:THREE.DoubleSide});
-  const y=pitchSurfaceY+.014,th=.11,lineHeight=.009;
-  const line=(x1,z1,x2,z2,width=th)=>{
-   const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);
-   if(len<.001)return;
-   const m=new THREE.Mesh(new THREE.BoxGeometry(len,lineHeight,width),white);
-   m.position.set((x1+x2)/2,y,(z1+z2)/2);
-   m.rotation.y=-Math.atan2(dz,dx);
-   m.renderOrder=6;group.add(m);
+  const group=new THREE.Group(),width=2048,height=Math.round(width*68/105);
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const ctx=canvas.getContext('2d');
+  const X=x=>(x+52.5)/105*width,Y=z=>(34-z)/68*height;
+  const lineWidth=width*.11/105;
+  ctx.strokeStyle='rgba(250,250,244,.98)';ctx.fillStyle='rgba(250,250,244,.98)';
+  ctx.lineWidth=lineWidth;ctx.lineCap='round';ctx.lineJoin='round';
+  const line=(x1,z1,x2,z2)=>{
+   ctx.beginPath();ctx.moveTo(X(x1),Y(z1));ctx.lineTo(X(x2),Y(z2));ctx.stroke();
   };
-  // All curved markings are built from the same visible-width line segments.
-  // Angles are unwrapped so each arc follows the intended field-facing side.
   const arc=(cx,cz,r,a0,a1,segments=96)=>{
    while(a1<a0)a1+=Math.PI*2;
-   let px=cx+Math.cos(a0)*r,pz=cz+Math.sin(a0)*r;
-   for(let i=1;i<=segments;i++){
-    const a=a0+(a1-a0)*i/segments,nx=cx+Math.cos(a)*r,nz=cz+Math.sin(a)*r;
-    line(px,pz,nx,nz,th);px=nx;pz=nz;
+   ctx.beginPath();
+   for(let i=0;i<=segments;i++){
+    const a=a0+(a1-a0)*i/segments,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
+    if(i===0)ctx.moveTo(X(x),Y(z));else ctx.lineTo(X(x),Y(z));
    }
+   ctx.stroke();
   };
   const spot=(x,z)=>{
-   const m=new THREE.Mesh(new THREE.CircleGeometry(.16,24),white);
-   m.rotation.x=-Math.PI/2;m.position.set(x,y+.006,z);m.renderOrder=7;group.add(m);
+   ctx.beginPath();ctx.arc(X(x),Y(z),width*.16/105,0,Math.PI*2);ctx.fill();
   };
-  // Regulation 105 x 68 m field: touchlines, goal lines and halfway line.
+  // 105 x 68 m regulation field: outer boundary, halfway line and centre circle.
   line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);
   line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);
-  line(0,-34,0,34);
-  // Centre circle and centre spot.
-  arc(0,0,9.15,0,Math.PI*2,128);spot(0,0);
-  for(const sign of [-1,1]){
-   const gx=sign*52.5,dir=-sign;
-   // Penalty area: 16.5 m deep and 40.32 m wide.
-   const px=gx+dir*16.5,pz=20.16;
-   line(gx,-pz,px,-pz);line(px,-pz,px,pz);line(px,pz,gx,pz);
-   // Goal area: 5.5 m deep and 18.32 m wide.
+  line(0,-34,0,34);arc(0,0,9.15,0,Math.PI*2,160);spot(0,0);
+  for(const sign of[-1,1]){
+   const gx=sign*52.5,dir=-sign,penX=gx+dir*11;
+   const boxX=gx+dir*16.5,boxZ=20.16;
+   line(gx,-boxZ,boxX,-boxZ);line(boxX,-boxZ,boxX,boxZ);line(boxX,boxZ,gx,boxZ);
    const sixX=gx+dir*5.5,sixZ=9.16;
    line(gx,-sixZ,sixX,-sixZ);line(sixX,-sixZ,sixX,sixZ);line(sixX,sixZ,gx,sixZ);
-   // Penalty spot, 11 m from the goal line.
-   const penX=gx+dir*11;spot(penX,0);
-   // The D arc must lie OUTSIDE the penalty area, toward the centre of the pitch.
+   spot(penX,0);
    const lower=Math.atan2(-7.32,dir*5.5),upper=Math.atan2(7.32,dir*5.5);
-   if(sign>0)arc(penX,0,9.15,upper,lower+Math.PI*2,64);
-   else arc(penX,0,9.15,lower,upper,64);
+   if(sign>0)arc(penX,0,9.15,upper,lower+Math.PI*2,80);
+   else arc(penX,0,9.15,lower,upper,80);
   }
-  // Four 1 m corner quarter-circles, each opening into the field.
-  arc(-52.5,-34,1,0,Math.PI/2,16);
-  arc(52.5,-34,1,Math.PI/2,Math.PI,16);
-  arc(52.5,34,1,Math.PI,Math.PI*1.5,16);
-  arc(-52.5,34,1,Math.PI*1.5,Math.PI*2,16);
-  scene.add(group);return group;
+  // Four 1 m corner quarter-circles.
+  arc(-52.5,-34,1,0,Math.PI/2,20);
+  arc(52.5,-34,1,Math.PI/2,Math.PI,20);
+  arc(52.5,34,1,Math.PI,Math.PI*1.5,20);
+  arc(-52.5,34,1,Math.PI*1.5,Math.PI*2,20);
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
+  texture.generateMipmaps=true;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;
+  texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,side:THREE.DoubleSide});
+  const plane=new THREE.Mesh(new THREE.PlaneGeometry(105,68),material);
+  plane.rotation.x=-Math.PI/2;plane.renderOrder=6;
+  group.position.y=pitchSurfaceY+.018;group.add(plane);scene.add(group);
+  return group;
  }
- // Build one compact, deterministic turf atlas at load time; no external asset or per-frame work.
  function createPitchGrassTextures(){
-  const size=1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const size=mobile?1024:2048,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
   const g=canvas.getContext('2d',{alpha:false});
-  const base=g.createLinearGradient(0,0,size,size);
-  base.addColorStop(0,'#347b40');base.addColorStop(.5,'#2e7139');base.addColorStop(1,'#286637');
-  g.fillStyle=base;g.fillRect(0,0,size,size);
-  const bands=2,band=size/bands;
-  for(let i=0;i<bands;i++){
-   g.fillStyle=i%2?'rgba(7,30,13,.105)':'rgba(190,225,165,.075)';
-   g.fillRect(i*band,0,band+1,size);
-   g.fillStyle=i%2?'rgba(255,255,255,.018)':'rgba(0,0,0,.018)';
-   g.fillRect(i*band+band*.94,0,band*.06,size);
-  }
+  const fallback=g.createLinearGradient(0,0,size,size);
+  fallback.addColorStop(0,'#347b40');fallback.addColorStop(.5,'#2e7139');fallback.addColorStop(1,'#286637');
+  g.fillStyle=fallback;g.fillRect(0,0,size,size);
   let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  // Fine blades run with the mowing direction; varied hue and length avoid a flat painted look.
-  const blades=180000;
-  for(let i=0;i<blades;i++){
-   const x=rnd()*size,y=rnd()*size,len=1+rnd()*2.8,lean=(rnd()-.5)*1.5;
-   const light=rnd();
-   g.strokeStyle=light>.52?'rgba(180,220,145,.19)':light>.18?'rgba(9,42,17,.22)':'rgba(225,235,190,.12)';
-   g.lineWidth=.45+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+lean,y-len);g.stroke();
+  // Lightweight fallback only; the normal path uses the CC0 photographic turf map.
+  for(let i=0;i<(mobile?9000:18000);i++){
+   const x=rnd()*size,y=rnd()*size,len=1+rnd()*2.2;
+   g.strokeStyle=rnd()>.5?'rgba(180,220,145,.15)':'rgba(9,42,17,.16)';
+   g.lineWidth=.5+rnd()*.6;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5),y-len);g.stroke();
   }
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
-  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.repeat.set(8,5);albedo.generateMipmaps=true;
+  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.repeat.set(20,14);albedo.generateMipmaps=true;
   albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
   albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  // A low-contrast grayscale microstructure adds a restrained turf surface response.
   const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=512;
   const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,512,512);
-  for(let i=0;i<12000;i++){
+  for(let i=0;i<9000;i++){
    const x=rnd()*512,y=rnd()*512,len=1+rnd()*3;
-   d.strokeStyle=rnd()>.5?'rgba(235,235,235,.32)':'rgba(35,35,35,.3)';
+   d.strokeStyle=rnd()>.5?'rgba(235,235,235,.24)':'rgba(35,35,35,.24)';
    d.lineWidth=.5+rnd()*.6;d.beginPath();d.moveTo(x,y);d.lineTo(x+(rnd()-.5)*1.4,y-len);d.stroke();
   }
   const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.RepeatWrapping;
-  detail.wrapS=detail.wrapT=THREE.RepeatWrapping;detail.repeat.set(18,12);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
+  detail.repeat.set(28,20);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
   return{albedo,detail,canvas};
+ }
+ function loadPhotographicPitchGrass(){
+  const image=new Image();image.crossOrigin='anonymous';
+  image.onload=()=>{
+   pitchBaseImage=image;pitchTextureStatus='photographic-cc0';
+   activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
+   console.info('PITCH 11 CC0 sports-turf texture loaded:',image.naturalWidth+'x'+image.naturalHeight);
+  };
+  image.onerror=()=>{
+   pitchTextureStatus='fallback-canvas';
+   console.warn('PITCH 11 sports-turf CDN unavailable; using local fallback texture.');
+  };
+  image.src='https://cdn.meshy.ai/landing-assets/textures/grass/sports-turf/sports-turf-2k.jpg';
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;let changed=0,meshCount=0,surfaceCandidates=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);loadPhotographicPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
   const largest=[],candidateSamples=[];
   const materialInfo=material=>{
    if(!material)return null;
@@ -402,7 +416,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     // Replace the baked pitch texture (which contains the old markings) only
     // on Pitch_2; the independent overlay is drawn above this exact surface.
     m.map=textures.albedo;m.color.set(0xffffff);
-    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.008;}
+    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.003;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
     m.roughness=Math.max(.92,m.roughness||0);m.metalness=0;m.needsUpdate=true;
     pitchMaterials.push(m);changed++;
@@ -427,7 +441,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
   stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
-  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.014,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
+  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
   previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
@@ -542,7 +556,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   window.P11Stadium={
    get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
-   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   setPitchSettings(pitch,mowing){
+    pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
+    activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
+   },
    render,renderTopDown,renderPreview,project,setGoalDimensions
   };
  const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
