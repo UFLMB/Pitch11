@@ -6070,7 +6070,7 @@ MS.camera=function(){
     const col=i%2,row=Math.floor(i/2),bx=gridX+col*(bw+gapX),by=gridY+row*(bh+rowGap);
     cameraOptionButton(bx,by,bw,bh,label,()=>{G.cam=i;save();},G.cam===i);
   });
-  settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.675,x+w*.45,w*.52,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();},H*.056);
+  settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.675,x+w*.40,w*.57,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();},H*.06);
   drawCameraProfilePreview(W*.645,y,W*.32,h);
 };
 MS.opt=function(){
