@@ -27,6 +27,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install FBX inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+      - name: Inspect uploaded FBX animation package
+        run: node scripts/inspect-player-fbx-package.mjs
       - name: Check inline application scripts
         run: |
           node --input-type=module <<'NODE'
@@ -69,6 +75,7 @@ jobs:
           node --check engine/match-player-renderer.mjs
           node --check engine/player-renderer-performance.test.mjs
           node --check scripts/validate-player-assets.mjs
+          node --check scripts/inspect-player-fbx-package.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
       - name: Run simulation and adapter regression tests
