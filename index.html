@@ -6127,7 +6127,7 @@ MS.cust=function(){
   }
   if(hasPreview)drawMatchSettingsPreview(previewX,y+H*.13,previewW,h-H*.16,data,tb);
   ctx.save();ctx.font='800 '+(H*.028)+'px sans-serif';const resetLabelBottom=y+H*.045+(ctx.measureText('MATCH RULES & CUSTOMISATION').actualBoundingBoxDescent||H*.006);ctx.restore();
-  ubtn(x+w-W*.135,resetLabelBottom-H*.045+10,W*.11,H*.045,M.conf?'CONFIRM RESET':'RESET',()=>{
+  ubtn(x+w-W*.135,resetLabelBottom-H*.045+7,W*.11,H*.045,M.conf?'CONFIRM RESET':'RESET',()=>{
     if(M.conf){G.x=Object.assign({},DX,{kit:[null,null,null]});M.conf=0;chgX();}
     else M.conf=1;
   },M.conf?'rgba(255,60,40,.5)':0);
