@@ -6027,10 +6027,10 @@ MS.opt=function(){
   const yy=y+H*.69,hb=H*.057;
   settingsText('MENU BACKGROUND',x+W*.025,yy+hb*.58,W*.22,H*.027,'#f4f6fa','left');
   const stepBg=d=>{G.mbg=((Number.isInteger(G.mbg)?G.mbg:0)+d+21)%21;save();};
-  ubtn(x+W*.28,yy,W*.09,hb,'‹',()=>stepBg(-1));
-  ubtn(x+W*.84,yy,W*.09,hb,'›',()=>stepBg(1));
+  ubtn(x+W*.28,yy,W*.07,hb,'‹',()=>stepBg(-1));
+  ubtn(x+w-W*.095,yy,W*.07,hb,'›',()=>stepBg(1));
   const bgName=G.mbg>=1&&G.mbg<=20?G.mbg+'. '+BG27[G.mbg-1][0]:'AUTO (CYCLES)';
-  settingsText(bgName,x+W*.39,yy+hb*.58,w*.4,H*.026,'#fff','center');
+  settingsText(bgName,x+W*.375,yy+hb*.58,w*.4,H*.026,'#fff','center');
 };
 MS.ctl=function(){
   settingsPage('CONTROLS','ctl');const x=W*.135,y=H*.17,w=W*.83,h=H*.74;settingsPanel(x,y,w,h,'INPUT & ASSISTANCE');
