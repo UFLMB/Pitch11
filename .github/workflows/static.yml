@@ -39,10 +39,10 @@ jobs:
           import fs from 'node:fs';
           import { spawnSync } from 'node:child_process';
           const html = fs.readFileSync('index.html', 'utf8');
-          const tags = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          const tags = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
           const inline = tags.filter(([, attrs, body]) =>
-            !/\bsrc\s*=/.test(attrs) &&
-            !/type=["'](?:importmap|application\/ld\+json)["']/i.test(attrs) &&
+            !/\\bsrc\\s*=/.test(attrs) &&
+            !/type=["'](?:importmap|application\\/ld\\+json)["']/i.test(attrs) &&
             body.trim()
           );
           if (!inline.length) throw new Error('No inline application scripts found');
@@ -108,8 +108,10 @@ jobs:
           test -s vendor/three/examples/jsm/utils/SkeletonUtils.js
           test -s vendor/three/examples/jsm/libs/meshopt_decoder.module.js
           test -s vendor/three/LICENSE
-      - name: Download and validate stadium assets into the Pages artifact
+      - name: Download and validate stadium and player assets
         run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
           mkdir -p assets
           curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://www.innerscene.com/api/library/football-stadium-f7b93967/download" --output assets/football-stadium.glb
           test "$(stat -c%s assets/football-stadium.glb)" -gt 1000000
@@ -130,6 +132,7 @@ jobs:
             test "$(head -c 4 "$asset")" = "glTF"
           done
           node scripts/validate-player-assets.mjs
+          node scripts/inspect-player-fbx-package.mjs --compare-model
       - name: Build a mobile-optimized stadium model
         run: |
           npx --yes @gltf-transform/cli@4.5.1 resize assets/football-stadium.glb assets/football-stadium-mobile.glb --width 1024 --height 1024
