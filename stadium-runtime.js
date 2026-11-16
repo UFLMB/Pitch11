@@ -382,9 +382,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   return group;
  }
  function loadMeshyPitchGrass(){
-  // Meshy Sports Turf PBR set: Base Color, Normal (OpenGL), Roughness.
-  const quality=mobile?'ti_w:1536,q:75':'ti_w:2048,q:75';
-  const root='https://cdn.meshy.ai/'+quality+'/landing-assets/textures/grass/sports-turf/';
+  // Load the repository's local Sports Turf PBR pack. Mobile uses 1K;
+  // desktop uses 2K. This avoids CDN dependencies and preserves offline caching.
+  const quality=mobile?'1k':'2k';
+  const prefix='./assets/textures/grass/'+quality+'/sports-turf_'+quality+'_';
   const canvas=pitchGrassBaseCanvas;if(!canvas)return;
   const crop=(image,target)=>{
    const g=target.getContext('2d',{alpha:false}),iw=image.naturalWidth,ih=image.naturalHeight;
@@ -393,17 +394,17 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    g.clearRect(0,0,target.width,target.height);g.drawImage(image,sx,sy,sw,sh,0,0,target.width,target.height);
   };
   const load=(file,target,done)=>{
-   const image=new Image();image.crossOrigin='anonymous';
+   const image=new Image();
    image.onload=()=>{crop(image,target);done(true);};
-   image.onerror=()=>{done(false);console.warn('PITCH 11 Meshy map unavailable:',file);};
-   image.src=root+file;
+   image.onerror=()=>{done(false);console.warn('PITCH 11 local grass map unavailable:',prefix+file);};
+   image.src=prefix+file;
   };
   const normalCanvas=document.createElement('canvas');normalCanvas.width=canvas.width;normalCanvas.height=canvas.height;
   const roughCanvas=document.createElement('canvas');roughCanvas.width=canvas.width;roughCanvas.height=canvas.height;
   let complete=0,baseOK=false,normalOK=false,roughOK=false;
   const finish=()=>{
    if(++complete!==3)return;
-   if(baseOK){pitchTexture.needsUpdate=true;pitchTextureStatus='meshy-sports-turf-base-color';}
+   if(baseOK){pitchTexture.needsUpdate=true;pitchTextureStatus='local-meshy-'+quality+'-pbr';}
    if(normalOK){
     pitchNormalTexture=new THREE.CanvasTexture(normalCanvas);pitchNormalTexture.colorSpace=THREE.NoColorSpace;
     pitchNormalTexture.wrapS=pitchNormalTexture.wrapT=THREE.ClampToEdgeWrapping;
@@ -422,11 +423,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     material.roughness=1;material.metalness=0;material.needsUpdate=true;
    });
    activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
-   console.info('PITCH 11 Meshy Sports Turf PBR maps:',{baseColor:baseOK,normal:normalOK,roughness:roughOK,metalness:0});
+   console.info('PITCH 11 local Sports Turf PBR maps:',{quality,baseColor:baseOK,normalOpenGL:normalOK,roughness:roughOK,metalness:0});
   };
-  load('sports-turf-color.webp',canvas,ok=>{baseOK=ok;finish();});
-  load('sports-turf-normal.webp',normalCanvas,ok=>{normalOK=ok;finish();});
-  load('sports-turf-roughness.webp',roughCanvas,ok=>{roughOK=ok;finish();});
+  load('color.jpg',canvas,ok=>{baseOK=ok;finish();});
+  load('normalgl.jpg',normalCanvas,ok=>{normalOK=ok;finish();});
+  load('roughness.jpg',roughCanvas,ok=>{roughOK=ok;finish();});
  }
  function createPitchGrassTextures(){
   // Mobile texture stays at 1536 x 1024 (~6 MB RGBA before mipmaps);
