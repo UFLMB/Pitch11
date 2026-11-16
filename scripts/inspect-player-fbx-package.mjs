@@ -7,8 +7,18 @@ const directory = "input/player-package";
 const sourceDirectory = path.resolve(directory);
 const compareModel = process.argv.includes("--compare-model");
 const playerModelPath = path.resolve("assets/players/player.glb");
-const entries = await readdir(sourceDirectory, { withFileTypes: true });
-const files = entries.filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith(".fbx")).map(entry => ({ name: entry.name }));
+async function collectFbx(dir, relative = "") {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = [];
+  for (const entry of entries) {
+    const rel = path.join(relative, entry.name);
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) found.push(...await collectFbx(full, rel));
+    else if (entry.isFile() && entry.name.toLowerCase().endsWith(".fbx")) found.push({ name: rel, full });
+  }
+  return found.sort((a, b) => a.name.localeCompare(b.name));
+}
+const files = await collectFbx(sourceDirectory);
 if (!files.length) throw new Error("No FBX files found in input/player-package");
 const work = "/tmp/pitch11-fbx-audit";
 await mkdir(work, { recursive: true });
@@ -55,7 +65,8 @@ if (compareModel) {
 const results = [];
 for (const entry of files) {
   const target = path.join(work, entry.name);
-  const bytes = await readFile(path.join(sourceDirectory, entry.name));
+  await mkdir(path.dirname(target), { recursive: true });
+  const bytes = await readFile(entry.full);
   if (bytes.length < 128) throw new Error(`Suspiciously small FBX: ${entry.name}`);
   await writeFile(target, bytes);
   const xmlPath = target + ".assxml";
@@ -118,4 +129,6 @@ const report = {
   ...(compareModel ? { comparisonModel: "assets/players/player.glb", modelNamedNodeCount: modelNodeNames.size } : {}),
   files: results
 };
-console.log(JSON.stringify(report, null, 2));
+const reportText = JSON.stringify(report, null, 2);
+await writeFile("player-fbx-audit.json", reportText + "\\n");
+console.log(reportText);
