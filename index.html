@@ -5830,10 +5830,10 @@ injured=function(q){
    ================================================================================ */
 const SETTINGS_NAV=[
   {name:'GAMEPLAY',sub:'Difficulty and pitch dimensions',key:'game',abbr:'GP',kind:'game'},
-  {name:'CAMERA',sub:'Nine match camera profiles',key:'camera',abbr:'CM',kind:'camera'},
+  {name:'CAMERA',sub:'Match views and set-piece camera',key:'camera',abbr:'CM',kind:'camera'},
   {name:'SOUND & VISUALS',sub:'Audio, stadium and display',key:'opt',abbr:'AV',kind:'sound'},
   {name:'CONTROLS',sub:'Input, assists and layout',key:'ctl',abbr:'CT',kind:'controls'},
-  {name:'MATCH SETTINGS',sub:'Rules, gameplay tuning and kits',key:'cust',abbr:'MT',kind:'match'},
+  {name:'MATCH SETTINGS',sub:'Rules, gameplay, presentation, kits & officials',key:'cust',abbr:'MT',kind:'match'},
   {name:'DATA MANAGEMENT',sub:'Saved progress and reset',key:'data',abbr:'DM',kind:'data'}
 ];
 function settingsNavIcon(kind,cx,cy,r,color){
@@ -6028,11 +6028,12 @@ MS.camera=function(){
   const x=W*.135,y=H*.17,w=W*.49,h=H*.74;
   settingsPanel(x,y,w,h,'MATCH CAMERA');
   const labels=['TOP-DOWN','SIDE WIDE','SIDE MEDIUM','SIDE CLOSE','BROADCAST HIGH','LOW STADIUM','ACTION CAM','AUTO DIRECTOR','GOAL TO GOAL'];
-  const gridX=x+w*.045,gridY=y+H*.13,gapX=w*.055,bw=w*.45,bh=H*.092,rowGap=H*.025;
+  const gridX=x+w*.045,gridY=y+H*.13,gapX=w*.055,bw=w*.45,bh=H*.082,rowGap=H*.018;
   labels.forEach((label,i)=>{
     const col=i%2,row=Math.floor(i/2),bx=gridX+col*(bw+gapX),by=gridY+row*(bh+rowGap);
     cameraOptionButton(bx,by,bw,bh,label,()=>{G.cam=i;save();},G.cam===i);
   });
+  settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.675,x+W*.24,w*.72,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();},H*.052);
   drawCameraProfilePreview(W*.645,y,W*.32,h);
 };
 MS.opt=function(){
@@ -6041,14 +6042,13 @@ MS.opt=function(){
   settingsPanel(x,y,w,h,'AUDIO & PRESENTATION');
   const rows=[
     ['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],
-    ['SOUND FX','vol',['OFF','LOW','MED','HIGH']],
+    ['SFX VOLUME','vol',['OFF','LOW','MED','HIGH']],
     ['MUSIC','mus',['OFF','ON']],
     ['CROWD','crowd',['OFF','LOW','FULL']],
     ['SCREEN SHAKE','shk',['OFF','LOW','FULL']],
     ['MINI-MAP','radar',['OFF','SMALL','LARGE']],
     ['GOAL REPLAYS','rep',['OFF','ON']],
-    ['COMMENTARY','com',['OFF','ON']],
-    ['DOUBLE-TAP SHOT','ftap',['OFF','ON']]
+    ['COMMENTARY','com',['OFF','ON']]
   ];
   const start=y+H*.085,step=H*.066,rowH=H*.057,segX=x+W*.30,segW=w*.60;
   rows.forEach((r,i)=>{
@@ -6067,7 +6067,7 @@ MS.opt=function(){
 };
 MS.ctl=function(){
   settingsPage('CONTROLS','ctl');const x=W*.135,y=H*.17,w=W*.83,h=H*.74;settingsPanel(x,y,w,h,'INPUT & ASSISTANCE');
-  const rows=[['PASS / SHOT ASSIST','Aiming assistance settings','assist'],['CONTROL PRESET','Choose the on-screen action layout','preset'],['LAYOUT EDITOR','Move and resize the mobile controls','layout'],['TRAINING','Practise the core match actions','train'],['CHEAT SHEET','Review gestures and controls','cheat'],['ADVANCED INPUT','Haptics, swipe input and hints','adv']];
+  const rows=[['PASS / SHOT ASSIST','Aiming assistance settings','assist'],['CONTROL PRESET','Choose the on-screen action layout','preset'],['LAYOUT EDITOR','Move and resize the mobile controls','layout'],['TRAINING','Practise the core match actions','train'],['CHEAT SHEET','Review gestures and controls','cheat'],['ADVANCED INPUT','Haptics, swipe input, double-tap and hints','adv']];
   rows.forEach(r=>{const i=rows.indexOf(r),yy=y+H*(.09+i*.105),bx=x+W*.025,bw=w*.94,bh=H*.082;UI.r.push({x:bx,y:yy,w:bw,h:bh,fn:()=>go(r[2])});glass(bx,yy,bw,bh,bh*.38,{top:'rgba(255,255,255,.13)',bot:'rgba(255,255,255,.045)',hl:.07});ctx.textAlign='left';txt(r[0],bx+W*.025,yy+bh*.38,H*.032,'#fff',800);txt(r[1],bx+W*.025,yy+bh*.73,H*.023,'rgba(195,208,220,.78)',600);ctx.textAlign='center';txt('›',bx+bw-W*.025,yy+bh*.55,H*.055,'#ffe08a',800);});
 };
 MS.adv=function(){
@@ -6075,7 +6075,7 @@ MS.adv=function(){
   settingsRow('HAPTICS',x+W*.025,y+H*.13,x+W*.42,w*.48,['ON','OFF'],G.haptic?0:1,i=>{G.haptic=i?0:1;save();});
   settingsRow('SWIPE ANYWHERE',x+W*.025,y+H*.27,x+W*.42,w*.48,['ON','OFF'],G.swAnywhere?0:1,i=>{G.swAnywhere=i?0:1;save();});
   settingsRow('FIRST-TIME HINTS',x+W*.025,y+H*.41,x+W*.42,w*.48,[G.tut?'ON':'SHOW AGAIN'],0,()=>{G.tut=0;S.tutT=0;save();});
-  settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.55,x+W*.42,w*.48,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();});
+  settingsRow('DOUBLE-TAP SHOT',x+W*.025,y+H*.69,x+W*.42,w*.48,['OFF','ON'],G.ftap,v=>{G.ftap=v;syncDbl();save();AU.init();AU.vol();});
 };
 function drawMatchSettingsPreview(x,y,w,h,data,tb){
    settingsPanel(x,y,w,h,'LOOKS PREVIEW');
