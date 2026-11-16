@@ -52,7 +52,7 @@ for (const entry of files) {
     boneNameCount: boneNames.length,
     hierarchyNodeCount: nodeNames.length,
     animationNames,
-    animationChannelCount: (xml.match(/<Channel\\b/g) || []).length,
+    animationChannelCount: (xml.match(/<NodeAnim\\b/g) || []).length,
     skeletonSignature: signature
   });
 }
