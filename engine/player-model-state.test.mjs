@@ -9,8 +9,8 @@ const player = (overrides = {}) => ({
 
 test("maps legacy pitch coordinates to the Three.js stadium coordinate system", () => {
   const state = mapLegacyPlayerState(player(), 3, .5);
-  assert.equal(state.x, -52.5);
-  assert.equal(state.z, -33);
+  assert.equal(state.x, -47.5);
+  assert.equal(state.z, -24);
   assert.equal(state.speed, 5);
   assert.equal(state.id, 3);
 });
@@ -36,6 +36,7 @@ test("preserves selection, team, goalkeeper role and player appearance variants"
 
 test("omits players who are off the pitch and maps the full active squad", () => {
   const states = mapLegacyPlayers([player(), player({ out: true }), player({ team: 1, role: 0, gk: true })]);
-  assert.equal(states.length, 2);
-  assert.equal(states[1].role, "GK");
+  assert.equal(states.length, 3);
+  assert.equal(states[1].visible, false);
+  assert.equal(states[2].role, "GK");
 });
