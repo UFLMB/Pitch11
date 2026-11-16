@@ -6223,7 +6223,7 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
    if(live){
      // Opaque bezel masks any residual one-pixel WebGL edge shimmer.
      ctx.save();ctx.strokeStyle='rgba(3,8,12,.98)';ctx.lineWidth=6;rr(ix,iy,iw,ih,radius);ctx.stroke();
-     ctx.strokeStyle='rgba(235,242,248,.62)';ctx.lineWidth=1;rr(ix+3,iy+3,iw-6,ih-6,Math.max(1,radius-3));ctx.stroke();ctx.restore();
+     ctx.strokeStyle='rgba(148,163,184,.22)';ctx.lineWidth=1;rr(ix+3,iy+3,iw-6,ih-6,Math.max(1,radius-3));ctx.stroke();ctx.restore();
      const pillW=Math.min(iw*.34,H*.12),pillH=Math.max(18,H*.03),pillX=ix+iw*.035,pillY=iy+ih*.045;
      glass(pillX,pillY,pillW,pillH,pillH*.5,{top:'rgba(5,12,18,.88)',bot:'rgba(5,12,18,.7)',bd:'rgba(255,255,255,.2)'});
      fit('LIVE 3D',pillX+pillW*.53,pillY+pillH*.5,pillW*.86,pillH*.38,'#e8f0f4');
