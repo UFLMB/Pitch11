@@ -13,6 +13,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const key=new THREE.DirectionalLight(0xffdfb5,1.35);key.position.set(-90,150,100);scene.add(key);
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
+ const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
+ let previewBall=null;
  const topCamera=new THREE.OrthographicCamera(-60,60,40,-40,.1,1000);
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
@@ -233,6 +235,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  loader.load('./assets/football-stadium.glb',gltf=>{
   const stadium=gltf.scene;stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);
+  previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);setGoalDimensions();addFlags();
   const details=new GLTFLoader();details.load('./assets/team-dugout.glb',asset=>{for(const s of[-1,1]){const d=asset.scene.clone(true);d.position.set(s*12.5,.05,36.5);if(s<0)d.rotation.y=Math.PI;scene.add(d);}},undefined,()=>{});
@@ -243,6 +246,36 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*innerWidth,sy=(-v3.y*.5+.5)*innerHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*innerWidth,sy2=(-v4.y*.5+.5)*innerHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
  function render(V,w,h){setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
  function renderTopDown(cx,cy,vw,vh,w,h){const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
- window.P11Stadium={get ready(){return ready;},render,renderTopDown,project,setGoalDimensions};
+ function renderPreview(rect,options={}){
+   if(!ready||!rect||rect.w<2||rect.h<2)return false;
+   const x=Math.max(0,rect.x),y=Math.max(0,rect.y),w=Math.min(innerWidth-x,rect.w),h=Math.min(innerHeight-y,rect.h);
+   if(w<2||h<2)return false;
+   const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
+   const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
+   const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null;
+   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldExposure=renderer.toneMappingExposure;
+   if(timeOfDay===2){
+    scene.background.set(0x07111d);if(scene.fog)scene.fog.color.set(0x101a29);
+    key.color.set(0x8aa7d6);key.intensity=.62;fill.color.set(0x7399d8);fill.intensity=.42;renderer.toneMappingExposure=.92;
+   }else if(timeOfDay===1){
+    scene.background.set(0x382b3b);if(scene.fog)scene.fog.color.set(0x493746);
+    key.color.set(0xffad78);key.intensity=1.05;fill.color.set(0x8aa7c7);fill.intensity=.48;renderer.toneMappingExposure=1.02;
+   }else{
+    scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
+    key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;renderer.toneMappingExposure=1.08;
+   }
+   previewCamera.aspect=w/h;previewCamera.fov=46;previewCamera.position.set(0,27,73);previewCamera.lookAt(0,0,-5);previewCamera.updateProjectionMatrix();
+   if(previewBall)previewBall.rotation.y=now*.00022;
+   const bottom=innerHeight-y-h;
+   renderer.setScissorTest(true);renderer.setViewport(x,bottom,w,h);renderer.setScissor(x,bottom,w,h);
+   updateSecurity(now);updateStaff(now);updateCrowd(now);
+   renderer.render(scene,previewCamera);
+   renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
+   if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
+   if(oldFog&&scene.fog)scene.fog.color.copy(oldFog);
+   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;renderer.toneMappingExposure=oldExposure;
+   return true;
+  }
+  window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
  addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 })();
