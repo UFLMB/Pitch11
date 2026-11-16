@@ -424,15 +424,25 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  function renderPreview(rect,options={}){
    if(!ready){previewFailure=stadiumLoadState;return false;}
    if(!rect||rect.w<2||rect.h<2){previewFailure='invalid-preview-rect';return false;}
-   // Convert the UI canvas rectangle into this WebGL canvas' own CSS-pixel
-   // coordinate space; the two canvases must not be assumed to share bounds.
-   const canvasRect=renderer.domElement.getBoundingClientRect();
-   const logicalSize=renderer.getSize(new THREE.Vector2());
-   if(canvasRect.width<2||canvasRect.height<2){previewFailure='renderer-canvas-unavailable';return false;}
+   // The preview rectangle is expressed in the UI canvas' local CSS pixels.
+   // Map it through both canvases' real DOM bounds; mobile browser viewport
+   // dimensions can differ slightly from the CSS canvas dimensions.
+   const uiCanvas=document.getElementById('c');
+   const uiRect=uiCanvas&&uiCanvas.getBoundingClientRect();
+   if(!uiRect||uiRect.width<2||uiRect.height<2){previewFailure='ui-canvas-unavailable';return false;}
    syncRendererPixelRatio();
+   const canvasRect=renderer.domElement.getBoundingClientRect();
+   if(canvasRect.width<2||canvasRect.height<2){previewFailure='renderer-canvas-unavailable';return false;}
+   // Keep Three.js logical viewport dimensions aligned to the actual CSS
+   // viewport instead of assuming innerWidth/innerHeight match on mobile.
+   let logicalSize=renderer.getSize(new THREE.Vector2());
+   if(Math.abs(logicalSize.x-canvasRect.width)>.5||Math.abs(logicalSize.y-canvasRect.height)>.5){
+     renderer.setSize(canvasRect.width,canvasRect.height,false);
+     logicalSize=renderer.getSize(new THREE.Vector2());
+   }
    const pixelRatio=renderer.getPixelRatio();
    const sx=logicalSize.x/canvasRect.width,sy=logicalSize.y/canvasRect.height;
-   const rawX=(rect.x-canvasRect.left)*sx,rawY=(rect.y-canvasRect.top)*sy;
+   const rawX=(uiRect.left+rect.x-canvasRect.left)*sx,rawY=(uiRect.top+rect.y-canvasRect.top)*sy;
    const rawW=rect.w*sx,rawH=rect.h*sy;
    // Snap all scissor edges to the shared physical-pixel grid, rounding inward
    // so the UI mask and WebGL viewport cannot shimmer against each other.
