@@ -6431,11 +6431,46 @@ take=function(p,byHand=false){
   let enabled=false;
   try{enabled=new URLSearchParams(location.search).get('diag')==='1';}catch(_){}
   if(!enabled)return;
-  const panel=document.createElement('pre');
+  const panel=document.createElement('div');
   panel.id='p11-canvas-diagnostics';
   panel.setAttribute('aria-live','polite');
-  panel.style.cssText='position:fixed;z-index:2147483647;left:6px;top:6px;max-width:calc(100vw - 12px);max-height:44vh;overflow:auto;margin:0;padding:8px 10px;background:rgba(0,0,0,.9);color:#b7ff9c;border:1px solid #b7ff9c;border-radius:6px;font:11px/1.35 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;pointer-events:auto;user-select:text;-webkit-user-select:text;';
+  panel.style.cssText='position:fixed;z-index:2147483647;left:6px;top:6px;width:min(460px,calc(100vw - 12px));max-height:44vh;display:flex;flex-direction:column;gap:6px;box-sizing:border-box;padding:7px;background:rgba(0,0,0,.94);color:#b7ff9c;border:1px solid #b7ff9c;border-radius:6px;font:11px/1.35 ui-monospace,monospace;pointer-events:auto;user-select:text;-webkit-user-select:text;';
+  const toolbar=document.createElement('div');
+  toolbar.style.cssText='display:flex;justify-content:flex-end;flex:0 0 auto;';
+  const copyButton=document.createElement('button');
+  copyButton.type='button';
+  copyButton.textContent='COPY DIAGNOSTICS';
+  copyButton.setAttribute('aria-label','Copy all canvas diagnostics');
+  copyButton.style.cssText='padding:6px 10px;border:1px solid #b7ff9c;border-radius:4px;background:#18301b;color:#d8ffd0;font:700 11px/1.2 ui-monospace,monospace;touch-action:manipulation;cursor:pointer;';
+  const output=document.createElement('pre');
+  output.style.cssText='min-height:0;max-height:calc(44vh - 48px);overflow:auto;margin:0;color:inherit;font:inherit;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;-webkit-user-select:text;';
+  toolbar.appendChild(copyButton);
+  panel.appendChild(toolbar);
+  panel.appendChild(output);
   (document.body||document.documentElement).appendChild(panel);
+  copyButton.addEventListener('click',async()=>{
+    const text=output.textContent||'';
+    let copied=false;
+    try{
+      if(navigator.clipboard&&window.isSecureContext){
+        await navigator.clipboard.writeText(text);
+        copied=true;
+      }
+    }catch(_){}
+    if(!copied){
+      const field=document.createElement('textarea');
+      field.value=text;
+      field.setAttribute('readonly','');
+      field.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;';
+      document.body.appendChild(field);
+      field.select();
+      try{copied=document.execCommand('copy');}catch(_){}
+      field.remove();
+    }
+    copyButton.textContent=copied?'COPIED ✓':'COPY FAILED';
+    copyButton.style.background=copied?'#24532a':'#542424';
+    copyButton.style.color='#fff';
+  });
   const n=v=>Number.isFinite(v)?(Math.round(v*100)/100).toString():'n/a';
   const rect=e=>{if(!e)return null;const r=e.getBoundingClientRect(),c=getComputedStyle(e);return{left:r.left,top:r.top,width:r.width,height:r.height,right:r.right,bottom:r.bottom,cssWidth:c.width,cssHeight:c.height,position:c.position,transform:c.transform,zIndex:c.zIndex};};
   const dims=e=>e?{width:e.width,height:e.height,clientWidth:e.clientWidth,clientHeight:e.clientHeight}:null;
@@ -6465,7 +6500,7 @@ take=function(p,byHand=false){
       webglCanvas:{rect:fmt(data.webglCanvas.rect),backing:data.webglCanvas.backing},
       stadium:data.stadium
     };
-    panel.textContent='PITCH 11 CANVAS DIAGNOSTICS (?diag=1)\n'+JSON.stringify(output,null,2);
+    output.textContent='PITCH 11 CANVAS DIAGNOSTICS (?diag=1)\n'+JSON.stringify(output,null,2);
   }
   update();
   window.addEventListener('resize',update,{passive:true});
