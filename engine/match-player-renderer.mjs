@@ -17,6 +17,7 @@ function kitMaterial(material, meshName, player) {
   const copy = material.clone();
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
   const kit = TEAM_KITS[player.team] || TEAM_KITS[0];
+  if (!copy.color) return copy;
   if (/jersey|shirt|kit|top/.test(label)) copy.color.setHex(player.role === "GK" ? kit.keeper : kit.shirt);
   else if (/short/.test(label)) copy.color.setHex(kit.shorts);
   else if (/sock/.test(label)) copy.color.setHex(kit.socks);
