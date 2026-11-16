@@ -58,34 +58,61 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchGrassBaseCanvas=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
  let activePitchKey='';
+ function drawProceduralGrass(g,width,height){
+  // One continuous, deterministic turf image. Blade marks are baked into a
+  // single texture; no grass meshes, particle systems, or repeated tiles.
+  let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const base=g.createLinearGradient(0,0,width,height);
+  base.addColorStop(0,'#397d43');base.addColorStop(.48,'#34763d');base.addColorStop(1,'#2d6d37');
+  g.fillStyle=base;g.fillRect(0,0,width,height);
+  // Broad, very low-contrast natural variation prevents a flat carpet look.
+  for(let i=0;i<420;i++){
+   const x=rnd()*width,y=rnd()*height,r=18+rnd()*95;
+   const shade=rnd()>.52?'rgba(135,174,91,.055)':'rgba(10,43,19,.06)';
+   const grad=g.createRadialGradient(x,y,1,x,y,r);
+   grad.addColorStop(0,shade);grad.addColorStop(1,'rgba(0,0,0,0)');
+   g.fillStyle=grad;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const tones=[
+   'rgba(104,157,75,.55)','rgba(145,184,102,.46)','rgba(72,132,62,.62)',
+   'rgba(42,105,48,.62)','rgba(177,190,112,.25)','rgba(24,82,39,.42)',
+   'rgba(119,164,83,.38)','rgba(57,119,55,.5)'
+  ];
+  const paths=tones.map(()=>new Path2D());
+  const blades=mobile?52000:92000;
+  for(let i=0;i<blades;i++){
+   const x=rnd()*width,y=rnd()*height;
+   const len=(mobile?2.2:2.8)+rnd()*(mobile?5.2:7.2);
+   const angle=(rnd()-.5)*1.35;
+   const dx=Math.sin(angle)*len,dy=-Math.cos(angle)*len;
+   const bend=(rnd()-.5)*len*.42;
+   const path=paths[Math.floor(rnd()*paths.length)];
+   path.moveTo(x,y);path.quadraticCurveTo(x+bend,y-len*.55,x+dx,y+dy);
+  }
+  g.lineCap='round';
+  paths.forEach((path,i)=>{g.beginPath();g.strokeStyle=tones[i];g.lineWidth=.55+(i%3)*.28;g.stroke(path);});
+  // Tiny highlights and dark organic flecks add close-up texture without geometry.
+  for(let i=0;i<(mobile?16000:26000);i++){
+   const x=rnd()*width,y=rnd()*height;
+   g.fillStyle=rnd()>.5?'rgba(190,207,133,.23)':'rgba(13,54,25,.24)';
+   g.fillRect(x,y,.55+rnd()*1.05,.55+rnd()*1.35);
+  }
+ }
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
   if(key===activePitchKey||!pitchTextureCanvas||!pitchTexture)return;
   activePitchKey=key;pitchSettings={pitch:p,mowing:m};
   const c=pitchTextureCanvas,g=c.getContext('2d',{alpha:false}),width=c.width,height=c.height;
-  if(pitchBaseImage){
-   // Fill a landscape 3:2 field texture from one photographic crop. The source
-   // is used once across the whole pitch, not repeated as a visible tile grid.
-   const imageRatio=pitchBaseImage.naturalWidth/pitchBaseImage.naturalHeight,fieldRatio=width/height;
-   let sx=0,sy=0,sw=pitchBaseImage.naturalWidth,sh=pitchBaseImage.naturalHeight;
-   if(imageRatio>fieldRatio){sw=sh*fieldRatio;sx=(pitchBaseImage.naturalWidth-sw)/2;}
-   else{sh=sw/fieldRatio;sy=(pitchBaseImage.naturalHeight-sh)/2;}
-   g.drawImage(pitchBaseImage,sx,sy,sw,sh,0,0,width,height);
-  }else{
-   const fallback=g.createLinearGradient(0,0,width,height);
-   fallback.addColorStop(0,'#347b40');fallback.addColorStop(.5,'#2e7139');fallback.addColorStop(1,'#286637');
-   g.fillStyle=fallback;g.fillRect(0,0,width,height);
-  }
-  // Grass presets are restrained colour grades over the photographic surface.
+  if(pitchGrassBaseCanvas)g.drawImage(pitchGrassBaseCanvas,0,0,width,height);
+  else drawProceduralGrass(g,width,height);
   const tints=['#f0f5e9','#a8b8a5','#bca77b','#e4e9e8','#91b6c5'];
   const tintStrength=[.035,.22,.19,.14,.17][p];
   if(tintStrength>0){
    g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=tintStrength;
    g.fillStyle=tints[p];g.fillRect(0,0,width,height);g.restore();
   }
-  // Mowing remains a broad, subtle lighting variation; it never alters lines.
   const addBands=(vertical,count,dark,light)=>{
    for(let n=0;n<count;n++){
     const start=n/count,end=(n+1)/count,grad=vertical
@@ -93,8 +120,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
      :g.createLinearGradient(0,start*height,0,end*height);
     const shade=n%2?dark:light;
     grad.addColorStop(0,'rgba(255,255,255,0)');
-    grad.addColorStop(.16,shade);
-    grad.addColorStop(.84,shade);
+    grad.addColorStop(.16,shade);grad.addColorStop(.84,shade);
     grad.addColorStop(1,'rgba(255,255,255,0)');
     g.fillStyle=grad;
     if(vertical)g.fillRect(start*width,0,width/count,height);
@@ -356,52 +382,22 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   return group;
  }
  function createPitchGrassTextures(){
-  // Match the 120 x 80 m pitch UV aspect ratio and use a single photographic
-  // surface over the complete field: no 10 x 7 repeated texture tiles.
-  const width=mobile?2048:3072,height=Math.round(width*2/3),canvas=document.createElement('canvas');
-  canvas.width=width;canvas.height=height;
-  const g=canvas.getContext('2d',{alpha:false});
-  const fallback=g.createLinearGradient(0,0,width,height);
-  fallback.addColorStop(0,'#347b40');fallback.addColorStop(.5,'#2e7139');fallback.addColorStop(1,'#286637');
-  g.fillStyle=fallback;g.fillRect(0,0,width,height);
-  let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  // Fine stochastic flecks are only a fallback if the photo texture cannot load.
-  for(let i=0;i<(mobile?18000:30000);i++){
-   const x=rnd()*width,y=rnd()*height;
-   g.fillStyle=rnd()>.5?'rgba(180,220,145,.11)':'rgba(9,42,17,.12)';
-   g.fillRect(x,y,.7+rnd()*1.1,.7+rnd()*1.1);
-  }
+  // Mobile texture stays at 1536 x 1024 (~6 MB RGBA before mipmaps);
+  // desktop uses 2048 x 1365. The grass is texture-only, never 3D blades.
+  const width=mobile?1536:2048,height=Math.round(width*2/3);
+  const baseCanvas=document.createElement('canvas');baseCanvas.width=width;baseCanvas.height=height;
+  const bg=baseCanvas.getContext('2d',{alpha:false});drawProceduralGrass(bg,width,height);
+  const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
+  const g=canvas.getContext('2d',{alpha:false});g.drawImage(baseCanvas,0,0);
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
-  albedo.wrapS=albedo.wrapT=THREE.ClampToEdgeWrapping;albedo.repeat.set(1,1);albedo.generateMipmaps=true;
-  albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
-  albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
-  const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=1024;
-  const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,1024,1024);
-  for(let i=0;i<18000;i++){
-   const x=rnd()*1024,y=rnd()*1024,v=105+Math.floor(rnd()*46);
-   d.fillStyle='rgba('+v+','+v+','+v+','+(.08+rnd()*.12)+')';
-   d.fillRect(x,y,.7+rnd()*1.4,.7+rnd()*1.4);
-  }
-  const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.ClampToEdgeWrapping;
-  detail.repeat.set(1,1);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
-  return{albedo,detail,canvas};
- }
- function loadPhotographicPitchGrass(){
-  const image=new Image();image.crossOrigin='anonymous';
-  image.onload=()=>{
-   pitchBaseImage=image;pitchTextureStatus='photographic-cc0';
-   activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
-   console.info('PITCH 11 CC0 sports-turf texture loaded:',image.naturalWidth+'x'+image.naturalHeight);
-  };
-  image.onerror=()=>{
-   pitchTextureStatus='fallback-canvas';
-   console.warn('PITCH 11 sports-turf CDN unavailable; using local fallback texture.');
-  };
-  image.src='https://cdn.meshy.ai/landing-assets/textures/grass/sports-turf/sports-turf-2k.jpg';
+  albedo.wrapS=albedo.wrapT=THREE.ClampToEdgeWrapping;albedo.repeat.set(1,1);
+  albedo.generateMipmaps=true;albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
+  albedo.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  return{albedo,canvas,baseCanvas};
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);loadPhotographicPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchGrassBaseCanvas=textures.baseCanvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);pitchTextureStatus='procedural-hd-local';let changed=0,meshCount=0,surfaceCandidates=0;
   const largest=[],candidateSamples=[];
   const materialInfo=material=>{
    if(!material)return null;
