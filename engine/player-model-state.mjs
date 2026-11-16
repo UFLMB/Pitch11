@@ -2,7 +2,7 @@ const SKIN_TONES = [0xd5a47f, 0xb97f5e, 0x8e5b43, 0xe2bd9b, 0x704936, 0xc99470];
 const HAIR_TONES = [0x171311, 0x302017, 0x4b3324, 0x17191c, 0x6a4b2e];
 
 export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = null) {
-  if (!player || player.out) return null;
+  if (!player) return null;
   const team = Number.isInteger(player.team) ? player.team : 0;
   const role = player.gk ? "GK" : String(player.pos || "DEF").toUpperCase();
   const px = Number.isFinite(player.px) ? player.px : player.x;
@@ -30,7 +30,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
     role,
     x: (px + (x - px) * blend - 585) * 0.1,
     z: (py + (y - py) * blend - 400) * 0.1,
-    facing: Number.isFinite(player.rf) ? player.rf : (Number(player.face) || 0),
+    facing: Number.isFinite(player.face) ? player.face : 0,
     speed,
     action,
     selected: player === selectedPlayer,
