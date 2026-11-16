@@ -5900,11 +5900,24 @@ function settingsWrap(value,x,y,w,h,size,color,align,maxLines){
   lines.forEach((line,i)=>fit(line,a==='left'?x:a==='right'?x+w:x+w/2,start+i*lineH,w,fs,color,a));
   ctx.restore();
 }
+function settingsSeg(x,y,w,h,labs,sel,fn){
+  const pad=5,gap=2,innerW=Math.max(1,w-pad*2),innerH=Math.max(1,h-pad*2),cellW=innerW/labs.length;
+  ctx.save();
+  ctx.fillStyle='rgba(4,9,15,.72)';rr(x,y,w,h,h/2);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.stroke();
+  labs.forEach((label,i)=>{
+    const bx=x+pad+i*cellW+gap/2,by=y+pad,bw=Math.max(1,cellW-gap),bh=innerH;
+    UI.r.push({x:x+pad+i*cellW,y:y+pad,w:cellW,h:innerH,fn:()=>fn(i)});
+    if(i===sel){ctx.fillStyle=Y;rr(bx,by,bw,bh,bh/2);ctx.fill();}
+    fit(label,bx+bw/2,by+bh/2,bw*.88,bh*.4,i===sel?'#111820':'#e8edf3');
+  });
+  ctx.restore();
+}
 function settingsRow(label,x,y,segX,segW,options,value,fn,rowH){
   const rh=rowH||H*.062,sh=rh*.84,sy=y+(rh-sh)/2;
   const labelW=Math.max(12,segX-x-W*.035);
   settingsText(label,x,y+rh*.58,labelW,H*.027,'#f4f6fa','left');
-  seg(segX,sy,segW,sh,options,value,fn);
+  settingsSeg(segX,sy,segW,sh,options,value,fn);
 }
 function drawCameraProfilePreview(x,y,w,h){
   settingsPanel(x,y,w,h,'CAMERA PROFILE PREVIEW');
@@ -5947,7 +5960,7 @@ MS.game=function(){
 
   settingsText('DIFFICULTY',dx+W*.027,dy+H*.039,dw*.42,H*.027,'#f4f6fa','left');
   settingsText(DIF[G.diff].n,dx+dw-W*.025-dw*.38,dy+H*.039,dw*.38,H*.027,'#ffe08a','right');
-  seg(dx+W*.018,dy+H*.065,dw-W*.036,H*.062,DIF.map(d=>d.n),G.diff,i=>{G.diff=i;save();});
+  settingsSeg(dx+W*.018,dy+H*.065,dw-W*.036,H*.062,DIF.map(d=>d.n),G.diff,i=>{G.diff=i;save();});
   const difficultyNotes=[
     'A relaxed introduction to the match.',
     'A measured step up in challenge.',
@@ -5955,7 +5968,7 @@ MS.game=function(){
     'More demanding defensive pressure and reactions.',
     'The toughest opposition available.'
   ];
-  settingsWrap(difficultyNotes[G.diff]||'Choose the challenge level for your matches.',dx+dw*.04,dy+H*.145,dw*.92,H*.035,H*.021,'rgba(205,216,228,.86)','center',1);
+  settingsWrap(difficultyNotes[G.diff]||'Choose the challenge level for your matches.',dx+dw*.04,dy+H*.145+5,dw*.92,H*.035,H*.021,'rgba(205,216,228,.86)','center',1);
 
   const opts=['SMALL','STANDARD','LARGE'];
   const gridX=x+W*.025,gridY=y+H*.285,gapX=W*.022,gapY=H*.022;
@@ -5973,7 +5986,7 @@ MS.game=function(){
     rr(cx+W*.014,cy+H*.016,cardW-W*.028,H*.003,H*.002);ctx.fill();ctx.restore();
     settingsText(r.label,cx+W*.022,cy+H*.041,cardW*.5,H*.027,'#f4f6fa','left');
     settingsText(opts[G.cfg[r.key]],cx+cardW-W*.022-cardW*.38,cy+H*.041,cardW*.38,H*.027,'#ffe08a','right');
-    seg(cx+W*.018,cy+H*.065,cardW-W*.036,H*.061,opts,G.cfg[r.key],v=>{G.cfg[r.key]=v;save();applyConfig();});
+    settingsSeg(cx+W*.018,cy+H*.065,cardW-W*.036,H*.061,opts,G.cfg[r.key],v=>{G.cfg[r.key]=v;save();applyConfig();});
     settingsWrap(r.note(),cx+cardW*.05,cy+H*.153,cardW*.9,H*.045,H*.021,'rgba(190,205,218,.86)','center',2);
   });
 };
@@ -6004,7 +6017,7 @@ MS.opt=function(){
     ['COMMENTARY','com',['OFF','ON']],
     ['DOUBLE-TAP SHOT','ftap',['OFF','ON']]
   ];
-  const start=y+H*.085,step=H*.066,rowH=H*.057,segX=x+W*.28,segW=w*.66;
+  const start=y+H*.085,step=H*.066,rowH=H*.057,segX=x+W*.30,segW=w*.60;
   rows.forEach((r,i)=>{
     const yy=start+i*step;
     settingsRow(r[0],x+W*.025,yy,segX,segW,r[2],G[r[1]],v=>{
@@ -6036,11 +6049,11 @@ MS.cust=function(){
   const x=W*.135,y=H*.15,w=W*.83,h=H*.77;
   settingsPanel(x,y,w,h,'MATCH RULES & CUSTOMISATION');
   const data=X(),tb=M.ctab|0;
-  seg(x+W*.02,y+H*.075,w*.95,H*.06,CTABS,tb,i=>{M.ctab=i;});
+  settingsSeg(x+W*.02,y+H*.075,w*.95,H*.06,CTABS,tb,i=>{M.ctab=i;});
   if(tb<3){
     const rows=CROWS[tb]||[],rowH=H*.055,start=y+H*.16,step=H*.096;
     rows.forEach((r,i)=>{
-      settingsRow(r[0],x+W*.025,start+i*step,x+W*.28,w*.66,r[2],data[r[1]],j=>{data[r[1]]=j;chgX();},rowH);
+      settingsRow(r[0],x+W*.025,start+i*step,x+W*.30,w*.60,r[2],data[r[1]],j=>{data[r[1]]=j;chgX();},rowH);
     });
     if(tb===0)settingsWrap('Golden goal: first goal wins. Mercy: match ends at a 4-goal gap.',x+w*.05,y+h*.94,w*.9,H*.035,H*.021,'rgba(190,205,218,.72)','center',1);
     if(tb===2)settingsWrap('Pitch themes and mowing are visible in the top-down camera.',x+w*.05,y+h*.94,w*.9,H*.035,H*.021,'rgba(190,205,218,.72)','center',1);
@@ -6064,7 +6077,7 @@ MS.cust=function(){
       settingsText(l,cx-W*.1,py+H*.115,W*.2,H*.022,'#dfe7ee','center');
     });
   }
-  ubtn(x+w-W*.14,y+H*.012,W*.12,H*.055,M.conf?'CONFIRM RESET':'RESET',()=>{
+  ubtn(x+w-W*.135,y+H*.025,W*.11,H*.045,M.conf?'CONFIRM RESET':'RESET',()=>{
     if(M.conf){G.x=Object.assign({},DX,{kit:[null,null,null]});M.conf=0;chgX();}
     else M.conf=1;
   },M.conf?'rgba(255,60,40,.5)':0);
