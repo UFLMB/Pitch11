@@ -6218,9 +6218,8 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
    ctx.restore();
    // Keep the WebGL viewport a couple of CSS pixels inside the visible frame.
    // This avoids fractional DPR rounding exposing pixels beyond the preview edge.
-   const clipInset=Math.max(2,H*.002);
    const live=window.P11Stadium&&window.P11Stadium.renderPreview&&window.P11Stadium.renderPreview(
-     {x:ix+clipInset,y:iy+clipInset,w:Math.max(1,iw-clipInset*2),h:Math.max(1,ih-clipInset*2)},{timeOfDay:G.tod|0}
+     {x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0}
    );
    if(live){
      ctx.save();ctx.strokeStyle='rgba(235,242,248,.42)';ctx.lineWidth=Math.max(1,H*.0018);rr(ix,iy,iw,ih,radius);ctx.stroke();ctx.restore();
