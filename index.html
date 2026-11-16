@@ -6237,7 +6237,11 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
        state==='retrying'?'RETRYING STADIUM...':
        state==='ready'?'3D PREVIEW UNAVAILABLE':
        'LOADING STADIUM '+Math.max(0,Math.min(100,progress))+'%';
-     settingsText(message,x+w*.5,y+h*.49,w*.9,H*.035,state==='error'||state==='runtime-error'?'#ff8c8c':'#ffe08a','center');
+     settingsText(message,x+w*.5,y+h*.47,w*.9,H*.035,state==='error'||state==='runtime-error'?'#ff8c8c':'#ffe08a','center');
+     if(state==='ready'){
+       const reason=stadium&&stadium.previewFailure?stadium.previewFailure:'unknown-preview-state';
+       settingsText(reason.toUpperCase(),x+w*.5,y+h*.54,w*.9,H*.022,'#aab8c6','center');
+     }
    }
  }
 function resetMatchSettingsTab(tb){
