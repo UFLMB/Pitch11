@@ -8,18 +8,18 @@ test("production stadium renderer owns the skinned player runtime", () => {
   const runtime = read("../stadium-runtime.js");
   const index = read("../index.html");
   const renderer = read("./match-player-renderer.mjs");
-  assert.match(runtime, /MatchPlayerRenderer/);
-  assert.match(runtime, /playerRenderer\\.update\\(options\\.players/);
-  assert.match(runtime, /get playerModelsReady\\{/);
-  assert.match(index, /players:P,selectedPlayer:ctrl,alpha:a,delta:window\\.P11Stadium\\.mobile\\?1\\/30:DT/);
-  assert.match(renderer, /assets\\/players\\/player\\.glb/);
-  assert.match(renderer, /cloneSkeleton/);
-  assert.match(renderer, /isSkinnedMesh/);
+  assert.ok(runtime.includes("MatchPlayerRenderer"));
+  assert.ok(runtime.includes("playerRenderer.update(options.players"));
+  assert.ok(runtime.includes("get playerModelsReady(){"));
+  assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
+  assert.ok(renderer.includes("../assets/players/player.glb"));
+  assert.ok(renderer.includes("cloneSkeleton"));
+  assert.ok(renderer.includes("isSkinnedMesh"));
 });
 
 test("2D player drawing remains as a safe fallback until a valid skinned model loads", () => {
   const index = read("../index.html");
-  assert.match(index, /playerModelsReady/);
-  assert.match(index, /else drawPlayer\\(p,a\\)/);
-  assert.match(index, /drawPlayer3\\(p,a,playerModelsReady\\)/);
+  assert.ok(index.includes("playerModelsReady"));
+  assert.ok(index.includes("else drawPlayer(p,a)"));
+  assert.ok(index.includes("drawPlayer3(p,a,playerModelsReady)"));
 });
