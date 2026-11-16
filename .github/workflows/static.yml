@@ -67,6 +67,7 @@ jobs:
           node --check engine/player-animation.mjs
           node --check engine/player-model-state.mjs
           node --check engine/match-player-renderer.mjs
+          node --check engine/player-renderer-performance.test.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
       - name: Run simulation and adapter regression tests

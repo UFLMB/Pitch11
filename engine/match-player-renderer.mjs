@@ -13,16 +13,24 @@ const TEAM_KITS = [
   { shirt: 0xe5342b, shorts: 0x1b1b1b, socks: 0x1b1b1b, keeper: 0x27c46b }
 ];
 
-function kitMaterial(material, meshName, player) {
-  const copy = material.clone();
+function kitMaterial(material, meshName, player, cache) {
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
+  const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin|body/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
+  const variant = part === "shirt" ? (player.role === "GK" ? "keeper" : "shirt") : part;
+  const teamKey = ["shirt", "shorts", "socks"].includes(part) ? player.team : 0;
+  const toneKey = part === "skin" ? player.skinTone : part === "hair" ? player.hairTone : 0;
+  const key = [material.uuid, variant, teamKey, toneKey].join(":");
+  if (cache.has(key)) return cache.get(key);
+  const copy = material.clone();
   const kit = TEAM_KITS[player.team] || TEAM_KITS[0];
-  if (!copy.color) return copy;
-  if (/jersey|shirt|kit|top/.test(label)) copy.color.setHex(player.role === "GK" ? kit.keeper : kit.shirt);
-  else if (/short/.test(label)) copy.color.setHex(kit.shorts);
-  else if (/sock/.test(label)) copy.color.setHex(kit.socks);
-  else if (/skin|body/.test(label)) copy.color.setHex(player.skinTone);
-  else if (/hair/.test(label)) copy.color.setHex(player.hairTone);
+  if (copy.color) {
+    if (part === "shirt") copy.color.setHex(player.role === "GK" ? kit.keeper : kit.shirt);
+    else if (part === "shorts") copy.color.setHex(kit.shorts);
+    else if (part === "socks") copy.color.setHex(kit.socks);
+    else if (part === "skin") copy.color.setHex(player.skinTone);
+    else if (part === "hair") copy.color.setHex(player.hairTone);
+  }
+  cache.set(key, copy);
   return copy;
 }
 
@@ -39,6 +47,12 @@ export class MatchPlayerRenderer {
     this.error = "";
     this.clipCount = 0;
     this.lastAnimationUpdate = 0;
+    this.animationAccumulator = 0;
+    this.animationHz = this.mobile ? 20 : 30;
+    this.materialVariants = new Map();
+    this.ringGeometry = new THREE.TorusGeometry(0.62, 0.035, 6, 32);
+    this.ringMaterial = new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false });
+    this.modelTriangleCount = 0;
   }
 
   load() {
@@ -47,13 +61,22 @@ export class MatchPlayerRenderer {
       const template = gltf.scene;
       template.updateMatrixWorld(true);
       let skinnedMeshes = 0;
-      template.traverse(node => { if (node.isSkinnedMesh) skinnedMeshes++; });
+      let triangleCount = 0;
+      template.traverse(node => {
+        if (node.isSkinnedMesh) skinnedMeshes++;
+        if (node.isMesh && node.geometry) {
+          const geometry = node.geometry;
+          const indexCount = geometry.index ? geometry.index.count : geometry.attributes.position?.count || 0;
+          triangleCount += Math.floor(indexCount / 3);
+        }
+      });
       if (!skinnedMeshes) {
         this.status = "invalid-model";
         this.error = "player.glb contains no skinned mesh";
         return;
       }
       this.template = template;
+      this.modelTriangleCount = triangleCount;
       this.animations = Array.isArray(gltf.animations) ? gltf.animations : [];
       this.clipCount = this.animations.length;
       this.status = "ready";
@@ -79,15 +102,13 @@ export class MatchPlayerRenderer {
       if (!node.isMesh) return;
       node.castShadow = false;
       node.receiveShadow = false;
-      if (Array.isArray(node.material)) node.material = node.material.map(material => kitMaterial(material, node.name, state));
-      else if (node.material) node.material = kitMaterial(node.material, node.name, state);
+      node.frustumCulled = true;
+      if (Array.isArray(node.material)) node.material = node.material.map(material => kitMaterial(material, node.name, state, this.materialVariants));
+      else if (node.material) node.material = kitMaterial(node.material, node.name, state, this.materialVariants);
     });
     group.add(model);
 
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(0.62, 0.035, 6, 32),
-      new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false })
-    );
+    const ring = new THREE.Mesh(this.ringGeometry, this.ringMaterial);
     ring.rotation.x = Math.PI / 2;
     ring.position.y = 0.025;
     ring.visible = false;
@@ -104,6 +125,14 @@ export class MatchPlayerRenderer {
     if (!this.template || this.status !== "ready") return false;
     const states = mapLegacyPlayers(legacyPlayers, alpha, selectedPlayer);
     const dt = Math.max(0, Math.min(0.05, Number(delta) || 0));
+    this.animationAccumulator += dt;
+    const animationStep = 1 / this.animationHz;
+    const updateAnimations = this.animationAccumulator >= animationStep;
+    const animationDelta = updateAnimations ? this.animationAccumulator : 0;
+    if (updateAnimations) {
+      this.animationAccumulator %= animationStep;
+      this.lastAnimationUpdate = (this.lastAnimationUpdate || 0) + 1;
+    }
     for (const state of states) {
       let entry = this.players.get(state.id);
       if (!entry) entry = this.createPlayer(state);
@@ -135,7 +164,7 @@ export class MatchPlayerRenderer {
         entry.activeClipName = clip.name;
         entry.state = animationState;
       }
-      mixer.update(dt);
+      if (updateAnimations) mixer.update(animationDelta);
     }
     return true;
   }
@@ -147,4 +176,6 @@ export class MatchPlayerRenderer {
     for (const entry of this.players.values()) if (entry.activeAction) count++;
     return count;
   }
+  get triangleCount() { return this.modelTriangleCount * this.players.size; }
+  get animationUpdateRate() { return this.animationHz; }
 }
