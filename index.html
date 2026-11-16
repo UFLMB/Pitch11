@@ -5873,7 +5873,7 @@ function settingsPanel(x,y,w,h,title){
   if(title){ctx.textAlign='left';txt(title,x+W*.022,y+H*.045,H*.028,'#ffe08a',800);ctx.textAlign='center';}
 }
 function settingsRow(label,x,y,segX,segW,options,value,fn){
-  ctx.textAlign='left';fit(label,x,y+H*.035,W*.22,H*.033,'#f4f6fa','left');ctx.textAlign='center';seg(segX,y,segW,H*.07,options,value,fn);
+  ctx.textAlign='left';fit(label,x,y+H*.035,W*.22,H*.033,'#f4f6fa','left');ctx.textAlign='center';seg(segX,y,segW,H*.062,options,value,fn);
 }
 function drawCameraProfilePreview(x,y,w,h){
   settingsPanel(x,y,w,h,'CAMERA PROFILE PREVIEW');
@@ -5913,14 +5913,14 @@ MS.game=function(){
 MS.camera=function(){
   settingsPage('CAMERA','camera');const x=W*.135,y=H*.17,w=W*.48,h=H*.74;settingsPanel(x,y,w,h,'MATCH CAMERA');
   const labels=['TOP-DOWN','SIDE WIDE','SIDE MEDIUM','SIDE CLOSE','BROADCAST HIGH','LOW STADIUM','ACTION CAM','AUTO DIRECTOR','GOAL TO GOAL'];
-  labels.forEach((label,i)=>{const col=i%2,row=Math.floor(i/2),bx=x+W*(.025+col*.235),by=y+H*(.13+row*.135),bw=w*.46,bh=H*.105;ubtn(bx,by,bw,bh,label,()=>{G.cam=i;save();},G.cam===i?Y:0);});
+  labels.forEach((label,i)=>{const col=i%2,row=Math.floor(i/2),bx=x+W*(.025+col*.235),by=y+H*(.13+row*.12),bw=w*.46,bh=H*.095;ubtn(bx,by,bw,bh,label,()=>{G.cam=i;save();},G.cam===i?Y:0);});
   drawCameraProfilePreview(W*.635,y,W*.33,h);
 };
 MS.opt=function(){
   settingsPage('SOUND & VISUALS','opt');const x=W*.135,y=H*.16,w=W*.83,h=H*.76;settingsPanel(x,y,w,h,'AUDIO & PRESENTATION');
   const rows=[['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],['SOUND FX','vol',['OFF','LOW','MED','HIGH']],['MUSIC','mus',['OFF','ON']],['CROWD','crowd',['OFF','LOW','FULL']],['SCREEN SHAKE','shk',['OFF','LOW','FULL']],['MINI-MAP','radar',['OFF','SMALL','LARGE']],['GOAL REPLAYS','rep',['OFF','ON']],['COMMENTARY','com',['OFF','ON']],['DOUBLE-TAP SHOT','ftap',['OFF','ON']]];
-  rows.forEach((r,i)=>{const yy=y+H*(.095+i*.071);settingsRow(r[0],x+W*.025,yy,x+W*.28,w*.66,r[2],G[r[1]],v=>{G[r[1]]=v;syncDbl();save();AU.init();AU.vol();});});
-  const yy=y+H*.755,hb=H*.065;ctx.textAlign='left';fit('MENU BACKGROUND',x+W*.025,yy+hb*.5,W*.22,H*.03,'#f4f6fa','left');ctx.textAlign='center';
+  rows.forEach((r,i)=>{const yy=y+H*(.09+i*.066);settingsRow(r[0],x+W*.025,yy,x+W*.28,w*.66,r[2],G[r[1]],v=>{G[r[1]]=v;syncDbl();save();AU.init();AU.vol();});});
+  const yy=y+H*.69,hb=H*.06;ctx.textAlign='left';fit('MENU BACKGROUND',x+W*.025,yy+hb*.5,W*.22,H*.03,'#f4f6fa','left');ctx.textAlign='center';
   const step=d=>{G.mbg=((Number.isInteger(G.mbg)?G.mbg:0)+d+21)%21;save();};
   ubtn(x+W*.28,yy,W*.09,hb,'‹',()=>step(-1));ubtn(x+W*.84,yy,W*.09,hb,'›',()=>step(1));
   fit(G.mbg>=1&&G.mbg<=20?G.mbg+'. '+BG27[G.mbg-1][0]:'AUTO (CYCLES)',x+W*.64,yy+hb*.5,w*.43,H*.028,'#fff');
