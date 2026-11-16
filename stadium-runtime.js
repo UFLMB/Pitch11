@@ -343,11 +343,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
   const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;let changed=0,meshCount=0,surfaceCandidates=0;
-  const largest=[];
-  const candidateSamples=[];
+  const largest=[],candidateSamples=[];
   const materialInfo=material=>{
    if(!material)return null;
-   const color=material.color?{r:Math.round(material.color.r*1000)/1000,g:Math.round(material.color.g*1000)/1000,b:Math.round(material.color.b*1000)/1000}:null;
+   const color=material.color?{r:+material.color.r.toFixed(3),g:+material.color.g.toFixed(3),b:+material.color.b.toFixed(3)}:null;
    const hsl={h:0,s:0,l:0};if(material.color)material.color.getHSL(hsl);
    const map=material.map;
    return{name:material.name||'',type:material.type||'',color,hsl:{h:+hsl.h.toFixed(3),s:+hsl.s.toFixed(3),l:+hsl.l.toFixed(3)},hasMap:!!map,mapSize:map&&map.image?{width:map.image.width||0,height:map.image.height||0}:null,roughness:material.roughness??null,metalness:material.metalness??null,side:material.side??null,transparent:!!material.transparent,opacity:material.opacity??1,depthWrite:material.depthWrite??null};
@@ -360,30 +359,27 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const summary={name:o.name||'(unnamed)',type:o.type,dimensions:{x:+size.x.toFixed(3),y:+size.y.toFixed(3),z:+size.z.toFixed(3)},bounds:{minY:+box.min.y.toFixed(3),maxY:+box.max.y.toFixed(3)},visible:o.visible,geometry:o.geometry?.type||'unknown'};
    largest.push({...summary,area:longSide*shortSide});
    largest.sort((a,b)=>b.area-a.area);if(largest.length>8)largest.pop();
-   // Same bounds used by the production turf replacement; retain near misses in largestMeshes.
+   // These are exactly the dimensions accepted by the live turf replacement.
    if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
    surfaceCandidates++;
    pitchSurfaceY=Math.max(pitchSurfaceY,box.max.y);
    const source=Array.isArray(o.material)?o.material:[o.material];
-   const mats=source.map(original=>{
-    if(!original)return{material:null,green:false,changed:false};
+   const materialSamples=[],replacements=source.map(original=>{
+    if(!original){materialSamples.push({material:null,green:false,changed:false});return original;}
     const hsl={h:0,s:0,l:0};if(original.color)original.color.getHSL(hsl);
     const green=hsl.h>=.19&&hsl.h<=.48&&hsl.s>=.18;
-    if(!green&&!original.map)return{material:materialInfo(original),green,changed:false};
+    if(!green&&!original.map){materialSamples.push({material:materialInfo(original),green,changed:false});return original;}
     const m=original.clone();
     m.map=textures.albedo;m.color.set(0xffffff);
     if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
     m.roughness=Math.max(.9,m.roughness||0);m.metalness=0;m.needsUpdate=true;
-    pitchMaterials.push(m);changed++;return{material:materialInfo(original),green,changed:true};
+    pitchMaterials.push(m);changed++;
+    materialSamples.push({material:materialInfo(original),green,changed:true});
+    return m;
    });
-   if(candidateSamples.length<8)candidateSamples.push({...summary,materials:mats});
-   o.material=Array.isArray(o.material)?mats.map(x=>x.changed?(()=>{const old=Array.isArray(o.material)?o.material[mats.indexOf(x)]:o.material;return old;})():null):o.material;
-   // Restore the actual replacement materials from the tracked clone list in material order.
-   if(Array.isArray(o.material)){
-    const originals=Array.isArray(o.material)?o.material:[o.material];
-    o.material=originals.map((original,i)=>mats[i]?.changed?(()=>{const sourceMaterial=Array.isArray(stadium.userData.__unused)?null:null;return pitchMaterials[pitchMaterials.length-mats.slice(i+1).filter(x=>x.changed).length-1];})():original);
-   }
+   if(candidateSamples.length<8)candidateSamples.push({...summary,materials:materialSamples});
+   o.material=Array.isArray(o.material)?replacements:replacements[0];
   });
   pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:textures.detail.image?{width:textures.detail.image.width,height:textures.detail.image.height}:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
   if(changed)console.info('PITCH 11 realistic turf materials:',changed);
