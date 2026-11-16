@@ -4,6 +4,8 @@ import { createGoalNetPositions, DEFAULT_GOAL_LAYOUT } from './engine/goal-geome
 import { createProductionSecurityPositions } from './engine/stadium-atmosphere.mjs';
 (() => {
  const host=document.getElementById('stadium3d');if(!host)return;
+ const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
+ boot.state='initializing-renderer';boot.progress=0;boot.error='';
  const mobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
  const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance',stencil:false,depth:true});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);
@@ -90,13 +92,18 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const topCamera=new THREE.OrthographicCamera(-60,60,40,-40,.1,1000);
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
+ let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
+ const optionalAssets={dugout:'pending',cornerFlag:'pending'};
+ boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
  function points(hx,hz,r){const p=[],line=(a,b,c,d)=>{const n=Math.max(2,Math.ceil(Math.hypot(c-a,d-b)/2));for(let i=0;i<n;i++){const t=i/n;p.push([a+(c-a)*t,b+(d-b)*t]);}},arc=(x,z,rad,a0,a1)=>{const n=Math.max(8,Math.ceil(Math.abs(a1-a0)*rad/2));for(let i=0;i<n;i++){const a=a0+(a1-a0)*i/n;p.push([x+Math.cos(a)*rad,z+Math.sin(a)*rad]);}};line(-hx+r,-hz,hx-r,-hz);arc(hx-r,-hz+r,r,-Math.PI/2,0);line(hx,-hz+r,hx,hz-r);arc(hx-r,hz-r,r,0,Math.PI/2);line(hx-r,hz,-hx+r,hz);arc(-hx+r,hz-r,r,Math.PI/2,Math.PI);line(-hx,hz-r,-hx,-hz+r);arc(-hx+r,-hz+r,r,Math.PI,Math.PI*1.5);return p;}
  function addCrowd(){
-  const spacing=mobile?2.35:1.8,rows=[];
+  // Mobile uses a lighter crowd grid: preserve all four stands while avoiding
+  // the desktop density of more than nine thousand individual supporters.
+  const rowStep=mobile?2:1,spacing=mobile?3.8:1.8,rows=[];
   // All seats are on terraces beyond the touchline and goal-line safety zones.
-  for(let i=0;i<24;i++)rows.push({y:2.15+i*.34,p:points(66+i*.8,46+i*.8,14+i*.25)});
-  for(let i=0;i<20;i++)rows.push({y:18+i*.34,p:points(86+i*.8,66+i*.8,22+i*.25)});
+  for(let i=0;i<24;i+=rowStep)rows.push({y:2.15+i*.34,p:points(66+i*.8,46+i*.8,14+i*.25)});
+  for(let i=0;i<20;i+=rowStep)rows.push({y:18+i*.34,p:points(86+i*.8,66+i*.8,22+i*.25)});
   const all=[];
   for(let ri=0;ri<rows.length;ri++){
    const row=rows[ri];let total=0,lens=[];
@@ -357,27 +364,71 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
 
  const loader=new GLTFLoader();
- loader.load('./assets/football-stadium.glb',gltf=>{
-  const stadium=gltf.scene;stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
-  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);addFloodlightTowers();addPitchMarkings();
-  previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
-  try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere skipped',e);}
-  board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);setGoalDimensions();addFlags();
-  const details=new GLTFLoader();details.load('./assets/team-dugout.glb',asset=>{for(const s of[-1,1]){const d=asset.scene.clone(true);d.position.set(s*12.5,.05,36.5);if(s<0)d.rotation.y=Math.PI;scene.add(d);}},undefined,()=>{});
-  details.load('./assets/corner-flag.glb',asset=>{for(const x of[-52.5,52.5])for(const z of[-34,34]){const f=asset.scene.clone(true);f.position.set(x,0,z);scene.add(f);}},undefined,()=>{});
-  ready=true;window.dispatchEvent(new CustomEvent('p11stadiumready'));
- },undefined,e=>console.warn('PITCH 11 stadium unavailable; keeping original renderer.',e));
+ const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
+ function setStadiumLoadState(state,error=''){
+  stadiumLoadState=state;stadiumLoadError=error;boot.state=state;boot.progress=stadiumLoadProgress;boot.error=error;
+ }
+ function finishStadiumLoad(gltf){
+  const stadium=gltf.scene;
+  stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
+  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
+  stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
+  try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
+  scene.add(stadium);addFloodlightTowers();addPitchMarkings();
+  previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
+  previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
+  try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
+  board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
+  setGoalDimensions();addFlags();
+  const details=new GLTFLoader();
+  optionalAssets.dugout='loading';boot.optionalAssets=optionalAssets;
+  details.load('./assets/team-dugout.glb',asset=>{
+   try{for(const s of[-1,1]){const d=asset.scene.clone(true);d.position.set(s*12.5,.05,36.5);if(s<0)d.rotation.y=Math.PI;scene.add(d);}optionalAssets.dugout='ready';}
+   catch(e){optionalAssets.dugout='error';console.warn('PITCH 11 dugout setup failed',e);}
+  },undefined,e=>{optionalAssets.dugout='error';console.warn('PITCH 11 dugout asset unavailable',e);});
+  optionalAssets.cornerFlag='loading';
+  details.load('./assets/corner-flag.glb',asset=>{
+   try{for(const x of[-52.5,52.5])for(const z of[-34,34]){const f=asset.scene.clone(true);f.position.set(x,0,z);scene.add(f);}optionalAssets.cornerFlag='ready';}
+   catch(e){optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag setup failed',e);}
+  },undefined,e=>{optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag asset unavailable',e);});
+  ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
+  window.dispatchEvent(new CustomEvent('p11stadiumready'));
+ }
+ function loadStadium(attempt=0){
+  stadiumLoadAttempts=attempt+1;stadiumLoadProgress=0;
+  setStadiumLoadState(attempt?'retrying':'loading');
+  loader.load(stadiumUrl,gltf=>{
+   try{finishStadiumLoad(gltf);}
+   catch(e){console.error('PITCH 11 stadium setup failed',e);setStadiumLoadState('error',e&&e.message?e.message:String(e));}
+  },event=>{
+   if(event&&event.lengthComputable&&event.total>0){
+    stadiumLoadProgress=Math.max(0,Math.min(1,event.loaded/event.total));boot.progress=stadiumLoadProgress;
+   }
+  },error=>{
+   const message=error&&error.message?error.message:String(error||'Unknown GLB load error');
+   if(attempt<2){
+    console.warn('PITCH 11 stadium load failed; retrying',attempt+1,error);
+    setStadiumLoadState('retrying',message);
+    setTimeout(()=>loadStadium(attempt+1),700*(attempt+1));
+   }else{
+    console.error('PITCH 11 stadium unavailable after retries.',error);
+    setStadiumLoadState('error',message);
+   }
+  });
+ }
+ loadStadium();
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*innerWidth,sy=(-v3.y*.5+.5)*innerHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*innerWidth,sy2=(-v4.y*.5+.5)*innerHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
  function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
  function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
-   if(!ready||!rect||rect.w<2||rect.h<2)return false;
+   if(!ready){previewFailure=stadiumLoadState;return false;}
+   if(!rect||rect.w<2||rect.h<2){previewFailure='invalid-preview-rect';return false;}
    // Convert the UI canvas rectangle into this WebGL canvas' own CSS-pixel
    // coordinate space; the two canvases must not be assumed to share bounds.
    const canvasRect=renderer.domElement.getBoundingClientRect();
    const logicalSize=renderer.getSize(new THREE.Vector2());
-   if(canvasRect.width<2||canvasRect.height<2)return false;
+   if(canvasRect.width<2||canvasRect.height<2){previewFailure='renderer-canvas-unavailable';return false;}
    syncRendererPixelRatio();
    const pixelRatio=renderer.getPixelRatio();
    const sx=logicalSize.x/canvasRect.width,sy=logicalSize.y/canvasRect.height;
@@ -388,7 +439,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const x=Math.max(0,Math.ceil(rawX*pixelRatio)/pixelRatio),y=Math.max(0,Math.ceil(rawY*pixelRatio)/pixelRatio);
    const right=Math.min(logicalSize.x,Math.floor((rawX+rawW)*pixelRatio)/pixelRatio),bottomEdge=Math.min(logicalSize.y,Math.floor((rawY+rawH)*pixelRatio)/pixelRatio);
    const w=right-x,h=bottomEdge-y;
-   if(w<2||h<2)return false;
+   if(w<2||h<2){previewFailure='preview-outside-viewport';return false;}
+   previewFailure='';
    const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
    const pitch=Number.isInteger(options.pitch)?options.pitch:0,mowing=Number.isInteger(options.mowing)?options.mowing:0,weather=Number.isInteger(options.weather)?Math.max(0,Math.min(3,options.weather)):0;
    updatePreviewPitch(pitch,mowing);
@@ -424,6 +476,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});floodlightFixtures.forEach((lamp,i)=>{lamp.material.color.copy(oldLampState[i].color);lamp.material.emissiveIntensity=oldLampState[i].emissiveIntensity;});renderer.toneMappingExposure=oldExposure;
    return true;
   }
-  window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
+  window.P11Stadium={
+   get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
+   get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
+   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   render,renderTopDown,renderPreview,project,setGoalDimensions
+  };
  addEventListener('resize',()=>{syncRendererPixelRatio();renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 })();

@@ -8,10 +8,13 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const html = readFileSync(resolve(root, "index.html"), "utf8");
 const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
 
-test("stadium runtime external module has no ignored inline source", () => {
-  const runtime = scripts.find(([, attrs]) => /\bsrc=["']\.\/stadium-runtime\.js["']/.test(attrs));
-  assert.ok(runtime, "stadium-runtime.js module script must exist");
-  assert.equal(runtime[2].trim(), "", "external module script must not contain inline code");
+test("stadium runtime is dynamically imported and startup failures are surfaced", () => {
+  const runtime = scripts.find(([, attrs, body]) =>
+    /type=["']module["']/.test(attrs) && body.includes("import('./stadium-runtime.js')")
+  );
+  assert.ok(runtime, "stadium-runtime.js dynamic module bootstrap must exist");
+  assert.match(runtime[2], /import\('\.\/stadium-runtime\.js'\)\.catch/);
+  assert.match(runtime[2], /boot\.state\s*=\s*'runtime-error'/);
 });
 
 test("penalty and restart second-touch handlers are in an executable inline script", () => {
