@@ -6107,7 +6107,7 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
 MS.cust=function(){
   settingsPage('MATCH SETTINGS','cust');
   const x=W*.135,y=H*.15,w=W*.83,h=H*.77;
-  settingsPanel(x,y,w,h,'MATCH RULES & CUSTOMISATION');
+  settingsPanel(x,y,w,h,(M.ctab|0)===4?'REFEREE & OFFICIALS':'MATCH RULES & CUSTOMISATION');
   const data=X(),tb=M.ctab|0,hasPreview=tb===2,leftX=x+W*.025,leftW=hasPreview?w*.55:w*.95,previewX=x+w*.62,previewW=w*.34;
   settingsSeg(x+W*.02,y+H*.075,w*.95,H*.06,CTABS,tb,i=>{M.ctab=i;});
   if(tb<3){
@@ -6133,7 +6133,7 @@ MS.cust=function(){
       ctx.beginPath();ctx.moveTo(dividerX,dividerY);ctx.lineTo(dividerX+dividerW,dividerY);ctx.stroke();
       ctx.restore();
     }
-  }else{
+  }else if(tb===3){
     const names=['SHIRT','SHORTS','KEEPER'],swatches=SWC.length+1,bw=leftW*.78/swatches;
     names.forEach((nm,r)=>{
       const yy=y+H*(.19+r*.17);settingsText(nm,leftX,yy+H*.045,leftW*.2,H*.028,'#fff','left');
@@ -6142,6 +6142,13 @@ MS.cust=function(){
         ubtn(bx+1,yy,bw-3,H*.085,club?'CLUB':'',()=>{data.kit[r]=c;chgX();},club?(sel?Y:0):c);
         if(sel&&!club){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2;rr(bx+1,yy,bw-3,H*.085,H*.012);ctx.stroke();}
       }
+    });
+  }else{
+    const rows=RROWS,rowH=H*.055,start=y+H*.14,step=H*.082;
+    rows.forEach((r,i)=>{
+      settingsRow(r[0],leftX,start+i*step,leftX+leftW*.29,leftW*.68,r[2],G.rf[r[1]],j=>{
+        G.rf[r[1]]=j;fixRf();save();
+      },rowH);
     });
   }
   if(hasPreview)drawMatchSettingsPreview(previewX,y+H*.13,previewW,h-H*.16,data,tb);
