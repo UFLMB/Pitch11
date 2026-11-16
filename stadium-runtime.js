@@ -256,8 +256,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const sx=logicalSize.x/canvasRect.width,sy=logicalSize.y/canvasRect.height;
    const rawX=(rect.x-canvasRect.left)*sx,rawY=(rect.y-canvasRect.top)*sy;
    const rawW=rect.w*sx,rawH=rect.h*sy;
-   const x=Math.max(0,rawX),y=Math.max(0,rawY);
-   const right=Math.min(logicalSize.x,rawX+rawW),bottomEdge=Math.min(logicalSize.y,rawY+rawH);
+   // Round inward, never outward: fractional CSS/DPR coordinates can otherwise
+   // produce a one-pixel spill at the lower/right scissor edge.
+   const x=Math.max(0,Math.ceil(rawX)),y=Math.max(0,Math.ceil(rawY));
+   const right=Math.min(logicalSize.x,Math.floor(rawX+rawW)),bottomEdge=Math.min(logicalSize.y,Math.floor(rawY+rawH));
    const w=right-x,h=bottomEdge-y;
    if(w<2||h<2)return false;
    const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
