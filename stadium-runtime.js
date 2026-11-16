@@ -134,8 +134,17 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   // remains visible instead of looking like painted green panels.
   if(m===0)addBands(true,6,'rgba(0,0,0,.075)','rgba(255,255,255,.052)');
   else if(m===1){
-   addBands(false,6,'rgba(0,0,0,.072)','rgba(255,255,255,.05)');
-   addBands(true,10,'rgba(0,0,0,.042)','rgba(255,255,255,.03)',.48);
+   // A real checkerboard: alternate individual mowing rectangles, not
+   // overlapping lengthwise and crosswise bands.
+   const columns=10,rows=6;
+   for(let row=0;row<rows;row++){
+    for(let column=0;column<columns;column++){
+     const dark=(row+column)%2===0;
+     g.fillStyle=dark?'rgba(0,0,0,.065)':'rgba(255,255,255,.045)';
+     const x=column*width/columns,y=row*height/rows;
+     g.fillRect(x,y,Math.ceil(width/columns)+1,Math.ceil(height/rows)+1);
+    }
+   }
   }
   else if(m===2)addBands(false,10,'rgba(0,0,0,.068)','rgba(255,255,255,.046)');
   pitchTexture.needsUpdate=true;
