@@ -16,6 +16,8 @@ test("player material variants and selection ring resources are shared", () => {
   assert.ok(renderer.includes("this.materialVariants = new Map()"));
   assert.ok(renderer.includes("cache.get(key)"));
   assert.ok(renderer.includes("cache.set(key, copy)"));
+  assert.ok(renderer.includes("/skin/.test(label)"));
+  assert.ok(!renderer.includes("/skin|body/.test(label)"));
   assert.ok(renderer.includes("new THREE.Mesh(this.ringGeometry, this.ringMaterial)"));
   assert.equal((renderer.match(/new THREE\.TorusGeometry/g) || []).length, 1);
 });
