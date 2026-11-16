@@ -387,15 +387,30 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const quality=mobile?'1k':'2k';
   const prefix='./assets/textures/grass/'+quality+'/sports-turf_'+quality+'_';
   const canvas=pitchGrassBaseCanvas;if(!canvas)return;
-  const crop=(image,target)=>{
+  // Build one continuous, high-detail turf surface from the seamless source map.
+  // Three offset spatial scales break up obvious repetition without field-sized
+  // image blocks. Identical transforms are used for albedo, normal and roughness.
+  const composeMap=(image,target)=>{
    const g=target.getContext('2d',{alpha:false}),iw=image.naturalWidth,ih=image.naturalHeight;
-   const ratio=iw/ih,field=target.width/target.height;let sx=0,sy=0,sw=iw,sh=ih;
-   if(ratio>field){sw=ih*field;sx=(iw-sw)/2;}else{sh=iw/field;sy=(ih-sh)/2;}
-   g.clearRect(0,0,target.width,target.height);g.drawImage(image,sx,sy,sw,sh,0,0,target.width,target.height);
+   const side=Math.min(iw,ih),sx=(iw-side)/2,sy=(ih-side)/2,unit=Math.min(target.width,target.height);
+   const layers=[
+    {scale:.86,alpha:1,ox:0,oy:0},
+    {scale:.57,alpha:.30,ox:.23,oy:.37},
+    {scale:.36,alpha:.14,ox:.61,oy:.19}
+   ];
+   g.clearRect(0,0,target.width,target.height);
+   for(const layer of layers){
+    const tile=Math.max(96,Math.round(unit*layer.scale)),ox=Math.round(unit*layer.ox),oy=Math.round(unit*layer.oy);
+    g.globalAlpha=layer.alpha;
+    for(let y=-tile+oy;y<target.height+tile;y+=tile)
+     for(let x=-tile+ox;x<target.width+tile;x+=tile)
+      g.drawImage(image,sx,sy,side,side,x,y,tile,tile);
+   }
+   g.globalAlpha=1;
   };
   const load=(file,target,done)=>{
    const image=new Image();
-   image.onload=()=>{crop(image,target);done(true);};
+   image.onload=()=>{composeMap(image,target);done(true);};
    image.onerror=()=>{done(false);console.warn('PITCH 11 local grass map unavailable:',prefix+file);};
    image.src=prefix+file;
   };
