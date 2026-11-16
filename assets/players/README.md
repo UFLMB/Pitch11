@@ -23,6 +23,11 @@ Clip names can differ in source files; the import/retarget map will normalize th
 - Do not replace current gameplay player objects with visual models.
 - Each visual rig follows the existing simulation player position, facing, speed, and action state.
 - Physics, AI, collision, and match rules remain authoritative in the existing simulation.
-- Use LODs, shared materials, instancing where appropriate, and capped animation updates for mobile performance.
+- Optimized realism is the target: recognizable, proportionate 3D footballers with restrained mesh and texture budgets, not photorealistic hero models.
+- Target one reusable model at approximately 8,000–12,000 triangles, no more than 65 deform bones, and four skin influences per vertex. Treat these as export budgets, not claims about an asset already supplied.
+- Prefer one 1024×1024 texture atlas and one or two opaque materials; embed textures in the GLB. Avoid transparent hair cards, 4K maps, morph-target facial rigs, cloth simulation, and per-player unique materials in the first mobile version.
+- Keep the same optimized model on mobile and desktop initially. Add higher-detail LOD/model variants only after profiling proves there is performance headroom.
+- Reuse material variants and selection-ring geometry across players; keep player shadows disabled unless later profiling supports them.
+- Cap animation mixer updates at 20 Hz on mobile and 30 Hz on desktop while keeping player transforms responsive to the match update.
 
 No final player model is committed yet. The production match renderer now loads this same `player.glb` asset when it is supplied. Until a valid skinned GLB loads, the existing 2D match players remain visible; the renderer will not hide them prematurely. Add a licensed, final `player.glb` here when available; do not treat the fallback mannequin as final player visuals.
