@@ -1,6 +1,7 @@
 import * as THREE from "../vendor/three/build/three.module.js";
 import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
+import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
 import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 
@@ -39,7 +40,7 @@ export class MatchPlayerRenderer {
     this.scene = scene;
     this.mobile = !!mobile;
     this.modelUrl = modelUrl;
-    this.loader = new GLTFLoader();
+    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
     this.animations = [];
     this.players = new Map();
@@ -55,9 +56,11 @@ export class MatchPlayerRenderer {
     this.modelTriangleCount = 0;
   }
 
-  load() {
-    this.status = "loading";
-    this.loader.load(this.modelUrl, gltf => {
+  async load() {
+    this.status = "loading-model";
+    this.error = "";
+    try {
+      const gltf = await this.loader.loadAsync(this.modelUrl);
       const template = gltf.scene;
       template.updateMatrixWorld(true);
       let skinnedMeshes = 0;
@@ -70,21 +73,32 @@ export class MatchPlayerRenderer {
           triangleCount += Math.floor(indexCount / 3);
         }
       });
-      if (!skinnedMeshes) {
-        this.status = "invalid-model";
-        this.error = "player.glb contains no skinned mesh";
-        return;
-      }
+      if (!skinnedMeshes) throw new Error("player.glb contains no skinned mesh");
       this.template = template;
       this.modelTriangleCount = triangleCount;
-      this.animations = Array.isArray(gltf.animations) ? gltf.animations : [];
+      this.status = "loading-animations";
+      const clipFiles = [
+        { name: "Idle", url: new URL("../assets/players/idle.glb", import.meta.url).href },
+        { name: "Walk", url: new URL("../assets/players/walk.glb", import.meta.url).href },
+        { name: "Run", url: new URL("../assets/players/run.glb", import.meta.url).href }
+      ];
+      this.animations = await Promise.all(clipFiles.map(async source => {
+        const clipAsset = await this.loader.loadAsync(source.url);
+        const sourceClip = clipAsset.animations?.[0];
+        if (!sourceClip) throw new Error(`${source.name} animation file contains no animation clip`);
+        const clip = sourceClip.clone();
+        clip.name = source.name;
+        return clip;
+      }));
       this.clipCount = this.animations.length;
       this.status = "ready";
-      this.error = "";
-    }, undefined, error => {
-      this.status = "missing";
-      this.error = error && error.message ? error.message : String(error || "player.glb unavailable");
-    });
+    } catch (error) {
+      this.template = null;
+      this.animations = [];
+      this.clipCount = 0;
+      this.status = "asset-error";
+      this.error = error && error.message ? error.message : String(error || "Player assets unavailable");
+    }
   }
 
   createPlayer(state) {
@@ -151,7 +165,8 @@ export class MatchPlayerRenderer {
       if (clip && entry.activeClipName !== clip.name) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
-        if (ONE_SHOT_STATES.has(animationState)) {
+        const isLocomotionFallback = ["Idle", "Walk", "Run"].includes(clip.name);
+        if (ONE_SHOT_STATES.has(animationState) && !isLocomotionFallback) {
           nextAction.setLoop(THREE.LoopOnce, 1);
           nextAction.clampWhenFinished = true;
         } else {
