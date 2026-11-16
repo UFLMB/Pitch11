@@ -1,0 +1,35 @@
+name: Player FBX package audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "input/player-package/**"
+      - "scripts/inspect-player-fbx-package.mjs"
+      - ".github/workflows/audit-player-assets.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Assimp
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Inspect FBX files
+        run: node scripts/inspect-player-fbx-package.mjs
+      - name: Upload audit report
+        if: always() && hashFiles('player-fbx-audit.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-fbx-audit
+          path: player-fbx-audit.json
+          retention-days: 14
