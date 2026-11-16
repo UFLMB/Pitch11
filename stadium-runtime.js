@@ -330,7 +330,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    if(weather===1){scene.background.set(0x263746);if(scene.fog){scene.fog.color.set(0x71818c);scene.fog.near=125;scene.fog.far=360;}key.intensity*=.78;fill.intensity*=.82;}
    else if(weather===2){scene.background.set(0x667786);if(scene.fog){scene.fog.color.set(0xc4d0d8);scene.fog.near=75;scene.fog.far=240;}key.intensity*=.82;fill.intensity*=.9;}
    else if(weather===3){scene.background.set(0x89949b);if(scene.fog){scene.fog.color.set(0xc1c9ce);scene.fog.near=28;scene.fog.far=145;}key.intensity*=.72;fill.intensity*=.82;}
-   previewCamera.aspect=w/h;previewCamera.fov=46;previewCamera.position.set(0,27,73);previewCamera.lookAt(0,0,-5);previewCamera.updateProjectionMatrix();
+   previewCamera.aspect=w/h;previewCamera.fov=52;previewCamera.position.set(-118,42,82);previewCamera.lookAt(0,0,0);previewCamera.updateProjectionMatrix();
    if(previewBall){previewBall.rotation.y=now*.00022;previewBall.visible=true;}
    const viewportBottom=logicalSize.y-y-h;
    renderer.setScissorTest(true);renderer.setViewport(x,viewportBottom,w,h);renderer.setScissor(x,viewportBottom,w,h);
