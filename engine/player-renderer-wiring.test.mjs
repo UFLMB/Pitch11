@@ -15,6 +15,11 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("../assets/players/player.glb"));
   assert.ok(renderer.includes("cloneSkeleton"));
   assert.ok(renderer.includes("isSkinnedMesh"));
+  assert.ok(renderer.includes("setMeshoptDecoder(MeshoptDecoder)"));
+  assert.ok(renderer.includes("loading-animations"));
+  assert.ok(renderer.includes("idle.glb"));
+  assert.ok(renderer.includes("walk.glb"));
+  assert.ok(renderer.includes("run.glb"));
 });
 
 test("2D player drawing remains as a safe fallback until a valid skinned model loads", () => {
