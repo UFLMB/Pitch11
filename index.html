@@ -6230,7 +6230,14 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
      glass(pillX,pillY,pillW,pillH,pillH*.5,{top:'rgba(5,12,18,.88)',bot:'rgba(5,12,18,.7)',bd:'rgba(255,255,255,.2)'});
      fit('LIVE 3D',pillX+pillW*.53,pillY+pillH*.5,pillW*.86,pillH*.38,'#e8f0f4');
    }else{
-     settingsText('3D STADIUM INITIALISING',x+w*.5,y+h*.49,w*.86,H*.035,'#ffe08a','center');
+     const stadium=window.P11Stadium,boot=window.P11StadiumBoot||{};
+     const state=stadium&&stadium.status?stadium.status:(boot.state||'loading-runtime');
+     const progress=Math.round(100*(stadium&&Number.isFinite(stadium.progress)?stadium.progress:(boot.progress||0)));
+     const message=state==='error'||state==='runtime-error'?'STADIUM LOAD FAILED':
+       state==='retrying'?'RETRYING STADIUM...':
+       state==='ready'?'3D PREVIEW UNAVAILABLE':
+       'LOADING STADIUM '+Math.max(0,Math.min(100,progress))+'%';
+     settingsText(message,x+w*.5,y+h*.49,w*.9,H*.035,state==='error'||state==='runtime-error'?'#ff8c8c':'#ffe08a','center');
    }
  }
 function resetMatchSettingsTab(tb){
@@ -6310,7 +6317,16 @@ MS.data=function(){
 
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
-<script type="module" src="./stadium-runtime.js"></script>
+<script>
+ window.P11StadiumBoot={state:'loading-runtime',progress:0,error:'',optionalAssets:{}};
+</script>
+<script type="module">
+ import('./stadium-runtime.js').catch(error=>{
+  const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
+  boot.state='runtime-error';boot.error=error&&error.message?error.message:String(error);
+  console.error('PITCH 11 stadium runtime failed to start.',error);
+ });
+</script>
 <script>
 
 
