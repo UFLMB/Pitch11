@@ -5839,23 +5839,26 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    // Traditional football glyph: central black pentagon with five surrounding panel seams.
-    const ballR=r*.76,patchR=r*.265,outerR=ballR*.94,points=[];
-    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.stroke();
+    // Match the supplied Flaticon ball: solid round body, dark central pentagon and five panel divisions.
+    const ballR=r*.78,patchR=r*.32,points=[];
+    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.fill();
     for(let i=0;i<5;i++){
       const a=-Math.PI/2+i*Math.PI*2/5;
       points.push([cx+Math.cos(a)*patchR,cy+Math.sin(a)*patchR]);
     }
+    ctx.save();
+    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.clip();
+    const seam='rgba(8,17,34,.92)';
+    ctx.fillStyle=seam;ctx.strokeStyle=seam;ctx.lineWidth=Math.max(1.5,r*.10);ctx.lineJoin='round';
     ctx.beginPath();
     points.forEach(([px,py],i)=>{if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);});
     ctx.closePath();ctx.fill();
-    // Short angled seams form the classic pentagon-and-hexagon panel layout.
     points.forEach(([px,py],i)=>{
-      const a=-Math.PI/2+i*Math.PI*2/5;
-      const mid=a+Math.PI/5;
-      const ex=cx+Math.cos(mid)*outerR,ey=cy+Math.sin(mid)*outerR;
+      const ang=-Math.PI/2+i*Math.PI*2/5;
+      const ex=cx+Math.cos(ang)*ballR*1.08,ey=cy+Math.sin(ang)*ballR*1.08;
       ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();
     });
+    ctx.restore();
   }else if(kind==='camera'){
     rr(cx-r*.82,cy-r*.58,r*1.64,r*1.16,r*.2);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.34,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.55,cy-r*.8);ctx.lineTo(cx-r*.2,cy-r*.8);ctx.stroke();
   }else if(kind==='sound'){
