@@ -6079,22 +6079,27 @@ MS.adv=function(){
 };
 function drawMatchSettingsPreview(x,y,w,h,data,tb){
    settingsPanel(x,y,w,h,'LOOKS PREVIEW');
-   const ix=x+w*.035,iy=y+H*.12,iw=w*.93,ih=h*.58;
+   const ix=x+w*.035,iy=y+H*.105,iw=w*.93,ih=h*.855;
+   // The UI canvas sits above the WebGL canvas. Clear this viewport so the live
+   // stadium render beneath it is actually visible instead of being covered.
+   ctx.save();
+   ctx.beginPath();
+   const radius=Math.min(H*.018,iw*.035,ih*.035);
+   ctx.roundRect(ix,iy,iw,ih,radius);
+   ctx.clip();
+   ctx.clearRect(ix,iy,iw,ih);
+   ctx.restore();
    const live=window.P11Stadium&&window.P11Stadium.renderPreview&&window.P11Stadium.renderPreview(
      {x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0}
    );
    if(live){
-     ctx.save();ctx.strokeStyle='rgba(235,242,248,.32)';ctx.lineWidth=Math.max(1,H*.0015);rr(ix,iy,iw,ih,H*.014);ctx.stroke();ctx.restore();
-     const pillW=Math.min(iw*.43,H*.13),pillH=Math.max(18,H*.032),pillX=ix+iw*.035,pillY=iy+ih*.045;
+     ctx.save();ctx.strokeStyle='rgba(235,242,248,.42)';ctx.lineWidth=Math.max(1,H*.0018);rr(ix,iy,iw,ih,radius);ctx.stroke();ctx.restore();
+     const pillW=Math.min(iw*.34,H*.12),pillH=Math.max(18,H*.03),pillX=ix+iw*.035,pillY=iy+ih*.045;
      glass(pillX,pillY,pillW,pillH,pillH*.5,{top:'rgba(5,12,18,.88)',bot:'rgba(5,12,18,.7)',bd:'rgba(255,255,255,.2)'});
-     fit('LIVE 3D VIEW',pillX+pillW*.53,pillY+pillH*.5,pillW*.86,pillH*.38,'#e8f0f4');
+     fit('LIVE 3D',pillX+pillW*.53,pillY+pillH*.5,pillW*.86,pillH*.38,'#e8f0f4');
    }else{
-     settingsText('3D STADIUM LOADING',x+w*.5,y+h*.43,w*.86,H*.035,'#ffe08a','center');
-     settingsText('The preview appears when the stadium scene is ready.',x+w*.5,y+h*.51,w*.86,H*.025,'rgba(190,205,218,.72)','center');
+     settingsText('3D STADIUM INITIALISING',x+w*.5,y+h*.49,w*.86,H*.035,'#ffe08a','center');
    }
-   const summary=CROWS[2].map(r=>r[0]+': '+r[2][data[r[1]]|0]).join('  ·  ');
-   settingsWrap(summary,x+w*.06,y+h*.75,w*.88,h*.15,H*.023,'rgba(220,230,240,.88)','center',3);
-   settingsText('Stadium preview · current visual settings',x+w*.06,y+h*.94,w*.88,H*.025,'rgba(190,205,218,.72)','center');
  }
 MS.cust=function(){
   settingsPage('MATCH SETTINGS','cust');
