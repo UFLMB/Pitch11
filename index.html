@@ -82,7 +82,7 @@ const cam={x:CX,y:CY,v:410,px:CX,py:CY,pv:410};
 const ORD=P.slice();
 const cv=document.getElementById('c'),ctx=cv.getContext('2d',{alpha:true});
 let W=0,H=0,dpr=1,lowRes=false;
-function resize(){W=innerWidth;H=innerHeight;dpr=lowRes?1:Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=lowRes?1:Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
 
 /* ===================== 3. INPUT ===================== */
 const I={svar:'',pvar:'',tvar:'',ppow:0,skd:-1,tackle:false,swp:false,mx:0,my:0,sprint:false,spBtn:false,shoot:false,chargeT:0,shootUp:false,pass:false,thru:false,lob:false,sw:false,skill:false};
@@ -5325,6 +5325,9 @@ aiGK=function(p){
 addEventListener('p11stadiumready',()=>{if(window.P11Stadium&&window.P11Stadium.setGoalDimensions)window.P11Stadium.setGoalDimensions({halfWidth:GOALH/10,height:GOALZ/10,depth:GOALD/10});});
 
 addEventListener('resize',resize);
+addEventListener('orientationchange',resize);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',resize);
+if(typeof ResizeObserver!=='undefined'){const gameCanvasObserver=new ResizeObserver(resize);gameCanvasObserver.observe(cv);}
 resize();
 const _resetSaveSettingsAudit=resetSave;
 resetSave=function(){
