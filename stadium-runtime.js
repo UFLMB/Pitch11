@@ -58,7 +58,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0;
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
  let activePitchKey='';
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
@@ -342,29 +342,46 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;let changed=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;let changed=0,meshCount=0,surfaceCandidates=0;
+  const largest=[],candidateSamples=[];
+  const materialInfo=material=>{
+   if(!material)return null;
+   const color=material.color?{r:+material.color.r.toFixed(3),g:+material.color.g.toFixed(3),b:+material.color.b.toFixed(3)}:null;
+   const hsl={h:0,s:0,l:0};if(material.color)material.color.getHSL(hsl);
+   const map=material.map;
+   return{name:material.name||'',type:material.type||'',color,hsl:{h:+hsl.h.toFixed(3),s:+hsl.s.toFixed(3),l:+hsl.l.toFixed(3)},hasMap:!!map,mapSize:map&&map.image?{width:map.image.width||0,height:map.image.height||0}:null,roughness:material.roughness??null,metalness:material.metalness??null,side:material.side??null,transparent:!!material.transparent,opacity:material.opacity??1,depthWrite:material.depthWrite??null};
+  };
   stadium.traverse(o=>{
    if(!o.isMesh)return;
+   meshCount++;
    const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3());
    const longSide=Math.max(size.x,size.z),shortSide=Math.min(size.x,size.z);
-   // Only touch the thin, pitch-sized green surface; stands, boards, seats and goal assets are excluded.
+   const summary={name:o.name||'(unnamed)',type:o.type,dimensions:{x:+size.x.toFixed(3),y:+size.y.toFixed(3),z:+size.z.toFixed(3)},bounds:{minY:+box.min.y.toFixed(3),maxY:+box.max.y.toFixed(3)},visible:o.visible,geometry:o.geometry?.type||'unknown'};
+   largest.push({...summary,area:longSide*shortSide});
+   largest.sort((a,b)=>b.area-a.area);if(largest.length>8)largest.pop();
+   // These are exactly the dimensions accepted by the live turf replacement.
    if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
+   surfaceCandidates++;
    pitchSurfaceY=Math.max(pitchSurfaceY,box.max.y);
    const source=Array.isArray(o.material)?o.material:[o.material];
-   const replacements=source.map(original=>{
-    if(!original)return original;
+   const materialSamples=[],replacements=source.map(original=>{
+    if(!original){materialSamples.push({material:null,green:false,changed:false});return original;}
     const hsl={h:0,s:0,l:0};if(original.color)original.color.getHSL(hsl);
     const green=hsl.h>=.19&&hsl.h<=.48&&hsl.s>=.18;
-    if(!green&&!original.map)return original;
+    if(!green&&!original.map){materialSamples.push({material:materialInfo(original),green,changed:false});return original;}
     const m=original.clone();
     m.map=textures.albedo;m.color.set(0xffffff);
     if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
     m.roughness=Math.max(.9,m.roughness||0);m.metalness=0;m.needsUpdate=true;
-    pitchMaterials.push(m);changed++;return m;
+    pitchMaterials.push(m);changed++;
+    materialSamples.push({material:materialInfo(original),green,changed:true});
+    return m;
    });
+   if(candidateSamples.length<8)candidateSamples.push({...summary,materials:materialSamples});
    o.material=Array.isArray(o.material)?replacements:replacements[0];
   });
+  pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:textures.detail.image?{width:textures.detail.image.width,height:textures.detail.image.height}:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
   if(changed)console.info('PITCH 11 realistic turf materials:',changed);
  }
 
@@ -379,7 +396,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
   stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
-  scene.add(stadium);addFloodlightTowers();addPitchMarkings();
+  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
   previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
@@ -494,7 +511,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   window.P11Stadium={
    get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
-   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
    render,renderTopDown,renderPreview,project,setGoalDimensions
   };
  const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
