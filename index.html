@@ -6112,8 +6112,11 @@ MS.cust=function(){
   settingsSeg(x+W*.02,y+H*.075,w*.95,H*.06,CTABS,tb,i=>{M.ctab=i;});
   if(tb<3){
     const rows=CROWS[tb]||[],rowH=H*.055,start=y+H*.16,step=H*.096;
-    rows.forEach((r,i)=>settingsRow(r[0],leftX,start+i*step,leftX+leftW*.22,leftW*.76,r[2],data[r[1]],j=>{data[r[1]]=j;chgX();},rowH));
-    if(tb===0)settingsWrap('Golden = first goal wins. Mercy = match ends at a 4 goal gap.',leftX,y+H*.725,leftW,H*.06,H*.025,'#9fb0c0','center',2);
+    rows.forEach((r,i)=>{
+      const ruleNoteOffset=tb===0&&i>=2?H*.07:0;
+      settingsRow(r[0],leftX,start+i*step+ruleNoteOffset,leftX+leftW*.22,leftW*.76,r[2],data[r[1]],j=>{data[r[1]]=j;chgX();},rowH);
+    });
+    if(tb===0)settingsWrap('Golden = first goal wins. Mercy = match ends at a 4 goal gap.',leftX,y+H*.35,leftW,H*.05,H*.025,'#9fb0c0','center',2);
   }else{
     const names=['SHIRT','SHORTS','KEEPER'],swatches=SWC.length+1,bw=leftW*.78/swatches;
     names.forEach((nm,r)=>{
