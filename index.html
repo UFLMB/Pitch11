@@ -8,7 +8,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="./manifest.webmanifest">
-<meta name="mobile-web-app-capable" content="yes">
 <title>Pitch 11</title>
 <style>
 html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;overscroll-behavior:none}
@@ -5896,8 +5895,8 @@ take=function(p,byHand=false){
     }).catch(()=>{});
   };
   if(!standalone()){
-    document.addEventListener('pointerdown',enterFullscreen,true);
-    document.addEventListener('touchstart',enterFullscreen,true);
+    const gestureEvent='PointerEvent' in window?'pointerdown':'touchstart';
+    document.addEventListener(gestureEvent,enterFullscreen,true);
   }
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}),{once:true});
