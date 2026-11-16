@@ -4596,18 +4596,37 @@ MS.main=function(){
     ctx.save();ctx.strokeStyle='#f2d58e';ctx.lineWidth=Math.max(1.5,r*.09);
     ctx.lineCap='round';ctx.lineJoin='round';
     if(kind==='club'){
-      ctx.beginPath();ctx.arc(cx,cy-r*.25,r*.18,0,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx-r*.38,cy-r*.08,r*.13,0,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx+r*.38,cy-r*.08,r*.13,0,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx,cy+r*.38,r*.4,Math.PI,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx-r*.38,cy+r*.38,r*.25,Math.PI,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx+r*.38,cy+r*.38,r*.25,Math.PI,TAU);ctx.stroke();
+      // Three solid player silhouettes: a clear team identity, not a shield.
+      ctx.fillStyle='#f2d58e';
+      ctx.beginPath();ctx.arc(cx,cy-r*.28,r*.17,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(cx-r*.39,cy-r*.10,r*.125,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(cx+r*.39,cy-r*.10,r*.125,0,TAU);ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx-r*.30,cy+r*.38);
+      ctx.bezierCurveTo(cx-r*.28,cy+r*.02,cx+r*.28,cy+r*.02,cx+r*.30,cy+r*.38);
+      ctx.quadraticCurveTo(cx,cy+r*.51,cx-r*.30,cy+r*.38);ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx-r*.65,cy+r*.34);
+      ctx.bezierCurveTo(cx-r*.64,cy+r*.08,cx-r*.23,cy+r*.06,cx-r*.20,cy+r*.32);
+      ctx.quadraticCurveTo(cx-r*.42,cy+r*.44,cx-r*.65,cy+r*.34);ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(cx+r*.20,cy+r*.32);
+      ctx.bezierCurveTo(cx+r*.23,cy+r*.06,cx+r*.64,cy+r*.08,cx+r*.65,cy+r*.34);
+      ctx.quadraticCurveTo(cx+r*.42,cy+r*.44,cx+r*.20,cy+r*.32);ctx.fill();
     }else{
-      ctx.beginPath();ctx.arc(cx,cy,r*.27,0,TAU);ctx.stroke();
-      ctx.beginPath();ctx.arc(cx,cy,r*.105,0,TAU);ctx.stroke();
-      for(let i=0;i<8;i++){const a=i*TAU/8;ctx.beginPath();
-        ctx.moveTo(cx+Math.cos(a)*r*.39,cy+Math.sin(a)*r*.39);
-        ctx.lineTo(cx+Math.cos(a)*r*.56,cy+Math.sin(a)*r*.56);ctx.stroke();}
+      // Crisp eight-tooth gear with a recessed center.
+      const teeth=8,steps=4;
+      ctx.beginPath();
+      for(let i=0;i<teeth*steps;i++){
+        const a=-Math.PI/2+i*TAU/(teeth*steps);
+        const phase=i%steps;
+        const rradius=(phase===1||phase===2)?r*.57:r*.43;
+        const x=cx+Math.cos(a)*rradius,y=cy+Math.sin(a)*rradius;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.closePath();ctx.fillStyle='#f2d58e';ctx.fill();
+      ctx.beginPath();ctx.arc(cx,cy,r*.19,0,TAU);ctx.fillStyle='rgba(5,16,18,.94)';ctx.fill();
+      ctx.beginPath();ctx.arc(cx,cy,r*.105,0,TAU);ctx.strokeStyle='#f2d58e';ctx.lineWidth=Math.max(1,r*.055);ctx.stroke();
     }
     ctx.restore();
   };
