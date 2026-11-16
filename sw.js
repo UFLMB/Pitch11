@@ -20,7 +20,7 @@ self.addEventListener('fetch',event=>{
   }
   // Scripts and ES modules must be refreshed from the network first. The old
   // cache-first policy could keep an outdated stadium runtime indefinitely.
-  if(request.destination==='script'||/\\.(?:js|mjs)$/.test(url.pathname)){
+  if(request.destination==='script'||/\.(?:js|mjs)$/.test(url.pathname)){
     event.respondWith(fetch(request).then(response=>{
       if(response.ok&&response.type==='basic'){
         const copy=response.clone();
