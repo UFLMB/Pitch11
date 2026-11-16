@@ -248,7 +248,17 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  function renderTopDown(cx,cy,vw,vh,w,h){const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
    if(!ready||!rect||rect.w<2||rect.h<2)return false;
-   const x=Math.max(0,rect.x),y=Math.max(0,rect.y),w=Math.min(innerWidth-x,rect.w),h=Math.min(innerHeight-y,rect.h);
+   // Convert the UI canvas rectangle into this WebGL canvas' own CSS-pixel
+   // coordinate space; the two canvases must not be assumed to share bounds.
+   const canvasRect=renderer.domElement.getBoundingClientRect();
+   const logicalSize=renderer.getSize(new THREE.Vector2());
+   if(canvasRect.width<2||canvasRect.height<2)return false;
+   const sx=logicalSize.x/canvasRect.width,sy=logicalSize.y/canvasRect.height;
+   const rawX=(rect.x-canvasRect.left)*sx,rawY=(rect.y-canvasRect.top)*sy;
+   const rawW=rect.w*sx,rawH=rect.h*sy;
+   const x=Math.max(0,rawX),y=Math.max(0,rawY);
+   const right=Math.min(logicalSize.x,rawX+rawW),bottomEdge=Math.min(logicalSize.y,rawY+rawH);
+   const w=right-x,h=bottomEdge-y;
    if(w<2||h<2)return false;
    const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
    const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
@@ -266,12 +276,12 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    }
    previewCamera.aspect=w/h;previewCamera.fov=46;previewCamera.position.set(0,27,73);previewCamera.lookAt(0,0,-5);previewCamera.updateProjectionMatrix();
    if(previewBall){previewBall.rotation.y=now*.00022;previewBall.visible=true;}
-   const bottom=innerHeight-y-h;
-   renderer.setScissorTest(true);renderer.setViewport(x,bottom,w,h);renderer.setScissor(x,bottom,w,h);
+   const viewportBottom=logicalSize.y-y-h;
+   renderer.setScissorTest(true);renderer.setViewport(x,viewportBottom,w,h);renderer.setScissor(x,viewportBottom,w,h);
    updateSecurity(now);updateStaff(now);updateCrowd(now);
    renderer.render(scene,previewCamera);
    if(previewBall)previewBall.visible=false;
-   renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
+   renderer.setScissorTest(false);renderer.setViewport(0,0,logicalSize.x,logicalSize.y);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
    if(oldFog&&scene.fog)scene.fog.color.copy(oldFog);
    key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;renderer.toneMappingExposure=oldExposure;
