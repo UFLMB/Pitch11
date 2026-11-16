@@ -75,8 +75,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   else if(m===1){const cw=size/16,ch=size/10;for(let x=0;x<16;x++)for(let y=0;y<10;y++)if((x+y)&1){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(x*cw,y*ch,cw+1,ch+1);}}
   else if(m===2){const band=size/10;for(let y=0;y<10;y+=2){g.fillStyle='rgba(0,0,0,.13)';g.fillRect(0,y*band,size,band+1);}}
   let seed=110711+p*7919+m*131;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
-  const blades=p===3?1200:6500;
-  for(let n=0;n<blades;n++){const x=rnd()*size,y=rnd()*size,len=2+rnd()*6;g.strokeStyle=p===3?'rgba(255,255,255,.22)':p===4?'rgba(105,255,245,.22)':rnd()>.5?'rgba(190,230,155,.17)':'rgba(0,20,0,.2)';g.lineWidth=.5+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*2,y-len);g.stroke();}
+  const blades=p===3?12000:22000;
+  for(let n=0;n<blades;n++){const x=rnd()*size,y=rnd()*size,len=1+rnd()*4;g.strokeStyle=p===3?'rgba(255,255,255,.22)':p===4?'rgba(105,255,245,.22)':rnd()>.5?'rgba(190,230,155,.17)':'rgba(0,20,0,.2)';g.lineWidth=.5+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*2,y-len);g.stroke();}
   pitchTexture.needsUpdate=true;
  }
  function createPreviewWeather(){
@@ -278,7 +278,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
   const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=.018,th=.105;
+  const y=pitchSurfaceY+.018,th=.105;
   const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
   const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
   const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
@@ -317,7 +317,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   }
   let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   // Fine blades run with the mowing direction; varied hue and length avoid a flat painted look.
-  const blades=26000;
+  const blades=72000;
   for(let i=0;i<blades;i++){
    const x=rnd()*size,y=rnd()*size,len=2+rnd()*8,lean=(rnd()-.5)*2.8;
    const light=rnd();
@@ -329,10 +329,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
   albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   // A low-contrast grayscale microstructure adds a restrained turf surface response.
-  const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=256;
-  const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,256,256);
-  for(let i=0;i<4200;i++){
-   const x=rnd()*256,y=rnd()*256,len=1+rnd()*4;
+  const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=512;
+  const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,512,512);
+  for(let i=0;i<12000;i++){
+   const x=rnd()*512,y=rnd()*512,len=1+rnd()*3;
    d.strokeStyle=rnd()>.5?'rgba(235,235,235,.32)':'rgba(35,35,35,.3)';
    d.lineWidth=.5+rnd()*.6;d.beginPath();d.moveTo(x,y);d.lineTo(x+(rnd()-.5)*1.4,y-len);d.stroke();
   }
@@ -359,21 +359,23 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const summary={name:o.name||'(unnamed)',type:o.type,dimensions:{x:+size.x.toFixed(3),y:+size.y.toFixed(3),z:+size.z.toFixed(3)},bounds:{minY:+box.min.y.toFixed(3),maxY:+box.max.y.toFixed(3)},visible:o.visible,geometry:o.geometry?.type||'unknown'};
    largest.push({...summary,area:longSide*shortSide});
    largest.sort((a,b)=>b.area-a.area);if(largest.length>8)largest.pop();
-   // These are exactly the dimensions accepted by the live turf replacement.
-   if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
+   // Only the named, zero-thickness top plane is the playable grass surface.
+   // Perimeter boards and the pitch slab must never receive the turf material.
+   if(o.name!=='Pitch_2'||longSide<110||longSide>125||shortSide<72||shortSide>82||size.y>.02)return;
    surfaceCandidates++;
-   pitchSurfaceY=Math.max(pitchSurfaceY,box.max.y);
+   pitchSurfaceY=box.max.y;
    const source=Array.isArray(o.material)?o.material:[o.material];
    const materialSamples=[],replacements=source.map(original=>{
     if(!original){materialSamples.push({material:null,green:false,changed:false});return original;}
     const hsl={h:0,s:0,l:0};if(original.color)original.color.getHSL(hsl);
     const green=hsl.h>=.19&&hsl.h<=.48&&hsl.s>=.18;
-    if(!green&&!original.map){materialSamples.push({material:materialInfo(original),green,changed:false});return original;}
     const m=original.clone();
+    // Replace the baked pitch texture (which contains the old markings) only
+    // on Pitch_2; the independent overlay is drawn above this exact surface.
     m.map=textures.albedo;m.color.set(0xffffff);
-    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
+    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.008;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
-    m.roughness=Math.max(.9,m.roughness||0);m.metalness=0;m.needsUpdate=true;
+    m.roughness=Math.max(.92,m.roughness||0);m.metalness=0;m.needsUpdate=true;
     pitchMaterials.push(m);changed++;
     materialSamples.push({material:materialInfo(original),green,changed:true});
     return m;
@@ -396,7 +398,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
   stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
-  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
+  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
   previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
