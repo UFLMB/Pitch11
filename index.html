@@ -4635,8 +4635,6 @@ MS.main=function(){
     glass(x,navY,navW,navH,navH*.28,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
       hl:.14,bd:'rgba(215,222,216,.32)'});
     const ir=navH*.31,icx=x+navH*.58,icy=navY+navH*.5;
-    ctx.save();ctx.fillStyle='rgba(5,16,18,.7)';ctx.strokeStyle='rgba(222,190,118,.55)';
-    ctx.lineWidth=Math.max(1,H*.0015);ctx.beginPath();ctx.arc(icx,icy,ir*1.18,0,TAU);ctx.fill();ctx.stroke();ctx.restore();
     drawIcon(kind,icx,icy,ir);
     fit(label,x+navH*1.05,navY+navH*.53,navW-navH*1.12,navH*.34,'#f3f1e9','left');
   };
