@@ -13,6 +13,11 @@ test("Three.js runtime is loaded from the same origin in every 3D entry point", 
   assert.match(lab, /from ["']\.\.\/vendor\/three\/build\/three\.module\.js["']/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/build\/three\.module\.js["']/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/examples\/jsm\/loaders\/GLTFLoader\.js["']/);
+  assert.match(stadium, /football-stadium-mobile\.glb/);
+  assert.match(stadium, /get diagnostics\(\)/);
+  assert.match(stadium, /mobile\?2:1/);
+  assert.match(index, /import\('\.\/stadium-runtime\.js'\)\.catch/);
+  assert.match(index, /STADIUM LOAD FAILED/);
   assert.match(lab, /SkeletonUtils\.js/);
   assert.match(lab, /assets\/players\/player\.glb/);
   assert.match(graphics, /"three":"\.\/vendor\/three\/build\/three\.module\.js"/);
