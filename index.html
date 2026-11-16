@@ -6216,8 +6216,7 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
    ctx.clip();
    ctx.clearRect(ix,iy,iw,ih);
    ctx.restore();
-   // Keep the WebGL viewport a couple of CSS pixels inside the visible frame.
-   // This avoids fractional DPR rounding exposing pixels beyond the preview edge.
+   // Fill the complete inner viewport; the rounded 2D clip masks its corners.
    const live=window.P11Stadium&&window.P11Stadium.renderPreview&&window.P11Stadium.renderPreview(
      {x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0}
    );
