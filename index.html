@@ -4651,10 +4651,8 @@ MS.main=function(){
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=ph*.16;ctx.shadowOffsetY=ph*.045;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+(H*.074)+'px sans-serif';
-  ctx.fillStyle='#f3f1e9';ctx.fillText('PLAY',px+pw*.34,py+ph*.51);
-  ctx.strokeStyle='#d4af4b';ctx.lineWidth=Math.max(1,H*.0028);ctx.lineCap='round';ctx.lineJoin='round';
-  const ax=px+pw*.82,ay=py+ph*.51,as=H*.0135;
-  ctx.beginPath();ctx.moveTo(ax-as*.9,ay-as*.5);ctx.lineTo(ax+as*.9,ay);ctx.lineTo(ax-as*.9,ay+as*.5);ctx.stroke();ctx.restore();
+  ctx.fillStyle='#f3f1e9';ctx.fillText('PLAY',px+pw*.5,py+ph*.51);
+  ctx.restore();
   UI.def=()=>pre('quick');
 };
 MS.play=function(){
