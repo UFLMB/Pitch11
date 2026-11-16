@@ -235,7 +235,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  loader.load('./assets/football-stadium.glb',gltf=>{
   const stadium=gltf.scene;stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);
-  previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);scene.add(previewBall);
+  previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);setGoalDimensions();addFlags();
   const details=new GLTFLoader();details.load('./assets/team-dugout.glb',asset=>{for(const s of[-1,1]){const d=asset.scene.clone(true);d.position.set(s*12.5,.05,36.5);if(s<0)d.rotation.y=Math.PI;scene.add(d);}},undefined,()=>{});
@@ -265,11 +265,12 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;renderer.toneMappingExposure=1.08;
    }
    previewCamera.aspect=w/h;previewCamera.fov=46;previewCamera.position.set(0,27,73);previewCamera.lookAt(0,0,-5);previewCamera.updateProjectionMatrix();
-   if(previewBall)previewBall.rotation.y=now*.00022;
+   if(previewBall){previewBall.rotation.y=now*.00022;previewBall.visible=true;}
    const bottom=innerHeight-y-h;
    renderer.setScissorTest(true);renderer.setViewport(x,bottom,w,h);renderer.setScissor(x,bottom,w,h);
    updateSecurity(now);updateStaff(now);updateCrowd(now);
    renderer.render(scene,previewCamera);
+   if(previewBall)previewBall.visible=false;
    renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
    if(oldFog&&scene.fog)scene.fog.color.copy(oldFog);
