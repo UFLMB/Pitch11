@@ -18,9 +18,37 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  syncRendererPixelRatio();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,620);
- scene.add(new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.5));
+ const hemi=new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.5);scene.add(hemi);
  const key=new THREE.DirectionalLight(0xffdfb5,1.35);key.position.set(-90,150,100);scene.add(key);
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
+ // Four broad, shadow-free floodlights make NIGHT a genuine stadium lighting state.
+ const floodlights=[[-66,43,-49],[-66,43,49],[66,43,-49],[66,43,49]].map(([x,y,z])=>{
+  const light=new THREE.SpotLight(0xf0f4ff,0,190,Math.PI*.235,.58,1.35);
+  light.position.set(x,y,z);light.target.position.set(0,0,0);
+  scene.add(light,light.target);return light;
+ });
+ function applyStadiumTimeOfDay(value){
+  const mode=Number.isInteger(value)?Math.max(0,Math.min(2,value)):0;
+  if(mode===2){
+   scene.background.set(0x07111d);if(scene.fog)scene.fog.color.set(0x101a29);
+   hemi.color.set(0x7895c5);hemi.groundColor.set(0x101923);hemi.intensity=.48;
+   key.color.set(0x8aa7d6);key.intensity=.18;fill.color.set(0x7399d8);fill.intensity=.16;
+   floodlights.forEach(light=>{light.intensity=420;});
+   renderer.toneMappingExposure=.94;
+  }else if(mode===1){
+   scene.background.set(0x382b3b);if(scene.fog)scene.fog.color.set(0x493746);
+   hemi.color.set(0xe0a17d);hemi.groundColor.set(0x30252b);hemi.intensity=1.0;
+   key.color.set(0xffad78);key.intensity=1.05;fill.color.set(0x8aa7c7);fill.intensity=.48;
+   floodlights.forEach(light=>{light.intensity=34;});
+   renderer.toneMappingExposure=1.02;
+  }else{
+   scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
+   hemi.color.set(0xc8ddff);hemi.groundColor.set(0x1b251d);hemi.intensity=1.5;
+   key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;
+   floodlights.forEach(light=>{light.intensity=0;});
+   renderer.toneMappingExposure=1.08;
+  }
+ }
  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
  let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null;
@@ -288,8 +316,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  },undefined,e=>console.warn('PITCH 11 stadium unavailable; keeping original renderer.',e));
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*innerWidth,sy=(-v3.y*.5+.5)*innerHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*innerWidth,sy2=(-v4.y*.5+.5)*innerHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
- function render(V,w,h){setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
- function renderTopDown(cx,cy,vw,vh,w,h){const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
+ function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
+ function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
    if(!ready||!rect||rect.w<2||rect.h<2)return false;
    // Convert the UI canvas rectangle into this WebGL canvas' own CSS-pixel
@@ -316,17 +344,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    weatherGroup.rotation.y=now*.000008;
    const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
    const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null,oldFogNear=scene.fog?scene.fog.near:0,oldFogFar=scene.fog?scene.fog.far:0;
-   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldExposure=renderer.toneMappingExposure;
-   if(timeOfDay===2){
-    scene.background.set(0x07111d);if(scene.fog)scene.fog.color.set(0x101a29);
-    key.color.set(0x8aa7d6);key.intensity=.62;fill.color.set(0x7399d8);fill.intensity=.42;renderer.toneMappingExposure=.92;
-   }else if(timeOfDay===1){
-    scene.background.set(0x382b3b);if(scene.fog)scene.fog.color.set(0x493746);
-    key.color.set(0xffad78);key.intensity=1.05;fill.color.set(0x8aa7c7);fill.intensity=.48;renderer.toneMappingExposure=1.02;
-   }else{
-    scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
-    key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;renderer.toneMappingExposure=1.08;
-   }
+   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldHemiSky=hemi.color.clone(),oldHemiGround=hemi.groundColor.clone(),oldHemiPower=hemi.intensity,oldFloodPower=floodlights.map(light=>light.intensity),oldExposure=renderer.toneMappingExposure;
+   applyStadiumTimeOfDay(timeOfDay);
    if(weather===1){scene.background.set(0x263746);if(scene.fog){scene.fog.color.set(0x71818c);scene.fog.near=125;scene.fog.far=360;}key.intensity*=.78;fill.intensity*=.82;}
    else if(weather===2){scene.background.set(0x667786);if(scene.fog){scene.fog.color.set(0xc4d0d8);scene.fog.near=75;scene.fog.far=240;}key.intensity*=.82;fill.intensity*=.9;}
    else if(weather===3){scene.background.set(0x89949b);if(scene.fog){scene.fog.color.set(0xc1c9ce);scene.fog.near=28;scene.fog.far=145;}key.intensity*=.72;fill.intensity*=.82;}
@@ -349,7 +368,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    renderer.setScissorTest(false);renderer.setViewport(0,0,logicalSize.x,logicalSize.y);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
    if(oldFog&&scene.fog){scene.fog.color.copy(oldFog);scene.fog.near=oldFogNear;scene.fog.far=oldFogFar;}weatherGroup.visible=false;rainMesh.visible=false;snowMesh.visible=false;
-   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;renderer.toneMappingExposure=oldExposure;
+   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});renderer.toneMappingExposure=oldExposure;
    return true;
   }
   window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
