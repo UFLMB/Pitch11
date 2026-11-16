@@ -7,6 +7,15 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const mobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
  const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance',stencil:false,depth:true});
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);
+ function syncRendererPixelRatio(){
+  const uiCanvas=document.getElementById('c'),uiRect=uiCanvas&&uiCanvas.getBoundingClientRect();
+  if(!uiCanvas||!uiRect||uiRect.width<1)return;
+  const targetRatio=uiCanvas.width/uiRect.width;
+  if(Number.isFinite(targetRatio)&&targetRatio>0&&Math.abs(renderer.getPixelRatio()-targetRatio)>.001){
+   renderer.setPixelRatio(targetRatio);renderer.setSize(innerWidth,innerHeight,false);
+  }
+ }
+ syncRendererPixelRatio();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,620);
  scene.add(new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.5));
@@ -253,13 +262,15 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const canvasRect=renderer.domElement.getBoundingClientRect();
    const logicalSize=renderer.getSize(new THREE.Vector2());
    if(canvasRect.width<2||canvasRect.height<2)return false;
+   syncRendererPixelRatio();
+   const pixelRatio=renderer.getPixelRatio();
    const sx=logicalSize.x/canvasRect.width,sy=logicalSize.y/canvasRect.height;
    const rawX=(rect.x-canvasRect.left)*sx,rawY=(rect.y-canvasRect.top)*sy;
    const rawW=rect.w*sx,rawH=rect.h*sy;
-   // Round inward, never outward: fractional CSS/DPR coordinates can otherwise
-   // produce a one-pixel spill at the lower/right scissor edge.
-   const x=Math.max(0,Math.ceil(rawX)),y=Math.max(0,Math.ceil(rawY));
-   const right=Math.min(logicalSize.x,Math.floor(rawX+rawW)),bottomEdge=Math.min(logicalSize.y,Math.floor(rawY+rawH));
+   // Snap all scissor edges to the shared physical-pixel grid, rounding inward
+   // so the UI mask and WebGL viewport cannot shimmer against each other.
+   const x=Math.max(0,Math.ceil(rawX*pixelRatio)/pixelRatio),y=Math.max(0,Math.ceil(rawY*pixelRatio)/pixelRatio);
+   const right=Math.min(logicalSize.x,Math.floor((rawX+rawW)*pixelRatio)/pixelRatio),bottomEdge=Math.min(logicalSize.y,Math.floor((rawY+rawH)*pixelRatio)/pixelRatio);
    const w=right-x,h=bottomEdge-y;
    if(w<2||h<2)return false;
    const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
@@ -290,5 +301,5 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    return true;
   }
   window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
- addEventListener('resize',()=>{renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+ addEventListener('resize',()=>{syncRendererPixelRatio();renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 })();
