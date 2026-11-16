@@ -17,7 +17,9 @@ function kitMaterial(material, meshName, player, cache) {
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
   const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin|body/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
   const variant = part === "shirt" ? (player.role === "GK" ? "keeper" : "shirt") : part;
-  const key = [material.uuid, variant, player.team, player.skinTone, player.hairTone].join(":");
+  const teamKey = ["shirt", "shorts", "socks"].includes(part) ? player.team : 0;
+  const toneKey = part === "skin" ? player.skinTone : part === "hair" ? player.hairTone : 0;
+  const key = [material.uuid, variant, teamKey, toneKey].join(":");
   if (cache.has(key)) return cache.get(key);
   const copy = material.clone();
   const kit = TEAM_KITS[player.team] || TEAM_KITS[0];
