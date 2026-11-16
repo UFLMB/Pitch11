@@ -20,7 +20,7 @@ function run(command, args) {
 }
 function names(xml, tag) {
   const found = [];
-  const re = new RegExp(`<${tag}\\\\b[^>]*\\\\bname="([^"]+)"`, "g");
+  const re = new RegExp(`<${tag}\\b[^>]*\\bname="([^"]+)"`, "g");
   for (const match of xml.matchAll(re)) found.push(match[1].replaceAll("&amp;", "&"));
   return [...new Set(found)].sort();
 }
@@ -65,19 +65,21 @@ for (const entry of files) {
   const nodeNames = names(xml, "Node");
   const animationNames = names(xml, "Animation");
   const hierarchy = boneNames.length ? boneNames : nodeNames.filter(name => !/^(RootNode|Scene|Armature)$/i.test(name));
-  const signature = hierarchy.length ? createHash("sha256").update(hierarchy.join("\\n")).digest("hex").slice(0, 12) : "no-skeleton-names";
+  const signature = hierarchy.length ? createHash("sha256").update(hierarchy.join("\n")).digest("hex").slice(0, 12) : "no-skeleton-names";
   const info = run("assimp", ["info", target]);
   const pick = label => {
-    const match = info.match(new RegExp(`^\\\\s*${label}:\\\\s*(.+)$`, "mi"));
+    const match = info.match(new RegExp(`^\\s*${label}:\\s*(.+)$`, "mi"));
     return match ? match[1].trim() : "not-reported";
   };
   const trackTargets = [];
-  for (const match of xml.matchAll(/<NodeAnim\\b([^>]*)>/g)) {
+  for (const match of xml.matchAll(/<NodeAnim\b([^>]*)>/g)) {
     const attrs = match[1];
-    const targetName = attrs.match(/\\bnode="([^"]+)"/)?.[1] || attrs.match(/\\bname="([^"]+)"/)?.[1];
+    const targetName = attrs.match(/\bnode="([^"]+)"/)?.[1] || attrs.match(/\bname="([^"]+)"/)?.[1];
     if (targetName) trackTargets.push(targetName.replaceAll("&amp;", "&"));
   }
   const uniqueTrackTargets = [...new Set(trackTargets)].sort();
+  if (!nodeNames.length) throw new Error(`${entry.name}: Assimp returned no hierarchy nodes`);
+  if (compareModel && !uniqueTrackTargets.length) throw new Error(`${entry.name}: could not extract any FBX animation track targets`);
   const result = {
     file: entry.name,
     bytes: bytes.length,
@@ -87,8 +89,7 @@ for (const entry of files) {
     bones: pick("Bones"),
     boneNameCount: boneNames.length,
     hierarchyNodeCount: nodeNames.length,
-    animationNames,
-    animationChannelCount: (xml.match(/<NodeAnim\\b/g) || []).length,
+    animationChannelCount: (xml.match(/<NodeAnim\b/g) || []).length,
     skeletonSignature: signature
   };
   if (compareModel) {
