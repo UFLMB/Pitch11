@@ -4625,6 +4625,8 @@ MS.main=function(){
   UI.r.push({x:px,y:py,w:pw,h:ph,fn:()=>go('play')});
   glass(px,py,pw,ph,ph*.22,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
     hl:.14,bd:'rgba(212,175,75,.58)'});
+  ctx.save();ctx.strokeStyle='rgba(212,175,75,.82)';ctx.lineWidth=Math.max(1.5,H*.0022);
+  rr(px,py,pw,ph,ph*.22);ctx.stroke();ctx.restore();
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=ph*.16;ctx.shadowOffsetY=ph*.045;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+(H*.074)+'px sans-serif';
