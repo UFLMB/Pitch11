@@ -16,7 +16,7 @@ const TEAM_KITS = [
 
 function kitMaterial(material, meshName, player, cache) {
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
-  const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin|body/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
+  const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
   const variant = part === "shirt" ? (player.role === "GK" ? "keeper" : "shirt") : part;
   const teamKey = ["shirt", "shorts", "socks"].includes(part) ? player.team : 0;
   const toneKey = part === "skin" ? player.skinTone : part === "hair" ? player.hairTone : 0;
