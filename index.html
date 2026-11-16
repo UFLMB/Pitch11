@@ -19,7 +19,6 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <script src="engine/law-compliance.js">
-
 </script>
 <script>
 'use strict';
@@ -5949,7 +5948,7 @@ MS.cust=function(){
     names.forEach((nm,r)=>{const yy=y+H*(.2+r*.17),swatches=SWC.length+1,bw=w*.68/swatches;ctx.textAlign='left';txt(nm,x+W*.025,yy+H*.045,H*.032,'#fff',800);ctx.textAlign='center';
       for(let i=0;i<swatches;i++){const club=i===swatches-1,c=club?null:SWC[i],sel=club?!data.kit[r]:data.kit[r]===c,bx=x+W*.25+i*bw;ubtn(bx+1,yy,bw-3,H*.09,club?'CLUB':'',()=>{data.kit[r]=c;chgX();},club?(sel?Y:0):c);if(sel&&!club){ctx.strokeStyle='#ffe08a';ctx.lineWidth=2;rr(bx+1,yy,bw-3,H*.09,H*.015);ctx.stroke();}}
     });
-    const py=y+H*.75,sh=data.kit[0]||CL[G.club][2],sk=data.kit[1]||CL[G.club][3],gk=data.kit[2]||CL[G.club][4];fit('KIT PREVIEW',x+w*.5,py-H*.025,w*.5,H*.03,'#ffe08a');
+    const py=y+H*.66,sh=data.kit[0]||CL[G.club][2],sk=data.kit[1]||CL[G.club][3],gk=data.kit[2]||CL[G.club][4];fit('KIT PREVIEW',x+w*.5,py-H*.025,w*.5,H*.03,'#ffe08a');
     [[sh,'OUTFIELD',-.13],[gk,'GOALKEEPER',.13]].forEach(([c,l,o])=>{const cx=x+w/2+W*o;ctx.fillStyle=c;rr(cx-W*.027,py,W*.054,H*.085,H*.012);ctx.fill();ctx.fillStyle=sk;ctx.fillRect(cx-W*.022,py+H*.085,W*.044,H*.035);fit(l,cx,py+H*.15,W*.2,H*.023,'#dfe7ee');});
   }
   ubtn(x+w-W*.14,y+H*.015,W*.12,H*.06,M.conf?'CONFIRM RESET':'RESET',()=>{if(M.conf){G.x=Object.assign({},DX,{kit:[null,null,null]});M.conf=0;chgX();}else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
