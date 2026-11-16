@@ -3639,6 +3639,8 @@ function fixX(){const x=G.x&&typeof G.x==='object'?G.x:{},o={};
     else o[k]=Number.isInteger(x[k])&&x[k]>=0&&x[k]<=(max[k]??0)?x[k]:DX[k];}
   G.x=o;}
 function applyX(){const x=G.x,L=LENS[Math.min(3,x.len)];
+  window.P11PitchSettings={pitch:x.pitch|0,mowing:x.mow|0};
+  if(window.P11Stadium&&typeof window.P11Stadium.setPitchSettings==='function')window.P11Stadium.setPitchSettings(x.pitch,x.mow);
   PERIOD.len=[0,L,L,L/2,L/2,0];
   DIF.forEach(d=>{if(d.tk0===undefined){d.tk0=d.tk;d.gk0=d.gk;}d.tk=d.tk0*[.6,1,1.4][Math.min(2,x.aitk)];d.gk=d.gk0*[1.4,1,.65][Math.min(2,x.gk)];});}
 const _ldX=load;load=function(){_ldX();fixX();applyX();};
