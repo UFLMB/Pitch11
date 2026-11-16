@@ -23,8 +23,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
  // Four broad, shadow-free floodlights make NIGHT a genuine stadium lighting state.
  const floodlights=[[-66,43,-49],[-66,43,49],[66,43,-49],[66,43,49]].map(([x,y,z])=>{
-  const light=new THREE.SpotLight(0xf0f4ff,0,190,Math.PI*.235,.58,1.35);
-  light.position.set(x,y,z);light.target.position.set(0,0,0);
+  const light=new THREE.SpotLight(0xf0f4ff,0,190,.75,.58,1.35);
+  light.position.set(x,35,z);light.target.position.set(0,0,0);
   scene.add(light,light.target);return light;
  });
  function applyStadiumTimeOfDay(value){
@@ -33,25 +33,25 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    scene.background.set(0x07111d);if(scene.fog)scene.fog.color.set(0x101a29);
    hemi.color.set(0x7895c5);hemi.groundColor.set(0x101923);hemi.intensity=.48;
    key.color.set(0x8aa7d6);key.intensity=.18;fill.color.set(0x7399d8);fill.intensity=.16;
-   floodlights.forEach(light=>{light.intensity=420;});
+   floodlights.forEach(light=>{light.intensity=620;});setFloodlightFixtureState(2);
    renderer.toneMappingExposure=.94;
   }else if(mode===1){
    scene.background.set(0x382b3b);if(scene.fog)scene.fog.color.set(0x493746);
    hemi.color.set(0xe0a17d);hemi.groundColor.set(0x30252b);hemi.intensity=1.0;
    key.color.set(0xffad78);key.intensity=1.05;fill.color.set(0x8aa7c7);fill.intensity=.48;
-   floodlights.forEach(light=>{light.intensity=34;});
+   floodlights.forEach(light=>{light.intensity=110;});setFloodlightFixtureState(1);
    renderer.toneMappingExposure=1.02;
   }else{
    scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
    hemi.color.set(0xc8ddff);hemi.groundColor.set(0x1b251d);hemi.intensity=1.5;
    key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;
-   floodlights.forEach(light=>{light.intensity=0;});
+   floodlights.forEach(light=>{light.intensity=0;});setFloodlightFixtureState(0);
    renderer.toneMappingExposure=1.08;
   }
  }
  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null;
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0;
  let activePitchKey='';
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
@@ -237,6 +237,58 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  function addFlags(){const mat=new THREE.MeshStandardMaterial({color:0xa3e635,side:THREE.DoubleSide,roughness:.8});for(const [x,z] of [[-52.5,-34],[-52.5,34],[52.5,-34],[52.5,34]]){const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,1.55,6),new THREE.MeshStandardMaterial({color:0xb8c2c4,metalness:.5}));pole.position.set(x,.78,z);scene.add(pole);const flag=new THREE.Mesh(new THREE.PlaneGeometry(.48,.3,3,2),mat.clone());flag.position.set(x+.24,1.38,z);flag.userData.phase=flagMeshes.length*.8;flagMeshes.push(flag);scene.add(flag);}}
 
+ // Visible PITCH 11 floodlight towers: the light sources have physical fixtures,
+ // steel masts and LED panels so NIGHT reads as a properly lit football ground.
+ const floodlightFixtures=[];
+ function addFloodlightTowers(){
+  const steel=new THREE.MeshStandardMaterial({color:0x303b43,metalness:.72,roughness:.42});
+  const brace=new THREE.MeshStandardMaterial({color:0x59636a,metalness:.68,roughness:.48});
+  const housing=new THREE.MeshStandardMaterial({color:0x202a33,metalness:.55,roughness:.36});
+  const led=new THREE.MeshStandardMaterial({color:0xfff5d8,emissive:0xffe9b5,emissiveIntensity:0,roughness:.24});
+  for(const [x,z] of [[-66,-49],[-66,49],[66,-49],[66,49]]){
+   const tower=new THREE.Group();
+   const mast=new THREE.Mesh(new THREE.BoxGeometry(.42,34,.42),steel);mast.position.y=17;tower.add(mast);
+   for(const dx of [-.72,.72]){const leg=new THREE.Mesh(new THREE.BoxGeometry(.16,33,.16),brace);leg.position.set(dx,16.5,0);tower.add(leg);}
+   const cross=new THREE.Mesh(new THREE.BoxGeometry(3.8,.24,.5),steel);cross.position.y=34;tower.add(cross);
+   const panel=new THREE.Mesh(new THREE.BoxGeometry(3.5,2.1,.32),housing);panel.position.set(0,33.1,0);tower.add(panel);
+   for(let row=0;row<3;row++)for(let col=0;col<6;col++){
+    const lamp=new THREE.Mesh(new THREE.BoxGeometry(.39,.42,.055),led.clone());
+    lamp.position.set(-1.35+col*.54,33.72-row*.62,.2);tower.add(lamp);floodlightFixtures.push(lamp);
+   }
+   tower.position.set(x,0,z);scene.add(tower);
+  }
+ }
+ function setFloodlightFixtureState(mode){
+  const on=mode===2?1:mode===1?.22:0;
+  for(const lamp of floodlightFixtures){lamp.material.emissiveIntensity=on?2.4*on:0;lamp.material.color.setHex(on?0xfff5dc:0x7d858b);}
+ }
+ // Guarantee regulation pitch markings even when the source GLB's grass material
+ // is replaced by the runtime turf texture above.
+ function addPitchMarkings(){
+  const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
+  const y=pitchSurfaceY+.018,th=.105;
+  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
+  const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
+  const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
+  // Touchlines, goal lines and halfway line.
+  line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);line(0,-34,0,34);
+  // Centre circle and spot.
+  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.004,0);group.add(spot);
+  for(const sign of [-1,1]){
+   const gx=sign*52.5,dir=-sign;
+   // Penalty area: 16.5m deep, 40.32m wide.
+   const px=gx+dir*16.5,pz=20.16;
+   line(gx,-pz,px,-pz);line(px,-pz,px,pz);line(px,pz,gx,pz);
+   // Goal area: 5.5m deep, 18.32m wide.
+   const sixX=gx+dir*5.5,sixZ=9.16;
+   line(gx,-sixZ,sixX,-sixZ);line(sixX,-sixZ,sixX,sixZ);line(sixX,sixZ,gx,sixZ);
+   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.004,0);group.add(pen);
+   // Penalty arc outside the penalty area (the 9.15m D).
+   const lower=Math.atan2(-7.32,dir*16.5),upper=Math.atan2(7.32,dir*16.5);
+   if(sign>0)arc(gx+dir*11,0,9.15,upper,lower);else arc(gx+dir*11,0,9.15,lower,upper);
+  }
+  scene.add(group);return group;
+ }
  // Build one compact, deterministic turf atlas at load time; no external asset or per-frame work.
  function createPitchGrassTextures(){
   const size=mobile?512:1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
@@ -285,6 +337,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const longSide=Math.max(size.x,size.z),shortSide=Math.min(size.x,size.z);
    // Only touch the thin, pitch-sized green surface; stands, boards, seats and goal assets are excluded.
    if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
+   pitchSurfaceY=Math.max(pitchSurfaceY,box.max.y);
    const source=Array.isArray(o.material)?o.material:[o.material];
    const replacements=source.map(original=>{
     if(!original)return original;
@@ -306,7 +359,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const loader=new GLTFLoader();
  loader.load('./assets/football-stadium.glb',gltf=>{
   const stadium=gltf.scene;stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
-  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);
+  const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;enhancePitchGrass(stadium);scene.add(stadium);addFloodlightTowers();addPitchMarkings();
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);setGoalDimensions();addFlags();
@@ -344,7 +397,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    weatherGroup.rotation.y=now*.000008;
    const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
    const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null,oldFogNear=scene.fog?scene.fog.near:0,oldFogFar=scene.fog?scene.fog.far:0;
-   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldHemiSky=hemi.color.clone(),oldHemiGround=hemi.groundColor.clone(),oldHemiPower=hemi.intensity,oldFloodPower=floodlights.map(light=>light.intensity),oldExposure=renderer.toneMappingExposure;
+   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldHemiSky=hemi.color.clone(),oldHemiGround=hemi.groundColor.clone(),oldHemiPower=hemi.intensity,oldFloodPower=floodlights.map(light=>light.intensity),oldLampState=floodlightFixtures.map(lamp=>({color:lamp.material.color.clone(),emissiveIntensity:lamp.material.emissiveIntensity})),oldExposure=renderer.toneMappingExposure;
    applyStadiumTimeOfDay(timeOfDay);
    if(weather===1){scene.background.set(0x263746);if(scene.fog){scene.fog.color.set(0x71818c);scene.fog.near=125;scene.fog.far=360;}key.intensity*=.78;fill.intensity*=.82;}
    else if(weather===2){scene.background.set(0x667786);if(scene.fog){scene.fog.color.set(0xc4d0d8);scene.fog.near=75;scene.fog.far=240;}key.intensity*=.82;fill.intensity*=.9;}
@@ -368,7 +421,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    renderer.setScissorTest(false);renderer.setViewport(0,0,logicalSize.x,logicalSize.y);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
    if(oldFog&&scene.fog){scene.fog.color.copy(oldFog);scene.fog.near=oldFogNear;scene.fog.far=oldFogFar;}weatherGroup.visible=false;rainMesh.visible=false;snowMesh.visible=false;
-   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});renderer.toneMappingExposure=oldExposure;
+   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});floodlightFixtures.forEach((lamp,i)=>{lamp.material.color.copy(oldLampState[i].color);lamp.material.emissiveIntensity=oldLampState[i].emissiveIntensity;});renderer.toneMappingExposure=oldExposure;
    return true;
   }
   window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
