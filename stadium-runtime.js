@@ -7,17 +7,22 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
  boot.state='initializing-renderer';boot.progress=0;boot.error='';
  const mobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
+ const uiCanvas=document.getElementById('c');
+ let viewportWidth=uiCanvas?.getBoundingClientRect().width||innerWidth;
+ let viewportHeight=uiCanvas?.getBoundingClientRect().height||innerHeight;
  const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance',stencil:false,depth:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));renderer.setSize(innerWidth,innerHeight);
- function syncRendererPixelRatio(){
-  const uiCanvas=document.getElementById('c'),uiRect=uiCanvas&&uiCanvas.getBoundingClientRect();
-  if(!uiCanvas||!uiRect||uiRect.width<1)return;
-  const targetRatio=uiCanvas.width/uiRect.width;
-  if(Number.isFinite(targetRatio)&&targetRatio>0&&Math.abs(renderer.getPixelRatio()-targetRatio)>.001){
-   renderer.setPixelRatio(targetRatio);renderer.setSize(innerWidth,innerHeight,false);
-  }
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));
+ function syncRendererSize(){
+  const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
+  if(!rect||rect.width<1||rect.height<1)return null;
+  viewportWidth=rect.width;viewportHeight=rect.height;
+  const targetRatio=uiCanvas.width/rect.width;
+  if(Number.isFinite(targetRatio)&&targetRatio>0&&Math.abs(renderer.getPixelRatio()-targetRatio)>.001)renderer.setPixelRatio(targetRatio);
+  const size=renderer.getSize(new THREE.Vector2());
+  if(Math.abs(size.x-rect.width)>.5||Math.abs(size.y-rect.height)>.5)renderer.setSize(rect.width,rect.height,false);
+  return rect;
  }
- syncRendererPixelRatio();
+ syncRendererSize();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,620);
  const hemi=new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.5);scene.add(hemi);
@@ -51,7 +56,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    renderer.toneMappingExposure=1.08;
   }
  }
- const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
+ const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
  let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0;
  let activePitchKey='';
@@ -418,7 +423,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  loadStadium();
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
- function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*innerWidth,sy=(-v3.y*.5+.5)*innerHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*innerWidth,sy2=(-v4.y*.5+.5)*innerHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
+ function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*viewportWidth,sy=(-v3.y*.5+.5)*viewportHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*viewportWidth,sy2=(-v4.y*.5+.5)*viewportHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
  function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,camera);lastRender=now;}}
  function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
@@ -430,7 +435,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const uiCanvas=document.getElementById('c');
    const uiRect=uiCanvas&&uiCanvas.getBoundingClientRect();
    if(!uiRect||uiRect.width<2||uiRect.height<2){previewFailure='ui-canvas-unavailable';return false;}
-   syncRendererPixelRatio();
+   syncRendererSize();
    const canvasRect=renderer.domElement.getBoundingClientRect();
    if(canvasRect.width<2||canvasRect.height<2){previewFailure='renderer-canvas-unavailable';return false;}
    // Keep Three.js logical viewport dimensions aligned to the actual CSS
@@ -492,5 +497,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
    render,renderTopDown,renderPreview,project,setGoalDimensions
   };
- addEventListener('resize',()=>{syncRendererPixelRatio();renderer.setSize(innerWidth,innerHeight,false);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
+ const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
+ addEventListener('resize',resizeStadium);
+ addEventListener('orientationchange',resizeStadium);
+ if(window.visualViewport)window.visualViewport.addEventListener('resize',resizeStadium);
+ if(typeof ResizeObserver!=='undefined'){const viewportObserver=new ResizeObserver(resizeStadium);viewportObserver.observe(uiCanvas);}
 })();
