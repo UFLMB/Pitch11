@@ -4596,37 +4596,37 @@ MS.main=function(){
     ctx.save();ctx.strokeStyle='#f2d58e';ctx.lineWidth=Math.max(1.5,r*.09);
     ctx.lineCap='round';ctx.lineJoin='round';
     if(kind==='club'){
-      // Three solid player silhouettes: a clear team identity, not a shield.
+      // Larger, simplified three-player silhouette for small mobile displays.
       ctx.fillStyle='#f2d58e';
-      ctx.beginPath();ctx.arc(cx,cy-r*.28,r*.17,0,TAU);ctx.fill();
-      ctx.beginPath();ctx.arc(cx-r*.39,cy-r*.10,r*.125,0,TAU);ctx.fill();
-      ctx.beginPath();ctx.arc(cx+r*.39,cy-r*.10,r*.125,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(cx,cy-r*.31,r*.205,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(cx-r*.43,cy-r*.10,r*.155,0,TAU);ctx.fill();
+      ctx.beginPath();ctx.arc(cx+r*.43,cy-r*.10,r*.155,0,TAU);ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(cx-r*.30,cy+r*.38);
-      ctx.bezierCurveTo(cx-r*.28,cy+r*.02,cx+r*.28,cy+r*.02,cx+r*.30,cy+r*.38);
-      ctx.quadraticCurveTo(cx,cy+r*.51,cx-r*.30,cy+r*.38);ctx.fill();
+      ctx.moveTo(cx-r*.36,cy+r*.43);
+      ctx.bezierCurveTo(cx-r*.35,cy-r*.02,cx+r*.35,cy-r*.02,cx+r*.36,cy+r*.43);
+      ctx.quadraticCurveTo(cx,cy+r*.57,cx-r*.36,cy+r*.43);ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(cx-r*.65,cy+r*.34);
-      ctx.bezierCurveTo(cx-r*.64,cy+r*.08,cx-r*.23,cy+r*.06,cx-r*.20,cy+r*.32);
-      ctx.quadraticCurveTo(cx-r*.42,cy+r*.44,cx-r*.65,cy+r*.34);ctx.fill();
+      ctx.moveTo(cx-r*.73,cy+r*.38);
+      ctx.bezierCurveTo(cx-r*.72,cy+r*.02,cx-r*.25,cy+r*.02,cx-r*.20,cy+r*.37);
+      ctx.quadraticCurveTo(cx-r*.46,cy+r*.52,cx-r*.73,cy+r*.38);ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(cx+r*.20,cy+r*.32);
-      ctx.bezierCurveTo(cx+r*.23,cy+r*.06,cx+r*.64,cy+r*.08,cx+r*.65,cy+r*.34);
-      ctx.quadraticCurveTo(cx+r*.42,cy+r*.44,cx+r*.20,cy+r*.32);ctx.fill();
+      ctx.moveTo(cx+r*.20,cy+r*.37);
+      ctx.bezierCurveTo(cx+r*.25,cy+r*.02,cx+r*.72,cy+r*.02,cx+r*.73,cy+r*.38);
+      ctx.quadraticCurveTo(cx+r*.46,cy+r*.52,cx+r*.20,cy+r*.37);ctx.fill();
     }else{
-      // Crisp eight-tooth gear with a recessed center.
+      // Bold eight-tooth gear; enlarged teeth and a clear central opening.
       const teeth=8,steps=4;
       ctx.beginPath();
       for(let i=0;i<teeth*steps;i++){
         const a=-Math.PI/2+i*TAU/(teeth*steps);
         const phase=i%steps;
-        const rradius=(phase===1||phase===2)?r*.57:r*.43;
+        const rradius=(phase===1||phase===2)?r*.69:r*.49;
         const x=cx+Math.cos(a)*rradius,y=cy+Math.sin(a)*rradius;
         if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
       }
       ctx.closePath();ctx.fillStyle='#f2d58e';ctx.fill();
-      ctx.beginPath();ctx.arc(cx,cy,r*.19,0,TAU);ctx.fillStyle='rgba(5,16,18,.94)';ctx.fill();
-      ctx.beginPath();ctx.arc(cx,cy,r*.105,0,TAU);ctx.strokeStyle='#f2d58e';ctx.lineWidth=Math.max(1,r*.055);ctx.stroke();
+      ctx.beginPath();ctx.arc(cx,cy,r*.27,0,TAU);ctx.fillStyle='rgba(5,16,18,.96)';ctx.fill();
+      ctx.beginPath();ctx.arc(cx,cy,r*.27,0,TAU);ctx.strokeStyle='#f2d58e';ctx.lineWidth=Math.max(1.5,r*.085);ctx.stroke();
     }
     ctx.restore();
   };
@@ -4634,7 +4634,7 @@ MS.main=function(){
     UI.r.push({x,y:navY,w:navW,h:navH,fn});
     glass(x,navY,navW,navH,navH*.28,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
       hl:.14,bd:'rgba(215,222,216,.32)'});
-    const ir=navH*.27,icx=x+navH*.58,icy=navY+navH*.5;
+    const ir=navH*.31,icx=x+navH*.58,icy=navY+navH*.5;
     ctx.save();ctx.fillStyle='rgba(5,16,18,.7)';ctx.strokeStyle='rgba(222,190,118,.55)';
     ctx.lineWidth=Math.max(1,H*.0015);ctx.beginPath();ctx.arc(icx,icy,ir*1.18,0,TAU);ctx.fill();ctx.stroke();ctx.restore();
     drawIcon(kind,icx,icy,ir);
