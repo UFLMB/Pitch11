@@ -58,7 +58,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchGrassBaseCanvas=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchGrassBaseCanvas=null,pitchNormalTexture=null,pitchRoughnessTexture=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
  let activePitchKey='';
  function drawProceduralGrass(g,width,height){
   // One continuous, deterministic turf image. Blade marks are baked into a
@@ -382,28 +382,51 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   return group;
  }
  function loadMeshyPitchGrass(){
-  // Meshy's CC0 sports-turf Base Color (2K JPG, ~2.3 MB).
-  // Draw once into the local canvas; the renderer keeps a procedural fallback
-  // if the CDN is unavailable or the browser rejects cross-origin access.
-  const image=new Image();image.crossOrigin='anonymous';
-  image.onload=()=>{
-   const canvas=pitchGrassBaseCanvas;if(!canvas)return;
-   const g=canvas.getContext('2d',{alpha:false}),iw=image.naturalWidth,ih=image.naturalHeight;
-   const imageRatio=iw/ih,fieldRatio=canvas.width/canvas.height;
-   let sx=0,sy=0,sw=iw,sh=ih;
-   if(imageRatio>fieldRatio){sw=ih*fieldRatio;sx=(iw-sw)/2;}
-   else{sh=iw/fieldRatio;sy=(ih-sh)/2;}
-   g.clearRect(0,0,canvas.width,canvas.height);
-   g.drawImage(image,sx,sy,sw,sh,0,0,canvas.width,canvas.height);
-   pitchBaseImage=image;pitchTextureStatus='meshy-sports-turf-2k';
+  // Meshy Sports Turf PBR set: Base Color, Normal (OpenGL), Roughness.
+  const quality=mobile?'ti_w:1536,q:75':'ti_w:2048,q:75';
+  const root='https://cdn.meshy.ai/'+quality+'/landing-assets/textures/grass/sports-turf/';
+  const canvas=pitchGrassBaseCanvas;if(!canvas)return;
+  const crop=(image,target)=>{
+   const g=target.getContext('2d',{alpha:false}),iw=image.naturalWidth,ih=image.naturalHeight;
+   const ratio=iw/ih,field=target.width/target.height;let sx=0,sy=0,sw=iw,sh=ih;
+   if(ratio>field){sw=ih*field;sx=(iw-sw)/2;}else{sh=iw/field;sy=(ih-sh)/2;}
+   g.clearRect(0,0,target.width,target.height);g.drawImage(image,sx,sy,sw,sh,0,0,target.width,target.height);
+  };
+  const load=(file,target,done)=>{
+   const image=new Image();image.crossOrigin='anonymous';
+   image.onload=()=>{crop(image,target);done(true);};
+   image.onerror=()=>{done(false);console.warn('PITCH 11 Meshy map unavailable:',file);};
+   image.src=root+file;
+  };
+  const normalCanvas=document.createElement('canvas');normalCanvas.width=canvas.width;normalCanvas.height=canvas.height;
+  const roughCanvas=document.createElement('canvas');roughCanvas.width=canvas.width;roughCanvas.height=canvas.height;
+  let complete=0,baseOK=false,normalOK=false,roughOK=false;
+  const finish=()=>{
+   if(++complete!==3)return;
+   if(baseOK){pitchTexture.needsUpdate=true;pitchTextureStatus='meshy-sports-turf-base-color';}
+   if(normalOK){
+    pitchNormalTexture=new THREE.CanvasTexture(normalCanvas);pitchNormalTexture.colorSpace=THREE.NoColorSpace;
+    pitchNormalTexture.wrapS=pitchNormalTexture.wrapT=THREE.ClampToEdgeWrapping;
+    pitchNormalTexture.generateMipmaps=true;pitchNormalTexture.minFilter=THREE.LinearMipmapLinearFilter;
+    pitchNormalTexture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+   }
+   if(roughOK){
+    pitchRoughnessTexture=new THREE.CanvasTexture(roughCanvas);pitchRoughnessTexture.colorSpace=THREE.NoColorSpace;
+    pitchRoughnessTexture.wrapS=pitchRoughnessTexture.wrapT=THREE.ClampToEdgeWrapping;
+    pitchRoughnessTexture.generateMipmaps=true;pitchRoughnessTexture.minFilter=THREE.LinearMipmapLinearFilter;
+    pitchRoughnessTexture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+   }
+   pitchMaterials.forEach(material=>{
+    if(normalOK){material.normalMap=pitchNormalTexture;material.normalScale.set(.38,.38);}
+    if(roughOK)material.roughnessMap=pitchRoughnessTexture;
+    material.roughness=1;material.metalness=0;material.needsUpdate=true;
+   });
    activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
-   console.info('PITCH 11 Meshy CC0 sports turf loaded:',iw+'x'+ih);
+   console.info('PITCH 11 Meshy Sports Turf PBR maps:',{baseColor:baseOK,normal:normalOK,roughness:roughOK,metalness:0});
   };
-  image.onerror=()=>{
-   pitchTextureStatus='procedural-hd-fallback';
-   console.warn('PITCH 11 Meshy sports turf unavailable; retaining local HD fallback.');
-  };
-  image.src='https://cdn.meshy.ai/landing-assets/textures/grass/sports-turf/sports-turf-2k.jpg';
+  load('sports-turf-color.webp',canvas,ok=>{baseOK=ok;finish();});
+  load('sports-turf-normal.webp',normalCanvas,ok=>{normalOK=ok;finish();});
+  load('sports-turf-roughness.webp',roughCanvas,ok=>{roughOK=ok;finish();});
  }
  function createPitchGrassTextures(){
   // Mobile texture stays at 1536 x 1024 (~6 MB RGBA before mipmaps);
