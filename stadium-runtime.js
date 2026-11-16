@@ -73,24 +73,33 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   }
   // Grass presets tint the photographic sports-turf albedo; the separate
   // fixed line-marking texture is never recoloured or redrawn here.
-  const tints=['#e7f2df','#8eaa91','#b6a16b','#dce5e7','#78a9c4'];
-  if(p!==0){
-   g.save();g.globalCompositeOperation='multiply';g.globalAlpha=p===1?.72:p===2?.68:p===3?.58:.62;
+  // Keep the photographic turf dominant: presets make restrained colour
+  // corrections instead of painting over the grass detail.
+  const tints=['#f0f5e9','#a8b8a5','#bca77b','#e4e9e8','#91b6c5'];
+  const tintStrength=[.035,.22,.19,.14,.17][p];
+  if(tintStrength>0){
+   g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=tintStrength;
    g.fillStyle=tints[p];g.fillRect(0,0,size,size);g.restore();
-  }else{
-   g.save();g.globalCompositeOperation='multiply';g.globalAlpha=.12;
-   g.fillStyle=tints[0];g.fillRect(0,0,size,size);g.restore();
   }
-  // Mowing presets are subtle directional treatments over the same real turf.
-  g.save();g.globalCompositeOperation='multiply';
-  if(m===0){
-   for(let n=0;n<2;n++){g.fillStyle=n%2?'rgba(0,0,0,.10)':'rgba(255,255,255,.045)';g.fillRect(n*size/2,0,size/2+1,size);}
-  }else if(m===1){
-   for(let n=0;n<4;n++){g.fillStyle=n%2?'rgba(0,0,0,.075)':'rgba(255,255,255,.035)';g.fillRect(n*size/4,0,size/4+1,size);}
-  }else if(m===2){
-   for(let n=0;n<4;n++){g.fillStyle=n%2?'rgba(0,0,0,.065)':'rgba(255,255,255,.025)';g.fillRect(0,n*size/4,size,size/4+1);}
-  }
-  g.restore();
+  // Mowing patterns are broad, low-contrast light shifts with soft boundaries.
+  const addBands=(vertical,count,dark,light)=>{
+   for(let n=0;n<count;n++){
+    const start=n/count,end=(n+1)/count,grad=vertical
+     ?g.createLinearGradient(start*size,0,end*size,0)
+     :g.createLinearGradient(0,start*size,0,end*size);
+    const shade=n%2?dark:light;
+    grad.addColorStop(0,'rgba(255,255,255,0)');
+    grad.addColorStop(.12,shade);
+    grad.addColorStop(.88,shade);
+    grad.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grad;
+    if(vertical)g.fillRect(start*size,0,size/count,size);
+    else g.fillRect(0,start*size,size,size/count);
+   }
+  };
+  if(m===0)addBands(true,2,'rgba(0,0,0,.035)','rgba(255,255,255,.025)');
+  else if(m===1)addBands(true,4,'rgba(0,0,0,.03)','rgba(255,255,255,.022)');
+  else if(m===2)addBands(false,4,'rgba(0,0,0,.028)','rgba(255,255,255,.02)');
   pitchTexture.needsUpdate=true;
  }
  function createPreviewWeather(){
@@ -343,7 +352,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   return group;
  }
  function createPitchGrassTextures(){
-  const size=mobile?1024:2048,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const size=mobile?1536:2048,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
   const g=canvas.getContext('2d',{alpha:false});
   const fallback=g.createLinearGradient(0,0,size,size);
   fallback.addColorStop(0,'#347b40');fallback.addColorStop(.5,'#2e7139');fallback.addColorStop(1,'#286637');
@@ -356,7 +365,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    g.lineWidth=.5+rnd()*.6;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5),y-len);g.stroke();
   }
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
-  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.repeat.set(20,14);albedo.generateMipmaps=true;
+  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.repeat.set(10,7);albedo.generateMipmaps=true;
   albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
   albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=512;
@@ -367,7 +376,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    d.lineWidth=.5+rnd()*.6;d.beginPath();d.moveTo(x,y);d.lineTo(x+(rnd()-.5)*1.4,y-len);d.stroke();
   }
   const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.RepeatWrapping;
-  detail.repeat.set(28,20);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
+  detail.repeat.set(16,11);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
   return{albedo,detail,canvas};
  }
  function loadPhotographicPitchGrass(){
@@ -416,9 +425,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     // Replace the baked pitch texture (which contains the old markings) only
     // on Pitch_2; the independent overlay is drawn above this exact surface.
     m.map=textures.albedo;m.color.set(0xffffff);
-    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.003;}
+    if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.0012;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
-    m.roughness=Math.max(.92,m.roughness||0);m.metalness=0;m.needsUpdate=true;
+    m.roughness=Math.max(.96,m.roughness||0);m.metalness=0;m.needsUpdate=true;
     pitchMaterials.push(m);changed++;
     materialSamples.push({material:materialInfo(original),green,changed:true});
     return m;
