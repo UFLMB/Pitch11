@@ -104,6 +104,14 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://cdn.3dassets.dev/assets/19077/v1/model.glb" --output assets/corner-flag.glb
           test "$(stat -c%s assets/corner-flag.glb)" -gt 3000
           test "$(head -c 4 assets/corner-flag.glb)" = "glTF"
+      - name: Build a mobile-optimized stadium model
+        run: |
+          npx --yes @gltf-transform/cli@4.5.1 resize assets/football-stadium.glb assets/football-stadium-mobile.glb --width 1024 --height 1024
+          test -s assets/football-stadium-mobile.glb
+          test "$(head -c 4 assets/football-stadium-mobile.glb)" = "glTF"
+          test "$(stat -c%s assets/football-stadium-mobile.glb)" -lt "$(stat -c%s assets/football-stadium.glb)"
+          echo "Desktop stadium: $(du -h assets/football-stadium.glb | cut -f1)"
+          echo "Mobile stadium:  $(du -h assets/football-stadium-mobile.glb | cut -f1)"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
