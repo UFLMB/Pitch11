@@ -59,6 +59,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
  let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchGrassBaseCanvas=null,pitchNormalTexture=null,pitchRoughnessTexture=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
+ let pitchGrassPbrDiagnostics={status:'not-started',quality:null,files:{},materialCount:0,normalBindings:0,roughnessBindings:0};
  let activePitchKey='';
  function drawProceduralGrass(g,width,height){
   // One continuous, deterministic turf image. Blade marks are baked into a
@@ -386,7 +387,8 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   // desktop uses 2K. This avoids CDN dependencies and preserves offline caching.
   const quality=mobile?'1k':'2k';
   const prefix='./assets/textures/grass/'+quality+'/sports-turf_'+quality+'_';
-  const canvas=pitchGrassBaseCanvas;if(!canvas)return;
+  const canvas=pitchGrassBaseCanvas;if(!canvas){pitchGrassPbrDiagnostics={status:'no-base-canvas',quality,files:{}};return;}
+  pitchGrassPbrDiagnostics={status:'loading',quality,files:{color:{url:prefix+'color.jpg',status:'loading'},normalgl:{url:prefix+'normalgl.jpg',status:'loading'},roughness:{url:prefix+'roughness.jpg',status:'loading'}},materialCount:pitchMaterials.length,normalBindings:0,roughnessBindings:0};
   // Build one continuous, high-detail turf surface from the seamless source map.
   // Three offset spatial scales break up obvious repetition without field-sized
   // image blocks. Identical transforms are used for albedo, normal and roughness.
@@ -408,10 +410,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    }
    g.globalAlpha=1;
   };
-  const load=(file,target,done)=>{
+  const load=(file,key,target,done)=>{
    const image=new Image();
-   image.onload=()=>{composeMap(image,target);done(true);};
-   image.onerror=()=>{done(false);console.warn('PITCH 11 local grass map unavailable:',prefix+file);};
+   image.onload=()=>{composeMap(image,target);pitchGrassPbrDiagnostics.files[key]={url:prefix+file,status:'loaded',width:image.naturalWidth,height:image.naturalHeight};done(true);};
+   image.onerror=()=>{pitchGrassPbrDiagnostics.files[key]={url:prefix+file,status:'error'};done(false);console.warn('PITCH 11 local grass map unavailable:',prefix+file);};
    image.src=prefix+file;
   };
   const normalCanvas=document.createElement('canvas');normalCanvas.width=canvas.width;normalCanvas.height=canvas.height;
@@ -432,17 +434,21 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     pitchRoughnessTexture.generateMipmaps=true;pitchRoughnessTexture.minFilter=THREE.LinearMipmapLinearFilter;
     pitchRoughnessTexture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
    }
+   pitchGrassPbrDiagnostics.status=baseOK?'complete':'base-color-failed';
+   pitchGrassPbrDiagnostics.baseColorApplied=baseOK;
+   pitchGrassPbrDiagnostics.materialCount=pitchMaterials.length;
    pitchMaterials.forEach(material=>{
-    if(normalOK){material.normalMap=pitchNormalTexture;material.normalScale.set(.38,.38);}
-    if(roughOK)material.roughnessMap=pitchRoughnessTexture;
+    if(normalOK){material.normalMap=pitchNormalTexture;material.normalScale.set(.38,.38);if(material.normalMap===pitchNormalTexture)pitchGrassPbrDiagnostics.normalBindings++;}
+    if(roughOK){material.roughnessMap=pitchRoughnessTexture;if(material.roughnessMap===pitchRoughnessTexture)pitchGrassPbrDiagnostics.roughnessBindings++;}
     material.roughness=1;material.metalness=0;material.needsUpdate=true;
    });
+   pitchGrassPbrDiagnostics.completedAt=new Date().toISOString();
    activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
-   console.info('PITCH 11 local Sports Turf PBR maps:',{quality,baseColor:baseOK,normalOpenGL:normalOK,roughness:roughOK,metalness:0});
+   console.info('PITCH 11 local Sports Turf PBR maps:',{quality,baseColor:baseOK,normalOpenGL:normalOK,roughness:roughOK,metalness:0,materials:pitchMaterials.length});
   };
-  load('color.jpg',canvas,ok=>{baseOK=ok;finish();});
-  load('normalgl.jpg',normalCanvas,ok=>{normalOK=ok;finish();});
-  load('roughness.jpg',roughCanvas,ok=>{roughOK=ok;finish();});
+  load('color.jpg','color',canvas,ok=>{baseOK=ok;finish();});
+  load('normalgl.jpg','normalgl',normalCanvas,ok=>{normalOK=ok;finish();});
+  load('roughness.jpg','roughness',roughCanvas,ok=>{roughOK=ok;finish();});
  }
  function createPitchGrassTextures(){
   // Mobile texture stays at 1536 x 1024 (~6 MB RGBA before mipmaps);
@@ -648,7 +654,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   window.P11Stadium={
    get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
-   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,pbrLoad:{...pitchGrassPbrDiagnostics,files:{...pitchGrassPbrDiagnostics.files}},textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
    setPitchSettings(pitch,mowing){
     pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
     activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
