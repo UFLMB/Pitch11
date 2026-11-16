@@ -79,8 +79,9 @@ for (const entry of files) {
   }
   const uniqueTrackTargets = [...new Set(trackTargets)].sort();
   if (!nodeNames.length) throw new Error(`${entry.name}: Assimp returned no hierarchy nodes`);
-  const result = {
   if (compareModel && !uniqueTrackTargets.length) throw new Error(`${entry.name}: could not extract any FBX animation track targets`);
+  if (!nodeNames.length) throw new Error(`${entry.name}: Assimp returned no hierarchy nodes`);
+  const result = {
     file: entry.name,
     bytes: bytes.length,
     meshes: pick("Meshes"),
