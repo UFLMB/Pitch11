@@ -5839,22 +5839,19 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    // Flaticon 5213872: polygon geometry traced from the supplied reference image.
+    // Same outline-only visual language as the other settings icons, retaining the supplied ball layout.
     const s=r*.88/224,ox=cx-256*s,oy=cy-256*s;
-    const panels=[
-      [[108,112],[188,61],[259,92],[249,170],[170,227],[107,200]],
-      [[274,94],[352,74],[423,136],[412,207],[342,228],[265,171]],
-      [[347,244],[417,223],[461,280],[426,373],[360,385],[317,335]],
-      [[207,344],[304,345],[347,395],[314,454],[256,463],[209,457],[173,397]],
-      [[101,215],[165,243],[194,335],[160,387],[85,372],[51,277]]
-    ];
+    const point=(p)=>[ox+p[0]*s,oy+p[1]*s];
+    const pentagon=[[259,92],[342,228],[317,335],[194,335],[170,227]].map(point);
+    const outer=[[256,32],[470,220],[390,450],[122,450],[42,220]].map(point);
     ctx.save();
-    ctx.beginPath();ctx.arc(cx,cy,224*s,0,TAU);ctx.fillStyle='#0b1930';ctx.fill();
-    ctx.fillStyle=color;
-    for(const points of panels){
-      ctx.beginPath();
-      points.forEach((p,i)=>{const x=ox+p[0]*s,y=oy+p[1]*s;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
-      ctx.closePath();ctx.fill();
+    ctx.strokeStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.arc(cx,cy,224*s,0,TAU);ctx.stroke();
+    ctx.beginPath();
+    pentagon.forEach((p,i)=>{if(i===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);});
+    ctx.closePath();ctx.stroke();
+    for(let i=0;i<5;i++){
+      ctx.beginPath();ctx.moveTo(pentagon[i][0],pentagon[i][1]);ctx.lineTo(outer[i][0],outer[i][1]);ctx.stroke();
     }
     ctx.restore();
   }else if(kind==='camera'){
