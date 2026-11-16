@@ -5963,7 +5963,7 @@ function settingsWrap(value,x,y,w,h,size,color,align,maxLines){
   ctx.restore();
 }
 function settingsSeg(x,y,w,h,labs,sel,fn){
-  const mobileSwitchLabels=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches&&Math.min(screen.width||innerWidth,screen.height||innerHeight)<=600;
+  const mobileSwitchLabels=(navigator.userAgentData&&navigator.userAgentData.mobile===true)||/Android.*Mobile|iPhone|iPod|Windows Phone/i.test(navigator.userAgent)||(window.matchMedia&&window.matchMedia('(pointer:coarse)').matches&&Math.min(screen.width||innerWidth,screen.height||innerHeight)<=600);
   const padX=mobileSwitchLabels?3:5,padY=mobileSwitchLabels?1.5:5,gap=2,innerW=Math.max(1,w-padX*2),innerH=Math.max(1,h-padY*2),cellW=innerW/labs.length;
   ctx.save();
   // Match the fully lit gold treatment used by MATCH CAMERA buttons.
