@@ -23,7 +23,42 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null;
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null;
+ let activePitchKey='';
+ function updatePreviewPitch(pitch,mowing){
+  const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
+  if(key===activePitchKey||!pitchTextureCanvas||!pitchTexture)return;
+  activePitchKey=key;
+  const palettes=[
+   ['#347b40','#2e7139','#286637'],['#183c2c','#123323','#0c261b'],['#9b8750','#b49b5c','#75643b'],
+   ['#dce6e8','#f2f5f4','#b9c9d0'],['#064c73','#087f9c','#042d66']
+  ];
+  const c=pitchTextureCanvas,g=c.getContext('2d',{alpha:false}),size=c.width,pal=palettes[p];
+  const grad=g.createLinearGradient(0,0,size,size);grad.addColorStop(0,pal[0]);grad.addColorStop(.5,pal[1]);grad.addColorStop(1,pal[2]);
+  g.fillStyle=grad;g.fillRect(0,0,size,size);
+  if(m===0){const band=size/14;for(let n=0;n<14;n++){g.fillStyle=n%2?'rgba(0,0,0,.13)':'rgba(225,255,210,.10)';g.fillRect(n*band,0,band+1,size);}}
+  else if(m===1){const cw=size/16,ch=size/10;for(let x=0;x<16;x++)for(let y=0;y<10;y++)if((x+y)&1){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(x*cw,y*ch,cw+1,ch+1);}}
+  else if(m===2){const band=size/10;for(let y=0;y<10;y+=2){g.fillStyle='rgba(0,0,0,.13)';g.fillRect(0,y*band,size,band+1);}}
+  let seed=110711+p*7919+m*131;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const blades=p===3?1200:6500;
+  for(let n=0;n<blades;n++){const x=rnd()*size,y=rnd()*size,len=2+rnd()*6;g.strokeStyle=p===3?'rgba(255,255,255,.22)':p===4?'rgba(105,255,245,.22)':rnd()>.5?'rgba(190,230,155,.17)':'rgba(0,20,0,.2)';g.lineWidth=.5+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*2,y-len);g.stroke();}
+  pitchTexture.needsUpdate=true;
+ }
+ function createPreviewWeather(){
+  if(previewWeatherGroup)return previewWeatherGroup;
+  previewWeatherGroup=new THREE.Group();
+  const rain=[],snow=[];
+  let seed=77291;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  for(let n=0;n<260;n++){const x=rnd()*110-55,y=3+rnd()*25,z=rnd()*76-38;rain.push(x,y,z,x-.12,y+1.25,z);}
+  const rainGeo=new THREE.BufferGeometry();rainGeo.setAttribute('position',new THREE.Float32BufferAttribute(rain,3));
+  const rainMat=new THREE.LineBasicMaterial({color:0xb9d8f4,transparent:true,opacity:.48});
+  const rainMesh=new THREE.LineSegments(rainGeo,rainMat);rainMesh.visible=false;previewWeatherGroup.add(rainMesh);
+  const flakes=[];for(let n=0;n<240;n++)flakes.push(rnd()*110-55,3+rnd()*25,rnd()*76-38);
+  const snowGeo=new THREE.BufferGeometry();snowGeo.setAttribute('position',new THREE.Float32BufferAttribute(flakes,3));
+  const snowMat=new THREE.PointsMaterial({color:0xffffff,size:.22,transparent:true,opacity:.88,sizeAttenuation:true});
+  const snowMesh=new THREE.Points(snowGeo,snowMat);snowMesh.visible=false;previewWeatherGroup.add(snowMesh);
+  scene.add(previewWeatherGroup);return previewWeatherGroup;
+ }
  const topCamera=new THREE.OrthographicCamera(-60,60,40,-40,.1,1000);
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
@@ -211,11 +246,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   }
   const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.RepeatWrapping;
   detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
-  return{albedo,detail};
+  return{albedo,detail,canvas};
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();let changed=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchTexture=textures.albedo;let changed=0;
   stadium.traverse(o=>{
    if(!o.isMesh)return;
    const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3());
@@ -229,11 +264,11 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     const green=hsl.h>=.19&&hsl.h<=.48&&hsl.s>=.18;
     if(!green&&!original.map)return original;
     const m=original.clone();
-    if(!m.map){m.map=textures.albedo;m.color.set(0xffffff);}
+    m.map=textures.albedo;m.color.set(0xffffff);
     if(!m.bumpMap){m.bumpMap=textures.detail;m.bumpScale=.012;}
     if(!m.roughnessMap)m.roughnessMap=textures.detail;
     m.roughness=Math.max(.9,m.roughness||0);m.metalness=0;m.needsUpdate=true;
-    changed++;return m;
+    pitchMaterials.push(m);changed++;return m;
    });
    o.material=Array.isArray(o.material)?replacements:replacements[0];
   });
@@ -274,8 +309,13 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const w=right-x,h=bottomEdge-y;
    if(w<2||h<2)return false;
    const now=performance.now(),timeOfDay=Number.isInteger(options.timeOfDay)?Math.max(0,Math.min(2,options.timeOfDay)):0;
+   const pitch=Number.isInteger(options.pitch)?options.pitch:0,mowing=Number.isInteger(options.mowing)?options.mowing:0,weather=Number.isInteger(options.weather)?Math.max(0,Math.min(3,options.weather)):0;
+   updatePreviewPitch(pitch,mowing);
+   const weatherGroup=createPreviewWeather(),rainMesh=weatherGroup.children[0],snowMesh=weatherGroup.children[1];
+   rainMesh.visible=weather===1;snowMesh.visible=weather===2;weatherGroup.visible=weather===1||weather===2;
+   weatherGroup.rotation.y=now*.000008;
    const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
-   const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null;
+   const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null,oldFogNear=scene.fog?scene.fog.near:0,oldFogFar=scene.fog?scene.fog.far:0;
    const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldExposure=renderer.toneMappingExposure;
    if(timeOfDay===2){
     scene.background.set(0x07111d);if(scene.fog)scene.fog.color.set(0x101a29);
@@ -287,6 +327,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
     scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
     key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;renderer.toneMappingExposure=1.08;
    }
+   if(weather===1){scene.background.set(0x263746);if(scene.fog){scene.fog.color.set(0x71818c);scene.fog.near=125;scene.fog.far=360;}key.intensity*=.78;fill.intensity*=.82;}
+   else if(weather===2){scene.background.set(0x667786);if(scene.fog){scene.fog.color.set(0xc4d0d8);scene.fog.near=75;scene.fog.far=240;}key.intensity*=.82;fill.intensity*=.9;}
+   else if(weather===3){scene.background.set(0x89949b);if(scene.fog){scene.fog.color.set(0xc1c9ce);scene.fog.near=28;scene.fog.far=145;}key.intensity*=.72;fill.intensity*=.82;}
    previewCamera.aspect=w/h;previewCamera.fov=46;previewCamera.position.set(0,27,73);previewCamera.lookAt(0,0,-5);previewCamera.updateProjectionMatrix();
    if(previewBall){previewBall.rotation.y=now*.00022;previewBall.visible=true;}
    const viewportBottom=logicalSize.y-y-h;
@@ -296,7 +339,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    if(previewBall)previewBall.visible=false;
    renderer.setScissorTest(false);renderer.setViewport(0,0,logicalSize.x,logicalSize.y);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
-   if(oldFog&&scene.fog)scene.fog.color.copy(oldFog);
+   if(oldFog&&scene.fog){scene.fog.color.copy(oldFog);scene.fog.near=oldFogNear;scene.fog.far=oldFogFar;}weatherGroup.visible=false;rainMesh.visible=false;snowMesh.visible=false;
    key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;renderer.toneMappingExposure=oldExposure;
    return true;
   }
