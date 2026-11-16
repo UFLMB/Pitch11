@@ -4620,23 +4620,15 @@ MS.main=function(){
   navButton(mx,'MY CLUB','club',()=>go('club'));
   navButton(mx+navW+navGap,'SETTINGS','settings',()=>go('set'));
 
-  // Large bottom-right bronze/gold PLAY button with a restrained cyan edge glow.
+  // Prominent bottom-right PLAY button, matching the glassmorphism navigation style.
   const pw=W*.225,ph=H*.165,px=W-mx-pw,py=bottom-ph;
   UI.r.push({x:px,y:py,w:pw,h:ph,fn:()=>go('play')});
+  glass(px,py,pw,ph,ph*.22,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
+    hl:.14,bd:'rgba(215,222,216,.32)'});
   ctx.save();
-  ctx.shadowColor='rgba(0,0,0,.48)';ctx.shadowBlur=ph*.24;ctx.shadowOffsetY=ph*.07;
-  const pg=ctx.createLinearGradient(px,py,px,py+ph);
-  pg.addColorStop(0,'#f3dfad');pg.addColorStop(.2,'#d8b36e');
-  pg.addColorStop(.58,'#b9853e');pg.addColorStop(1,'#704a27');
-  rr(px,py,pw,ph,ph*.22);ctx.fillStyle=pg;ctx.fill();
-  ctx.shadowColor='rgba(61,218,255,.58)';ctx.shadowBlur=H*.018;ctx.shadowOffsetY=0;
-  ctx.strokeStyle='#63ddf4';ctx.lineWidth=Math.max(1.8,H*.0032);
-  rr(px,py,pw,ph,ph*.22);ctx.stroke();
-  ctx.shadowColor='rgba(255,245,210,.28)';ctx.shadowBlur=H*.01;
-  ctx.strokeStyle='rgba(255,245,210,.5)';ctx.lineWidth=Math.max(1,H*.0014);
-  rr(px+H*.006,py+H*.006,pw-H*.012,ph-H*.012,ph*.19);ctx.stroke();
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='italic 900 '+(H*.074)+'px sans-serif';
-  ctx.fillStyle='#171b20';ctx.fillText('PLAY',px+pw/2,py+ph*.51);ctx.restore();
+  ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=ph*.16;ctx.shadowOffsetY=ph*.045;
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+(H*.074)+'px sans-serif';
+  ctx.fillStyle='#f3f1e9';ctx.fillText('PLAY',px+pw/2,py+ph*.51);ctx.restore();
   UI.def=()=>pre('quick');
 };
 MS.play=function(){
