@@ -5839,25 +5839,21 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    // Match the supplied Flaticon ball: solid round body, dark central pentagon and five panel divisions.
-    const ballR=r*.78,patchR=r*.32,points=[];
-    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.fill();
-    for(let i=0;i<5;i++){
-      const a=-Math.PI/2+i*Math.PI*2/5;
-      points.push([cx+Math.cos(a)*patchR,cy+Math.sin(a)*patchR]);
-    }
+    // Flaticon 5213872 layout: dark navy ball with five light outer panels around a dark pentagon.
+    const ballR=r*.78,innerR=r*.345,outerR=ballR*.995;
+    const panelColor=color;
     ctx.save();
-    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.clip();
-    const seam='rgba(8,17,34,.92)';
-    ctx.fillStyle=seam;ctx.strokeStyle=seam;ctx.lineWidth=Math.max(1.5,r*.10);ctx.lineJoin='round';
-    ctx.beginPath();
-    points.forEach(([px,py],i)=>{if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);});
-    ctx.closePath();ctx.fill();
-    points.forEach(([px,py],i)=>{
-      const ang=-Math.PI/2+i*Math.PI*2/5;
-      const ex=cx+Math.cos(ang)*ballR*1.08,ey=cy+Math.sin(ang)*ballR*1.08;
-      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(ex,ey);ctx.stroke();
-    });
+    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.fillStyle='#0b1930';ctx.fill();
+    ctx.strokeStyle='#0b1930';ctx.lineWidth=Math.max(1,r*.035);
+    for(let i=0;i<5;i++){
+      const a1=-Math.PI/2+i*TAU/5,a2=-Math.PI/2+(i+1)*TAU/5;
+      const ix1=cx+Math.cos(a1)*innerR,iy1=cy+Math.sin(a1)*innerR;
+      const ix2=cx+Math.cos(a2)*innerR,iy2=cy+Math.sin(a2)*innerR;
+      const ox1=cx+Math.cos(a1)*outerR,oy1=cy+Math.sin(a1)*outerR;
+      const ox2=cx+Math.cos(a2)*outerR,oy2=cy+Math.sin(a2)*outerR;
+      ctx.beginPath();ctx.moveTo(ix1,iy1);ctx.lineTo(ox1,oy1);ctx.arc(cx,cy,outerR,a1,a2);ctx.lineTo(ix2,iy2);ctx.closePath();
+      ctx.fillStyle=panelColor;ctx.fill();
+    }
     ctx.restore();
   }else if(kind==='camera'){
     rr(cx-r*.82,cy-r*.58,r*1.64,r*1.16,r*.2);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.34,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.55,cy-r*.8);ctx.lineTo(cx-r*.2,cy-r*.8);ctx.stroke();
