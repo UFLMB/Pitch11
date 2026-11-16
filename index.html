@@ -3945,7 +3945,7 @@ MS.rate=function(){mt('RATINGS');mbk();const sq=sqd(G.club),c=G.car,ids=sq.map((
 
 /* ---------- customise: referee tab ---------- */
 CTABS.push('REFEREE');
-const RROWS=[['REFEREE','show',['OFF','ON']],['STRICTNESS','strict',['LENIENT','NORMAL','STRICT']],['REF KIT','kit',['BLACK','YELLOW','PINK','CYAN','AUTO']],['ASSISTANTS','ar',['OFF','ON']],['ADVANTAGE','adv',['OFF','ON']],['FREE-KICK SPRAY','spray',['OFF','ON']],['BALL HITS REF','hit',['OFF','ON']]];
+const RROWS=[['STRICTNESS','strict',['LENIENT','NORMAL','STRICT']],['REF KIT','kit',['BLACK','YELLOW','PINK','CYAN','AUTO']],['ASSISTANTS','ar',['OFF','ON']],['ADVANTAGE','adv',['OFF','ON']],['FREE-KICK SPRAY','spray',['OFF','ON']],['BALL HITS REF','hit',['OFF','ON']]];
 const _cuR=MS.cust;MS.cust=function(){if((M.ctab|0)!==4){_cuR();return;}
   mt('CUSTOMISE');mbk();seg(W*.04,H*.15,W*.92,H*.08,CTABS,4,i=>{M.ctab=i;});
   RROWS.forEach((r,i)=>{const y=H*(.26+i*.063);fit(r[0],W*.18,y,W*.28,H*.03,'#fff');seg(W*.34,y-H*.028,W*.62,H*.056,r[2],G.rf[r[1]],j=>{G.rf[r[1]]=j;fixRf();save();});});UI.def=back;};
