@@ -6118,13 +6118,13 @@ MS.cust=function(){
     });
     if(tb===0)settingsWrap('Golden = first goal wins. Mercy = match ends at a 4 goal gap.',leftX,y+H*.35,leftW,H*.05,H*.025,'#9fb0c0','center',2);
     if(tb===0){
-      const dividerY=y+H*.397,dividerX=leftX+leftW*.09,dividerW=leftW*.82;
+      const dividerY=y+H*.397,dividerX=leftX+leftW*.02,dividerW=leftW*.96;
       ctx.save();
       const divider=ctx.createLinearGradient(dividerX,dividerY,dividerX+dividerW,dividerY);
       divider.addColorStop(0,'rgba(255,213,105,0)');
-      divider.addColorStop(.18,'rgba(255,213,105,.42)');
+      divider.addColorStop(.025,'rgba(255,213,105,.42)');
       divider.addColorStop(.5,'rgba(255,224,138,.95)');
-      divider.addColorStop(.82,'rgba(255,213,105,.42)');
+      divider.addColorStop(.975,'rgba(255,213,105,.42)');
       divider.addColorStop(1,'rgba(255,213,105,0)');
       ctx.strokeStyle=divider;
       ctx.lineWidth=Math.max(1,H*.0015);
