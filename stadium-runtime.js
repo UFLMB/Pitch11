@@ -114,23 +114,30 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    g.save();g.globalCompositeOperation='soft-light';g.globalAlpha=tintStrength;
    g.fillStyle=tints[p];g.fillRect(0,0,width,height);g.restore();
   }
-  const addBands=(vertical,count,dark,light)=>{
+  const addBands=(vertical,count,dark,light,opacity=1)=>{
    for(let n=0;n<count;n++){
     const start=n/count,end=(n+1)/count,grad=vertical
      ?g.createLinearGradient(start*width,0,end*width,0)
      :g.createLinearGradient(0,start*height,0,end*height);
     const shade=n%2?dark:light;
     grad.addColorStop(0,'rgba(255,255,255,0)');
-    grad.addColorStop(.16,shade);grad.addColorStop(.84,shade);
+    grad.addColorStop(.12,shade);grad.addColorStop(.88,shade);
     grad.addColorStop(1,'rgba(255,255,255,0)');
-    g.fillStyle=grad;
+    g.save();g.globalAlpha=opacity;g.fillStyle=grad;
     if(vertical)g.fillRect(start*width,0,width/count,height);
     else g.fillRect(0,start*height,width,height/count);
+    g.restore();
    }
   };
-  if(m===0)addBands(true,2,'rgba(0,0,0,.026)','rgba(255,255,255,.018)');
-  else if(m===1)addBands(true,4,'rgba(0,0,0,.023)','rgba(255,255,255,.016)');
-  else if(m===2)addBands(false,4,'rgba(0,0,0,.021)','rgba(255,255,255,.015)');
+  // The pitch canvas follows the field axes: horizontal canvas bands run
+  // lengthwise along the pitch. Keep mowing contrast subtle so PBR blade detail
+  // remains visible instead of looking like painted green panels.
+  if(m===0)addBands(false,6,'rgba(0,0,0,.075)','rgba(255,255,255,.052)');
+  else if(m===1){
+   addBands(false,6,'rgba(0,0,0,.072)','rgba(255,255,255,.05)');
+   addBands(true,10,'rgba(0,0,0,.042)','rgba(255,255,255,.03)',.48);
+  }
+  else if(m===2)addBands(true,10,'rgba(0,0,0,.068)','rgba(255,255,255,.046)');
   pitchTexture.needsUpdate=true;
  }
  function createPreviewWeather(){
