@@ -24,7 +24,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // Four broad, shadow-free floodlights make NIGHT a genuine stadium lighting state.
  const floodlights=[[-66,43,-49],[-66,43,49],[66,43,-49],[66,43,49]].map(([x,y,z])=>{
   const light=new THREE.SpotLight(0xf0f4ff,0,190,Math.PI*.235,.58,1.35);
-  light.position.set(x,y,z);light.target.position.set(0,0,0);
+  light.position.set(x,35,z);light.target.position.set(0,0,0);
   scene.add(light,light.target);return light;
  });
  function applyStadiumTimeOfDay(value){
@@ -266,14 +266,14 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
   const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=.075,th=.105;
-  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.018,d),white);m.position.set(x,y,z);group.add(m);};
-  const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.018,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
+  const y=.018,th=.105;
+  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
+  const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
   const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
   // Touchlines, goal lines and halfway line.
   line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);line(0,-34,0,34);
   // Centre circle and spot.
-  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.012,0);group.add(spot);
+  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.004,0);group.add(spot);
   for(const sign of [-1,1]){
    const gx=sign*52.5,dir=-sign;
    // Penalty area: 16.5m deep, 40.32m wide.
