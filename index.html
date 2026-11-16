@@ -5839,20 +5839,22 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    // Flaticon 5213872 layout: dark navy ball with five light outer panels around a dark pentagon.
-    const ballR=r*.78,innerR=r*.345,outerR=ballR*.995;
-    const panelColor=color;
+    // Flaticon 5213872: polygon geometry traced from the supplied reference image.
+    const s=r*.88/224,ox=cx-256*s,oy=cy-256*s;
+    const panels=[
+      [[108,112],[188,61],[259,92],[249,170],[170,227],[107,200]],
+      [[274,94],[352,74],[423,136],[412,207],[342,228],[265,171]],
+      [[347,244],[417,223],[461,280],[426,373],[360,385],[317,335]],
+      [[207,344],[304,345],[347,395],[314,454],[256,463],[209,457],[173,397]],
+      [[101,215],[165,243],[194,335],[160,387],[85,372],[51,277]]
+    ];
     ctx.save();
-    ctx.beginPath();ctx.arc(cx,cy,ballR,0,TAU);ctx.fillStyle='#0b1930';ctx.fill();
-    ctx.strokeStyle='#0b1930';ctx.lineWidth=Math.max(1,r*.035);
-    for(let i=0;i<5;i++){
-      const a1=-Math.PI/2+i*TAU/5,a2=-Math.PI/2+(i+1)*TAU/5;
-      const ix1=cx+Math.cos(a1)*innerR,iy1=cy+Math.sin(a1)*innerR;
-      const ix2=cx+Math.cos(a2)*innerR,iy2=cy+Math.sin(a2)*innerR;
-      const ox1=cx+Math.cos(a1)*outerR,oy1=cy+Math.sin(a1)*outerR;
-      const ox2=cx+Math.cos(a2)*outerR,oy2=cy+Math.sin(a2)*outerR;
-      ctx.beginPath();ctx.moveTo(ix1,iy1);ctx.lineTo(ox1,oy1);ctx.arc(cx,cy,outerR,a1,a2);ctx.lineTo(ix2,iy2);ctx.closePath();
-      ctx.fillStyle=panelColor;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,224*s,0,TAU);ctx.fillStyle='#0b1930';ctx.fill();
+    ctx.fillStyle=color;
+    for(const points of panels){
+      ctx.beginPath();
+      points.forEach((p,i)=>{const x=ox+p[0]*s,y=oy+p[1]*s;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});
+      ctx.closePath();ctx.fill();
     }
     ctx.restore();
   }else if(kind==='camera'){
