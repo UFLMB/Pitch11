@@ -51,7 +51,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1000);
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
- let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null;
+ let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0;
  let activePitchKey='';
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
@@ -266,7 +266,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
   const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=.018,th=.105;
+  const y=pitchSurfaceY+.018,th=.105;
   const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
   const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
   const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
@@ -337,6 +337,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    const longSide=Math.max(size.x,size.z),shortSide=Math.min(size.x,size.z);
    // Only touch the thin, pitch-sized green surface; stands, boards, seats and goal assets are excluded.
    if(longSide<85||longSide>125||shortSide<52||shortSide>82||size.y>1.5)return;
+   pitchSurfaceY=Math.max(pitchSurfaceY,box.max.y);
    const source=Array.isArray(o.material)?o.material:[o.material];
    const replacements=source.map(original=>{
     if(!original)return original;
