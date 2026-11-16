@@ -6491,7 +6491,7 @@ take=function(p,byHand=false){
       stadium
     };
     const fmt=(o)=>o?Object.fromEntries(Object.entries(o).map(([k,v])=>[k,typeof v==='number'?n(v):v])):null;
-    const output={
+    const diagnosticsData={
       time:data.time,
       screen:fmt(data.screen),
       visualViewport:fmt(data.visualViewport),
@@ -6500,7 +6500,7 @@ take=function(p,byHand=false){
       webglCanvas:{rect:fmt(data.webglCanvas.rect),backing:data.webglCanvas.backing},
       stadium:data.stadium
     };
-    output.textContent='PITCH 11 CANVAS DIAGNOSTICS (?diag=1)\n'+JSON.stringify(output,null,2);
+    output.textContent='PITCH 11 CANVAS DIAGNOSTICS (?diag=1)\\n'+JSON.stringify(diagnosticsData,null,2);
   }
   update();
   window.addEventListener('resize',update,{passive:true});
