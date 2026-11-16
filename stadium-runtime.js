@@ -278,7 +278,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
   const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=pitchSurfaceY+.018,th=.105;
+  const y=.018,th=.105;
   const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
   const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
   const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
@@ -303,7 +303,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  }
  // Build one compact, deterministic turf atlas at load time; no external asset or per-frame work.
  function createPitchGrassTextures(){
-  const size=mobile?512:1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+  const size=1024,canvas=document.createElement('canvas');canvas.width=canvas.height=size;
   const g=canvas.getContext('2d',{alpha:false});
   const base=g.createLinearGradient(0,0,size,size);
   base.addColorStop(0,'#347b40');base.addColorStop(.5,'#2e7139');base.addColorStop(1,'#286637');
@@ -317,9 +317,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   }
   let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   // Fine blades run with the mowing direction; varied hue and length avoid a flat painted look.
-  const blades=mobile?10500:26000;
+  const blades=26000;
   for(let i=0;i<blades;i++){
-   const x=rnd()*size,y=rnd()*size,len=2+rnd()*(mobile?5:8),lean=(rnd()-.5)*2.8;
+   const x=rnd()*size,y=rnd()*size,len=2+rnd()*8,lean=(rnd()-.5)*2.8;
    const light=rnd();
    g.strokeStyle=light>.52?'rgba(180,220,145,.19)':light>.18?'rgba(9,42,17,.22)':'rgba(225,235,190,.12)';
    g.lineWidth=.45+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+lean,y-len);g.stroke();
@@ -327,7 +327,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
   albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.generateMipmaps=true;
   albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
-  albedo.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   // A low-contrast grayscale microstructure adds a restrained turf surface response.
   const detailCanvas=document.createElement('canvas');detailCanvas.width=detailCanvas.height=256;
   const d=detailCanvas.getContext('2d',{alpha:false});d.fillStyle='#808080';d.fillRect(0,0,256,256);
