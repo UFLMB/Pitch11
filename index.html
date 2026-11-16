@@ -5839,16 +5839,32 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    const left=cx-r*.82,right=cx+r*.82,top=cy-r*.43,bottom=cy+r*.43;
-    ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(right,top);ctx.lineTo(right,bottom);ctx.lineTo(left,bottom);ctx.closePath();
-    ctx.moveTo(cx,top);ctx.lineTo(cx,bottom);ctx.moveTo(cx-r*.22,cy);ctx.arc(cx,cy,r*.22,0,TAU);ctx.stroke();
-    const gh=r*.30,gw=r*.20;
-    ctx.beginPath();
-    ctx.moveTo(left,cy-gh);ctx.lineTo(left-gw,cy-gh);ctx.lineTo(left-gw,cy+gh);ctx.lineTo(left,cy+gh);
-    ctx.moveTo(right,cy-gh);ctx.lineTo(right+gw,cy-gh);ctx.lineTo(right+gw,cy+gh);ctx.lineTo(right,cy+gh);ctx.stroke();
-    for(const side of [-1,1])for(const endY of [top,bottom]){
-      const fx=cx+side*r*.79,fy=endY,dir=endY<cy?1:-1;
-      ctx.beginPath();ctx.moveTo(fx,fy);ctx.lineTo(fx,fy-dir*r*.27);ctx.lineTo(fx+side*r*.22,fy-dir*r*.20);ctx.lineTo(fx,fy-dir*r*.14);ctx.stroke();
+    // True side elevation: a flat pitch line, upright goals and corner flags.
+    const ground=cy+r*.48,left=cx-r*.82,right=cx+r*.82;
+    ctx.beginPath();ctx.moveTo(cx-r*.96,ground);ctx.lineTo(cx+r*.96,ground);ctx.stroke();
+    const goalW=r*.42,goalH=r*.72;
+    for(const gx of [left,right]){
+      const inward=gx<cx?1:-1,postX=gx;
+      ctx.beginPath();
+      ctx.moveTo(postX,ground);ctx.lineTo(postX,ground-goalH);
+      ctx.lineTo(postX+inward*goalW,ground-goalH);
+      ctx.lineTo(postX+inward*goalW,ground);
+      ctx.stroke();
+      // Minimal net mesh, kept open and legible at small icon size.
+      ctx.beginPath();
+      for(let k=1;k<=2;k++){
+        const nx=postX+inward*goalW*k/3;
+        ctx.moveTo(nx,ground-goalH);ctx.lineTo(nx,ground);
+      }
+      ctx.moveTo(postX,ground-goalH*.5);ctx.lineTo(postX+inward*goalW,ground-goalH*.5);
+      ctx.stroke();
+    }
+    // Center spot and a short touchline cue establish a pitch, not a top view.
+    ctx.beginPath();ctx.arc(cx,ground-r*.035,r*.055,0,TAU);ctx.stroke();
+    for(const fx of [cx-r*.68,cx+r*.68]){
+      ctx.beginPath();ctx.moveTo(fx,ground);ctx.lineTo(fx,ground-r*.62);
+      ctx.lineTo(fx+(fx<cx?1:-1)*r*.23,ground-r*.49);
+      ctx.lineTo(fx,ground-r*.39);ctx.stroke();
     }
   }else if(kind==='camera'){
     rr(cx-r*.82,cy-r*.58,r*1.64,r*1.16,r*.2);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.34,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.55,cy-r*.8);ctx.lineTo(cx-r*.2,cy-r*.8);ctx.stroke();
@@ -5856,12 +5872,23 @@ function settingsNavIcon(kind,cx,cy,r,color){
     ctx.beginPath();ctx.moveTo(cx-r*.75,cy-r*.25);ctx.lineTo(cx-r*.35,cy-r*.25);ctx.lineTo(cx+r*.05,cy-r*.62);ctx.lineTo(cx+r*.05,cy+r*.62);ctx.lineTo(cx-r*.35,cy+r*.25);ctx.lineTo(cx-r*.75,cy+r*.25);ctx.closePath();ctx.stroke();
     ctx.beginPath();ctx.arc(cx,cy,r*.52,-.85,.85);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.82,-.8,.8);ctx.stroke();
   }else if(kind==='controls'){
+    // One controller with a clear D-pad and a simplified four-button cluster.
     ctx.beginPath();ctx.moveTo(cx-r*.78,cy+r*.12);ctx.lineTo(cx-r*.63,cy-r*.42);ctx.quadraticCurveTo(cx-r*.57,cy-r*.62,cx-r*.34,cy-r*.62);ctx.lineTo(cx+r*.34,cy-r*.62);ctx.quadraticCurveTo(cx+r*.57,cy-r*.62,cx+r*.63,cy-r*.42);ctx.lineTo(cx+r*.78,cy+r*.12);ctx.quadraticCurveTo(cx+r*.82,cy+r*.48,cx+r*.57,cy+r*.48);ctx.lineTo(cx+r*.27,cy+r*.18);ctx.lineTo(cx-r*.27,cy+r*.18);ctx.lineTo(cx-r*.57,cy+r*.48);ctx.quadraticCurveTo(cx-r*.82,cy+r*.48,cx-r*.78,cy+r*.12);ctx.closePath();ctx.stroke();
-    ctx.beginPath();ctx.moveTo(cx-r*.48,cy-r*.22);ctx.lineTo(cx-r*.20,cy-r*.22);ctx.moveTo(cx-r*.34,cy-r*.36);ctx.lineTo(cx-r*.34,cy-r*.08);ctx.stroke();
-    ctx.beginPath();ctx.arc(cx+r*.28,cy-r*.28,r*.075,0,TAU);ctx.arc(cx+r*.48,cy-r*.08,r*.075,0,TAU);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx-r*.49,cy-r*.18);ctx.lineTo(cx-r*.19,cy-r*.18);ctx.moveTo(cx-r*.34,cy-r*.33);ctx.lineTo(cx-r*.34,cy-r*.03);ctx.stroke();
+    const buttons=[[-.22,-.30],[.02,-.43],[.26,-.30],[.02,-.17]];
+    buttons.forEach(([bx,by])=>{ctx.beginPath();ctx.arc(cx+r*bx,cy+r*by,r*.085,0,TAU);ctx.stroke();});
   }else if(kind==='match'){
-    ctx.beginPath();for(let i=0;i<24;i++){const a=-Math.PI/2+i*Math.PI/12,rr0=i%2===0?r*.86:r*.68,x=cx+Math.cos(a)*rr0,y=cy+Math.sin(a)*rr0;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}ctx.closePath();ctx.stroke();
-    ctx.beginPath();ctx.arc(cx,cy,r*.29,0,TAU);ctx.stroke();
+    // A conventional gear silhouette with eight distinct teeth and a central bore.
+    const teeth=8,outer=r*.88,root=r*.68,inner=r*.29,steps=teeth*4;
+    ctx.beginPath();
+    for(let i=0;i<steps;i++){
+      const a=-Math.PI/2+i*Math.PI*2/steps;
+      const phase=i%4,rad=(phase===0||phase===1)?outer:root;
+      const px=cx+Math.cos(a)*rad,py=cy+Math.sin(a)*rad;
+      if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+    }
+    ctx.closePath();ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,inner,0,TAU);ctx.stroke();
   }else{
     const rx=r*.70,ry=r*.23,top=cy-r*.48,mid=cy,bot=cy+r*.48;
     ctx.beginPath();ctx.ellipse(cx,top,rx,ry,0,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-rx,top);ctx.lineTo(cx-rx,bot);ctx.moveTo(cx+rx,top);ctx.lineTo(cx+rx,bot);ctx.stroke();ctx.beginPath();ctx.ellipse(cx,mid,rx,ry,0,0,Math.PI);ctx.stroke();ctx.beginPath();ctx.ellipse(cx,bot,rx,ry,0,0,Math.PI);ctx.stroke();
