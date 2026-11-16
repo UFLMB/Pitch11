@@ -23,7 +23,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
  // Four broad, shadow-free floodlights make NIGHT a genuine stadium lighting state.
  const floodlights=[[-66,43,-49],[-66,43,49],[66,43,-49],[66,43,49]].map(([x,y,z])=>{
-  const light=new THREE.SpotLight(0xf0f4ff,0,190,Math.PI*.235,.58,1.35);
+  const light=new THREE.SpotLight(0xf0f4ff,0,190,.75,.58,1.35);
   light.position.set(x,35,z);light.target.position.set(0,0,0);
   scene.add(light,light.target);return light;
  });
@@ -282,10 +282,10 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    // Goal area: 5.5m deep, 18.32m wide.
    const sixX=gx+dir*5.5,sixZ=9.16;
    line(gx,-sixZ,sixX,-sixZ);line(sixX,-sixZ,sixX,sixZ);line(sixX,sixZ,gx,sixZ);
-   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.012,0);group.add(pen);
+   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.004,0);group.add(pen);
    // Penalty arc outside the penalty area (the 9.15m D).
-   const start= Math.atan2(-7.32,dir*16.5),end=Math.atan2(7.32,dir*16.5);
-   if(sign>0)arc(gx+dir*11,0,9.15,start,end);else arc(gx+dir*11,0,9.15,end,start);
+   const lower=Math.atan2(-7.32,dir*16.5),upper=Math.atan2(7.32,dir*16.5);
+   if(sign>0)arc(gx+dir*11,0,9.15,upper,lower);else arc(gx+dir*11,0,9.15,lower,upper);
   }
   scene.add(group);return group;
  }
