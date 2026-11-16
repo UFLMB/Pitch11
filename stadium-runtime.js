@@ -396,7 +396,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    weatherGroup.rotation.y=now*.000008;
    const oldBg=scene.background&&scene.background.clone?scene.background.clone():scene.background;
    const oldFog=scene.fog&&scene.fog.color?scene.fog.color.clone():null,oldFogNear=scene.fog?scene.fog.near:0,oldFogFar=scene.fog?scene.fog.far:0;
-   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldHemiSky=hemi.color.clone(),oldHemiGround=hemi.groundColor.clone(),oldHemiPower=hemi.intensity,oldFloodPower=floodlights.map(light=>light.intensity),oldExposure=renderer.toneMappingExposure;
+   const oldKey=key.color.clone(),oldFill=fill.color.clone(),oldKeyPower=key.intensity,oldFillPower=fill.intensity,oldHemiSky=hemi.color.clone(),oldHemiGround=hemi.groundColor.clone(),oldHemiPower=hemi.intensity,oldFloodPower=floodlights.map(light=>light.intensity),oldLampState=floodlightFixtures.map(lamp=>({color:lamp.material.color.clone(),emissiveIntensity:lamp.material.emissiveIntensity})),oldExposure=renderer.toneMappingExposure;
    applyStadiumTimeOfDay(timeOfDay);
    if(weather===1){scene.background.set(0x263746);if(scene.fog){scene.fog.color.set(0x71818c);scene.fog.near=125;scene.fog.far=360;}key.intensity*=.78;fill.intensity*=.82;}
    else if(weather===2){scene.background.set(0x667786);if(scene.fog){scene.fog.color.set(0xc4d0d8);scene.fog.near=75;scene.fog.far=240;}key.intensity*=.82;fill.intensity*=.9;}
@@ -420,7 +420,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    renderer.setScissorTest(false);renderer.setViewport(0,0,logicalSize.x,logicalSize.y);
    if(oldBg&&scene.background&&scene.background.copy)scene.background.copy(oldBg);
    if(oldFog&&scene.fog){scene.fog.color.copy(oldFog);scene.fog.near=oldFogNear;scene.fog.far=oldFogFar;}weatherGroup.visible=false;rainMesh.visible=false;snowMesh.visible=false;
-   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});renderer.toneMappingExposure=oldExposure;
+   key.color.copy(oldKey);fill.color.copy(oldFill);key.intensity=oldKeyPower;fill.intensity=oldFillPower;hemi.color.copy(oldHemiSky);hemi.groundColor.copy(oldHemiGround);hemi.intensity=oldHemiPower;floodlights.forEach((light,i)=>{light.intensity=oldFloodPower[i];});floodlightFixtures.forEach((lamp,i)=>{lamp.material.color.copy(oldLampState[i].color);lamp.material.emissiveIntensity=oldLampState[i].emissiveIntensity;});renderer.toneMappingExposure=oldExposure;
    return true;
   }
   window.P11Stadium={get ready(){return ready;},render,renderTopDown,renderPreview,project,setGoalDimensions};
