@@ -6078,46 +6078,61 @@ MS.adv=function(){
   settingsRow('SET-PIECE CAMERA',x+W*.025,y+H*.55,x+W*.42,w*.48,['ON','OFF'],G.spc?0:1,i=>{G.spc=i?0:1;save();});
 };
 function drawMatchSettingsPreview(x,y,w,h,data,tb){
-  const titles=['MATCH PREVIEW','GAMEPLAY PREVIEW','PITCH PREVIEW','KIT PREVIEW'];
-  settingsPanel(x,y,w,h,titles[tb]||'MATCH PREVIEW');
-  const ix=x+w*.07,iy=y+H*.14,iw=w*.86,ih=h*.53;
-  ctx.save();rr(ix,iy,iw,ih,H*.014);ctx.clip();
-  const field=(color,pattern)=>{
-    ctx.fillStyle=color;ctx.fillRect(ix,iy,iw,ih);
-    if(pattern){ctx.fillStyle='rgba(0,0,0,.10)';for(let i=0;i<6;i++)ctx.fillRect(ix+i*iw/6,iy,iw/12,ih);}
-    ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=Math.max(1,H*.002);
-    ctx.strokeRect(ix+iw*.06,iy+ih*.08,iw*.88,ih*.84);
-    ctx.beginPath();ctx.moveTo(ix+iw*.5,iy+ih*.08);ctx.lineTo(ix+iw*.5,iy+ih*.92);ctx.stroke();
-    ctx.beginPath();ctx.ellipse(ix+iw*.5,iy+ih*.5,iw*.11,ih*.18,0,0,TAU);ctx.stroke();
-    ctx.strokeRect(ix+iw*.06,iy+ih*.31,iw*.13,ih*.38);ctx.strokeRect(ix+iw*.81,iy+ih*.31,iw*.13,ih*.38);
-  };
-  if(tb===0){
-    field('#286b3c',true);ctx.fillStyle='rgba(5,12,18,.82)';rr(ix+iw*.18,iy+ih*.1,iw*.64,ih*.22,ih*.04);ctx.fill();
-    fit('HOME  0  –  0  AWAY',ix+iw*.5,iy+ih*.21,iw*.58,ih*.12,'#fff');
-    ctx.fillStyle='#e6bd4c';ctx.beginPath();ctx.arc(ix+iw*.5,iy+ih*.64,Math.max(3,H*.012),0,TAU);ctx.fill();
-  }else if(tb===1){
-    field('#286b3c',false);
-    const speed=data.spd|0,ballSize=data.ball|0,playerR=H*(.009+speed*.0013),ballR=H*(.004+ballSize*.0018);
-    [[.32,.4,'#e6bd4c'],[.68,.6,'#e8edf3']].forEach(([px,py,c])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(ix+iw*px,iy+ih*py,playerR,0,TAU);ctx.fill();});
-    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ix+iw*(.5+ballSize*.018),iy+ih*.5,ballR,0,TAU);ctx.fill();
-  }else if(tb===2){
-    const pitch=['#286b3c','#273d31','#8a7950','#d9e8f1','#4b2e78'][data.pitch|0]||'#286b3c';field(pitch,(data.mow|0)!==3);
-    if((data.wx|0)===1){ctx.strokeStyle='rgba(190,220,255,.6)';ctx.lineWidth=1.2;for(let i=0;i<26;i++){const xx=ix+(i*37%Math.max(1,iw)),yy=iy+(i*23%Math.max(1,ih));ctx.beginPath();ctx.moveTo(xx,yy);ctx.lineTo(xx-4,yy+9);ctx.stroke();}}
-    if((data.wx|0)===2){ctx.fillStyle='rgba(255,255,255,.8)';for(let i=0;i<32;i++){ctx.beginPath();ctx.arc(ix+(i*31%Math.max(1,iw)),iy+(i*17%Math.max(1,ih)),1.5,0,TAU);ctx.fill();}}
-    if((data.wx|0)===3){ctx.fillStyle='rgba(210,220,230,.22)';ctx.fillRect(ix,iy,iw,ih);}
-  }else{
-    field('#245b35',true);const colors=[data.kit[0]||CL[G.club][2],data.kit[2]||CL[G.club][4]];
-    [[.32,'OUTFIELD',colors[0]],[.68,'KEEPER',colors[1]]].forEach(([cx,label,color])=>{
-      const px=ix+iw*cx,top=iy+ih*.27,sw=iw*.19,sh=ih*.43;ctx.fillStyle=color;ctx.beginPath();
-      ctx.moveTo(px-sw*.3,top);ctx.lineTo(px+sw*.3,top);ctx.lineTo(px+sw*.5,top+sh*.25);ctx.lineTo(px+sw*.38,top+sh*.42);ctx.lineTo(px+sw*.3,top+sh*.34);ctx.lineTo(px+sw*.3,top+sh);ctx.lineTo(px-sw*.3,top+sh);ctx.lineTo(px-sw*.3,top+sh*.34);ctx.lineTo(px-sw*.38,top+sh*.42);ctx.lineTo(px-sw*.5,top+sh*.25);ctx.closePath();ctx.fill();
-      fit(label,px,iy+ih*.84,iw*.36,H*.022,'#fff');
-    });
-  }
-  ctx.restore();
-  const summary=tb===3?'Outfield: '+(data.kit[0]||'CLUB KIT')+'  ·  Keeper: '+(data.kit[2]||'CLUB KIT'):CROWS[tb].map(r=>r[0]+': '+r[2][data[r[1]]|0]).join('  ·  ');
-  settingsWrap(summary,x+w*.07,y+h*.78,w*.86,h*.14,H*.022,'rgba(220,230,240,.86)','center',3);
-  settingsText(tb===0?'Changes reflect the rules for your next match.':tb===1?'Player and ball behaviour preview.':tb===2?'Pitch appearance updates with your selected surface and weather.':'Kit colours update as you make each selection.',x+w*.07,y+h*.95,w*.86,H*.025,'rgba(190,205,218,.7)','center');
-}
+   const titles=['MATCH PREVIEW','GAMEPLAY PREVIEW','PITCH PREVIEW','KIT PREVIEW'];
+   settingsPanel(x,y,w,h,titles[tb]||'MATCH PREVIEW');
+   const ix=x+w*.07,iy=y+H*.14,iw=w*.86,ih=h*.53;
+   if(tb===0){
+     const live=window.P11Stadium&&window.P11Stadium.renderPreview&&window.P11Stadium.renderPreview({x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0});
+     if(live){
+       ctx.save();rr(ix,iy,iw,ih,H*.014);ctx.clip();ctx.clearRect(ix,iy,iw,ih);ctx.restore();
+       ctx.save();ctx.strokeStyle='rgba(235,242,248,.32)';ctx.lineWidth=Math.max(1,H*.0015);rr(ix,iy,iw,ih,H*.014);ctx.stroke();ctx.restore();
+       const pillW=Math.min(iw*.42,H*.13),pillH=Math.max(18,H*.032),pillX=ix+iw*.035,pillY=iy+ih*.045;
+       glass(pillX,pillY,pillW,pillH,pillH*.5,{top:'rgba(5,12,18,.88)',bot:'rgba(5,12,18,.7)',bd:'rgba(255,255,255,.2)'});
+       fit('3D STADIUM',pillX+pillW*.53,pillY+pillH*.5,pillW*.86,pillH*.38,'#e8f0f4');
+     }else{
+       ctx.save();rr(ix,iy,iw,ih,H*.014);ctx.clip();
+       const sky=ctx.createLinearGradient(0,iy,0,iy+ih);sky.addColorStop(0,'#14263a');sky.addColorStop(.55,'#1b4035');sky.addColorStop(1,'#0b241b');ctx.fillStyle=sky;ctx.fillRect(ix,iy,iw,ih);
+       ctx.fillStyle='#286b3c';ctx.fillRect(ix,iy+ih*.53,iw,ih*.47);
+       ctx.strokeStyle='rgba(255,255,255,.72)';ctx.lineWidth=Math.max(1,H*.002);ctx.strokeRect(ix+iw*.08,iy+ih*.57,iw*.84,ih*.37);
+       ctx.beginPath();ctx.moveTo(ix+iw*.5,iy+ih*.57);ctx.lineTo(ix+iw*.5,iy+ih*.94);ctx.stroke();
+       ctx.restore();
+       settingsText('3D STADIUM LOADING',x+w*.5,y+h*.82,w*.86,H*.024,'#ffe08a','center');
+     }
+   }else{
+     ctx.save();rr(ix,iy,iw,ih,H*.014);ctx.clip();
+     const field=(color,pattern)=>{
+       ctx.fillStyle=color;ctx.fillRect(ix,iy,iw,ih);
+       if(pattern){ctx.fillStyle='rgba(0,0,0,.10)';for(let i=0;i<6;i++)ctx.fillRect(ix+i*iw/6,iy,iw/12,ih);}
+       ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=Math.max(1,H*.002);
+       ctx.strokeRect(ix+iw*.06,iy+ih*.08,iw*.88,ih*.84);
+       ctx.beginPath();ctx.moveTo(ix+iw*.5,iy+ih*.08);ctx.lineTo(ix+iw*.5,iy+ih*.92);ctx.stroke();
+       ctx.beginPath();ctx.ellipse(ix+iw*.5,iy+ih*.5,iw*.11,ih*.18,0,0,TAU);ctx.stroke();
+       ctx.strokeRect(ix+iw*.06,iy+ih*.31,iw*.13,ih*.38);ctx.strokeRect(ix+iw*.81,iy+ih*.31,iw*.13,ih*.38);
+     };
+     if(tb===1){
+       field('#286b3c',false);
+       const speed=data.spd|0,ballSize=data.ball|0,playerR=H*(.009+speed*.0013),ballR=H*(.004+ballSize*.0018);
+       [[.32,.4,'#e6bd4c'],[.68,.6,'#e8edf3']].forEach(([px,py,c])=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(ix+iw*px,iy+ih*py,playerR,0,TAU);ctx.fill();});
+       ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(ix+iw*(.5+ballSize*.018),iy+ih*.5,ballR,0,TAU);ctx.fill();
+     }else if(tb===2){
+       const pitch=['#286b3c','#273d31','#8a7950','#d9e8f1','#4b2e78'][data.pitch|0]||'#286b3c';field(pitch,(data.mow|0)!==3);
+       if((data.wx|0)===1){ctx.strokeStyle='rgba(190,220,255,.6)';ctx.lineWidth=1.2;for(let i=0;i<26;i++){const xx=ix+(i*37%Math.max(1,iw)),yy=iy+(i*23%Math.max(1,ih));ctx.beginPath();ctx.moveTo(xx,yy);ctx.lineTo(xx-4,yy+9);ctx.stroke();}}
+       if((data.wx|0)===2){ctx.fillStyle='rgba(255,255,255,.8)';for(let i=0;i<32;i++){ctx.beginPath();ctx.arc(ix+(i*31%Math.max(1,iw)),iy+(i*17%Math.max(1,ih)),1.5,0,TAU);ctx.fill();}}
+       if((data.wx|0)===3){ctx.fillStyle='rgba(210,220,230,.22)';ctx.fillRect(ix,iy,iw,ih);}
+     }else{
+       field('#245b35',true);const colors=[data.kit[0]||CL[G.club][2],data.kit[2]||CL[G.club][4]];
+       [[.32,'OUTFIELD',colors[0]],[.68,'KEEPER',colors[1]]].forEach(([cx,label,color])=>{
+         const px=ix+iw*cx,top=iy+ih*.27,sw=iw*.19,sh=ih*.43;ctx.fillStyle=color;ctx.beginPath();
+         ctx.moveTo(px-sw*.3,top);ctx.lineTo(px+sw*.3,top);ctx.lineTo(px+sw*.5,top+sh*.25);ctx.lineTo(px+sw*.38,top+sh*.42);ctx.lineTo(px+sw*.3,top+sh*.34);ctx.lineTo(px+sw*.3,top+sh);ctx.lineTo(px-sw*.3,top+sh);ctx.lineTo(px-sw*.3,top+sh*.34);ctx.lineTo(px-sw*.38,top+sh*.42);ctx.lineTo(px-sw*.5,top+sh*.25);ctx.closePath();ctx.fill();
+         fit(label,px,iy+ih*.84,iw*.36,H*.022,'#fff');
+       });
+     }
+     ctx.restore();
+   }
+   const summary=tb===3?'Outfield: '+(data.kit[0]||'CLUB KIT')+'  ·  Keeper: '+(data.kit[2]||'CLUB KIT'):CROWS[tb].map(r=>r[0]+': '+r[2][data[r[1]]|0]).join('  ·  ');
+   settingsWrap(summary,x+w*.07,y+h*.78,w*.86,h*.14,H*.022,'rgba(220,230,240,.86)','center',3);
+   settingsText(tb===0?'Real stadium scene · lighting follows Time of Day.':tb===1?'Player and ball behaviour preview.':tb===2?'Pitch appearance updates with your selected surface and weather.':'Kit colours update as you make each selection.',x+w*.07,y+h*.95,w*.86,H*.025,'rgba(190,205,218,.7)','center');
+ }
 MS.cust=function(){
   settingsPage('MATCH SETTINGS','cust');
   const x=W*.135,y=H*.15,w=W*.83,h=H*.77;
