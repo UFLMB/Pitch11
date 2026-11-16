@@ -27,6 +27,31 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Check inline application scripts
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('index.html', 'utf8');
+          const tags = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
+          const inline = tags.filter(([, attrs, body]) =>
+            !/\bsrc\s*=/.test(attrs) &&
+            !/type=["'](?:importmap|application\/ld\+json)["']/i.test(attrs) &&
+            body.trim()
+          );
+          if (!inline.length) throw new Error('No inline application scripts found');
+          inline.forEach(([, attrs, body], i) => {
+            const ext = /type=["']module["']/i.test(attrs) ? 'mjs' : 'cjs';
+            const file = `/tmp/pitch11-inline-${i}.${ext}`;
+            fs.writeFileSync(file, body);
+            const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+            if (result.status !== 0) {
+              process.stderr.write(result.stderr || result.stdout);
+              process.exit(result.status || 1);
+            }
+          });
+          console.log(`Checked ${inline.length} inline application scripts.`);
+          NODE
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
