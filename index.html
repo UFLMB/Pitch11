@@ -4651,7 +4651,9 @@ MS.main=function(){
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=ph*.16;ctx.shadowOffsetY=ph*.045;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+(H*.074)+'px sans-serif';
-  ctx.fillStyle='#f3f1e9';ctx.fillText('PLAY',px+pw/2,py+ph*.51);ctx.restore();
+  ctx.fillStyle='#f3f1e9';ctx.fillText('PLAY',px+pw/2,py+ph*.51);
+  ctx.font='700 '+(H*.058)+'px sans-serif';ctx.fillStyle='#d4af4b';
+  ctx.fillText('>',px+pw*.84,py+ph*.51);ctx.restore();
   UI.def=()=>pre('quick');
 };
 MS.play=function(){
