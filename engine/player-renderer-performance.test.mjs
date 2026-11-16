@@ -24,7 +24,7 @@ test("optimized GLB asset contract defines mobile-conscious geometry and texture
   const readme = read("../assets/players/README.md");
   assert.ok(readme.includes("8,000–12,000 triangles"));
   assert.ok(readme.includes("80 named joints"));
-  assert.ok(readme.includes("1024×1024 texture atlas"));
+  assert.ok(readme.includes("four embedded 1024 px PBR textures"));
   assert.ok(readme.includes("20 Hz on mobile and 30 Hz on desktop"));
   const workflow = read("../.github/workflows/static.yml");
   assert.ok(workflow.includes("https://models.codelove.in/models/sports-male-02.glb"));
