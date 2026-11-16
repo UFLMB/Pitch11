@@ -2273,9 +2273,9 @@ function drawPlayer3(p,a,markersOnly=false){                                 // 
   const hipY=-9.8,L1=4.9,L2=4.9;                            // hip height, thigh & shin lengths
   ctx.save();ctx.translate(sx,sy);ctx.scale(s*fc*PLAYER_SCALE,s*PLAYER_SCALE);
   ctx.fillStyle='rgba(0,0,0,'+(lie?.22:.3)+')';ctx.beginPath();ctx.ellipse(0,0,lie?13:6.5,lie?2.1:2.3,0,0,TAU);ctx.fill();
-  if(p!==ctrl&&indCol(p)){ctx.strokeStyle=indCol(p);ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();}
+  if(!markersOnly&&p!==ctrl&&indCol(p)){ctx.strokeStyle=indCol(p);ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();}
   if(p===ctrl){
-    ctx.strokeStyle=indCol(p)||'#ffe600';ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();
+    if(!markersOnly){ctx.strokeStyle=indCol(p)||'#ffe600';ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();}
     ctx.fillStyle=indCol(p)||'#ffe600';ctx.beginPath();ctx.moveTo(-3,-34);ctx.lineTo(3,-34);ctx.lineTo(0,-29.5);ctx.fill();
     ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(-7,-37.5,14,1.6);ctx.fillStyle=p.winded?'#ff5030':p.stam<.3?'#ffc040':'#5cff8a';ctx.fillRect(-7,-37.5,14*p.stam,1.6);
     if(I.shoot&&ball.owner===p){ctx.strokeStyle=I.chargeT>.72?'#ff5030':'#fff';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,0,13,4.6,0,-Math.PI/2,-Math.PI/2+clamp(I.chargeT/.85,0,1)*TAU);ctx.stroke();
