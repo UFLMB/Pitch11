@@ -395,10 +395,14 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const composeMap=(image,target)=>{
    const g=target.getContext('2d',{alpha:false}),iw=image.naturalWidth,ih=image.naturalHeight;
    const side=Math.min(iw,ih),sx=(iw-side)/2,sy=(ih-side)/2,unit=Math.min(target.width,target.height);
+   // Smaller seamless tiles restore a believable blade scale across the full pitch.
+   // The same spatial transforms are applied to albedo, normal and roughness maps.
+   // Keep the canvas resolution unchanged: this adds no geometry or draw calls.
    const layers=[
-    {scale:.86,alpha:1,ox:0,oy:0},
-    {scale:.57,alpha:.30,ox:.23,oy:.37},
-    {scale:.36,alpha:.14,ox:.61,oy:.19}
+    {scale:.28,alpha:1,ox:0,oy:0},
+    {scale:.19,alpha:.28,ox:.23,oy:.37},
+    {scale:.13,alpha:.14,ox:.61,oy:.19},
+    {scale:.085,alpha:.07,ox:.41,oy:.73}
    ];
    g.clearRect(0,0,target.width,target.height);
    for(const layer of layers){
