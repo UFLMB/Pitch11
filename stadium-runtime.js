@@ -423,6 +423,23 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    if(o.name!=='Pitch_2'||longSide<110||longSide>125||shortSide<72||shortSide>82||size.y>.02)return;
    surfaceCandidates++;
    pitchSurfaceY=box.max.y;
+   // The source stadium mesh uses fragmented/atlas UV islands on its pitch
+   // surface. Rebuild UVs from world-space X/Z so the grass image spans the
+   // complete playing field continuously, independent of the model's atlas.
+   const position=o.geometry?.getAttribute('position');
+   let uvMapping={mode:'unchanged',vertices:0};
+   if(position&&size.x>1&&size.z>1){
+    const geometry=o.geometry.clone(),uv=new Float32Array(position.count*2),point=new THREE.Vector3();
+    for(let i=0;i<position.count;i++){
+     point.fromBufferAttribute(position,i).applyMatrix4(o.matrixWorld);
+     uv[i*2]=THREE.MathUtils.clamp((point.x-box.min.x)/size.x,0,1);
+     uv[i*2+1]=THREE.MathUtils.clamp((point.z-box.min.z)/size.z,0,1);
+    }
+    geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+    geometry.attributes.uv.needsUpdate=true;
+    o.geometry=geometry;
+    uvMapping={mode:'continuous-world-space-xz',vertices:position.count,u:[0,1],v:[0,1]};
+   }
    const source=Array.isArray(o.material)?o.material:[o.material];
    const materialSamples=[],replacements=source.map(original=>{
     if(!original){materialSamples.push({material:null,green:false,changed:false});return original;}
@@ -442,7 +459,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    if(candidateSamples.length<8)candidateSamples.push({...summary,materials:materialSamples});
    o.material=Array.isArray(o.material)?replacements:replacements[0];
   });
-  pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:textures.detail.image?{width:textures.detail.image.width,height:textures.detail.image.height}:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
+  pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),uvMapping,texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:textures.detail.image?{width:textures.detail.image.width,height:textures.detail.image.height}:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
   if(changed)console.info('PITCH 11 realistic turf materials:',changed);
  }
 
