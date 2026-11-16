@@ -68,6 +68,7 @@ jobs:
           node --check engine/player-model-state.mjs
           node --check engine/match-player-renderer.mjs
           node --check engine/player-renderer-performance.test.mjs
+          node --check scripts/validate-player-assets.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
       - name: Run simulation and adapter regression tests
@@ -83,6 +84,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Vendor pinned Three.js runtime for offline same-origin loading
@@ -94,6 +99,7 @@ jobs:
           test -s vendor/three/build/three.module.js
           test -s vendor/three/examples/jsm/loaders/GLTFLoader.js
           test -s vendor/three/examples/jsm/utils/SkeletonUtils.js
+          test -s vendor/three/examples/jsm/libs/meshopt_decoder.module.js
           test -s vendor/three/LICENSE
       - name: Download and validate stadium assets into the Pages artifact
         run: |
@@ -107,6 +113,16 @@ jobs:
           curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://cdn.3dassets.dev/assets/19077/v1/model.glb" --output assets/corner-flag.glb
           test "$(stat -c%s assets/corner-flag.glb)" -gt 3000
           test "$(head -c 4 assets/corner-flag.glb)" = "glTF"
+          mkdir -p assets/players
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://models.codelove.in/models/sports-male-02.glb" --output assets/players/player.glb
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://models.codelove.in/animations/m_idle_neutral_01.glb" --output assets/players/idle.glb
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://models.codelove.in/animations/m_walk_neutral_01.glb" --output assets/players/walk.glb
+          curl --fail --location --retry 3 --retry-delay 2 --user-agent "PITCH-11-GitHub-Actions" "https://models.codelove.in/animations/m_run_neutral_01.glb" --output assets/players/run.glb
+          for asset in assets/players/player.glb assets/players/idle.glb assets/players/walk.glb assets/players/run.glb; do
+            test "$(stat -c%s "$asset")" -gt 1000
+            test "$(head -c 4 "$asset")" = "glTF"
+          done
+          node scripts/validate-player-assets.mjs
       - name: Build a mobile-optimized stadium model
         run: |
           npx --yes @gltf-transform/cli@4.5.1 resize assets/football-stadium.glb assets/football-stadium-mobile.glb --width 1024 --height 1024
