@@ -1,15 +1,12 @@
 import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 
-const repo = "UFLMB/Pitch11";
 const directory = "input/player-package";
-const api = `https://api.github.com/repos/${repo}/contents/${directory}?ref=main`;
-const response = await fetch(api, { headers: { "Accept": "application/vnd.github+json", "User-Agent": "PITCH-11-FBX-Audit" } });
-if (!response.ok) throw new Error(`GitHub directory request failed: ${response.status}`);
-const entries = await response.json();
-const files = entries.filter(entry => entry.type === "file" && entry.name.toLowerCase().endsWith(".fbx"));
+const sourceDirectory = path.resolve(directory);
+const entries = await readdir(sourceDirectory, { withFileTypes: true });
+const files = entries.filter(entry => entry.isFile() && entry.name.toLowerCase().endsWith(".fbx")).map(entry => ({ name: entry.name }));
 if (!files.length) throw new Error("No FBX files found in input/player-package");
 const work = "/tmp/pitch11-fbx-audit";
 await mkdir(work, { recursive: true });
@@ -29,14 +26,12 @@ function names(xml, tag) {
 const results = [];
 for (const entry of files) {
   const target = path.join(work, entry.name);
-  const download = await fetch(entry.download_url, { headers: { "User-Agent": "PITCH-11-FBX-Audit" } });
-  if (!download.ok) throw new Error(`Download failed for ${entry.name}: ${download.status}`);
-  const bytes = Buffer.from(await download.arrayBuffer());
+  const bytes = await readFile(path.join(sourceDirectory, entry.name));
   if (bytes.length < 128) throw new Error(`Suspiciously small FBX: ${entry.name}`);
   await writeFile(target, bytes);
   const xmlPath = target + ".assxml";
   run("assimp", ["dump", target, xmlPath]);
-  const xml = await (await import("node:fs/promises")).readFile(xmlPath, "utf8");
+  const xml = await readFile(xmlPath, "utf8");
   const boneNames = names(xml, "Bone");
   const nodeNames = names(xml, "Node");
   const animationNames = names(xml, "Animation");
@@ -67,7 +62,6 @@ for (const item of results) {
   groups.get(item.skeletonSignature).push(item.file);
 }
 console.log(JSON.stringify({
-  repository: repo,
   directory,
   fbxCount: results.length,
   totalMB: Number(results.reduce((sum, item) => sum + item.bytes, 0) / 1048576).toFixed(2),
