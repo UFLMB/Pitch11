@@ -4610,7 +4610,7 @@ MS.main=function(){
   const navButton=(x,label,kind,fn)=>{
     UI.r.push({x,y:navY,w:navW,h:navH,fn});
     glass(x,navY,navW,navH,navH*.28,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
-      hl:.14,bd:'rgba(212,175,75,.58)'});
+      hl:.14,bd:'rgba(215,222,216,.32)'});
     const ir=navH*.27,icx=x+navH*.58,icy=navY+navH*.5;
     ctx.save();ctx.fillStyle='rgba(5,16,18,.7)';ctx.strokeStyle='rgba(222,190,118,.55)';
     ctx.lineWidth=Math.max(1,H*.0015);ctx.beginPath();ctx.arc(icx,icy,ir*1.18,0,TAU);ctx.fill();ctx.stroke();ctx.restore();
@@ -4624,7 +4624,7 @@ MS.main=function(){
   const pw=W*.225,ph=H*.165,px=W-mx-pw,py=bottom-ph;
   UI.r.push({x:px,y:py,w:pw,h:ph,fn:()=>go('play')});
   glass(px,py,pw,ph,ph*.22,{top:'rgba(23,40,39,.84)',bot:'rgba(4,14,17,.78)',
-    hl:.14,bd:'rgba(215,222,216,.32)'});
+    hl:.14,bd:'rgba(212,175,75,.58)'});
   ctx.save();
   ctx.shadowColor='rgba(0,0,0,.42)';ctx.shadowBlur=ph*.16;ctx.shadowOffsetY=ph*.045;
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='900 '+(H*.074)+'px sans-serif';
