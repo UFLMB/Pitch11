@@ -6287,7 +6287,7 @@ MS.cust=function(){
     const rows=RROWS,rowH=H*.055,start=y+H*.14,step=H*.082;
     rows.forEach((r,i)=>settingsRow(r[0],leftX,start+i*step,leftX+leftW*.29,leftW*.68,r[2],G.rf[r[1]],j=>{G.rf[r[1]]=j;fixRf();save();},rowH));
   }
-  if(hasPreview)drawMatchSettingsPreview(previewX,y+H*.13,previewW,h-H*.16,data,tb);
+  if(hasPreview)drawMatchSettingsPreview(previewX,y+H*.13+10,previewW,h-H*.16-10,data,tb);
   ctx.save();ctx.font='800 '+(H*.028)+'px sans-serif';
   const resetLabelBottom=y+H*.045+(ctx.measureText(headerTitle).actualBoundingBoxDescent||H*.006);ctx.restore();
   ubtn(x+w-W*.135,resetLabelBottom-H*.045+7,W*.11,H*.045,M.conf?'CONFIRM RESET':'RESET',()=>{
