@@ -5908,19 +5908,25 @@ MS.game=function(){
   const x=W*.135,y=H*.17,w=W*.83,h=H*.74;
   settingsPanel(x,y,w,h,'MATCH EXPERIENCE');
 
-  // EA-inspired hierarchy: a clear difficulty selector, then four compact setting cards.
+  // Use a consistent middle baseline and isolated canvas state for every GAMEPLAY label.
+  const gameText=(s,tx,ty,mw,size,color,align)=>{
+    ctx.save();
+    ctx.textBaseline='middle';
+    fit(s,tx,ty,mw,size,color,align||'center');
+    ctx.restore();
+  };
+
   const dx=x+W*.025,dy=y+H*.09,dw=w-W*.05,dh=H*.16;
   glass(dx,dy,dw,dh,H*.018,{top:'rgba(255,255,255,.12)',bot:'rgba(255,255,255,.035)',bd:'rgba(255,255,255,.24)',hl:.1});
   ctx.save();
   ctx.fillStyle='rgba(255,213,105,.9)';
   rr(dx+W*.012,dy+H*.018,W*.004,dh-H*.036,H*.003);ctx.fill();
   ctx.restore();
-  ctx.textAlign='left';
-  txt('DIFFICULTY',dx+W*.027,dy+H*.043,H*.027,'#f4f6fa',800);
-  ctx.textAlign='right';
-  fit(DIF[G.diff].n,dx+dw-W*.025,dy+H*.043,dw*.28,H*.028,'#ffe08a','right');
-  ctx.textAlign='center';
-  seg(dx+W*.25,dy+H*.018,dw-W*.28,H*.075,DIF.map(d=>d.n),G.diff,i=>{G.diff=i;save();});
+
+  // Difficulty heading and selected level occupy a dedicated row above the selector.
+  gameText('DIFFICULTY',dx+W*.027,dy+H*.039,dw*.42,H*.027,'#f4f6fa','left');
+  gameText(DIF[G.diff].n,dx+dw-W*.025,dy+H*.039,dw*.38,H*.027,'#ffe08a','right');
+  seg(dx+W*.018,dy+H*.065,dw-W*.036,H*.062,DIF.map(d=>d.n),G.diff,i=>{G.diff=i;save();});
   const difficultyNotes=[
     'A relaxed introduction to the match.',
     'A measured step up in challenge.',
@@ -5928,9 +5934,9 @@ MS.game=function(){
     'More demanding defensive pressure and reactions.',
     'The toughest opposition available.'
   ];
-  fit(difficultyNotes[G.diff]||'Choose the challenge level for your matches.',dx+dw*.5,dy+H*.125,dw*.92,H*.024,'rgba(205,216,228,.86)');
+  gameText(difficultyNotes[G.diff]||'Choose the challenge level for your matches.',dx+dw*.5,dy+H*.145,dw*.92,H*.021,'rgba(205,216,228,.86)');
 
-  // No preview pane: the selected values and dimensions are more useful here.
+  // No preview pane: selected values and dimensions are the useful information here.
   const opts=['SMALL','STANDARD','LARGE'];
   const gridX=x+W*.025,gridY=y+H*.285,gapX=W*.022,gapY=H*.025;
   const cardW=(w-W*.05-gapX)/2,cardH=H*.185;
@@ -5947,13 +5953,12 @@ MS.game=function(){
     ctx.fillStyle='rgba(255,213,105,.78)';
     rr(cx+W*.014,cy+H*.016,cardW-W*.028,H*.003,H*.002);ctx.fill();
     ctx.restore();
-    ctx.textAlign='left';
-    fit(r.label,cx+W*.022,cy+H*.043,cardW*.56,H*.027,'#f4f6fa','left');
-    ctx.textAlign='right';
-    fit(opts[G.cfg[r.key]],cx+cardW-W*.022,cy+H*.043,cardW*.36,H*.027,'#ffe08a','right');
-    ctx.textAlign='center';
+
+    // Header labels align to a common centre line; value is right-anchored with its own width.
+    gameText(r.label,cx+W*.022,cy+H*.041,cardW*.52,H*.027,'#f4f6fa','left');
+    gameText(opts[G.cfg[r.key]],cx+cardW-W*.022,cy+H*.041,cardW*.4,H*.027,'#ffe08a','right');
     seg(cx+W*.018,cy+H*.065,cardW-W*.036,H*.065,opts,G.cfg[r.key],v=>{G.cfg[r.key]=v;save();applyConfig();});
-    fit(r.note(),cx+cardW*.5,cy+H*.158,cardW*.9,H*.022,'rgba(190,205,218,.86)');
+    gameText(r.note(),cx+cardW*.5,cy+H*.158,cardW*.9,H*.021,'rgba(190,205,218,.86)');
   });
 };
 MS.camera=function(){
