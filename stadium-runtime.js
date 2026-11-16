@@ -277,28 +277,57 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // Guarantee regulation pitch markings even when the source GLB's grass material
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
-  const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=pitchSurfaceY+.014,th=.11;
-  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.008,d),white);m.position.set(x,y,z);m.renderOrder=5;group.add(m);};
-  const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
-  const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);const arcLine=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:1,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));arcLine.renderOrder=5;group.add(arcLine);};
-  // Touchlines, goal lines and halfway line.
-  line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);line(0,-34,0,34);
-  // Centre circle and spot.
-  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.004,0);spot.renderOrder=5;group.add(spot);
+  const group=new THREE.Group();
+  const white=new THREE.MeshBasicMaterial({color:0xf5f5ed,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2,side:THREE.DoubleSide});
+  const y=pitchSurfaceY+.014,th=.11,lineHeight=.009;
+  const line=(x1,z1,x2,z2,width=th)=>{
+   const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);
+   if(len<.001)return;
+   const m=new THREE.Mesh(new THREE.BoxGeometry(len,lineHeight,width),white);
+   m.position.set((x1+x2)/2,y,(z1+z2)/2);
+   m.rotation.y=-Math.atan2(dz,dx);
+   m.renderOrder=6;group.add(m);
+  };
+  // All curved markings are built from the same visible-width line segments.
+  // Angles are unwrapped so each arc follows the intended field-facing side.
+  const arc=(cx,cz,r,a0,a1,segments=96)=>{
+   while(a1<a0)a1+=Math.PI*2;
+   let px=cx+Math.cos(a0)*r,pz=cz+Math.sin(a0)*r;
+   for(let i=1;i<=segments;i++){
+    const a=a0+(a1-a0)*i/segments,nx=cx+Math.cos(a)*r,nz=cz+Math.sin(a)*r;
+    line(px,pz,nx,nz,th);px=nx;pz=nz;
+   }
+  };
+  const spot=(x,z)=>{
+   const m=new THREE.Mesh(new THREE.CircleGeometry(.16,24),white);
+   m.rotation.x=-Math.PI/2;m.position.set(x,y+.006,z);m.renderOrder=7;group.add(m);
+  };
+  // Regulation 105 x 68 m field: touchlines, goal lines and halfway line.
+  line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);
+  line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);
+  line(0,-34,0,34);
+  // Centre circle and centre spot.
+  arc(0,0,9.15,0,Math.PI*2,128);spot(0,0);
   for(const sign of [-1,1]){
    const gx=sign*52.5,dir=-sign;
-   // Penalty area: 16.5m deep, 40.32m wide.
+   // Penalty area: 16.5 m deep and 40.32 m wide.
    const px=gx+dir*16.5,pz=20.16;
    line(gx,-pz,px,-pz);line(px,-pz,px,pz);line(px,pz,gx,pz);
-   // Goal area: 5.5m deep, 18.32m wide.
+   // Goal area: 5.5 m deep and 18.32 m wide.
    const sixX=gx+dir*5.5,sixZ=9.16;
    line(gx,-sixZ,sixX,-sixZ);line(sixX,-sixZ,sixX,sixZ);line(sixX,sixZ,gx,sixZ);
-   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.004,0);pen.renderOrder=5;group.add(pen);
-   // Penalty arc outside the penalty area (the 9.15m D).
-   const lower=Math.atan2(-7.32,dir*16.5),upper=Math.atan2(7.32,dir*16.5);
-   if(sign>0)arc(gx+dir*11,0,9.15,upper,lower);else arc(gx+dir*11,0,9.15,lower,upper);
+   // Penalty spot, 11 m from the goal line.
+   const penX=gx+dir*11;spot(penX,0);
+   // The D arc must lie OUTSIDE the penalty area, toward the centre of the pitch.
+   const lower=Math.atan2(-7.32,dir*5.5),upper=Math.atan2(7.32,dir*5.5);
+   if(sign>0)arc(penX,0,9.15,upper,lower+Math.PI*2,64);
+   else arc(penX,0,9.15,lower,upper,64);
   }
+  // Four 1 m corner quarter-circles, each opening into the field.
+  arc(-52.5,-34,1,0,Math.PI/2,16);
+  arc(52.5,-34,1,Math.PI/2,Math.PI,16);
+  arc(52.5,34,1,Math.PI,Math.PI*1.5,16);
+  arc(-52.5,34,1,Math.PI*1.5,Math.PI*2,16);
   scene.add(group);return group;
  }
  // Build one compact, deterministic turf atlas at load time; no external asset or per-frame work.
