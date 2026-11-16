@@ -71,9 +71,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const c=pitchTextureCanvas,g=c.getContext('2d',{alpha:false}),size=c.width,pal=palettes[p];
   const grad=g.createLinearGradient(0,0,size,size);grad.addColorStop(0,pal[0]);grad.addColorStop(.5,pal[1]);grad.addColorStop(1,pal[2]);
   g.fillStyle=grad;g.fillRect(0,0,size,size);
-  if(m===0){const band=size/14;for(let n=0;n<14;n++){g.fillStyle=n%2?'rgba(0,0,0,.13)':'rgba(225,255,210,.10)';g.fillRect(n*band,0,band+1,size);}}
-  else if(m===1){const cw=size/16,ch=size/10;for(let x=0;x<16;x++)for(let y=0;y<10;y++)if((x+y)&1){g.fillStyle='rgba(0,0,0,.12)';g.fillRect(x*cw,y*ch,cw+1,ch+1);}}
-  else if(m===2){const band=size/10;for(let y=0;y<10;y+=2){g.fillStyle='rgba(0,0,0,.13)';g.fillRect(0,y*band,size,band+1);}}
+  if(m===0){const band=size/2;for(let n=0;n<2;n++){g.fillStyle=n%2?'rgba(0,0,0,.11)':'rgba(225,255,210,.07)';g.fillRect(n*band,0,band+1,size);}}
+  else if(m===1){const cw=size/4,ch=size/2;for(let x=0;x<4;x++)for(let y=0;y<2;y++)if((x+y)&1){g.fillStyle='rgba(0,0,0,.09)';g.fillRect(x*cw,y*ch,cw+1,ch+1);}}
+  else if(m===2){const band=size/2;g.fillStyle='rgba(0,0,0,.10)';g.fillRect(0,0,size,band);}
   let seed=110711+p*7919+m*131;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   const blades=p===3?12000:22000;
   for(let n=0;n<blades;n++){const x=rnd()*size,y=rnd()*size,len=1+rnd()*4;g.strokeStyle=p===3?'rgba(255,255,255,.22)':p===4?'rgba(105,255,245,.22)':rnd()>.5?'rgba(190,230,155,.17)':'rgba(0,20,0,.2)';g.lineWidth=.5+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+(rnd()-.5)*2,y-len);g.stroke();}
@@ -278,14 +278,14 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
  // is replaced by the runtime turf texture above.
  function addPitchMarkings(){
   const group=new THREE.Group(),white=new THREE.MeshBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96,depthWrite:false});
-  const y=pitchSurfaceY+.018,th=.105;
-  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.006,d),white);m.position.set(x,y,z);group.add(m);};
+  const y=pitchSurfaceY+.014,th=.11;
+  const bar=(x,z,w,d)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.008,d),white);m.position.set(x,y,z);m.renderOrder=5;group.add(m);};
   const line=(x1,z1,x2,z2)=>{const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz),m=new THREE.Mesh(new THREE.BoxGeometry(len,.006,th),white);m.position.set((x1+x2)/2,y,(z1+z2)/2);m.rotation.y=-Math.atan2(dz,dx);group.add(m);};
-  const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);group.add(new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:.96})));};
+  const arc=(cx,cz,r,a0,a1)=>{const pts=[];for(let i=0;i<=64;i++){const a=a0+(a1-a0)*i/64;pts.push(new THREE.Vector3(cx+Math.cos(a)*r,y,cz+Math.sin(a)*r));}const geo=new THREE.BufferGeometry().setFromPoints(pts);const arcLine=new THREE.Line(geo,new THREE.LineBasicMaterial({color:0xf3f3e9,transparent:true,opacity:1,depthTest:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2}));arcLine.renderOrder=5;group.add(arcLine);};
   // Touchlines, goal lines and halfway line.
   line(-52.5,-34,52.5,-34);line(52.5,-34,52.5,34);line(52.5,34,-52.5,34);line(-52.5,34,-52.5,-34);line(0,-34,0,34);
   // Centre circle and spot.
-  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.004,0);group.add(spot);
+  arc(0,0,9.15,0,Math.PI*2);const spot=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);spot.rotation.x=-Math.PI/2;spot.position.set(0,y+.004,0);spot.renderOrder=5;group.add(spot);
   for(const sign of [-1,1]){
    const gx=sign*52.5,dir=-sign;
    // Penalty area: 16.5m deep, 40.32m wide.
@@ -294,7 +294,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    // Goal area: 5.5m deep, 18.32m wide.
    const sixX=gx+dir*5.5,sixZ=9.16;
    line(gx,-sixZ,sixX,-sixZ);line(sixX,-sixZ,sixX,sixZ);line(sixX,sixZ,gx,sixZ);
-   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.004,0);group.add(pen);
+   const penX=gx+dir*11,pen=new THREE.Mesh(new THREE.CircleGeometry(.16,20),white);pen.rotation.x=-Math.PI/2;pen.position.set(penX,y+.004,0);pen.renderOrder=5;group.add(pen);
    // Penalty arc outside the penalty area (the 9.15m D).
    const lower=Math.atan2(-7.32,dir*16.5),upper=Math.atan2(7.32,dir*16.5);
    if(sign>0)arc(gx+dir*11,0,9.15,upper,lower);else arc(gx+dir*11,0,9.15,lower,upper);
@@ -308,7 +308,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const base=g.createLinearGradient(0,0,size,size);
   base.addColorStop(0,'#347b40');base.addColorStop(.5,'#2e7139');base.addColorStop(1,'#286637');
   g.fillStyle=base;g.fillRect(0,0,size,size);
-  const bands=14,band=size/bands;
+  const bands=2,band=size/bands;
   for(let i=0;i<bands;i++){
    g.fillStyle=i%2?'rgba(7,30,13,.105)':'rgba(190,225,165,.075)';
    g.fillRect(i*band,0,band+1,size);
@@ -317,15 +317,15 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   }
   let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   // Fine blades run with the mowing direction; varied hue and length avoid a flat painted look.
-  const blades=72000;
+  const blades=180000;
   for(let i=0;i<blades;i++){
-   const x=rnd()*size,y=rnd()*size,len=2+rnd()*8,lean=(rnd()-.5)*2.8;
+   const x=rnd()*size,y=rnd()*size,len=1+rnd()*2.8,lean=(rnd()-.5)*1.5;
    const light=rnd();
    g.strokeStyle=light>.52?'rgba(180,220,145,.19)':light>.18?'rgba(9,42,17,.22)':'rgba(225,235,190,.12)';
    g.lineWidth=.45+rnd()*.8;g.beginPath();g.moveTo(x,y);g.lineTo(x+lean,y-len);g.stroke();
   }
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
-  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.generateMipmaps=true;
+  albedo.wrapS=albedo.wrapT=THREE.RepeatWrapping;albedo.repeat.set(8,5);albedo.generateMipmaps=true;
   albedo.minFilter=THREE.LinearMipmapLinearFilter;albedo.magFilter=THREE.LinearFilter;
   albedo.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   // A low-contrast grayscale microstructure adds a restrained turf surface response.
@@ -337,7 +337,7 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
    d.lineWidth=.5+rnd()*.6;d.beginPath();d.moveTo(x,y);d.lineTo(x+(rnd()-.5)*1.4,y-len);d.stroke();
   }
   const detail=new THREE.CanvasTexture(detailCanvas);detail.wrapS=detail.wrapT=THREE.RepeatWrapping;
-  detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
+  detail.wrapS=detail.wrapT=THREE.RepeatWrapping;detail.repeat.set(18,12);detail.generateMipmaps=true;detail.minFilter=THREE.LinearMipmapLinearFilter;detail.magFilter=THREE.LinearFilter;
   return{albedo,detail,canvas};
  }
  function enhancePitchGrass(stadium){
@@ -396,9 +396,9 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   const stadium=gltf.scene;
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
-  stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;pitchSurfaceY-=bounds.min.y;
+  stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
-  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
+  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.014,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
   previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
