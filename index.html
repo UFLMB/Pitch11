@@ -6218,7 +6218,7 @@ function drawMatchSettingsPreview(x,y,w,h,data,tb){
    ctx.restore();
    // Fill the complete inner viewport; the rounded 2D clip masks its corners.
    const live=window.P11Stadium&&window.P11Stadium.renderPreview&&window.P11Stadium.renderPreview(
-     {x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0}
+     {x:ix,y:iy,w:iw,h:ih},{timeOfDay:G.tod|0,pitch:data.pitch|0,mowing:data.mow|0,weather:data.wx|0}
    );
    if(live){
      // Opaque bezel masks any residual one-pixel WebGL edge shimmer.
