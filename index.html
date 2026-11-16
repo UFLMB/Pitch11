@@ -5839,21 +5839,27 @@ const SETTINGS_NAV=[
 function settingsNavIcon(kind,cx,cy,r,color){
   ctx.save();ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
   if(kind==='game'){
-    // Same outline-only visual language as the other settings icons, retaining the supplied ball layout.
-    const s=r*.88/224,ox=cx-256*s,oy=cy-256*s;
-    const point=(p)=>[ox+p[0]*s,oy+p[1]*s];
-    const pentagon=[[259,92],[342,228],[317,335],[194,335],[170,227]].map(point);
-    const outer=[[256,32],[470,220],[390,450],[122,450],[42,220]].map(point);
-    ctx.save();
-    ctx.strokeStyle=color;ctx.lineWidth=Math.max(1.7,r*.115);ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();ctx.arc(cx,cy,224*s,0,TAU);ctx.stroke();
+    // Referee whistle, drawn with the same clean outline language as the other settings icons.
     ctx.beginPath();
-    pentagon.forEach((p,i)=>{if(i===0)ctx.moveTo(p[0],p[1]);else ctx.lineTo(p[0],p[1]);});
+    ctx.moveTo(cx-r*.78,cy-r*.12);
+    ctx.lineTo(cx-r*.43,cy-r*.12);
+    ctx.lineTo(cx-r*.29,cy-r*.34);
+    ctx.quadraticCurveTo(cx-r*.16,cy-r*.53,cx+r*.12,cy-r*.53);
+    ctx.lineTo(cx+r*.48,cy-r*.53);
+    ctx.quadraticCurveTo(cx+r*.78,cy-r*.53,cx+r*.78,cy-r*.23);
+    ctx.lineTo(cx+r*.78,cy+r*.20);
+    ctx.quadraticCurveTo(cx+r*.78,cy+r*.50,cx+r*.48,cy+r*.50);
+    ctx.lineTo(cx-r*.02,cy+r*.50);
+    ctx.quadraticCurveTo(cx-r*.30,cy+r*.50,cx-r*.38,cy+r*.25);
+    ctx.lineTo(cx-r*.48,cy+r*.12);
+    ctx.lineTo(cx-r*.78,cy+r*.12);
     ctx.closePath();ctx.stroke();
-    for(let i=0;i<5;i++){
-      ctx.beginPath();ctx.moveTo(pentagon[i][0],pentagon[i][1]);ctx.lineTo(outer[i][0],outer[i][1]);ctx.stroke();
-    }
-    ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(cx-r*.48,cy-r*.12);ctx.lineTo(cx-r*.48,cy+r*.12);
+    ctx.moveTo(cx+r*.18,cy-r*.53);ctx.lineTo(cx+r*.18,cy-r*.72);
+    ctx.lineTo(cx+r*.48,cy-r*.72);
+    ctx.stroke();
+    ctx.beginPath();ctx.arc(cx+r*.34,cy-r*.12,r*.12,0,TAU);ctx.stroke();
   }else if(kind==='camera'){
     rr(cx-r*.82,cy-r*.58,r*1.64,r*1.16,r*.2);ctx.stroke();ctx.beginPath();ctx.arc(cx,cy,r*.34,0,TAU);ctx.stroke();ctx.beginPath();ctx.moveTo(cx-r*.55,cy-r*.8);ctx.lineTo(cx-r*.2,cy-r*.8);ctx.stroke();
   }else if(kind==='sound'){
