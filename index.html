@@ -3628,12 +3628,12 @@ update=function(){
 };
 
 /* ===================== 21. STAGE 15: CUSTOMISE hub - match rules, gameplay feel, looks & weather, kit editor ===================== */
-const DX={len:1,win:0,offside:1,fouls:2,cards:1,inj:2,spd:2,spr:1,stam:1,ball:1,aitk:1,gk:1,sbar:1,pitch:0,mow:0,wx:0,kit:[null,null,null]};
+const DX={len:1,win:0,offside:1,fouls:2,cards:1,inj:2,spd:2,spr:1,stam:1,ball:1,aitk:1,gk:1,pitch:0,mow:0,wx:0,kit:[null,null,null]};
 G.x=Object.assign({},DX,{kit:[null,null,null]});
 const SPD=[.85,.93,1,1.08,1.18],SPR=[.9,1,1.12],LENS=[90,180,300,480],FRIC=[1,1,.998];
 const X=()=>G.x;
 function fixX(){const x=G.x&&typeof G.x==='object'?G.x:{},o={};
-  const max={len:3,win:4,offside:1,fouls:2,cards:1,inj:2,spd:4,spr:2,stam:2,ball:2,aitk:2,gk:2,sbar:1,pitch:4,mow:3,wx:3};
+  const max={len:3,win:4,offside:1,fouls:2,cards:1,inj:2,spd:4,spr:2,stam:2,ball:2,aitk:2,gk:2,pitch:4,mow:3,wx:3};
   for(const k in DX){if(k==='kit')o.kit=Array.isArray(x.kit)&&x.kit.length===3?x.kit.map(v=>typeof v==='string'&&/^#[0-9a-f]{6}$/i.test(v)?v:null):[null,null,null];
     else o[k]=Number.isInteger(x[k])&&x[k]>=0&&x[k]<=(max[k]??0)?x[k]:DX[k];}
   G.x=o;}
