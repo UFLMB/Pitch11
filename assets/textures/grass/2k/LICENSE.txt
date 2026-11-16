@@ -1,0 +1,4 @@
+These texture maps are released under CC0 1.0 Universal (public domain).
+Source: ambientCG (Grass008) - https://ambientcg.com/view?id=Grass008
+Distributed by Meshy as part of the free texture library: https://www.meshy.ai/textures
+You may use, modify and redistribute them for any purpose, commercial or not, without attribution.
