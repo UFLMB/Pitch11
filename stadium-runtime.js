@@ -132,12 +132,12 @@ import { createProductionSecurityPositions } from './engine/stadium-atmosphere.m
   // The pitch canvas follows the field axes: horizontal canvas bands run
   // lengthwise along the pitch. Keep mowing contrast subtle so PBR blade detail
   // remains visible instead of looking like painted green panels.
-  if(m===0)addBands(false,6,'rgba(0,0,0,.075)','rgba(255,255,255,.052)');
+  if(m===0)addBands(true,6,'rgba(0,0,0,.075)','rgba(255,255,255,.052)');
   else if(m===1){
    addBands(false,6,'rgba(0,0,0,.072)','rgba(255,255,255,.05)');
    addBands(true,10,'rgba(0,0,0,.042)','rgba(255,255,255,.03)',.48);
   }
-  else if(m===2)addBands(true,10,'rgba(0,0,0,.068)','rgba(255,255,255,.046)');
+  else if(m===2)addBands(false,10,'rgba(0,0,0,.068)','rgba(255,255,255,.046)');
   pitchTexture.needsUpdate=true;
  }
  function createPreviewWeather(){
