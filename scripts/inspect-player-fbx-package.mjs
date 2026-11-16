@@ -80,7 +80,6 @@ for (const entry of files) {
   const uniqueTrackTargets = [...new Set(trackTargets)].sort();
   if (!nodeNames.length) throw new Error(`${entry.name}: Assimp returned no hierarchy nodes`);
   if (compareModel && !uniqueTrackTargets.length) throw new Error(`${entry.name}: could not extract any FBX animation track targets`);
-  if (!nodeNames.length) throw new Error(`${entry.name}: Assimp returned no hierarchy nodes`);
   const result = {
     file: entry.name,
     bytes: bytes.length,
@@ -91,7 +90,6 @@ for (const entry of files) {
     boneNameCount: boneNames.length,
     hierarchyNodeCount: nodeNames.length,
     animationChannelCount: (xml.match(/<NodeAnim\b/g) || []).length,
-    animationChannelCount: (xml.match(/<NodeAnim\\b/g) || []).length,
     skeletonSignature: signature
   };
   if (compareModel) {
