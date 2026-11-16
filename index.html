@@ -1684,7 +1684,7 @@ function render2D(a){
   let cx=cam.px+(cam.x-cam.px)*a,cy=cam.py+(cam.y-cam.py)*a;
   cx=vw>=WW?WW/2:clamp(cx,vw/2,WW-vw/2);cy=vh>=WH?WH/2:clamp(cy,vh/2,WH-vh/2);
   const stadiumTop=!!(window.P11Stadium&&window.P11Stadium.ready);
-  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:DT});ctx.clearRect(0,0,cw,ch);}
+  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT});ctx.clearRect(0,0,cw,ch);}
   else{ctx.fillStyle='#24602f';ctx.fillRect(0,0,cw,ch);}
   ctx.setTransform(sc,0,0,sc,cw/2-cx*sc,ch/2-cy*sc);
   if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
@@ -2346,7 +2346,7 @@ function drawPlayer3(p,a,markersOnly=false){                                 // 
 function render3D(a){
   ctx.setTransform(dpr,0,0,dpr,0,0);camSet(a);
   if(window.P11Stadium&&window.P11Stadium.ready){
-    window.P11Stadium.render(V,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:DT});ctx.clearRect(0,0,W,H);ctx.save();
+    window.P11Stadium.render(V,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT});ctx.clearRect(0,0,W,H);ctx.save();
     if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
     const playerModelsReady=window.P11Stadium.playerModelsReady;
     sortOrd();drawBallShadow3(a);let stadiumBallDrawn=false;
