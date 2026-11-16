@@ -5963,7 +5963,8 @@ function settingsWrap(value,x,y,w,h,size,color,align,maxLines){
   ctx.restore();
 }
 function settingsSeg(x,y,w,h,labs,sel,fn){
-  const padX=5,padY=5,gap=2,innerW=Math.max(1,w-padX*2),innerH=Math.max(1,h-padY*2),cellW=innerW/labs.length;
+  const mobileSwitchLabels=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches&&Math.min(screen.width||innerWidth,screen.height||innerHeight)<=600;
+  const padX=mobileSwitchLabels?3:5,padY=mobileSwitchLabels?1.5:5,gap=2,innerW=Math.max(1,w-padX*2),innerH=Math.max(1,h-padY*2),cellW=innerW/labs.length;
   ctx.save();
   // Match the fully lit gold treatment used by MATCH CAMERA buttons.
   ctx.globalAlpha=1;
@@ -5974,7 +5975,7 @@ function settingsSeg(x,y,w,h,labs,sel,fn){
     const bx=x+padX+i*cellW+gap/2,by=y+padY,bw=Math.max(1,cellW-gap),bh=innerH;
     UI.r.push({x:x+padX+i*cellW,y:y+padY,w:cellW,h:innerH,fn:()=>fn(i)});
     if(i===sel)glass(bx,by,bw,bh,bh*.5,GOLD);
-    fit(label,bx+bw/2,by+bh/2,bw*.84,bh*.4,i===sel?'#1b2430':'#e8edf3');
+    fit(label,bx+bw/2,by+bh/2,bw*.84,bh*(mobileSwitchLabels?.82:.4),i===sel?'#1b2430':'#e8edf3');
   });
   ctx.restore();
 }
