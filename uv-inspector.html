@@ -69,10 +69,14 @@ function buildIslands(mesh){
  const groups=new Map();for(let t=0;t<count;t++){const r=find(t);if(!groups.has(r))groups.set(r,[]);groups.get(r).push(t)}
  const out=[...groups.values()].map(tris=>{let area=0;const verts=new Set();for(const t of tris){const ids=triIds(t);ids.forEach(i=>verts.add(i));const a=[uv.getX(ids[0]),uv.getY(ids[0])],b=[uv.getX(ids[1]),uv.getY(ids[1])],c=[uv.getX(ids[2]),uv.getY(ids[2])];area+=Math.abs((a[0]*(b[1]-c[1])+b[0]*(c[1]-a[1])+c[0]*(a[1]-b[1]))/2)}return{tris,vertices:verts.size,area}}).sort((a,b)=>b.area-a.area);
  const faceIsland=new Int32Array(count);out.forEach((o,i)=>o.tris.forEach(t=>faceIsland[t]=i));
- const positions=[],colors=[],indices=[];
- for(let t=0;t<count;t++){const island=faceIsland[t],col=new THREE.Color(palette[island%palette.length]);for(const id of triIds(t)){positions.push(pos.getX(id),pos.getY(id),pos.getZ(id));colors.push(col.r,col.g,col.b);indices.push(indices.length)}}
- const overlayGeometry=new THREE.BufferGeometry();overlayGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));overlayGeometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));overlayGeometry.setIndex(indices);overlayGeometry.computeVertexNormals();
- const overlay=new THREE.Mesh(overlayGeometry,new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.72,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1}));overlay.renderOrder=3;mesh.add(overlay);overlays.push({mesh:overlay,faceIsland});
+ const positions=[],colors=[],indices=[],skinIndices=[],skinWeights=[];
+ const sourceSkinIndex=g.getAttribute('skinIndex'),sourceSkinWeight=g.getAttribute('skinWeight');
+ for(let t=0;t<count;t++){const island=faceIsland[t],col=new THREE.Color(palette[island%palette.length]);for(const id of triIds(t)){positions.push(pos.getX(id),pos.getY(id),pos.getZ(id));colors.push(col.r,col.g,col.b);indices.push(indices.length);if(sourceSkinIndex&&sourceSkinWeight){for(let k=0;k<4;k++){skinIndices.push(sourceSkinIndex.getComponent(id,k));skinWeights.push(sourceSkinWeight.getComponent(id,k))}}}}
+ const overlayGeometry=new THREE.BufferGeometry();overlayGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));overlayGeometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));if(sourceSkinIndex&&sourceSkinWeight){overlayGeometry.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(skinIndices,4));overlayGeometry.setAttribute('skinWeight',new THREE.Float32BufferAttribute(skinWeights,4))}overlayGeometry.setIndex(indices);overlayGeometry.computeVertexNormals();
+ const overlayMaterial=new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,opacity:.72,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+ const overlay=mesh.isSkinnedMesh&&sourceSkinIndex&&sourceSkinWeight?new THREE.SkinnedMesh(overlayGeometry,overlayMaterial):new THREE.Mesh(overlayGeometry,overlayMaterial);
+ if(overlay.isSkinnedMesh){overlay.bind(mesh.skeleton,mesh.bindMatrix);overlay.bindMode=mesh.bindMode}
+ overlay.frustumCulled=false;overlay.renderOrder=3;mesh.add(overlay);overlays.push({mesh:overlay,faceIsland});
  return out.map((o,i)=>({id:i+1,triangles:o.tris.length,vertices:o.vertices,area:o.area,color:palette[i%palette.length]}));
 }
 function setMode(mode){active=mode;document.querySelector('#bodyBtn').classList.toggle('active',mode==='body');document.querySelector('#headBtn').classList.toggle('active',mode==='head');const meshes=records[mode];overlays.forEach(o=>o.mesh.visible=meshes.some(m=>m.overlay===o.mesh));refreshList()}
