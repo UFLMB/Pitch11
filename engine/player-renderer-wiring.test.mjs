@@ -41,3 +41,18 @@ test("legacy 2D player bodies are disabled while 2D overlays and match HUD remai
   assert.ok(index.includes("drawHud()"));
   assert.ok(index.includes("drawFig3(figO(REF,a))"));
 });
+
+
+test("stadium GLB loader supports Meshopt-compressed geometry", () => {
+  const runtime = read("../stadium-runtime.js");
+  assert.ok(runtime.includes("import { MeshoptDecoder } from './vendor/three/examples/jsm/libs/meshopt_decoder.module.js';"));
+  assert.ok(runtime.includes("new GLTFLoader().setMeshoptDecoder(MeshoptDecoder)"));
+});
+
+test("optional animation failures do not prevent skinned player models from rendering", () => {
+  const renderer = read("./match-player-renderer.mjs");
+  assert.ok(renderer.includes("Promise.allSettled(clipFiles.map"));
+  assert.ok(renderer.includes("this.status = \"ready\";"));
+  assert.ok(renderer.includes("this.template = null;"));
+  assert.ok(!renderer.includes("this.animations = await Promise.all(clipFiles.map"));
+});
