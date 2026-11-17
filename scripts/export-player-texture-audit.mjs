@@ -53,7 +53,7 @@ async function readAccessor(index) {
     if (compressed.buffer !== 0) throw new Error(`Accessor ${index} references an unsupported non-GLB buffer`);
     const packed = binary.subarray(compressed.byteOffset || 0, (compressed.byteOffset || 0) + compressed.byteLength);
     const decoded = new Uint8Array(compressed.count * compressed.byteStride);
-    MeshoptDecoder.decodeGltfBuffer(decoded, compressed.count, compressed.byteStride, packed, compressed.mode, compressed.filter);
+    await MeshoptDecoder.decodeGltfBuffer(decoded, compressed.count, compressed.byteStride, packed, compressed.mode, compressed.filter);
     sourceBytes = decoded;
     viewStart = 0;
     stride = compressed.byteStride;
