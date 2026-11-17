@@ -134,7 +134,7 @@ function accessorRange(index) {
   return a ? { accessor: index, min: a.min || null, max: a.max || null, count: a.count, type: a.type, componentType: a.componentType } : null;
 }
 
-function buildUvIslands(uv, indices, positions) {
+function buildUvIslands(uv, indices, positions, jointIndices, jointWeights, jointNames) {
   const triangleCount = Math.floor(indices.length / 3);
   const parent = Array.from({ length: triangleCount }, (_, i) => i);
   const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));
@@ -175,6 +175,21 @@ function buildUvIslands(uv, indices, positions) {
     }
     const points = [...vertexIds].map(id => uv[id]);
     const meshPoints = positions ? [...vertexIds].map(id => positions[id]) : [];
+    const jointInfluence = new Map();
+    if (jointIndices && jointWeights && jointNames) {
+      for (const vertexId of vertexIds) {
+        const ids = jointIndices[vertexId] || [];
+        const weights = jointWeights[vertexId] || [];
+        for (let slot = 0; slot < Math.min(ids.length, weights.length); slot++) {
+          const name = jointNames[ids[slot]] || ('joint-' + ids[slot]);
+          jointInfluence.set(name, (jointInfluence.get(name) || 0) + Number(weights[slot] || 0));
+        }
+      }
+    }
+    const dominantJoints = [...jointInfluence.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([name, weight]) => ({ name, weight: Number(weight.toFixed(3)) }));
     const meshBounds = positions ? {
       min: [0, 1, 2].map(axis => Math.min(...meshPoints.map(p => p[axis]))),
       max: [0, 1, 2].map(axis => Math.max(...meshPoints.map(p => p[axis])))
@@ -187,6 +202,7 @@ function buildUvIslands(uv, indices, positions) {
         max: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]
       },
       meshBoundsLocal: meshBounds,
+      dominantJoints,
       uvArea: area,
       _triangleSet: triangles
     };
@@ -200,11 +216,15 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
     const positionIndex = primitive.attributes?.POSITION;
     const uv = Number.isInteger(uvIndex) ? await readAccessor(uvIndex) : null;
     const positions = Number.isInteger(positionIndex) ? await readAccessor(positionIndex) : null;
+    const jointIndexValues = Number.isInteger(primitive.attributes?.JOINTS_0) ? await readAccessor(primitive.attributes.JOINTS_0) : null;
+    const jointWeightValues = Number.isInteger(primitive.attributes?.WEIGHTS_0) ? await readAccessor(primitive.attributes.WEIGHTS_0) : null;
+    const skinIndex = (document.nodes || []).find(node => node.mesh === meshIndex)?.skin;
+    const jointNames = Number.isInteger(skinIndex) ? (document.skins?.[skinIndex]?.joints || []).map(nodeIndex => document.nodes?.[nodeIndex]?.name || ('node-' + nodeIndex)) : null;
     const indexValues = Number.isInteger(primitive.indices) ? await readAccessor(primitive.indices) : null;
     const vertexCount = uv?.length || 0;
     const indices = indexValues ? indexValues.map(Number) : Array.from({ length: vertexCount }, (_, i) => i);
     const svgName = `uv-material-${primitive.material ?? "none"}.svg`;
-    const islands = uv ? buildUvIslands(uv, indices, positions) : [];
+    const islands = uv ? buildUvIslands(uv, indices, positions, jointIndexValues, jointWeightValues, jointNames) : [];
     if (uv) {
       const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899"];
       const polygons = [];
