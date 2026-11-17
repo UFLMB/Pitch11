@@ -10,10 +10,14 @@ test("production stadium renderer owns the skinned player runtime", () => {
   const renderer = read("./match-player-renderer.mjs");
   assert.ok(runtime.includes("MatchPlayerRenderer"));
   assert.ok(runtime.includes("playerRenderer.update(options.players"));
+  assert.ok(runtime.includes("playerRenderer.setGroundHeight(pitchSurfaceY + 0.025)"));
   assert.ok(runtime.includes("get playerModelsReady(){"));
   assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
   assert.ok(renderer.includes("../assets/players/player.glb"));
   assert.ok(renderer.includes("cloneSkeleton"));
+  assert.ok(renderer.includes("setGroundHeight(value)"));
+  assert.ok(renderer.includes("group.position.set(state.x, this.groundHeight, state.z)"));
+  assert.ok(renderer.includes("node.frustumCulled = false"));
   assert.ok(renderer.includes("isSkinnedMesh"));
   assert.ok(renderer.includes("setMeshoptDecoder(MeshoptDecoder)"));
   assert.ok(renderer.includes("loading-animations"));
