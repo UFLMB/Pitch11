@@ -39,6 +39,7 @@ export class MatchPlayerRenderer {
   constructor(scene, { mobile = false, modelUrl = new URL("../assets/players/player.glb", import.meta.url).href } = {}) {
     this.scene = scene;
     this.mobile = !!mobile;
+    this.groundHeight = 0;
     this.modelUrl = modelUrl;
     this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
@@ -128,7 +129,8 @@ export class MatchPlayerRenderer {
       if (!node.isMesh) return;
       node.castShadow = false;
       node.receiveShadow = false;
-      node.frustumCulled = true;
+      // Skinned GLB bounds can be stale while the skeleton animates; keep all player parts in the draw list.
+      node.frustumCulled = false;
       if (Array.isArray(node.material)) node.material = node.material.map(material => kitMaterial(material, node.name, state, this.materialVariants));
       else if (node.material) node.material = kitMaterial(node.material, node.name, state, this.materialVariants);
     });
@@ -145,6 +147,10 @@ export class MatchPlayerRenderer {
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
+  }
+
+  setGroundHeight(value) {
+    this.groundHeight = Number.isFinite(value) ? value : 0;
   }
 
   update(legacyPlayers, selectedPlayer, alpha = 1, delta = 1 / 60) {
@@ -168,7 +174,7 @@ export class MatchPlayerRenderer {
 
       const { group, mixer, ring } = entry;
       group.visible = state.visible;
-      group.position.set(state.x, 0, state.z);
+      group.position.set(state.x, this.groundHeight, state.z);
       const targetYaw = -state.facing - Math.PI / 2;
       const angleDelta = Math.atan2(Math.sin(targetYaw - group.rotation.y), Math.cos(targetYaw - group.rotation.y));
       group.rotation.y += angleDelta * (1 - Math.exp(-12 * Math.max(dt, 1 / 120)));
