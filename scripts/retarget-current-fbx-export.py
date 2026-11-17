@@ -97,8 +97,9 @@ for frame in range(start, end + 1):
 
 # Remove the source rig and any imported source objects; only the original
 # target GLB scene is exported with the baked action.
-for obj in list(bpy.context.scene.objects):
-    if obj == source or obj in source.children_recursive:
+source_objects = [source] + list(source.children_recursive)
+for obj in source_objects:
+    if obj.name in bpy.data.objects:
         bpy.data.objects.remove(obj, do_unlink=True)
 # Ensure target and its original mesh objects are selected for export.
 bpy.ops.object.select_all(action='DESELECT')
