@@ -134,7 +134,7 @@ function accessorRange(index) {
   return a ? { accessor: index, min: a.min || null, max: a.max || null, count: a.count, type: a.type, componentType: a.componentType } : null;
 }
 
-function buildUvIslands(uv, indices) {
+function buildUvIslands(uv, indices, positions) {
   const triangleCount = Math.floor(indices.length / 3);
   const parent = Array.from({ length: triangleCount }, (_, i) => i);
   const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));
@@ -174,6 +174,11 @@ function buildUvIslands(uv, indices) {
       area += Math.abs((a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])) / 2);
     }
     const points = [...vertexIds].map(id => uv[id]);
+    const meshPoints = positions ? [...vertexIds].map(id => positions[id]) : [];
+    const meshBounds = positions ? {
+      min: [0, 1, 2].map(axis => Math.min(...meshPoints.map(p => p[axis]))),
+      max: [0, 1, 2].map(axis => Math.max(...meshPoints.map(p => p[axis])))
+    } : null;
     return {
       triangles: triangles.length,
       vertices: vertexIds.size,
@@ -181,6 +186,7 @@ function buildUvIslands(uv, indices) {
         min: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))],
         max: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]
       },
+      meshBoundsLocal: meshBounds,
       uvArea: area,
       _triangleSet: triangles
     };
@@ -191,12 +197,14 @@ const primitives = [];
 for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
   for (const [primitiveIndex, primitive] of (mesh.primitives || []).entries()) {
     const uvIndex = primitive.attributes?.TEXCOORD_0;
+    const positionIndex = primitive.attributes?.POSITION;
     const uv = Number.isInteger(uvIndex) ? await readAccessor(uvIndex) : null;
+    const positions = Number.isInteger(positionIndex) ? await readAccessor(positionIndex) : null;
     const indexValues = Number.isInteger(primitive.indices) ? await readAccessor(primitive.indices) : null;
     const vertexCount = uv?.length || 0;
     const indices = indexValues ? indexValues.map(Number) : Array.from({ length: vertexCount }, (_, i) => i);
     const svgName = `uv-material-${primitive.material ?? "none"}.svg`;
-    const islands = uv ? buildUvIslands(uv, indices) : [];
+    const islands = uv ? buildUvIslands(uv, indices, positions) : [];
     if (uv) {
       const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899"];
       const polygons = [];
