@@ -75,6 +75,7 @@ jobs:
           node --check engine/match-player-renderer.mjs
           node --check engine/player-renderer-performance.test.mjs
           node --check scripts/validate-player-assets.mjs
+          node --check scripts/export-player-texture-audit.mjs
           node --check scripts/inspect-player-fbx-package.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
@@ -133,6 +134,14 @@ jobs:
           done
           node scripts/validate-player-assets.mjs
           node scripts/inspect-player-fbx-package.mjs --compare-model
+          node scripts/export-player-texture-audit.mjs /tmp/pitch11-player-texture-audit
+      - name: Upload player texture audit (diagnostic only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitch11-player-texture-audit-${{ github.run_id }}
+          path: /tmp/pitch11-player-texture-audit/
+          if-no-files-found: error
+          retention-days: 7
       - name: Build a mobile-optimized stadium model
         run: |
           npx --yes @gltf-transform/cli@4.5.1 resize assets/football-stadium.glb assets/football-stadium-mobile.glb --width 1024 --height 1024
