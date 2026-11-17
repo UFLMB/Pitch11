@@ -49,14 +49,14 @@ def draw_atlas(texture_path, islands, labels, filename):
                 u,v = float(p[0]),float(p[1])
                 if not (0 <= u <= 1 and 0 <= v <= 1): raise RuntimeError(f"UV outside 0..1: {p}")
                 points.append((u,v))
-                x = round((1 - u) * (1024 * scale - 1))
-                y = round(v * 1024 * scale)
+                x = round(u * (1024 * scale - 1))
+                y = round((1-v) * 1024 * scale)
                 xy.append((x,y))
             draw.line(xy+[xy[0]], fill=(255,238,65,235), width=2, joint="curve")
         xs=[p[0] for p in points]; ys=[p[1] for p in points]
         center_u=(min(xs)+max(xs))*0.5
         center_v=(min(ys)+max(ys))*0.5
-        centers.append(((1 - center_u) * (2048 - 1), center_v * 2048))
+        centers.append((center_u) * (2048 - 1), (1-center_v * 2048))
     placed=[]
     offsets=[(0,0)]
     for radius in (42,60,80,102,128,158,192,230):
