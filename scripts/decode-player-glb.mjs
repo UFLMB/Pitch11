@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { NodeIO } from '@gltf-transform/core';
-import { EXTMeshoptCompression } from '@gltf-transform/extensions';
+import { EXTMeshoptCompression, EXTTextureWebP } from '@gltf-transform/extensions';
 import { MeshoptDecoder } from 'meshoptimizer';
 
 const input = process.env.INPUT_GLB || 'assets/players/player.glb';
@@ -8,7 +8,7 @@ const output = process.env.OUTPUT_GLB || '/tmp/player-uncompressed.glb';
 await MeshoptDecoder.ready;
 
 const io = new NodeIO()
-  .registerExtensions([EXTMeshoptCompression])
+  .registerExtensions([EXTMeshoptCompression, EXTTextureWebP])
   .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
 
 const document = await io.read(input);
