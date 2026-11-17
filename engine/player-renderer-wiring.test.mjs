@@ -29,12 +29,12 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(runtime.includes("renderedPlayers:playerRenderer.count"));
 });
 
-test("legacy player bodies are suppressed in every 2D and 3D render path", () => {
+test("legacy player bodies remain as fallback until all 3D player models are instantiated", () => {
   const index = read("../index.html");
-  assert.ok(index.includes("for(const p of ORD)if(!p.out)drawModelPlayerOverlay2D(p,a);"));
-  assert.ok(index.includes("drawPlayer3(p,a,true);"));
-  assert.equal(index.split("drawPlayer3(p,a);").length - 1, 0);
-  assert.equal(index.split("drawPlayer(p,a);").length - 1, 0);
+  const runtime = read("../stadium-runtime.js");
+  assert.ok(index.includes("if(playerModelsReady)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);"));
+  assert.ok(index.includes("drawPlayer3(p,a,playerModelsReady);"));
+  assert.ok(runtime.includes("get playerModelsReady(){return playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;}"));
   assert.ok(index.includes("drawBallShadow3(a)"));
   assert.ok(index.includes("drawHud()"));
   assert.ok(index.includes("drawFig3(figO(REF,a))"));
