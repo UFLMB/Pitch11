@@ -56,7 +56,7 @@ def draw_atlas(texture_path, islands, labels, filename):
         xs=[p[0] for p in points]; ys=[p[1] for p in points]
         center_u=(min(xs)+max(xs))*0.5
         center_v=(min(ys)+max(ys))*0.5
-        centers.append(((1-center_u)*(2048-1),(1-center_v)*2048))
+        centers.append((center_u*(2048-1),(1-center_v)*2048))
     placed=[]
     offsets=[(0,0)]
     for radius in (42,60,80,102,128,158,192,230):
@@ -76,7 +76,7 @@ def draw_atlas(texture_path, islands, labels, filename):
         draw.ellipse((cx-r,cy-r,cx+r,cy+r),fill=(5,12,19,245),outline=(255,255,255,255),width=3)
         s=str(idx+1); box=draw.textbbox((0,0),s,font=font)
         tw,th=box[2]-box[0],box[3]-box[1]
-        # Keep the digits upright/readable while mirroring the marker position.
+        # Marker circles, leader lines and digits are annotations, not the yellow UV wireframe; keep them in their original positions.
         draw.text((cx-tw/2,cy-th/2-box[1]),s,font=font,fill=(255,255,255,255))
         placed.append((cx,cy))
     image.alpha_composite(overlay)
