@@ -26,7 +26,7 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 if not os.path.isfile(SOURCE): raise RuntimeError("Missing source FBX: " + SOURCE)
 if not os.path.isfile(TARGET): raise RuntimeError("Missing target GLB: " + TARGET)
 
-bpy.ops.import_scene.fbx(filepath=SOURCE)
+bpy.ops.import_scene.fbx(filepath=SOURCE, files=[])
 source_rigs = armatures()
 if not source_rigs: raise RuntimeError("FBX import produced no armature")
 source_actions = list(bpy.data.actions)
