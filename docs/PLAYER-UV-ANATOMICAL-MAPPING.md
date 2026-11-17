@@ -56,13 +56,16 @@ This document is the accepted semantic index for the existing UV islands. Island
 
 ## Coordinate and integrity rules
 
-- Preserve the original UV coordinate orientation. Do not apply horizontal/vertical mirroring or image rotation.
-- UV atlas projection convention: `x = u × texture_width`; `y = (1 − v) × texture_height`.
-- The yellow UV outlines must continue to represent the source UV triangles exactly.
+- **Canonical baseline: GitHub Actions run 18** (commit `b3b3ef31baaf396e6a91601a3ab75d1f4f50b0cf`, “Correct UV mapping center calculation”). The user visually confirmed both generated atlases as correct.
+- Preserve the stored UV coordinate orientation. Do not apply horizontal/vertical mirroring, image rotation, or a second corrective flip.
+- **Exact atlas projection used by the accepted output:** `x = u × (texture_width − 1)`; `y = v × texture_height`. PIL's top-left image origin is used directly with the stored UV values. In particular, do not replace `v` with `1 − v`.
+- Island marker centers must use the same convention: `center_x = center_u × (image_width − 1)`; `center_y = center_v × image_height`. Do not independently flip marker positions.
+- Keep marker digits upright and readable; do not rotate or mirror the text.
+- The yellow UV outlines must continue to represent the source UV triangles exactly. The original base-colour texture remains unchanged.
 - Keep the accepted HEAD/BODY island numbering stable. Do not reorder or merge islands.
 - Texture editing may change texture pixels only. It must not change mesh geometry, UV coordinates, rigging, animation, physics, AI, or gameplay.
 - Treat this document as the semantic label index; use the generated UV analysis JSON for exact triangle coordinates and mesh-local bounds.
 
 ## Completion
 
-The 38 anatomical labels and left/right assignments listed above are the accepted mapping. The original UV orientation has been restored and the generated BODY and HEAD atlases were visually checked. No further mirroring or UV-layout adjustment is part of this step.
+The 38 anatomical labels and left/right assignments listed above are the accepted mapping. The accepted BODY and HEAD atlases were generated in Actions run 18 and visually confirmed by the user. Run 18 is the known-good reference. Its center calculation uses `center_v` directly (not `1 - center_v`). Keep this convention consistent in the generator, generated report, and all future diagnostic outputs. No additional mirroring or UV-layout adjustment is permitted unless the user explicitly requests a new mapping revision.
