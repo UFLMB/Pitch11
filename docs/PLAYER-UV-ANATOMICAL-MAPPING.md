@@ -54,6 +54,19 @@ This document is the accepted semantic index for the existing UV islands. Island
 | 26 | Bal cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál |
 | 27 | Jobb cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál |
 
+## User-confirmed garment masks
+
+The user has visually confirmed the garment selections as exact. Preserve these masks without changing UV coordinates or island numbering. Island numbers below are the visible one-based IDs; implementation arrays use zero-based indices.
+
+| Garment | BODY island IDs | Notes |
+|---|---|---|
+| Jersey | 1, 8, 9, 16, 17 | Islands 16 (left) and 17 (right) are the inner jersey panels and must remain included |
+| Shorts | 6, 7, 10, 11, 14, 15 | Islands 14 (left) and 15 (right) are the inner shorts panels and must remain included |
+| Socks | 4, 5 | Left and right lower-leg fabric panels |
+| Boots | 12, 13, 18–27 | Footwear panels, soles, studs and tongue details |
+
+These four independent selections are user-approved. Do not expand, reduce, reorder, or reinterpret them without explicit user direction.
+
 ## Coordinate and integrity rules
 
 - **Canonical baseline: GitHub Actions run 18** (commit `b3b3ef31baaf396e6a91601a3ab75d1f4f50b0cf`, “Correct UV mapping center calculation”). The user visually confirmed both generated atlases as correct.
