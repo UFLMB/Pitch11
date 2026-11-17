@@ -17,7 +17,7 @@ def action_targets(action):
     if not action:
         return []
     for fc in action.fcurves:
-        m = re.search(r'pose\\.bones\\["([^"]+)"\\]', fc.data_path)
+        m = re.search(r'pose\.bones\["([^"]+)"\]', fc.data_path)
         if m:
             found.add(m.group(1))
     return sorted(found)
@@ -83,5 +83,5 @@ report = {
   "unmapped_tracks": unmapped,
   "retarget_ready": bool(source and target and mapped)
 }
-Path(out_path).write_text(json.dumps(report, indent=2) + "\\n")
+Path(out_path).write_text(json.dumps(report, indent=2) + "\n")
 print(json.dumps(report, indent=2))
