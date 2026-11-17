@@ -34,6 +34,8 @@ test("legacy 2D player bodies are disabled while 2D overlays and match HUD remai
   const runtime = read("../stadium-runtime.js");
   assert.ok(index.includes("for(const p of ORD)if(!p.out)drawModelPlayerOverlay2D(p,a);"));
   assert.ok(index.includes("drawPlayer3(p,a,true);"));
+  assert.ok(index.includes("function drawPlayer(p,a){return;}"));
+  assert.ok(index.includes("function drawPlayerOld(p,a){return;}"));
   assert.ok(!index.includes("if(playerModelsReady)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);"));
   assert.ok(!index.includes("drawPlayer3(p,a,playerModelsReady);"));
   assert.ok(runtime.includes("get playerModelsReady(){return playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;}"));
