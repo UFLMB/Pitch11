@@ -154,7 +154,7 @@ function findDesignColours(prompt){
  const unique=[];for(const item of found)if(!unique.some(x=>x.hex.toLowerCase()===item.hex.toLowerCase()))unique.push(item);
  return unique;
 }
-function findDesignGarment(prompt){const p=prompt.toLowerCase();const rules=[['jersey',/\b(jersey|shirt|top|referee|goalkeeper|kit top|mez|polo)\b/],['shorts',/\b(shorts|short|nadrag)\b/],['socks',/\b(socks|sock|stockings|zokni)\b/],['boots',/\b(boots|boot|cleats|football boots|cipo|cipő)\b/]];for(const [name,re] of rules)if(re.test(p))return name;return null}
+function findDesignGarment(prompt){const p=prompt.toLowerCase();const rules=[['jersey',/\b(jersey|shirt|top|referee|referees|official|goalkeeper|keeper|kit top|polo)\b/],['shorts',/\b(shorts|short)\b/],['socks',/\b(socks|sock|stockings)\b/],['boots',/\b(boots|boot|cleats|football boots)\b/]];for(const [name,re] of rules)if(re.test(p))return name;return null}
 function generateKitDesign(){
  const prompt=$('#designPrompt').value.trim();
  if(!prompt){status.textContent='ADD A DESIGN DESCRIPTION FIRST';return}
@@ -162,8 +162,8 @@ function generateKitDesign(){
  const stripeWords=/stripe|striped|csík|csíkos/.test(p),horizontal=/horizontal|vízszintes|hoop/.test(p),diagonal=/diagonal|átlós|ferde/.test(p),pinstripe=/pinstripe|fine stripe|thin stripe|vékony csík/.test(p),wide=/wide stripe|bold stripe|vastag csík/.test(p),sidePanels=/side panel|side panels|oldalpanel|oldalsó panel/.test(p),trim=/trim|szegély|gallér|collar|cuff|mandzsetta/.test(p);
  if(!base&&!stripeWords&&!sidePanels&&!trim){status.textContent='DESIGN NOT RECOGNISED · ADD A COLOUR OR PATTERN';return}
  const target=$('#designTarget').value,wholeTarget=target==='whole',targetMask=wholeTarget?state.masks[state.activeGarment]:state.islandMasks[state.activeGarment]?.[target];if(!targetMask){status.textContent='DESIGN TARGET MASK UNAVAILABLE';return}
- pushUndo();clearDetailsInMask(targetMask.mask);
- if(base){if(wholeTarget){clearPanelOverrides(state.activeGarment);state.colours[state.activeGarment]=base}else state.panelColours[state.activeGarment+':'+target]=base;state.selected=base;$('#customColor').value=base;$('#colourLabel').textContent=base.toUpperCase();renderTexture()}
+ pushUndo();clearDetailsInMask(targetMask.mask);if(wholeTarget)clearPanelOverrides(state.activeGarment);else delete state.panelColours[state.activeGarment+':'+target];
+ if(base){if(wholeTarget){state.colours[state.activeGarment]=base}else state.panelColours[state.activeGarment+':'+target]=base;state.selected=base;$('#customColor').value=base;$('#colourLabel').textContent=base.toUpperCase();renderTexture()}
  if(stripeWords||sidePanels||trim){
   const mask=targetMask,pattern=document.createElement('canvas');pattern.width=pattern.height=1024;
   const ctx=pattern.getContext('2d');ctx.fillStyle=accent;
