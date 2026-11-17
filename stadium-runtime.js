@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three/build/three.module.js';
 import { GLTFLoader } from './vendor/three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from './vendor/three/examples/jsm/libs/meshopt_decoder.module.js';
 import { createGoalNetPositions, DEFAULT_GOAL_LAYOUT } from './engine/goal-geometry.mjs';
 import { createProductionSecurityPositions } from './engine/stadium-atmosphere.mjs';
 import { MatchPlayerRenderer } from './engine/match-player-renderer.mjs';
@@ -551,7 +552,7 @@ import { MatchPlayerRenderer } from './engine/match-player-renderer.mjs';
   if(changed)console.info('PITCH 11 realistic turf materials:',changed);
  }
 
- const loader=new GLTFLoader();
+ const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
  function setStadiumLoadState(state,error=''){
   stadiumLoadState=state;stadiumLoadError=error;boot.state=state;boot.progress=stadiumLoadProgress;boot.error=error;
