@@ -1693,7 +1693,7 @@ function render2D(a){
   for(let i=1;i<22;i++){const v=ORD[i];let j=i-1;while(j>=0&&ORD[j].y>v.y){ORD[j+1]=ORD[j];j--;}ORD[j+1]=v;}   // depth sort (insertion, nearly sorted)
   drawMarker(a);
   const playerModelsReady=stadiumTop&&window.P11Stadium.playerModelsReady;
-  for(const p of ORD)if(!p.out){if(playerModelsReady)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);}
+  for(const p of ORD)if(!p.out){if(stadiumTop)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);}
   for(const p of P)if(p.down){const x=p.x,y=p.y;ctx.fillStyle='#fff';ctx.fillRect(x-5,y-24,10,10);ctx.fillStyle='#e22';ctx.fillRect(x-1.5,y-23,3,8);ctx.fillRect(x-4,y-20.5,8,3);}   // medic cross
   drawBall(a);
   drawParts();
@@ -2350,7 +2350,7 @@ function render3D(a){
     if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
     const playerModelsReady=window.P11Stadium.playerModelsReady;
     sortOrd();drawBallShadow3(a);let stadiumBallDrawn=false;
-    for(const p of ORD){if(p.out)continue;if(!stadiumBallDrawn&&ballBehind(p)){drawBall3(a);stadiumBallDrawn=true;}drawPlayer3(p,a,playerModelsReady);}
+    for(const p of ORD){if(p.out)continue;if(!stadiumBallDrawn&&ballBehind(p)){drawBall3(a);stadiumBallDrawn=true;}drawPlayer3(p,a,true);}
     if(!stadiumBallDrawn)drawBall3(a);
     for(const q of parts){pj(q.x,q.y,4+(1.6-q.l)*8);const z=Math.max(1.5,V.s*1.8);ctx.fillStyle=q.c;ctx.fillRect(V.sx-z/2,V.sy-z/2,z,z);}
     drawRet3();drawHud();ctx.restore();return;
