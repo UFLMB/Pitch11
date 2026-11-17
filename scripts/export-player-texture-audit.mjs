@@ -134,6 +134,58 @@ function accessorRange(index) {
   return a ? { accessor: index, min: a.min || null, max: a.max || null, count: a.count, type: a.type, componentType: a.componentType } : null;
 }
 
+function buildUvIslands(uv, indices) {
+  const triangleCount = Math.floor(indices.length / 3);
+  const parent = Array.from({ length: triangleCount }, (_, i) => i);
+  const find = (x) => parent[x] === x ? x : (parent[x] = find(parent[x]));
+  const join = (a, b) => {
+    const ra = find(a), rb = find(b);
+    if (ra !== rb) parent[rb] = ra;
+  };
+  const pointKey = (index) => {
+    const p = uv[index];
+    if (!p) throw new Error(`UV index ${index} outside accessor`);
+    return `${Math.round(p[0] * 100000)},${Math.round(p[1] * 100000)}`;
+  };
+  const edgeOwners = new Map();
+  for (let t = 0; t < triangleCount; t++) {
+    const tri = [indices[t * 3], indices[t * 3 + 1], indices[t * 3 + 2]];
+    for (let e = 0; e < 3; e++) {
+      const a = pointKey(tri[e]), b = pointKey(tri[(e + 1) % 3]);
+      const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+      const previous = edgeOwners.get(key);
+      if (previous !== undefined) join(t, previous);
+      else edgeOwners.set(key, t);
+    }
+  }
+  const groups = new Map();
+  for (let t = 0; t < triangleCount; t++) {
+    const root = find(t);
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(t);
+  }
+  return [...groups.values()].map((triangles) => {
+    const vertexIds = new Set();
+    let area = 0;
+    for (const t of triangles) {
+      const ids = [indices[t * 3], indices[t * 3 + 1], indices[t * 3 + 2]];
+      ids.forEach(id => vertexIds.add(id));
+      const [a, b, c] = ids.map(id => uv[id]);
+      area += Math.abs((a[0] * (b[1] - c[1]) + b[0] * (c[1] - a[1]) + c[0] * (a[1] - b[1])) / 2);
+    }
+    const points = [...vertexIds].map(id => uv[id]);
+    return {
+      triangles: triangles.length,
+      vertices: vertexIds.size,
+      uvBounds: {
+        min: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))],
+        max: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]
+      },
+      uvArea: area
+    };
+  }).sort((a, b) => b.uvArea - a.uvArea);
+}
+
 const primitives = [];
 for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
   for (const [primitiveIndex, primitive] of (mesh.primitives || []).entries()) {
@@ -143,18 +195,27 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
     const vertexCount = uv?.length || 0;
     const indices = indexValues ? indexValues.map(Number) : Array.from({ length: vertexCount }, (_, i) => i);
     const svgName = `uv-material-${primitive.material ?? "none"}.svg`;
+    const islands = uv ? buildUvIslands(uv, indices) : [];
     if (uv) {
-      const lines = [];
-      for (let i = 0; i + 2 < indices.length; i += 3) {
-        const pts = [indices[i], indices[i + 1], indices[i + 2]].map(n => {
+      const palette = ["#ef4444", "#0ea5e9", "#22c55e", "#eab308", "#a855f7", "#f97316", "#14b8a6", "#ec4899"];
+      const polygons = [];
+      for (let t = 0; t * 3 + 2 < indices.length; t++) {
+        const islandIndex = islands.findIndex(island => island._triangleSet?.includes(t));
+        const pts = [indices[t * 3], indices[t * 3 + 1], indices[t * 3 + 2]].map(n => {
           const p = uv[n];
           if (!p) throw new Error(`UV index ${n} outside accessor ${uvIndex}`);
           return `${(p[0] * 1024).toFixed(2)},${((1 - p[1]) * 1024).toFixed(2)}`;
         }).join(" ");
-        lines.push(`<polygon points="${pts}" />`);
+        polygons.push(`<polygon points="${pts}" fill="none" stroke="${palette[islandIndex % palette.length]}" stroke-width="0.8" stroke-opacity="0.78" />`);
       }
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#fff"/><g fill="none" stroke="#111" stroke-width="0.65" stroke-opacity="0.62">${lines.join("")}</g></svg>`;
+      const labels = islands.map((island, i) => {
+        const x = ((island.uvBounds.min[0] + island.uvBounds.max[0]) / 2) * 1024;
+        const y = (1 - (island.uvBounds.min[1] + island.uvBounds.max[1]) / 2) * 1024;
+        return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Arial,sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#111" stroke="#fff" stroke-width="3" paint-order="stroke">${i + 1}</text>`;
+      }).join("");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#fff"/><g>${polygons.join("")}</g><g>${labels}</g></svg>`;
       fs.writeFileSync(path.join(output, svgName), svg);
+      fs.writeFileSync(path.join(output, `uv-material-${primitive.material ?? "none"}-islands.json`), JSON.stringify(islands, null, 2));
     }
     primitives.push({
       meshIndex, mesh: mesh.name || `mesh-${meshIndex}`, primitiveIndex,
@@ -162,7 +223,7 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
       material: materials[primitive.material]?.name || null,
       position: accessorRange(primitive.attributes?.POSITION),
       uv0: accessorRange(uvIndex), uvSvg: uv ? svgName : null,
-      uvVertexCount: uv?.length || 0, triangleCount: Math.floor(indices.length / 3),
+      uvVertexCount: uv?.length || 0, triangleCount: Math.floor(indices.length / 3),\n      uvIslandCount: islands.length, uvIslands: islands.map(({ _triangleSet, ...island }) => island),
       uvBounds: uv ? {
         min: [Math.min(...uv.map(p => p[0])), Math.min(...uv.map(p => p[1]))],
         max: [Math.max(...uv.map(p => p[0])), Math.max(...uv.map(p => p[1]))]
@@ -184,6 +245,6 @@ fs.writeFileSync(path.join(output, "texture-audit.json"), JSON.stringify(report,
 fs.writeFileSync(path.join(output, "README.txt"),
   "PITCH 11 — PLAYER TEXTURE / UV AUDIT\n\n" +
   "Extracted embedded images and exported per-material UV triangle layouts from the existing Male Athlete 02 GLB.\n" +
-  "Match uv-material-0.svg with the m301_body base-color image and uv-material-1.svg with the m301_head base-color image.\n" +
+  "Match each uv-material-N.svg with its material base-color image. SVGs now color-code connected UV islands and number them by descending UV area; matching JSON files list each island bounding box, triangle count, vertex count, and UV area.\n" +
   "No game runtime files or player assets are modified by this diagnostic export.\n");
 console.log(JSON.stringify(report, null, 2));
