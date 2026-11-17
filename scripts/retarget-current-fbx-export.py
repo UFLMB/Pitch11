@@ -133,7 +133,7 @@ report = {
     "source_fbx": fbx_path,
     "target_glb": glb_path,
     "output_glb": out_path,
-    "source_bone_count": len(source.data.bones) if source else 0,
+    "source_bone_count": source_bone_count,
     "mapped_bone_count": len(mapping),
     "mapped_bones": [{"source": s, "target": t} for s, t in mapping.items()],
     "source_frame_range": [start, end],
