@@ -29,6 +29,17 @@ This is a **first integration/prototype asset**, not the final UFL/PITCH 11 play
 - Reuse material variants and selection-ring geometry across players; keep player shadows disabled.
 - Cap animation mixer updates at 20 Hz on mobile and 30 Hz on desktop while keeping player transforms responsive.
 
+## Canonical UV mapping reference
+
+The accepted diagnostic UV mapping is fixed to the visually verified GitHub Actions run 18 baseline (re-generated successfully in run 19):
+- Project UVs directly into image space: `x = u × (image_width − 1)`, `y = v × image_height`.
+- Do not mirror horizontally or vertically and do not rotate the source texture.
+- Island outlines and numbered marker centers use the same projection; marker labels remain upright.
+- Keep the original embedded player textures and model UV attributes unchanged.
+- The diagnostic atlas is a reference/inspection output, not a replacement player texture and not a gameplay asset.
+
+See [the anatomical mapping specification](../../docs/PLAYER-UV-ANATOMICAL-MAPPING.md) and [the UV Inspector](../../uv-inspector.html).
+
 ## Integration rules
 
 - Do not replace gameplay player objects with visual models.
