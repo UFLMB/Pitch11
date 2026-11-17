@@ -181,7 +181,8 @@ function buildUvIslands(uv, indices) {
         min: [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))],
         max: [Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))]
       },
-      uvArea: area
+      uvArea: area,
+      _triangleSet: triangles
     };
   }).sort((a, b) => b.uvArea - a.uvArea);
 }
