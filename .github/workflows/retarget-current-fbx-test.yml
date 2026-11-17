@@ -6,6 +6,7 @@ on:
     branches: [test/current-fbx-retarget]
     paths:
       - "scripts/retarget-current-fbx-test.py"
+      - "scripts/decode-player-glb.mjs"
       - ".github/workflows/retarget-current-fbx-test.yml"
 
 permissions:
@@ -13,19 +14,36 @@ permissions:
 
 jobs:
   compatibility:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install GLB decode dependencies
+        run: npm install --no-save @gltf-transform/core @gltf-transform/extensions meshoptimizer
+      - name: Decode player GLB meshopt data to a temporary file
+        env:
+          INPUT_GLB: assets/players/player.glb
+          OUTPUT_GLB: /tmp/player-uncompressed.glb
+        run: node scripts/decode-player-glb.mjs
+      - name: Install Blender and NumPy
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender
-      - name: Inspect jog-forward FBX against the player GLB
+          sudo apt-get install -y blender python3-numpy
+          export PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH:-}"
+          blender --background --python-expr "import sys, numpy; print('BLENDER_PYTHON', sys.version); print('BLENDER_NUMPY_OK', numpy.__version__)"
+      - name: Import both rigs and inspect mapping
         env:
           FBX_PATH: input/player-package/jog forward.fbx
-          GLB_PATH: assets/players/player.glb
+          GLB_PATH: /tmp/player-uncompressed.glb
           REPORT_PATH: retarget-test-report.json
+          PYTHONPATH: /usr/lib/python3/dist-packages
         run: blender --background --python scripts/retarget-current-fbx-test.py
+      - name: Verify both rigs and usable bone mapping
+        run: |
+          test -s retarget-test-report.json
+          python3 -c "import json; d=json.load(open('retarget-test-report.json')); assert d['source_armature_found'] and d['target_armature_found']; assert d['source_bone_count'] >= 50 and d['target_bone_count'] >= 70; assert d['mapped_track_count'] >= 20; print('Both rigs imported:', d['source_bone_count'], 'source bones,', d['target_bone_count'], 'target bones,', d['mapped_track_count'], 'mapped tracks')"
       - name: Upload compatibility report
         if: always() && hashFiles('retarget-test-report.json') != ''
         uses: actions/upload-artifact@v4
