@@ -27,6 +27,10 @@ jobs:
           SOURCE_FBX: input/player-package/jog forward.fbx
           TARGET_GLB: assets/players/player.glb
         run: blender --background --python scripts/retarget-preflight.py
+      - name: Verify preflight report
+        run: |
+          test -s retarget-preflight.json
+          python3 -c "import json; d=json.load(open('retarget-preflight.json')); assert d['status'] == 'PREFLIGHT_ONLY_RETARGET_NOT_EXPORTED'; print('Report validated:', d['source_action'], d['direct_name_mapping_count'], 'mapped bones')"
       - name: Upload preflight report
         if: always() && hashFiles('retarget-preflight.json') != ''
         uses: actions/upload-artifact@v4
