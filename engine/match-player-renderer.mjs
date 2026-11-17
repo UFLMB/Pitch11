@@ -54,6 +54,8 @@ export class MatchPlayerRenderer {
     this.ringGeometry = new THREE.TorusGeometry(0.62, 0.035, 6, 32);
     this.ringMaterial = new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false });
     this.modelTriangleCount = 0;
+    this.inputPlayerCount = 0;
+    this.visiblePlayerCount = 0;
   }
 
   async load() {
@@ -136,8 +138,10 @@ export class MatchPlayerRenderer {
   }
 
   update(legacyPlayers, selectedPlayer, alpha = 1, delta = 1 / 60) {
-    if (!this.template || this.status !== "ready") return false;
     const states = mapLegacyPlayers(legacyPlayers, alpha, selectedPlayer);
+    this.inputPlayerCount = states.length;
+    this.visiblePlayerCount = states.reduce((count, state) => count + (state.visible ? 1 : 0), 0);
+    if (!this.template || this.status !== "ready") return false;
     const dt = Math.max(0, Math.min(0.05, Number(delta) || 0));
     this.animationAccumulator += dt;
     const animationStep = 1 / this.animationHz;
@@ -186,6 +190,8 @@ export class MatchPlayerRenderer {
 
   get ready() { return this.status === "ready" && !!this.template; }
   get count() { return this.players.size; }
+  get expectedCount() { return this.inputPlayerCount; }
+  get visibleCount() { return this.visiblePlayerCount; }
   get animatedCount() {
     let count = 0;
     for (const entry of this.players.values()) if (entry.activeAction) count++;
