@@ -261,6 +261,26 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
         }
         const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g>${jerseyPolygons.join("")}</g></svg>`;
         fs.writeFileSync(path.join(output, "jersey-mask-preview.svg"), preview);
+        const candidateMasks = [
+          { file: "lower-leg-calf-candidate-preview.svg", islands: [3, 4], color: "#38bdf8" },
+          { file: "thigh-knee-candidate-preview.svg", islands: [5, 6, 9, 10], color: "#f59e0b" }
+        ];
+        for (const candidate of candidateMasks) {
+          const candidatePolygons = [];
+          for (const islandIndex of candidate.islands) {
+            const island = islands[islandIndex];
+            if (!island) throw new Error("Missing candidate UV island " + (islandIndex + 1));
+            for (const triangleIndex of island._triangleSet) {
+              const pts = [indices[triangleIndex * 3], indices[triangleIndex * 3 + 1], indices[triangleIndex * 3 + 2]].map(n => {
+                const p = uv[n];
+                return (p[0] * 1023).toFixed(2) + "," + (p[1] * 1024).toFixed(2);
+              }).join(" ");
+              candidatePolygons.push(`<polygon points="${pts}" fill="${candidate.color}" fill-opacity="0.48" stroke="#111827" stroke-width="0.35" />`);
+            }
+          }
+          const candidateSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g>${candidatePolygons.join("")}</g></svg>`;
+          fs.writeFileSync(path.join(output, candidate.file), candidateSvg);
+        }
       }
     }
     primitives.push({
@@ -338,5 +358,5 @@ fs.writeFileSync(path.join(output, "README.txt"),
   "PITCH 11 — PLAYER TEXTURE / UV AUDIT\n\n" +
   "Extracted embedded images and exported per-material UV triangle layouts from the existing Male Athlete 02 GLB.\n" +
   "Match each uv-material-N.svg with its material base-color image. SVGs now color-code connected UV islands and number them by descending UV area; matching JSON files list each island bounding box, triangle count, vertex count, and UV area.\n" +
-  "No game runtime files or player assets are modified by this diagnostic export.\n");
+  "No game runtime files or player assets are modified by this diagnostic export.\n" +\n  "Skeleton-weight analysis: body islands 4-5 are dominated by left/right calf joints; 6-7 by left/right thigh joints; 10-11 by thigh/calf transition weights; 12-13 and 18-27 by foot/toe joints.\n" +\n  "lower-leg-calf-candidate-preview.svg and thigh-knee-candidate-preview.svg are diagnostic-only candidate overlays, not approved garment masks and not used by Kit Studio.\n");
 console.log(JSON.stringify(report, null, 2));
