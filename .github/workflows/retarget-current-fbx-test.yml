@@ -61,4 +61,5 @@ jobs:
           path: |
             retarget-test-report.json
             retarget-export-report.json
+            /tmp/player-retargeted.glb
           retention-days: 14
