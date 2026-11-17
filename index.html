@@ -1555,99 +1555,11 @@ function animInfo(p){
   if(p.skill>0){wob=Math.sin(p.skill*30);rot+=wob*0.18;bob+=Math.abs(wob)*1.5;}
   return{dive:false,down:false,u,ak,rot,bob,lift,scale,wob,L:{hip:Lh,knee:Lk},R:{hip:Rh,knee:Rk},arms:{L:{sh:lsh,el},R:{sh:rsh,el}}};
 }
-function drawPlayer(p,a){
-  const x=p.px+(p.x-p.px)*a,y=p.py+(p.y-p.py)*a,k=KIT[p.team],dv=p.dive>0,gk=p.gk;
-  if(p.rf===undefined)p.rf=p.face;const dr=angd(p.face,p.rf);p.rf+=dr*0.3;
-  const Q=animInfo(p),sk=SKIN[p.skin],sp=Math.hypot(p.vx,p.vy),gait=clamp(sp/50,0,1);
-  let du=0;if(dv){if(!(p.dvMax>=p.dive))p.dvMax=p.dive;du=clamp(1-p.dive/p.dvMax,0,1);}else p.dvMax=0;
-  const ds=Math.sin(clamp(du*1.7,0,1)*Math.PI/2),dl=dv?Math.sin(du*Math.PI)*5:0,diveArc=dv?Math.sin(du*Math.PI)*9:0;
-  const sl=p.sd?clamp(p.sd.t/(TUNING.df.sl.dur||.6),0,1):0,sdes=Math.sin(clamp(sl*3,0,1)*Math.PI/2)*(1-clamp((sl-.78)*4.5,0,1));
-  const lean=Math.sin(Q.rot)*6,side=clamp(dr*6,-2.2,2.2)*gait,lf=(Q.lift||0)+dl;
-  const shirt=gk?k.gk:k.shirt,shorts=gk?'#222':k.shorts,hair=p.role%3?'#1b1209':'#6b4a22';
-  ctx.save();ctx.translate(x,y);
-  ctx.fillStyle='rgba(0,0,0,'+(.3/(1+lf*.06))+')';ctx.beginPath();ctx.ellipse(1.5+lf*.15,2.5,(dv?12:8.6)*(1+lf*.02)*PLAYER_SCALE*1.15,6.8*PLAYER_SCALE*1.15,0,0,TAU);ctx.fill();
-  {const ic=indCol(p);if(ic){ctx.fillStyle=ic==='#00e5ff'?'rgba(0,229,255,.22)':'rgba(255,230,0,.16)';ctx.strokeStyle=ic;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,7,0,TAU);ctx.fill();ctx.stroke();}}
-  ctx.translate(0,-lf*.8-diveArc-(dv?2.5*ds:0));
-  ctx.rotate(dv?p.diveAng:p.down?1.3:p.rf);
-  if(dv)ctx.scale(1+1.05*ds,1-.18*ds);else if(p.sd)ctx.scale(1+.3*sdes,1-.12*sdes);
-  ctx.scale(PLAYER_SCALE,PLAYER_SCALE);
-  if(Q.wob)ctx.rotate(Q.wob*0.35);
-  const bs=Q.scale*(1+Q.bob*.022+lf*.025);ctx.scale(bs,bs);
-  let lx=Math.sin(Q.L.hip)*8,lly=-Math.abs(Q.L.knee)*4.5,rx=Math.sin(Q.R.hip)*8,ry=-Math.abs(Q.R.knee)*4.5;
-  if(Q.ak===1||Q.ak===2){rx=Q.u<.45?-5+14*(Q.u/.45):9-4*((Q.u-.45)/.55);ry=0;}
-  else if(Q.ak===3){rx=p.sd?7+7*sdes:10;lx=p.sd?-5-3*sdes:-3;lly=ry=0;}
-  else if(dv){lx=-7-5*ds;rx=7+5*ds;lly=ry=0;}
-  else if(Q.down){lx=rx=-3;lly=ry=0;}
-  const fl=[lx,lly-3.2,Math.abs(Q.L.knee)],fr=[rx,ry+3.2,Math.abs(Q.R.knee)];
-  for(const [fx,fy,kn,sd] of [[fl[0],fl[1],fl[2],-1],[fr[0],fr[1],fr[2],1]]){      // leg: sock line + boot
-    ctx.strokeStyle=gk?'#2a2a2a':shirt;ctx.lineWidth=2.6;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-.5,sd*2.4);ctx.lineTo(fx-1.6,fy);ctx.stroke();
-    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(fx-3.4,fy-sd*.2);ctx.lineTo(fx-1.8,fy);ctx.stroke();
-    const bz=1+kn*.12;ctx.fillStyle='#101114';ctx.beginPath();ctx.ellipse(fx,fy,3.2*bz,2*bz,0,0,TAU);ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.32)';ctx.lineWidth=.55;ctx.beginPath();ctx.moveTo(fx-2.2,fy+.7);ctx.lineTo(fx+2.1,fy+.7);ctx.stroke();
-    ctx.fillStyle='rgba(255,255,255,.65)';ctx.fillRect(fx-.4,fy-1.4*bz,1.1,2.8*bz);
-  }
-  ctx.lineCap='butt';
-  ctx.fillStyle=shorts;ctx.beginPath();ctx.ellipse(-1+lean*.4,0,4.4,6.3,0,0,TAU);ctx.fill();
-  ctx.save();ctx.rotate((Q.L.hip-Q.R.hip)*.06);                                     // shoulders counter-rotate against the stride
-  let hl=.8+Math.sin(Q.arms.L.sh)*7,hr=.8-Math.sin(Q.arms.R.sh)*7,hy=7.6,hs=gk?2.7:2.1;
-  if(Q.ak===1||Q.ak===2){hl=4;hr=-3;hy=8.6;}else if(Q.ak===3||Q.lift>0){hl=hr=Q.ak===3?(p.sd?-3:4):-2;hy=9.4;}else if(Q.ak===5){hl=hr=-1;hy=11.5;hs=2.9;}
-  else if(dv){hl=5+12*ds;hr=-5-12*ds;hy=7.2-2.8*ds;hs=gk?3.5:2.1;}else if(p.hold===1){hl=hr=6;hy=3.6;}else if(p.hold===2){hl=hr=0;hy=4.8;}else if(Q.down){hl=hr=-2;hy=7;}
-  const sx=.5+lean;
-  ctx.strokeStyle=gk?k.gk:shirt;ctx.lineWidth=2.6;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(sx,-6.2);ctx.lineTo(hl,-hy);ctx.moveTo(sx,6.2);ctx.lineTo(hr,hy);ctx.stroke();
-  if(p.captain){const ax=sx+(hr-sx)*.32,ay=6.2+(hy-6.2)*.32;ctx.strokeStyle='#f4f4f4';ctx.lineWidth=3.8;ctx.beginPath();ctx.moveTo(ax-.2,ay-1.1);ctx.lineTo(ax+.2,ay+1.1);ctx.stroke();ctx.strokeStyle='#d52f3b';ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(ax-.2,ay-1.1);ctx.lineTo(ax+.2,ay+1.1);ctx.stroke();}
-  ctx.lineCap='butt';
-  const jersey=ctx.createLinearGradient(sx-4.8,0,sx+4.8,0);jersey.addColorStop(0,'rgba(0,0,0,.28)');jersey.addColorStop(.38,shirt);jersey.addColorStop(.72,'rgba(255,255,255,.13)');jersey.addColorStop(1,'rgba(0,0,0,.18)');
-  ctx.fillStyle=jersey;ctx.beginPath();ctx.ellipse(sx,side*.5,4.8,7.6,0,0,TAU);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.22)';ctx.lineWidth=.65;ctx.beginPath();ctx.moveTo(sx-.7,-5.4);ctx.lineTo(sx-.7,5.2);ctx.stroke();
-  ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(sx-1.6,side*.5,2.6,7,0,0,TAU);ctx.fill();            // back-side shade
-  ctx.fillStyle='rgba(255,255,255,.16)';ctx.beginPath();ctx.ellipse(sx+1.4,-1.6+side*.5,2.4,3.4,0,0,TAU);ctx.fill();  // light on the shoulders
-  ctx.fillStyle=gk?'#fff':sk;ctx.strokeStyle=gk?'rgba(0,0,0,.55)':'transparent';ctx.lineWidth=.6;
-  ctx.beginPath();ctx.arc(hl,-hy,hs,0,TAU);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(hr,hy,hs,0,TAU);ctx.fill();ctx.stroke();
-  ctx.restore();
-  ctx.fillStyle=sk;ctx.beginPath();ctx.arc(1.2+lean,-3.4,.9,0,TAU);ctx.arc(1.2+lean,3.4,.9,0,TAU);ctx.fill();     // ears
-  ctx.fillStyle=hair;ctx.beginPath();ctx.arc(1.2+lean,side*.4,3.7,0,TAU);ctx.fill();
-  ctx.fillStyle=sk;ctx.beginPath();ctx.arc(2.9+lean,side*.4,2,0,TAU);ctx.fill();
-  if(p===S.airTarget||(S.passRingT&&p===S.passRingT)){
-    const isP=S.passRingT&&p===S.passRingT;
-    ctx.strokeStyle=isP?'#ffcf3f':'rgba(255,255,255,.9)';ctx.lineWidth=1.4;
-    ctx.beginPath();ctx.arc(0,0,16,0,TAU);ctx.stroke();
-    if(isP){ctx.setLineDash([4,3]);ctx.lineDashOffset=-S.t*24;ctx.strokeStyle='#ffcf3f';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,0,19,0,TAU);ctx.stroke();ctx.setLineDash([]);}
-  }
-  ctx.restore();
-}
-function drawPlayerOld(p,a){
-  const x=p.px+(p.x-p.px)*a,y=p.py+(p.y-p.py)*a,k=KIT[p.team],dv=p.dive>0;
-  if(p.rf===undefined)p.rf=p.face;p.rf+=angd(p.face,p.rf)*0.35;                  // smooth turning: draw angle chases the real facing
-  const Q=animInfo(p),sk=SKIN[p.skin],leanPx=Math.sin(Q.rot)*6;
-  ctx.save();ctx.translate(x,y);
-  ctx.fillStyle='rgba(0,0,0,.28)';ctx.beginPath();ctx.ellipse(1.5,2.5,dv?11:8,6.5,0,0,TAU);ctx.fill();
-  ctx.rotate(dv?p.diveAng:p.down?1.3:p.rf);
-  if(dv)ctx.scale(1.45,1);
-  ctx.scale(PLAYER_SCALE,PLAYER_SCALE);
-  if(Q.wob)ctx.rotate(Q.wob*0.35);
-  ctx.translate(0,-Q.bob);
-  if(Q.lift)ctx.translate(0,-Q.lift);
-  ctx.scale(Q.scale,Q.scale);
-  let lx=Math.sin(Q.L.hip)*8,lly=-Math.abs(Q.L.knee)*4.5,rx=Math.sin(Q.R.hip)*8,ry=-Math.abs(Q.R.knee)*4.5;
-  if(Q.ak===1||Q.ak===2){rx=Q.u<.45?-5+14*(Q.u/.45):9-4*((Q.u-.45)/.55);ry=0;}
-  else if(Q.ak===3){rx=10;lx=-3;lly=ry=0;}
-  ctx.fillStyle='#111';ctx.beginPath();ctx.moveTo(lx+3,lly-3.2);ctx.ellipse(lx,lly-3.2,3,2,0,0,TAU);ctx.moveTo(rx+3,ry+3.2);ctx.ellipse(rx,ry+3.2,3,2,0,0,TAU);ctx.fill();
-  ctx.fillStyle=p.gk?'#222':k.shorts;ctx.beginPath();ctx.ellipse(-1+leanPx*0.4,0,4.2,6,0,0,TAU);ctx.fill();
-  ctx.fillStyle=p.gk?k.gk:k.shirt;ctx.beginPath();ctx.ellipse(0.5+leanPx,0,4.6,7.4,0,0,TAU);ctx.fill();
-  let hl=.8+Math.sin(Q.arms.L.sh)*7,hr=.8-Math.sin(Q.arms.R.sh)*7,hy=7.6,hs=2.1;
-  if(Q.ak===1||Q.ak===2){hl=4;hr=-3;hy=8.6;}else if(Q.ak===3||Q.lift>0){hl=hr=Q.ak===3?4:-2;hy=9.4;}else if(Q.ak===5){hl=hr=-1;hy=11.5;hs=2.9;}
-  ctx.fillStyle=sk;ctx.beginPath();ctx.moveTo(hl+hs,-hy);ctx.arc(hl,-hy,hs,0,TAU);ctx.moveTo(hr+hs,hy);ctx.arc(hr,hy,hs,0,TAU);ctx.fill();
-  ctx.fillStyle=p.role%3?'#1b1209':'#6b4a22';ctx.beginPath();ctx.arc(1.2+leanPx,0,3.6,0,TAU);ctx.fill();
-  ctx.fillStyle=sk;ctx.beginPath();ctx.arc(2.6+leanPx,0,2,0,TAU);ctx.fill();
-  if(p===S.airTarget||(S.passRingT&&p===S.passRingT)){
-    const isP=S.passRingT&&p===S.passRingT;
-    ctx.strokeStyle=isP?'#ffcf3f':'rgba(255,255,255,.9)';ctx.lineWidth=1.4;
-    ctx.beginPath();ctx.arc(0,0,16,0,TAU);ctx.stroke();
-    if(isP){ctx.setLineDash([4,3]);ctx.lineDashOffset=-S.t*24;ctx.strokeStyle='#ffcf3f';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,0,19,0,TAU);ctx.stroke();ctx.setLineDash([]);}
-  }
-  ctx.restore();
-}
+// Legacy 2D player-body renderers are intentionally hard-disabled.
+// All match player bodies must come from the skinned 3D model renderer.
+function drawPlayer(p,a){return;}
+function drawPlayerOld(p,a){return;}
+
 function drawBallShadow(a){
   const b=ball,x=b.px+(b.x-b.px)*a,y=b.py+(b.y-b.py)*a,z=b.pz+(b.z-b.pz)*a,s=1+Math.min(0.35,z/450);
   ctx.fillStyle='rgba(0,0,0,'+(0.32/(1+z/60))+')';
