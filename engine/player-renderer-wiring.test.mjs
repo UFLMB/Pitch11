@@ -29,9 +29,11 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(runtime.includes("renderedPlayers:playerRenderer.count"));
 });
 
-test("2D player drawing remains as a safe fallback until a valid skinned model loads", () => {
+test("legacy 2D player bodies are suppressed whenever the 3D stadium renderer is active", () => {
   const index = read("../index.html");
-  assert.ok(index.includes("playerModelsReady"));
-  assert.ok(index.includes("else drawPlayer(p,a)"));
-  assert.ok(index.includes("drawPlayer3(p,a,playerModelsReady)"));
+  assert.ok(index.includes("if(stadiumTop)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);"));
+  assert.ok(index.includes("drawPlayer3(p,a,true)"));
+  assert.ok(index.includes("drawBallShadow3(a)"));
+  assert.ok(index.includes("drawHud()"));
+  assert.ok(index.includes("drawFig3(figO(REF,a))"));
 });
