@@ -11,7 +11,7 @@ const headings = [
 ];
 
 function rendererForward(yaw) {
-  // Three.js objects face local -Z.
+  // The supplied GLB faces local +Z; Three.js yaw rotates that forward vector.
   return { x: Math.sin(yaw), z: Math.cos(yaw) };
 }
 
@@ -39,7 +39,7 @@ test("3D heading remains correct for interpolated player states", () => {
       vx: Math.cos(face) * 40, vy: Math.sin(face) * 40,
       face, pos: "MID"
     }, 0, 1);
-    const yaw = -legacy.facing - Math.PI / 2;
+    const yaw = -legacy.facing + Math.PI / 2;
     const actual = rendererForward(yaw);
     const dot = actual.x * Math.cos(face) + actual.z * Math.sin(face);
     assert.ok(dot > 0.999999, `heading ${i}° diverges (dot=${dot})`);
