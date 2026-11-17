@@ -12,7 +12,7 @@ const headings = [
 
 function rendererForward(yaw) {
   // Three.js objects face local -Z.
-  return { x: -Math.sin(yaw), z: -Math.cos(yaw) };
+  return { x: Math.sin(yaw), z: Math.cos(yaw) };
 }
 
 test("3D renderer yaw points the model along all four pitch directions", () => {
@@ -23,7 +23,7 @@ test("3D renderer yaw points the model along all four pitch directions", () => {
       vy: Math.sin(heading.face) * 20,
       face: heading.face, pos: "DEF"
     }, 0, 1);
-    const yaw = -legacy.facing - Math.PI / 2;
+    const yaw = -legacy.facing + Math.PI / 2;
     const actual = rendererForward(yaw);
     const expected = { x: Math.cos(heading.face), z: Math.sin(heading.face) };
     const dot = actual.x * expected.x + actual.z * expected.z;
