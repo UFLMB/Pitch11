@@ -360,5 +360,6 @@ fs.writeFileSync(path.join(output, "README.txt"),
   "Match each uv-material-N.svg with its material base-color image. SVGs now color-code connected UV islands and number them by descending UV area; matching JSON files list each island bounding box, triangle count, vertex count, and UV area.\n" +
   "No game runtime files or player assets are modified by this diagnostic export.\n" +
   "Skeleton-weight analysis: body islands 4-5 are dominated by left/right calf joints; 6-7 by left/right thigh joints; 10-11 by thigh/calf transition weights; 12-13 and 18-27 by foot/toe joints.\n" +
-  "lower-leg-calf-candidate-preview.svg and thigh-knee-candidate-preview.svg are diagnostic-only candidate overlays, not approved garment masks and not used by Kit Studio.\n");
+  "lower-leg-calf-candidate-preview.svg and thigh-knee-candidate-preview.svg are diagnostic-only skeleton-weight overlays, not approved garment masks and not used by Kit Studio.\n" +
+  "IMPORTANT: Visual comparison against the body base-color atlas shows islands 4-5 overlay the grey striped sleeve-like texture region, while islands 6-7 overlay the upper black/skin texture region. Their skeleton weights say calf/thigh, but their visible texture placement does not clearly correspond to socks/shorts. Treat this as a UV-to-texture semantic mismatch; do not use these islands for garment recolouring until the source model is inspected in 3D.\n");
 console.log(JSON.stringify(report, null, 2));
