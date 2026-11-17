@@ -21,7 +21,8 @@ jobs:
       - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y blender
+          sudo apt-get install -y blender python3-numpy
+          blender --background --python-expr "import numpy; print('BLENDER_NUMPY_OK', numpy.__version__)"
       - name: Inspect source animation and target rig
         env:
           SOURCE_FBX: input/player-package/jog forward.fbx
