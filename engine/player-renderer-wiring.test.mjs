@@ -20,6 +20,13 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("idle.glb"));
   assert.ok(renderer.includes("walk.glb"));
   assert.ok(renderer.includes("run.glb"));
+  assert.ok(renderer.includes("this.inputPlayerCount = states.length"));
+  assert.ok(renderer.includes("this.visiblePlayerCount = states.reduce"));
+  assert.ok(renderer.includes("get expectedCount()"));
+  assert.ok(renderer.includes("get visibleCount()"));
+  assert.ok(runtime.includes("expectedPlayers:playerRenderer.expectedCount"));
+  assert.ok(runtime.includes("visiblePlayers:playerRenderer.visibleCount"));
+  assert.ok(runtime.includes("renderedPlayers:playerRenderer.count"));
 });
 
 test("2D player drawing remains as a safe fallback until a valid skinned model loads", () => {
