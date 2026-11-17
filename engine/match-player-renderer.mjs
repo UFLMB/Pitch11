@@ -175,7 +175,8 @@ export class MatchPlayerRenderer {
       const { group, mixer, ring } = entry;
       group.visible = state.visible;
       group.position.set(state.x, this.groundHeight, state.z);
-      const targetYaw = -state.facing - Math.PI / 2;
+      // The supplied GLB faces local +Z, so compensate for the 180° asset-forward offset.
+      const targetYaw = -state.facing + Math.PI / 2;
       const angleDelta = Math.atan2(Math.sin(targetYaw - group.rotation.y), Math.cos(targetYaw - group.rotation.y));
       group.rotation.y += angleDelta * (1 - Math.exp(-12 * Math.max(dt, 1 / 120)));
       ring.visible = state.selected;
