@@ -7,6 +7,7 @@ on:
     paths:
       - "input/FULL-UV.txt.txt"
       - "scripts/generate-uv-mapping.py"
+      - "scripts/export-player-texture-audit.mjs"
       - ".github/workflows/generate-uv-mapping.yml"
 
 permissions:
@@ -47,5 +48,12 @@ jobs:
         with:
           name: pitch11-uv-mapping
           path: /tmp/pitch11-uv-mapping/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload full player texture and per-mesh UV audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: pitch11-player-texture-audit
+          path: /tmp/pitch11-player-texture-audit/
           if-no-files-found: error
           retention-days: 14
