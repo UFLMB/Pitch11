@@ -6,6 +6,7 @@ on:
     branches: [test/current-fbx-retarget]
     paths:
       - "scripts/retarget-current-fbx-test.py"
+      - "scripts/retarget-current-fbx-export.py"
       - "scripts/decode-player-glb.mjs"
       - ".github/workflows/retarget-current-fbx-test.yml"
 
@@ -40,14 +41,24 @@ jobs:
           REPORT_PATH: retarget-test-report.json
           PYTHONPATH: /usr/lib/python3/dist-packages
         run: blender --background --python scripts/retarget-current-fbx-test.py
-      - name: Verify both rigs and usable bone mapping
+      - name: Bake animation onto current player rig and export temporary GLB
+        env:
+          FBX_PATH: input/player-package/jog forward.fbx
+          GLB_PATH: /tmp/player-uncompressed.glb
+          OUTPUT_GLB: /tmp/player-retargeted.glb
+          REPORT_PATH: retarget-export-report.json
+          PYTHONPATH: /usr/lib/python3/dist-packages
+        run: blender --background --python scripts/retarget-current-fbx-export.py
+      - name: Verify retargeted GLB export
         run: |
-          test -s retarget-test-report.json
-          python3 -c "import json; d=json.load(open('retarget-test-report.json')); assert d['source_armature_found'] and d['target_armature_found']; assert d['source_bone_count'] >= 50 and d['target_bone_count'] >= 70; assert d['mapped_track_count'] >= 20; print('Both rigs imported:', d['source_bone_count'], 'source bones,', d['target_bone_count'], 'target bones,', d['mapped_track_count'], 'mapped tracks')"
-      - name: Upload compatibility report
-        if: always() && hashFiles('retarget-test-report.json') != ''
+          test -s retarget-export-report.json
+          python3 -c "import json; d=json.load(open('retarget-export-report.json')); assert d['retarget_export_verified']; assert d['mapped_bone_count'] >= 20; assert d['reimport_animation_track_count'] >= 20; print('Retargeted GLB re-import verified:', d['mapped_bone_count'], 'mapped bones,', d['reimport_animation_track_count'], 'animation tracks,', d['baked_frame_count'], 'baked frames')"
+      - name: Upload compatibility and retarget reports
+        if: always() && (hashFiles('retarget-test-report.json') != '' || hashFiles('retarget-export-report.json') != '')
         uses: actions/upload-artifact@v4
         with:
           name: current-fbx-retarget-test
-          path: retarget-test-report.json
+          path: |
+            retarget-test-report.json
+            retarget-export-report.json
           retention-days: 14
