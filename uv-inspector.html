@@ -80,7 +80,7 @@ function buildIslands(mesh){
  const overlay=mesh.isSkinnedMesh&&sourceSkinIndex&&sourceSkinWeight?new THREE.SkinnedMesh(overlayGeometry,overlayMaterial):new THREE.Mesh(overlayGeometry,overlayMaterial);
  if(overlay.isSkinnedMesh){overlay.bind(mesh.skeleton,mesh.bindMatrix);overlay.bindMode=mesh.bindMode}
  overlay.frustumCulled=false;overlay.renderOrder=3;mesh.add(overlay);overlays.push({mesh:overlay,faceIsland});
- return out.map((o,i)=>({id:i+1,triangles:o.tris.length,vertices:o.vertices,area:o.area,color:palette[i%palette.length],bones:boneInfluences[i]}));
+ return out.map((o,i)=>({id:i+1,triangles:o.tris.length,vertices:o.vertices,area:o.area,color:palette[i%palette.length],...boneInfluences[i]}));
 }
 function setMode(mode){active=mode;document.querySelector('#bodyBtn').classList.toggle('active',mode==='body');document.querySelector('#headBtn').classList.toggle('active',mode==='head');const meshes=records[mode];overlays.forEach(o=>o.mesh.visible=meshes.some(m=>m.overlay===o.mesh));refreshList()}
 function refreshList(){const data=records[active];select.innerHTML='<option value="-1">All UV islands</option>'+data.map(x=>'<option value="'+(x.id-1)+'">Island '+x.id+'</option>').join('');list.innerHTML='';data.forEach((x,i)=>{const b=document.createElement('button');b.className='island';b.innerHTML='<i class="swatch" style="background:'+x.color+'"></i><span>Island '+x.id+' · '+x.triangles.toLocaleString()+' tris</span>';b.onclick=()=>{select.value=String(i);applySelection()};list.appendChild(b)});details.textContent=data.length+' connected UV islands · '+data.reduce((s,x)=>s+x.triangles,0).toLocaleString()+' triangles. Select an island to inspect its strongest skeleton influences.';applySelection()}
