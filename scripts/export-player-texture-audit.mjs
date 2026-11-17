@@ -224,7 +224,8 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
       material: materials[primitive.material]?.name || null,
       position: accessorRange(primitive.attributes?.POSITION),
       uv0: accessorRange(uvIndex), uvSvg: uv ? svgName : null,
-      uvVertexCount: uv?.length || 0, triangleCount: Math.floor(indices.length / 3),\n      uvIslandCount: islands.length, uvIslands: islands.map(({ _triangleSet, ...island }) => island),
+      uvVertexCount: uv?.length || 0, triangleCount: Math.floor(indices.length / 3),
+      uvIslandCount: islands.length, uvIslands: islands.map(({ _triangleSet, ...island }) => island),
       uvBounds: uv ? {
         min: [Math.min(...uv.map(p => p[0])), Math.min(...uv.map(p => p[1]))],
         max: [Math.max(...uv.map(p => p[0])), Math.max(...uv.map(p => p[1]))]
