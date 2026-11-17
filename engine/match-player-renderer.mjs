@@ -78,13 +78,16 @@ export class MatchPlayerRenderer {
       if (!skinnedMeshes) throw new Error("player.glb contains no skinned mesh");
       this.template = template;
       this.modelTriangleCount = triangleCount;
+
+      // The skinned player body is the required asset. Animation clips are
+      // optional: a missing or incompatible clip must never hide all players.
       this.status = "loading-animations";
       const clipFiles = [
         { name: "Idle", url: new URL("../assets/players/idle.glb", import.meta.url).href },
         { name: "Walk", url: new URL("../assets/players/walk.glb", import.meta.url).href },
         { name: "Run", url: new URL("../assets/players/run.glb", import.meta.url).href }
       ];
-      this.animations = await Promise.all(clipFiles.map(async source => {
+      const clipResults = await Promise.allSettled(clipFiles.map(async source => {
         const clipAsset = await this.loader.loadAsync(source.url);
         const sourceClip = clipAsset.animations?.[0];
         if (!sourceClip) throw new Error(`${source.name} animation file contains no animation clip`);
@@ -92,14 +95,21 @@ export class MatchPlayerRenderer {
         clip.name = source.name;
         return clip;
       }));
+      this.animations = [];
+      const animationErrors = [];
+      clipResults.forEach((result, index) => {
+        if (result.status === "fulfilled") this.animations.push(result.value);
+        else animationErrors.push(`${clipFiles[index].name}: ${result.reason?.message || String(result.reason)}`);
+      });
       this.clipCount = this.animations.length;
+      this.error = animationErrors.join("; ");
       this.status = "ready";
     } catch (error) {
       this.template = null;
       this.animations = [];
       this.clipCount = 0;
       this.status = "asset-error";
-      this.error = error && error.message ? error.message : String(error || "Player assets unavailable");
+      this.error = error && error.message ? error.message : String(error || "Player model unavailable");
     }
   }
 
