@@ -5,15 +5,18 @@ import {
   EXTTextureWebP,
   KHRMeshQuantization
 } from '@gltf-transform/extensions';
-import { MeshoptDecoder } from 'meshoptimizer';
+import { MeshoptDecoder, MeshoptEncoder } from 'meshoptimizer';
 
 const input = process.env.INPUT_GLB || 'assets/players/player.glb';
 const output = process.env.OUTPUT_GLB || '/tmp/player-uncompressed.glb';
-await MeshoptDecoder.ready;
+await Promise.all([MeshoptDecoder.ready, MeshoptEncoder.ready]);
 
 const io = new NodeIO()
   .registerExtensions([EXTMeshoptCompression, EXTTextureWebP, KHRMeshQuantization])
-  .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+  .registerDependencies({
+    'meshopt.decoder': MeshoptDecoder,
+    'meshopt.encoder': MeshoptEncoder
+  });
 
 const document = await io.read(input);
 document.disposeExtension('EXT_meshopt_compression');
@@ -39,6 +42,7 @@ function readGlbJson(buffer) {
   throw new Error('Decoded output has no JSON chunk');
 }
 
+const inputBytes = await readFile(input);
 const outputBytes = await readFile(output);
 const json = readGlbJson(outputBytes);
 const used = json.extensionsUsed || [];
@@ -52,7 +56,7 @@ if (!jointCount) throw new Error('Decoded GLB has no skin joints');
 console.log(JSON.stringify({
   input,
   output,
-  inputBytes: (await readFile(input)).length,
+  inputBytes: inputBytes.length,
   outputBytes: outputBytes.length,
   meshoptRemoved: true,
   skinCount: (json.skins || []).length,
