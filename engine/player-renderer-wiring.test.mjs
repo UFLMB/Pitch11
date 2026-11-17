@@ -33,8 +33,8 @@ test("legacy player bodies are suppressed in every 2D and 3D render path", () =>
   const index = read("../index.html");
   assert.ok(index.includes("for(const p of ORD)if(!p.out)drawModelPlayerOverlay2D(p,a);"));
   assert.ok(index.includes("drawPlayer3(p,a,true);"));
-  assert.equal((index.match(/drawPlayer3\\(p,a\\);/g) || []).length, 0);
-  assert.equal((index.match(/drawPlayer\\(p,a\\);/g) || []).length, 0);
+  assert.equal(index.split("drawPlayer3(p,a);").length - 1, 0);
+  assert.equal(index.split("drawPlayer(p,a);").length - 1, 0);
   assert.ok(index.includes("drawBallShadow3(a)"));
   assert.ok(index.includes("drawHud()"));
   assert.ok(index.includes("drawFig3(figO(REF,a))"));
