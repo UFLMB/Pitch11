@@ -31,8 +31,6 @@ def draw_atlas(texture_path, islands, labels, filename):
     image = Image.open(texture_path).convert("RGB")
     if image.size != (1024,1024): raise RuntimeError(f"Expected 1024x1024 texture, got {image.size}")
     image = image.resize((2048,2048), Image.Resampling.LANCZOS)
-    # Rotate the texture itself 180 degrees (upside down); UV outlines use the same transform.
-    image = image.transpose(Image.Transpose.ROTATE_180)
     draw = ImageDraw.Draw(image, "RGBA")
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
     centers = []
@@ -47,10 +45,10 @@ def draw_atlas(texture_path, islands, labels, filename):
                 u,v = float(p[0]),float(p[1])
                 if not (0 <= u <= 1 and 0 <= v <= 1): raise RuntimeError(f"UV outside 0..1: {p}")
                 points.append((u,v))
-                xy.append((round((1-u)*1024*scale),round(v*1024*scale)))
+                xy.append((round(u*1024*scale),round((1-v)*1024*scale)))
             draw.line(xy+[xy[0]], fill=(255,238,65,235), width=2, joint="curve")
         xs=[p[0] for p in points]; ys=[p[1] for p in points]
-        centers.append(((1-(min(xs)+max(xs))*0.5)*2048,((min(ys)+max(ys))*0.5)*2048))
+        centers.append((((min(xs)+max(xs))*0.5)*2048,(1-(min(ys)+max(ys))*0.5)*2048))
     placed=[]
     offsets=[(0,0)]
     for radius in (42,60,80,102,128,158,192,230):
@@ -83,7 +81,7 @@ def main():
     groups=full.get("groups",{})
     report={"project":"PITCH 11","model":full.get("model","PITCH 11 player.glb"),
       "purpose":"Diagnostic UV mapping only; no model or runtime asset is modified.",
-      "coordinate_convention":"180-degree upside-down flip: x = (1 - u) * texture_width; y = v * texture_height",
+      "coordinate_convention":"x = u * texture_width; y = (1 - v) * texture_height",
       "validation":{},"materials":[]}
     counts={}
     for group,material_name,outname in [("body","m301_body","BODY-numbered-UV.png"),("head","m301_head","HEAD-numbered-UV.png")]:
@@ -111,7 +109,7 @@ def main():
         f.write("PITCH 11 – DIAGNOSZTIKAI UV MAPPING\\n\\n")
         f.write(f"Összesen {report['validation']['total_islands']} UV-sziget és {report['validation']['total_triangles']} UV-háromszög.\\n")
         f.write("A sárga kontúrok az eredeti UV-háromszögeket követik. A számok a JSON island mezőjével egyeznek.\\n")
-        f.write("Koordináta-vetítés: 180 fokos fejjel lefelé tükrözés; X=(1-u)*textúraszélesség; Y=v*textúramagasság.\\n\\n")
+        f.write("Koordináta-vetítés: X=u*textúraszélesség; Y=(1-v)*textúramagasság.\\n\\n")
         for group in ("body","head"):
             f.write(group.upper()+"\\n")
             for i,label in enumerate(LABELS[group],1): f.write(f"{i:02d}. {label}\\n")
