@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#090d12"><title>PITCH 11 · Player Texture Editor</title>
+<style>
+:root{color-scheme:dark;--bg:#090d12;--panel:#111923;--line:#293647;--muted:#91a0b2;--lime:#a3e635}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:#edf3f8;font:14px system-ui,sans-serif}
+#view{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:fixed;z-index:3;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none}
+.brand,.status{background:#0b111be8;border:1px solid var(--line);border-radius:11px;padding:9px 12px;backdrop-filter:blur(12px);pointer-events:auto}.brand{font-weight:850;letter-spacing:.08em}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em}.status{font-size:11px;color:var(--muted)}
+#panel{position:fixed;z-index:4;left:12px;top:80px;bottom:12px;width:min(365px,calc(100vw - 24px));overflow:auto;background:#0c131eef;border:1px solid var(--line);border-radius:15px;padding:13px;backdrop-filter:blur(15px)}
+h1{font-size:15px;margin:0 0 5px}p,.hint{font-size:11px;line-height:1.45;color:var(--muted)}p{margin:0 0 10px}
+.row{display:flex;gap:7px;align-items:center;margin:8px 0}.row>*{min-width:0;flex:1}
+button,select,input{font:inherit}button,select{background:#182331;color:#edf3f8;border:1px solid #344356;border-radius:8px;padding:8px}button{cursor:pointer}button.active{border-color:var(--lime);color:var(--lime)}select{width:100%}
+label{display:block;font-size:11px;color:#cbd5e1;margin:8px 0}input[type=color]{width:100%;height:34px;border:0;background:none}input[type=range]{width:100%;accent-color:var(--lime)}
+#islands{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}.island{font-size:10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:10px;color:var(--muted);line-height:1.45;margin-top:8px}.primary{border-color:#84cc16}.danger{border-color:#9f5555}
+#hint{position:fixed;z-index:2;bottom:15px;left:50%;transform:translateX(-50%);background:#0b111be8;border:1px solid var(--line);border-radius:20px;padding:8px 12px;font-size:10px;color:#cbd5e1;white-space:nowrap;pointer-events:none}
+@media(max-width:650px){#panel{top:auto;max-height:48dvh;bottom:10px;left:10px;right:10px;width:auto;padding:10px}.brand{padding:7px 9px}.status{padding:7px;font-size:9px}#hint{bottom:calc(48dvh + 18px)}}
+</style>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="view"></div>
+<header><div class="brand">PITCH 11<small>PLAYER TEXTURE EDITOR · NON-DESTRUCTIVE</small></div><div class="status" id="status">Modell betöltése…</div></header>
+<aside id="panel">
+<h1>Játékos textúraszerkesztő</h1>
+<p>Válassz UV-szigetet, majd fess közvetlenül a 3D modellen. A festés csak a kiválasztott sziget UV-területére kerül. Az eredeti GLB nem módosul.</p>
+<div class="row"><button id="bodyBtn" class="active">BODY</button><button id="headBtn">HEAD</button></div>
+<div class="row"><select id="selection"><option>UV-sziget betöltése…</option></select></div>
+<div id="islands"></div>
+<div class="row"><div><label for="color">Ecset színe</label><input id="color" type="color" value="#a3e635"></div><div><label for="size">Ecsetméret</label><input id="size" type="range" min="2" max="90" value="18"><div class="meta" id="sizeValue">18 px</div></div></div>
+<label><input id="paintMode" type="checkbox" checked> Festés engedélyezése (kikapcsolva: csak forgatás)</label>
+<div class="row"><button id="undo">Visszavonás</button><button id="clear" class="danger">Sziget festésének törlése</button></div>
+<div class="row"><button id="exportBody" class="primary">BODY PNG export</button><button id="exportHead" class="primary">HEAD PNG export</button></div>
+<div class="meta" id="details">A modell és a textúrák betöltése folyamatban.</div>
+<div class="meta">Export: a szerkesztett alapszín-textúra PNG-ként menthető. A normal/roughness térképek változatlanok maradnak. A festés nem mentődik automatikusan a böngésző bezárásakor.</div>
+<div class="meta" id="error" style="color:#fca5a5"></div>
+</aside>
+<div id="hint">Modell forgatása · kiválasztott UV-sziget festése · pinch zoom</div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+
+const $=s=>document.querySelector(s),status=$('#status'),details=$('#details'),error=$('#error');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('#view').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,1);fill.position.set(-4,2,-3);scene.add(fill);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=1;controls.maxDistance=8;
+const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
+const labels={
+head:['Fej és arc fő felülete','Bal szem','Jobb szem','Szájüreg belső felülete / állkapocs','Felső fogsor környéke','Jobb szájzug és belső szájfelület','Bal szájzug és belső szájfelület','Alsó fogsor / állkapocs belső része','Nyelv fő felülete','Bal nyelvoldali felület','Jobb nyelvoldali felület'],
+body:['Törzs – mellkas, has és hát','Bal kar – alkar és kéz régiója','Jobb kar – alkar és kéz régiója','Bal lábszár','Jobb lábszár','Jobb comb fő felülete','Bal comb fő felülete','Bal felkar fő felülete','Jobb felkar fő felülete','Jobb térd / comb-lábszár átmenet','Bal térd / comb-lábszár átmenet','Bal lábfej fő felülete','Jobb lábfej fő felülete','Bal comb kisebb felülete','Jobb comb kisebb felülete','Bal felkar kisebb felülete','Jobb felkar kisebb felülete','Jobb lábfej – talp / lábujj felület','Bal lábfej – talp / lábujj felület','Jobb cipő – stoplik','Bal cipő – stoplik','Jobb cipő – nyelv oldalsó része','Bal cipő – nyelv oldalsó része','Bal cipő – külső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Jobb cipő – külső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Bal cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Jobb cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál']};
+const groups={body:[],head:[]};let active='body',selected=0,painting=false,down=false,lastPoint=null,undoStack=[];
+const pointKey=(uv,i)=>Math.round(uv.getX(i)*1e5)+','+Math.round(uv.getY(i)*1e5);
+function triIds(g,t){return g.index?[g.index.getX(t*3),g.index.getX(t*3+1),g.index.getX(t*3+2)]:[t*3,t*3+1,t*3+2]}
+function makeIslands(mesh,group,materialIndex=0){
+ const g=mesh.geometry,uv=g.getAttribute('uv');if(!uv)return;
+ const mat=Array.isArray(mesh.material)?mesh.material[materialIndex]:mesh.material;if(!mat)return;
+ const count=(g.index?g.index.count:g.getAttribute('position').count)/3,parent=Array.from({length:count},(_,i)=>i);
+ const find=x=>parent[x]===x?x:(parent[x]=find(parent[x]));const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[b]=a};
+ const edges=new Map();
+ for(let t=0;t<count;t++){const ids=triIds(g,t);for(let e=0;e<3;e++){const a=pointKey(uv,ids[e]),b=pointKey(uv,ids[(e+1)%3]),k=a<b?a+'|'+b:b+'|'+a;if(edges.has(k))join(t,edges.get(k));else edges.set(k,t)}}
+ const buckets=new Map();for(let t=0;t<count;t++){const r=find(t);if(!buckets.has(r))buckets.set(r,[]);buckets.get(r).push(t)}
+ const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1024;const ctx=canvas.getContext('2d');
+ const source=mat.map?.image;if(source){try{ctx.drawImage(source,0,0,1024,1024)}catch(e){ctx.fillStyle='#888';ctx.fillRect(0,0,1024,1024)}}else{ctx.fillStyle='#888';ctx.fillRect(0,0,1024,1024)}
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=mat.map?.flipY??true;texture.wrapS=mat.map?.wrapS??THREE.ClampToEdgeWrapping;texture.wrapT=mat.map?.wrapT??THREE.ClampToEdgeWrapping;texture.needsUpdate=true;
+ const clone=mat.clone();clone.map=texture;clone.needsUpdate=true;
+ if(Array.isArray(mesh.material)){const copy=mesh.material.slice();copy[materialIndex]=clone;mesh.material=copy}else mesh.material=clone;
+ const islands=[...buckets.values()].map((triangles,i)=>({triangles,mesh,geometry:g,uv,ctx,canvas,texture,material:clone,materialIndex,group,index:i,undo:[]}));
+ islands.forEach((island,i)=>{const path=new Path2D();for(const t of island.triangles){const ids=triIds(g,t);const p=ids.map(id=>[uv.getX(id)*1024,(1-uv.getY(id))*1024]);path.moveTo(...p[0]);path.lineTo(...p[1]);path.lineTo(...p[2]);path.closePath()}island.path=path});
+ groups[group].push(...islands);
+}
+function activeList(){return groups[active]}
+function updateUI(){
+ const list=$('#islands'),sel=$('#selection');list.innerHTML='';sel.innerHTML='';
+ activeList().forEach((x,i)=>{const label=labels[active][i]||'UV-sziget '+(i+1);const option=document.createElement('option');option.value=i;option.textContent=(i+1)+'. '+label;sel.append(option);
+ const b=document.createElement('button');b.className='island'+(i===selected?' active':'');b.textContent=(i+1)+'. '+label;b.onclick=()=>choose(i);list.append(b)});
+ sel.value=String(selected);details.textContent=activeList().length+' UV-sziget · '+(labels[active]?.length||0)+' elfogadott anatómiai címke. Kiválasztva: '+(labels[active]?.[selected]||'—');
+}
+function choose(i){selected=Math.max(0,Math.min(i,activeList().length-1));updateUI()}
+function mode(group){active=group;selected=0;$('#bodyBtn').classList.toggle('active',group==='body');$('#headBtn').classList.toggle('active',group==='head');updateUI()}
+$('#bodyBtn').onclick=()=>mode('body');$('#headBtn').onclick=()=>mode('head');$('#selection').onchange=e=>choose(Number(e.target.value));
+$('#size').oninput=e=>$('#sizeValue').textContent=e.target.value+' px';
+function saveUndo(item){if(item.undo.length>20)item.undo.shift();item.undo.push(item.ctx.getImageData(0,0,1024,1024))}
+function paintAt(item,uvPoint){
+ if(!uvPoint)return;const x=uvPoint.x*1024,y=(1-uvPoint.y)*1024,ctx=item.ctx;
+ ctx.save();ctx.clip(item.path);ctx.fillStyle=$('#color').value;ctx.beginPath();ctx.arc(x,y,Number($('#size').value)/2,0,Math.PI*2);ctx.fill();ctx.restore();item.texture.needsUpdate=true;
+}
+function hitAt(event){const r=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-r.left)/r.width)*2-1;pointer.y=-((event.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects([...new Set(activeList().map(x=>x.mesh))],false);return hits.find(h=>h.uv&&h.faceIndex!==undefined)}
+renderer.domElement.addEventListener('pointerdown',e=>{if(!$('#paintMode').checked)return;const hit=hitAt(e);if(!hit)return;const item=activeList()[selected];if(!item||item.mesh!==hit.object)return;down=true;painting=true;lastPoint=hit.uv.clone();saveUndo(item);controls.enabled=false;paintAt(item,lastPoint);renderer.domElement.setPointerCapture(e.pointerId)});
+renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;const hit=hitAt(e);if(!hit||hit.object!==activeList()[selected]?.mesh||!hit.uv)return;const item=activeList()[selected],from=lastPoint,to=hit.uv;const dx=(to.x-from.x)*1024,dy=(to.y-from.y)*1024,dist=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(dist/(Number($('#size').value)*.22)));for(let i=1;i<=steps;i++)paintAt(item,new THREE.Vector2(from.x+(to.x-from.x)*i/steps,from.y+(to.y-from.y)*i/steps));lastPoint=to.clone()});
+function stopPaint(){if(down){down=false;painting=false;lastPoint=null;controls.enabled=true}}
+renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
+$('#undo').onclick=()=>{const item=activeList()[selected];if(!item?.undo.length)return;item.ctx.putImageData(item.undo.pop(),0,0);item.texture.needsUpdate=true};
+$('#clear').onclick=()=>{const item=activeList()[selected];if(!item)return;saveUndo(item);const image=new Image();const source=item.material.userData.originalImage;if(source){item.ctx.clearRect(0,0,1024,1024);item.ctx.drawImage(source,0,0,1024,1024)}else{item.ctx.clearRect(0,0,1024,1024);item.ctx.fillStyle='#888';item.ctx.fillRect(0,0,1024,1024)}item.ctx.save();item.ctx.globalCompositeOperation='destination-in';item.ctx.fillStyle='#fff';item.ctx.fill(item.path);item.ctx.restore();item.texture.needsUpdate=true};
+function download(group){const items=groups[group];if(!items.length){status.textContent=group.toUpperCase()+' TEXTÚRA NEM TALÁLHATÓ';return}const item=items[0];item.canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-player-'+group+'-basecolor.png';a.click();URL.revokeObjectURL(url);status.textContent=group.toUpperCase()+' PNG EXPORT KÉSZ'},'image/png')}
+$('#exportBody').onclick=()=>download('body');$('#exportHead').onclick=()=>download('head');
+try{
+ const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);const gltf=await loader.loadAsync('./assets/players/player.glb');const root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());root.position.sub(center);root.position.y+=size.y/2;camera.position.set(size.x*1.7,size.y*.65,size.z*2.1);controls.target.set(0,0,0);controls.update();
+ root.traverse(obj=>{if(!obj.isMesh)return;const material=Array.isArray(obj.material)?obj.material[0]:obj.material;const name=(material?.name||'').toLowerCase();const group=name.includes('head')?'head':'body';const count=Array.isArray(obj.material)?obj.material.length:1;for(let i=0;i<count;i++)makeIslands(obj,group,i)});
+ if(!groups.body.length||!groups.head.length)throw new Error('Nem található mindkét textúracsoport. Ellenőrizd a m301_body és m301_head anyagokat.');
+ status.textContent='MODELL BETÖLTVE · '+(groups.body.length+groups.head.length)+' UV-SZIGET';mode('body');
+}catch(e){status.textContent='BETÖLTÉSI HIBA';error.textContent=String(e);details.textContent='A modell vagy valamelyik textúra nem tölthető be.'}
+function tick(){requestAnimationFrame(tick);controls.update();renderer.render(scene,camera)}tick();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+</script>
+</body></html>
