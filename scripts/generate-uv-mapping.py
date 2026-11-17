@@ -71,7 +71,7 @@ def draw_atlas(texture_path, islands, labels, filename):
                 chosen=(cx,cy); break
         if chosen is None: chosen=(x,y)
         cx,cy=chosen
-        if math.hypot(cx-x,cy-y)>4: draw.line((x,y,cx,y,cy),fill=(255,255,255,240),width=2)
+        if math.hypot(cx-x,cy-y)>4: draw.line((x,y,cx,cy),fill=(255,255,255,240),width=2)
         r=25
         draw.ellipse((cx-r,cy-r,cx+r,cy+r),fill=(5,12,19,245),outline=(255,255,255,255),width=3)
         s=str(idx+1); box=draw.textbbox((0,0),s,font=font)
