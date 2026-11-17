@@ -46,3 +46,12 @@ See [the anatomical mapping specification](../../docs/PLAYER-UV-ANATOMICAL-MAPPI
 - Each visual rig follows the existing simulation player's position, facing, speed, and action state.
 - Physics, AI, collision, and match rules remain authoritative in the existing simulation.
 - The existing 2D players remain visible until the model **and all required base animation clips** load and validate successfully.
+
+
+## Model-specific neutral kit base texture
+
+- Canonical base-colour atlas: `player-basecolor-neutral.svg` (1024 × 1024, embedded WebP image).
+- This texture is prepared specifically for the existing Male Athlete 02 UV layout and is loaded by Player Kit Studio as its editable starting point.
+- It uses the already accepted garment masks: jersey BODY islands 1, 8, 9, 16, 17; shorts 6, 7, 14, 15; socks 4, 5; boots 12–13 and 18–27.
+- Skin and head textures remain sourced from the original GLB. The model mesh, UVs, skeleton, skin weights, animation clips and gameplay data are unchanged.
+- The neutral atlas removes the source kit's number, logos, sponsor marks and stripes from the editable clothing regions. Team-specific kit presets can be layered on through the existing Kit Studio workflow.
