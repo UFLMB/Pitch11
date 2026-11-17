@@ -42,6 +42,7 @@ source_actions = list(bpy.data.actions)
 if not source_rigs or not source_actions:
     raise RuntimeError("FBX did not import an armature and animation")
 source = source_rigs[0]
+source_bone_count = len(source.data.bones)
 source_action = source_actions[0]
 source.data.pose_position = 'POSE'
 source.animation_data_create()
