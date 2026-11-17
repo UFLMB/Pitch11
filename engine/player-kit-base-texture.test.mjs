@@ -5,14 +5,22 @@ import { readFileSync } from "node:fs";
 const editor = readFileSync(new URL("../player-texture-editor.html", import.meta.url), "utf8");
 const mapping = readFileSync(new URL("../docs/PLAYER-UV-ANATOMICAL-MAPPING.md", import.meta.url), "utf8");
 
-test("Kit Studio generates a neutral model-specific base texture when no saved kit exists", () => {
-  assert.ok(editor.includes("colours:{jersey:'#f2f4f6',shorts:'#e6eaee',socks:'#eef1f4',boots:'#2a313a'}"));
-  assert.ok(editor.includes("else{renderTexture();status.textContent='MODEL-SPECIFIC BASE KIT GENERATED'}"));
+test("Kit Studio preserves the original model texture until the user edits a garment", () => {
+  assert.ok(editor.includes("colours:{}"));
+  assert.ok(editor.includes("else{status.textContent='ORIGINAL MODEL TEXTURE PRESERVED'}"));
+  assert.ok(!editor.includes("colours:{jersey:'#f2f4f6',shorts:'#e6eaee',socks:'#eef1f4',boots:'#2a313a'}"));
   assert.ok(editor.includes("function exportTexture()"));
   assert.ok(editor.includes("pitch11-player-kit-basecolor.png"));
 });
 
-test("base texture generation uses the four user-approved UV garment masks", () => {
+test("placement descriptors update each mesh without relying on an outer root variable", () => {
+  assert.ok(editor.includes("function buildPlacementDescriptors(islands){"));
+  assert.ok(editor.includes("island.mesh.updateWorldMatrix(true,false)"));
+  assert.ok(editor.includes("buildPlacementDescriptors(bodyIslands);"));
+  assert.ok(!editor.includes("function buildPlacementDescriptors(root,"));
+});
+
+test("base texture editing uses the four user-approved UV garment masks", () => {
   for (const phrase of [
     "Jersey | 1, 8, 9, 16, 17",
     "Shorts | 6, 7, 14, 15",
