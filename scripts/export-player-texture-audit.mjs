@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
 
 const input = path.resolve("assets/players/player.glb");
 const output = path.resolve(process.argv[2] || "/tmp/pitch11-player-texture-audit");
@@ -33,7 +34,9 @@ const componentInfo = {
 };
 const typeSize = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT2: 4, MAT3: 9, MAT4: 16 };
 
-function readAccessor(index) {
+await MeshoptDecoder.ready;
+
+async function readAccessor(index) {
   const accessor = document.accessors?.[index];
   if (!accessor) throw new Error(`Missing accessor ${index}`);
   if (accessor.sparse) throw new Error(`Sparse accessor ${index} is not supported by this audit`);
@@ -42,14 +45,33 @@ function readAccessor(index) {
   const info = componentInfo[accessor.componentType];
   if (!info) throw new Error(`Unsupported component type ${accessor.componentType}`);
   const width = typeSize[accessor.type];
-  const stride = view.byteStride || info.bytes * width;
-  const start = (view.byteOffset || 0) + (accessor.byteOffset || 0);
-  const data = new DataView(binary.buffer, binary.byteOffset, binary.byteLength);
+  let sourceBytes = binary;
+  let viewStart = view.byteOffset || 0;
+  let stride = view.byteStride || info.bytes * width;
+  const compressed = view.extensions?.EXT_meshopt_compression;
+  if (compressed) {
+    if (compressed.buffer !== 0) throw new Error(`Accessor ${index} references an unsupported non-GLB buffer`);
+    const packed = binary.subarray(compressed.byteOffset || 0, (compressed.byteOffset || 0) + compressed.byteLength);
+    const decoded = new Uint8Array(compressed.count * compressed.byteStride);
+    MeshoptDecoder.decodeGltfBuffer(decoded, compressed.count, compressed.byteStride, packed, compressed.mode, compressed.filter);
+    sourceBytes = decoded;
+    viewStart = 0;
+    stride = compressed.byteStride;
+  }
+  const start = viewStart + (accessor.byteOffset || 0);
+  const data = new DataView(sourceBytes.buffer, sourceBytes.byteOffset, sourceBytes.byteLength);
   const values = [];
   for (let i = 0; i < accessor.count; i++) {
     const row = [];
     for (let c = 0; c < width; c++) {
-      row.push(data[info.get](start + i * stride + c * info.bytes, true));
+      let value = data[info.get](start + i * stride + c * info.bytes, true);
+      if (accessor.normalized && accessor.componentType !== 5126) {
+        if (accessor.componentType === 5120) value = Math.max(value / 127, -1);
+        else if (accessor.componentType === 5121) value /= 255;
+        else if (accessor.componentType === 5122) value = Math.max(value / 32767, -1);
+        else if (accessor.componentType === 5123) value /= 65535;
+      }
+      row.push(value);
     }
     values.push(width === 1 ? row[0] : row);
   }
@@ -116,8 +138,8 @@ const primitives = [];
 for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
   for (const [primitiveIndex, primitive] of (mesh.primitives || []).entries()) {
     const uvIndex = primitive.attributes?.TEXCOORD_0;
-    const uv = Number.isInteger(uvIndex) ? readAccessor(uvIndex) : null;
-    const indexValues = Number.isInteger(primitive.indices) ? readAccessor(primitive.indices) : null;
+    const uv = Number.isInteger(uvIndex) ? await readAccessor(uvIndex) : null;
+    const indexValues = Number.isInteger(primitive.indices) ? await readAccessor(primitive.indices) : null;
     const vertexCount = uv?.length || 0;
     const indices = indexValues ? indexValues.map(Number) : Array.from({ length: vertexCount }, (_, i) => i);
     const svgName = `uv-material-${primitive.material ?? "none"}.svg`;
