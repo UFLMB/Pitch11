@@ -17,8 +17,8 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 .group{margin:13px 0;padding-top:12px;border-top:1px solid var(--line)}.group-title{margin-bottom:8px;color:#c2ccd7;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
 .field{display:grid;gap:6px;margin:9px 0;color:#cbd5e1;font-size:10px}.field input[type=file],.field select{width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;background:#0c151f;color:var(--text);font-size:11px}.field input[type=range]{width:100%;accent-color:var(--gold)}.row{display:flex;gap:7px}.row>*{flex:1;min-width:0}.note{padding:9px 10px;border:1px solid #33413c;border-radius:9px;background:#111b19;color:#b9c9bd;font-size:10px;line-height:1.5}.error{margin-top:9px;color:#fca5a5;font-size:10px;line-height:1.5;white-space:pre-wrap}.meta{margin-top:8px;color:var(--muted);font-size:9px;line-height:1.5;overflow-wrap:anywhere}
 #hint{position:fixed;z-index:2;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border:1px solid var(--line);border-radius:20px;background:#0b111be8;color:#cbd5e1;font-size:10px;white-space:nowrap;pointer-events:none}
-#panelToggle{display:none}
-@media(max-width:760px),(max-height:600px){header{top:7px;left:7px;right:7px}.brand,.status{padding:8px 10px}.brand{font-size:10px}.brand small{font-size:8px}#tools{top:54px;left:7px;right:7px;max-width:none;justify-content:center;gap:4px;padding:5px}#tools button{flex:1 1 auto;min-width:0;min-height:36px;padding:6px 5px;font-size:9px}#panel{top:auto;left:7px;right:7px;bottom:max(7px,env(safe-area-inset-bottom));width:auto;max-height:42dvh;padding:11px;border-radius:13px}.heading{font-size:16px}.intro{margin-bottom:8px}.group{margin:9px 0;padding-top:8px}.field{margin:7px 0}#hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 43dvh);font-size:9px}}
+#panelToggle{display:none}.panel-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.panel-title-wrap{min-width:0}#panelToggle{align-items:center;justify-content:center;min-width:38px;min-height:36px;padding:6px 10px;font-size:16px}
+@media(max-width:760px),(max-height:600px){header{top:7px;left:7px;right:7px}.brand,.status{padding:8px 10px}.brand{font-size:10px}.brand small{font-size:8px}#tools{top:54px;left:7px;right:7px;max-width:none;justify-content:center;gap:4px;padding:5px}#tools button{flex:1 1 auto;min-width:0;min-height:36px;padding:6px 5px;font-size:9px}#panel{top:auto;left:7px;right:7px;bottom:max(7px,env(safe-area-inset-bottom));width:auto;max-height:42dvh;padding:11px;border-radius:13px}.heading{font-size:16px}.intro{margin-bottom:8px}.group{margin:9px 0;padding-top:8px}.field{margin:7px 0}#hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 43dvh);font-size:9px}#panelToggle{display:inline-flex}#panel.collapsed{top:auto;max-height:none;height:auto;overflow:hidden;padding:8px 10px}#panel.collapsed .panel-content{display:none}#panel.collapsed .panel-top{min-height:36px}body.panel-collapsed #hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 58px)}}
 </style>
 </head>
 <body>
@@ -28,8 +28,8 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <button class="active" data-view="front">FRONT</button><button data-view="back">BACK</button><button data-view="left">LEFT</button><button data-view="right">RIGHT</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="reset">RESET</button>
 </nav>
 <aside id="panel">
-<div class="eyebrow">PITCH 11 · TOOLS</div><div class="heading">3D Model Viewer</div>
-<p class="intro">A read-only inspection space. Models and animation files are loaded for preview only; this tool never edits or saves over game assets.</p>
+<div class="panel-top"><div class="panel-title-wrap"><div class="eyebrow">PITCH 11 · TOOLS</div><div class="heading">3D Model Viewer &amp; Animation Tester</div></div><button id="panelToggle" type="button" aria-label="Minimise panel" aria-expanded="true">⌄</button></div>
+<div class="panel-content"><p class="intro">A read-only inspection space. Models and animation files are loaded for preview only; this tool never edits or saves over game assets.</p>
 <div class="group"><div class="group-title">Model</div>
 <label class="field">Load a local GLB model<input id="modelFile" type="file" accept=".glb,model/gltf-binary"></label>
 <div class="note" id="modelInfo">Default model: assets/players/player.glb</div>
@@ -37,16 +37,18 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <div class="group"><div class="group-title">Animation</div>
 <label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
 <div class="row"><button id="playPause" disabled>PLAY</button><button id="stop" disabled>STOP</button></div>
+<label class="field">Timeline <span id="timeReadout">0.00 / 0.00 s</span><input id="timeline" type="range" min="0" max="1000" step="1" value="0" disabled></label>
+<div class="row"><button id="stepBack" disabled>− FRAME</button><button id="loop" class="active" aria-pressed="true" disabled>LOOP ON</button><button id="stepForward" disabled>+ FRAME</button></div>
 <label class="field">Playback speed <span id="speedLabel">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
-<label class="field">Load extra animation GLBs<input id="animationFiles" type="file" accept=".glb,model/gltf-binary" multiple></label>
-<div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically.</div>
+<label class="field">Import animation GLB files<input id="animationFiles" type="file" accept=".glb,model/gltf-binary" multiple></label>
+<div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically. Imported animations work best when skeleton node names match the loaded model.</div>
 </div>
 <div class="group"><div class="group-title">Display</div>
 <div class="row"><button id="wireframe" aria-pressed="false">WIREFRAME</button><button id="rotate" aria-pressed="false">AUTO ROTATE</button></div>
 <label class="field">Background<select id="background"><option value="dark">Graphite</option><option value="stadium">Stadium green</option><option value="light">Light grey</option></select></label>
 </div>
 <div class="group"><div class="note">Independent page · Read-only preview · Original GLB files are not modified.</div><div class="error" id="error" role="alert"></div></div>
-</aside>
+</div></aside>
 <div id="hint">Drag to rotate · Pinch or scroll to zoom</div>
 <script type="module">
 import * as THREE from 'three';
@@ -62,7 +64,7 @@ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.se
 scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,.9);fill.position.set(-4,2,-3);scene.add(fill);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.rotateSpeed=.72;controls.zoomSpeed=.85;
 const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
-let activeRoot=null,mixer=null,currentAction=null,clips=[],clipSources=[],radius=1,targetY=0,distance=3.1,autoRotate=false,wireframe=false,playing=false,clock=new THREE.Clock(),modelUrl=null;
+let activeRoot=null,mixer=null,currentAction=null,clips=[],clipSources=[],radius=1,targetY=0,distance=3.1,autoRotate=false,wireframe=false,playing=false,looping=true,clock=new THREE.Clock(),modelUrl=null;
 const materials=[];
 function setStatus(s){status.textContent=s}
 function setCamera(view){const d=distance,y=targetY;const positions={front:[0,y,d],back:[0,y,-d],left:[-d,y,0],right:[d,y,0]};const p=positions[view]||positions.front;camera.position.set(...p);camera.up.set(0,1,0);controls.target.set(0,y,0);controls.update();document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view))}
@@ -76,23 +78,25 @@ function frameModel(root){
 }
 function collectMaterials(root){materials.length=0;root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&!materials.includes(m))materials.push(m)})});applyWireframe()}
 function applyWireframe(){for(const m of materials)m.wireframe=wireframe;$('wireframe').classList.toggle('active',wireframe);$('wireframe').setAttribute('aria-pressed',String(wireframe))}
+function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
+function updateAnimationControls(){const enabled=!!clips.length;$('timeline').disabled=!enabled;$('loop').disabled=!enabled;$('stepBack').disabled=!enabled;$('stepForward').disabled=!enabled}
 function refreshAnimationList(preferred=''){
  const select=$('animationSelect');select.innerHTML='';
- if(!clips.length){select.add(new Option('No animation clips found',''));select.disabled=true;$('playPause').disabled=true;$('stop').disabled=true;animationInfo.textContent='No clips are available for this model yet. Load compatible animation GLB files below.';return}
+ if(!clips.length){select.add(new Option('No animation clips found',''));select.disabled=true;$('playPause').disabled=true;$('stop').disabled=true;updateAnimationControls();animationInfo.textContent='No clips are available for this model yet. Import compatible animation GLB files below.';return}
  clips.forEach((clip,i)=>select.add(new Option(clip.name||('Animation '+(i+1)),String(i))));
- select.disabled=false;$('playPause').disabled=false;$('stop').disabled=false;
+ select.disabled=false;$('playPause').disabled=false;$('stop').disabled=false;updateAnimationControls();
  const match=clips.findIndex(c=>c.name.toLowerCase().includes(preferred.toLowerCase()));
  select.value=String(match>=0?match:0);playSelected();
  animationInfo.textContent=clips.length+' clip(s) available · '+clips.map(c=>c.name||'Unnamed').join(' · ');
 }
-function stopAnimation(){if(mixer)mixer.stopAllAction();currentAction=null;playing=false;$('playPause').textContent='PLAY'}
-function playSelected(){if(!mixer||!clips.length)return;stopAnimation();const clip=clips[Number($('animationSelect').value)]||clips[0];if(!clip)return;currentAction=mixer.clipAction(clip,activeRoot);currentAction.reset().setLoop(THREE.LoopRepeat,Infinity).play();currentAction.timeScale=Number($('speed').value);playing=true;$('playPause').textContent='PAUSE'}
+function stopAnimation(){if(mixer){mixer.stopAllAction();mixer.setTime(0)}currentAction=null;playing=false;$('playPause').textContent='PLAY';$('timeline').value='0';$('timeReadout').textContent='0.00 / 0.00 s'}
+function playSelected(){if(!mixer||!clips.length)return;stopAnimation();const clip=clips[Number($('animationSelect').value)]||clips[0];if(!clip)return;currentAction=mixer.clipAction(clip,activeRoot);currentAction.reset().setLoop(looping?THREE.LoopRepeat:THREE.LoopOnce,looping?Infinity:1);currentAction.clampWhenFinished=!looping;currentAction.play();currentAction.timeScale=Number($('speed').value);playing=true;$('playPause').textContent='PAUSE';updateTimeline()
 async function loadExtraAnimations(){
  if(!activeRoot)return;
  const files=[...$('animationFiles').files];if(!files.length)return;
  let added=0,failed=[];
- for(const file of files){const url=URL.createObjectURL(file);try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const named=clip.clone();if(!named.name||named.name==='Animation')named.name=file.name.replace(/\.glb$/i,'');clips.push(named);added++}}catch(e){failed.push(file.name+': '+(e.message||e))}finally{URL.revokeObjectURL(url)}}
- refreshAnimationList();animationInfo.textContent=added+' additional clip(s) loaded. '+(failed.length?'Could not load: '+failed.join(' | '):'');
+ for(const file of files){const url=URL.createObjectURL(file);try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const named=clip.clone();if(!named.name||named.name==='Animation')named.name=file.name.replace(/\.glb$/i,'');const targets=new Set();for(const track of named.tracks){try{const parsed=THREE.PropertyBinding.parseTrackName(track.name);if(parsed.nodeName&&activeRoot.getObjectByName(parsed.nodeName))targets.add(parsed.nodeName)}catch{}}named.userData={...(named.userData||{}),matchedTargets:targets.size,totalTracks:named.tracks.length};clips.push(named);added++}}catch(e){failed.push(file.name+': '+(e.message||e))}finally{URL.revokeObjectURL(url)}}
+ refreshAnimationList();animationInfo.textContent=added+' additional clip(s) imported. '+clips.slice(-added).map(c=>c.name+': '+(c.userData?.matchedTargets??'—')+'/'+(c.userData?.totalTracks??c.tracks.length)+' tracks matched').join(' · ')+(failed.length?' · Could not load: '+failed.join(' | '):'');$('animationFiles').value='';
 }
 async function loadModel(url,label,revokeAfter=false){
  setStatus('LOADING MODEL');error.textContent='';stopAnimation();
@@ -121,13 +125,18 @@ $('reset').addEventListener('click',()=>{distance=radius*3.1;setCamera('front')}
 $('animationSelect').addEventListener('change',playSelected);
 $('playPause').addEventListener('click',()=>{if(!currentAction){playSelected();return}playing=!playing;currentAction.paused=!playing;$('playPause').textContent=playing?'PAUSE':'PLAY'});
 $('stop').addEventListener('click',()=>{stopAnimation()});
+$('timeline').addEventListener('input',()=>{if(!currentAction)return;const duration=currentAction.getClip().duration||0;currentAction.paused=true;currentAction.time=duration*(Number($('timeline').value)/1000);mixer.update(0);updateTimeline();playing=false;$('playPause').textContent='PLAY'});
+$('loop').addEventListener('click',()=>{looping=!looping;$('loop').textContent=looping?'LOOP ON':'LOOP OFF';$('loop').classList.toggle('active',looping);$('loop').setAttribute('aria-pressed',String(looping));if(currentAction){currentAction.setLoop(looping?THREE.LoopRepeat:THREE.LoopOnce,looping?Infinity:1);currentAction.clampWhenFinished=!looping}});
+$('stepBack').addEventListener('click',()=>stepFrame(-1));$('stepForward').addEventListener('click',()=>stepFrame(1));
+function stepFrame(direction){if(!currentAction)return;currentAction.paused=true;playing=false;currentAction.time=Math.max(0,Math.min(currentAction.getClip().duration,currentAction.time+direction/30));mixer.update(0);updateTimeline();$('playPause').textContent='PLAY'}
+$('panelToggle').addEventListener('click',()=>{const collapsed=$('panel').classList.toggle('collapsed');document.body.classList.toggle('panel-collapsed',collapsed);$('panelToggle').textContent=collapsed?'⌃':'⌄';$('panelToggle').setAttribute('aria-expanded',String(!collapsed));$('panelToggle').setAttribute('aria-label',collapsed?'Expand panel':'Minimise panel')});
 $('speed').addEventListener('input',()=>{$('speedLabel').textContent=Number($('speed').value).toFixed(2)+'×';if(currentAction)currentAction.timeScale=Number($('speed').value)});
 $('animationFiles').addEventListener('change',loadExtraAnimations);
 $('modelFile').addEventListener('change',()=>{const file=$('modelFile').files?.[0];if(!file)return;if(modelUrl)URL.revokeObjectURL(modelUrl);modelUrl=URL.createObjectURL(file);loadModel(modelUrl,file.name,true)});
 $('wireframe').addEventListener('click',()=>{wireframe=!wireframe;applyWireframe()});
 $('rotate').addEventListener('click',()=>{autoRotate=!autoRotate;controls.autoRotate=autoRotate;$('rotate').classList.toggle('active',autoRotate);$('rotate').setAttribute('aria-pressed',String(autoRotate))});
 $('background').addEventListener('change',e=>{const c={dark:0x090d12,stadium:0x173326,light:0x9ba4ad}[e.target.value];scene.background=new THREE.Color(c)});
-function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);if(mixer&&playing)mixer.update(dt);controls.update();renderer.render(scene,camera)}
+function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);if(mixer&&playing){mixer.update(dt);updateTimeline()}controls.update();renderer.render(scene,camera)}
 tick();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 loadModel('./assets/players/player.glb','assets/players/player.glb');
