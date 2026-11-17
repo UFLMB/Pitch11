@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PITCH 11 · Player Direction Test</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#080d12;color:#e8edf2}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden}
+#view{position:fixed;inset:0}#top{position:fixed;z-index:2;top:env(safe-area-inset-top,10px);left:12px;right:12px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;pointer-events:none}
+.panel{background:#0d141ddd;border:1px solid #283541;border-radius:12px;padding:10px 13px;backdrop-filter:blur(8px);max-width:min(76vw,420px)}
+h1{font-size:14px;letter-spacing:.12em;margin:0 0 5px;color:#a3e635}p{font-size:12px;line-height:1.4;margin:0;color:#b8c3cd}
+#status{font-size:12px;color:#d6e1e8;text-align:right;max-width:38vw}
+#bottom{position:fixed;z-index:2;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:repeat(4,1fr);gap:6px;pointer-events:none}
+.dir{padding:8px 5px;border:1px solid #344451;border-radius:9px;background:#0d141ddd;text-align:center;font-size:11px;color:#e8edf2}
+.dir b{display:block;color:#a3e635;font-size:12px;margin-bottom:2px}
+#error{color:#ff9c9c}
+@media(max-width:520px){.panel{padding:8px 10px}h1{font-size:12px}p,#status{font-size:10px}.dir{font-size:9px;padding:7px 2px}.dir b{font-size:10px}}
+</style>
+</head>
+<body>
+<div id="view"></div>
+<div id="top">
+ <div class="panel"><h1>PITCH 11 · PLAYER DIRECTION TEST</h1><p>Four identical running players. Each arrow shows the intended pitch direction. Check that chest, face and running motion point along the arrow.</p></div>
+ <div class="panel" id="status">Loading player model…</div>
+</div>
+<div id="bottom">
+ <div class="dir"><b>RIGHT</b>Pitch +X · face 0°</div>
+ <div class="dir"><b>DOWN</b>Pitch +Y · face 90°</div>
+ <div class="dir"><b>LEFT</b>Pitch −X · face 180°</div>
+ <div class="dir"><b>UP</b>Pitch −Y · face −90°</div>
+</div>
+<script type="module">
+import * as THREE from "./vendor/three/build/three.module.js";
+import { GLTFLoader } from "./vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { clone as cloneSkeleton } from "./vendor/three/examples/jsm/utils/SkeletonUtils.js";
+import { MeshoptDecoder } from "./vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
+
+const host=document.getElementById("view"),status=document.getElementById("status");
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x080d12);
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.set(0,8.8,12.8);camera.lookAt(0,0,0);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.6));renderer.shadowMap.enabled=false;renderer.outputColorSpace=THREE.SRGBColorSpace;host.appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe8f3ff,0x253322,2.1));
+const key=new THREE.DirectionalLight(0xffffff,2.4);key.position.set(-4,9,6);scene.add(key);
+const grid=new THREE.GridHelper(14,14,0x56704b,0x26352c);grid.position.y=.005;scene.add(grid);
+const axes=new THREE.AxesHelper(2.4);axes.position.set(-6.4,.02,-6.4);scene.add(axes);
+const specs=[
+ {name:"RIGHT",f:0,x:-3,z:-3,v:new THREE.Vector3(1,0,0),color:0xa3e635},
+ {name:"DOWN",f:Math.PI/2,x:3,z:-3,v:new THREE.Vector3(0,0,1),color:0x38bdf8},
+ {name:"LEFT",f:Math.PI,x:-3,z:3,v:new THREE.Vector3(-1,0,0),color:0xf59e0b},
+ {name:"UP",f:-Math.PI/2,x:3,z:3,v:new THREE.Vector3(0,0,-1),color:0xc084fc}
+];
+const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+let mixers=[];
+function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);}
+addEventListener("resize",resize);resize();
+try{
+ const [modelAsset,runAsset]=await Promise.all([
+  loader.loadAsync("./assets/players/player.glb"),
+  loader.loadAsync("./assets/players/run.glb").catch(()=>null)
+ ]);
+ const template=modelAsset.scene;template.updateMatrixWorld(true);
+ const box=new THREE.Box3().setFromObject(template),height=box.max.y-box.min.y;
+ if(!Number.isFinite(height)||height<.5)throw new Error("Player model has invalid dimensions");
+ const scale=1.8/height;
+ const runClip=runAsset?.animations?.[0]||null;
+ for(const spec of specs){
+  const group=new THREE.Group();group.position.set(spec.x,0,spec.z);
+  const model=cloneSkeleton(template);model.scale.setScalar(scale);model.position.y=-box.min.y*scale;
+  model.traverse(n=>{if(n.isMesh){n.frustumCulled=false;n.castShadow=false;n.receiveShadow=false;}});
+  group.add(model);
+  // Same yaw conversion used by MatchPlayerRenderer.
+  group.rotation.y=-spec.f-Math.PI/2;
+  scene.add(group);
+  const arrow=new THREE.ArrowHelper(spec.v,new THREE.Vector3(spec.x,.08,spec.z),1.65,spec.color,.42,.22);scene.add(arrow);
+  const mixer=new THREE.AnimationMixer(model);mixers.push(mixer);
+  if(runClip)mixer.clipAction(runClip.clone()).setLoop(THREE.LoopRepeat,Infinity).play();
+ }
+ status.textContent="4/4 models loaded · "+(runClip?"Run animation loaded":"Run animation unavailable");
+ if(!runClip)status.innerHTML='<span id="error">Model loaded; run.glb animation unavailable.</span>';
+}catch(error){status.innerHTML='<span id="error">Load failed: '+String(error.message||error)+'</span>';console.error(error);}
+const clock=new THREE.Clock();
+function frame(){requestAnimationFrame(frame);const dt=Math.min(clock.getDelta(),.05);for(const mixer of mixers)mixer.update(dt);renderer.render(scene,camera);}
+frame();
+</script>
+</body>
+</html>
