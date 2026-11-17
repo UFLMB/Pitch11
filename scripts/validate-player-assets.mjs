@@ -36,6 +36,29 @@ for (const mesh of model.meshes || []) {
 }
 if (!triangles || triangles > 20000) throw new Error(`Unexpected player triangle count: ${triangles}`);
 
+const materialReport = (model.materials || []).map((material, index) => ({
+  index,
+  name: material.name || `material-${index}`,
+  baseColorFactor: material.pbrMetallicRoughness?.baseColorFactor || null,
+  baseColorTexture: material.pbrMetallicRoughness?.baseColorTexture?.index ?? null,
+  normalTexture: material.normalTexture?.index ?? null,
+  metallicRoughnessTexture: material.pbrMetallicRoughness?.metallicRoughnessTexture?.index ?? null
+}));
+const meshAssignments = (model.nodes || [])
+  .filter(node => Number.isInteger(node.mesh))
+  .map(node => ({
+    node: node.name || "(unnamed node)",
+    mesh: model.meshes?.[node.mesh]?.name || `mesh-${node.mesh}`,
+    skin: Number.isInteger(node.skin) ? (model.skins?.[node.skin]?.name || `skin-${node.skin}`) : null,
+    primitives: (model.meshes?.[node.mesh]?.primitives || []).map(primitive => ({
+      material: Number.isInteger(primitive.material)
+        ? (model.materials?.[primitive.material]?.name || `material-${primitive.material}`)
+        : null,
+      materialIndex: primitive.material ?? null,
+      mode: primitive.mode ?? 4
+    }))
+  }));
+
 const clips = [
   ["idle.glb", "Idle"],
   ["walk.glb", "Walk"],
@@ -99,8 +122,8 @@ console.log(JSON.stringify({
   triangles,
   namedJoints: joints.size,
   skins: model.skins.length,
-  materials: (model.materials || []).map(material => material.name || "(unnamed)"),
-  meshes: (model.meshes || []).map(mesh => mesh.name || "(unnamed)"),
+  materials: materialReport,
+  meshAssignments,
   animations: clipReport,
   copyrightNotices: [...copyrightNotices]
 }, null, 2));
