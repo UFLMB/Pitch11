@@ -50,8 +50,8 @@ See [the anatomical mapping specification](../../docs/PLAYER-UV-ANATOMICAL-MAPPI
 
 ## Model-specific neutral kit base texture
 
-- Canonical base-colour atlas: `player-basecolor-neutral.svg` (1024 × 1024, embedded WebP image).
-- This texture is prepared specifically for the existing Male Athlete 02 UV layout and is loaded by Player Kit Studio as its editable starting point.
-- It uses the already accepted garment masks: jersey BODY islands 1, 8, 9, 16, 17; shorts 6, 7, 14, 15; socks 4, 5; boots 12–13 and 18–27.
-- Skin and head textures remain sourced from the original GLB. The model mesh, UVs, skeleton, skin weights, animation clips and gameplay data are unchanged.
-- The neutral atlas removes the source kit's number, logos, sponsor marks and stripes from the editable clothing regions. Team-specific kit presets can be layered on through the existing Kit Studio workflow.
+- Player Kit Studio generates the neutral base-colour atlas directly from the embedded Male Athlete 02 body texture when no saved kit exists.
+- It applies the already accepted garment masks: jersey BODY islands 1, 8, 9, 16, 17; shorts 6, 7, 14, 15; socks 4, 5; boots 12–13 and 18–27.
+- The default base is a clean light jersey, light shorts, light socks and charcoal boots. The original skin pixels and head texture are preserved.
+- The generated 1024 × 1024 texture can be exported as PNG from the existing Kit Studio. No duplicate clothing system or altered UV layout is introduced.
+- The model mesh, UVs, skeleton, skin weights, animation clips and gameplay data remain unchanged.
