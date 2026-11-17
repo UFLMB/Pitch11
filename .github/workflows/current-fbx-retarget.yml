@@ -1,0 +1,36 @@
+name: Current FBX retarget preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test/current-fbx-retarget]
+    paths:
+      - "input/player-package/jog forward.fbx"
+      - "assets/players/player.glb"
+      - "scripts/retarget-preflight.py"
+      - ".github/workflows/current-fbx-retarget.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+      - name: Inspect source animation and target rig
+        env:
+          SOURCE_FBX: input/player-package/jog forward.fbx
+          TARGET_GLB: assets/players/player.glb
+        run: blender --background --python scripts/retarget-preflight.py
+      - name: Upload preflight report
+        if: always() && hashFiles('retarget-preflight.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-fbx-retarget-preflight
+          path: retarget-preflight.json
+          retention-days: 14
