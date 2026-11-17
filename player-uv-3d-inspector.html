@@ -24,13 +24,13 @@
 <div class="note">Select a region to highlight it on the 3D model. Rotate, zoom and inspect front, back, side and underside. Candidate regions are not approved garment masks.</div>
 </aside><div class="hint">Drag to rotate · Scroll or pinch to zoom</div>
 <script type="importmap">
-{"imports":{"three":"./vendor/three/build/three.module.js"}}
+{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}
 </script>
 <script type="module">
-import * as THREE from './vendor/three/build/three.module.js';
-import {GLTFLoader} from './vendor/three/examples/jsm/loaders/GLTFLoader.js';
-import {OrbitControls} from './vendor/three/examples/jsm/controls/OrbitControls.js';
-import {MeshoptDecoder} from './vendor/three/examples/jsm/libs/meshopt_decoder.module.js';
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 const status=document.querySelector('#status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
