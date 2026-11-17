@@ -37,7 +37,8 @@ try{
   const group=new THREE.Group();group.position.set(spec.x,0,spec.z);
   const model=cloneSkeleton(template);model.scale.setScalar(scale);model.position.y=-box.min.y*scale;
   model.traverse(n=>{if(n.isMesh){n.frustumCulled=false;n.castShadow=false;n.receiveShadow=false;}});
-  group.add(model);group.rotation.y=-spec.f-Math.PI/2;scene.add(group);
+  group.add(model);// The supplied GLB faces local +Z; rotate with the same 180° correction as the match renderer.
+  group.rotation.y=-spec.f+Math.PI/2;scene.add(group);
   const arrow=new THREE.ArrowHelper(spec.v,new THREE.Vector3(spec.x,.08,spec.z),1.65,spec.color,.42,.22);scene.add(arrow);
   mixers.push(new THREE.AnimationMixer(model));
  }
