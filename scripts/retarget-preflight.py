@@ -29,11 +29,12 @@ if not os.path.isfile(TARGET): raise RuntimeError("Missing target GLB: " + TARGE
 bpy.ops.import_scene.fbx(filepath=SOURCE)
 source_rigs = armatures()
 if not source_rigs: raise RuntimeError("FBX import produced no armature")
-source_actions = [a for a in bpy.data.actions if len(a.fcurves)]
+source_actions = list(bpy.data.actions)
 if not source_actions: raise RuntimeError("FBX import produced no animation action")
 source = max(source_rigs, key=lambda o: len(o.data.bones))
 source_bones = describe(source)
-source_action = source.animation_data.action if source.animation_data else source_actions[0]
+source_action = (source.animation_data.action if source.animation_data and source.animation_data.action else (source_actions[0] if source_actions else None))
+if source_action is None: raise RuntimeError("FBX import produced no usable animation action")
 
 bpy.ops.import_scene.gltf(filepath=TARGET)
 target_rigs = armatures()
@@ -54,7 +55,8 @@ report = {
  "source_fbx": SOURCE, "target_glb": TARGET,
  "source_armature": source.name, "source_bone_count": len(source_bones),
  "target_armature": target.name, "target_bone_count": len(target_bones),
- "source_action": source_action.name, "source_action_fcurves": len(source_action.fcurves),
+ "source_action": source_action.name, "source_action_fcurves": (len(source_action.fcurves) if hasattr(source_action, "fcurves") else None),
+ "source_action_slots": ([slot.name for slot in source_action.slots] if hasattr(source_action, "slots") else []),
  "source_bones": source_bones, "target_bones": target_bones,
  "direct_name_mapping_count": len(mapping), "direct_name_mapping": mapping,
  "unmatched_source_bones": unmatched,
