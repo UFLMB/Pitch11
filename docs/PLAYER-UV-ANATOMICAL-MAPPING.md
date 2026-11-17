@@ -61,11 +61,11 @@ The user has visually confirmed the garment selections as exact. Preserve these 
 | Garment | BODY island IDs | Notes |
 |---|---|---|
 | Jersey | 1, 8, 9, 16, 17 | Islands 16 (left) and 17 (right) are the inner jersey panels and must remain included |
-| Shorts | 6, 7, 10, 11, 14, 15 | Islands 14 (left) and 15 (right) are the inner shorts panels and must remain included |
+| Shorts | 6, 7, 14, 15 | Islands 14 (left) and 15 (right) are the inner shorts panels and must remain included; knee transition islands 10–11 are excluded |
 | Socks | 4, 5 | Left and right lower-leg fabric panels |
 | Boots | 12, 13, 18–27 | Footwear panels, soles, studs and tongue details |
 
-These four independent selections are user-approved. Do not expand, reduce, reorder, or reinterpret them without explicit user direction.
+These four independent selections are user-approved. Do not expand, reduce, reorder, or reinterpret them without explicit user direction. Knee transition islands 10–11 must not be included in the shorts recolouring mask.
 
 ## Coordinate and integrity rules
 
