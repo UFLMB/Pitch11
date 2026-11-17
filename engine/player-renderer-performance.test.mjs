@@ -29,7 +29,9 @@ test("optimized GLB asset contract defines mobile-conscious geometry and texture
   assert.ok(readme.includes("Four embedded 1024 px PBR textures"));
   assert.ok(readme.includes("20 Hz on mobile and 30 Hz on desktop"));
   const workflow = read("../.github/workflows/static.yml");
-  assert.ok(workflow.includes("https://models.codelove.in/models/sports-male-02.glb"));
+  assert.ok(workflow.includes("test -s assets/players/player.glb"));
+  assert.ok(workflow.includes('test "$(head -c 4 assets/players/player.glb)" = "glTF"'));
+  assert.ok(!workflow.includes("https://models.codelove.in/models/sports-male-02.glb"));
   assert.ok(workflow.includes("m_idle_neutral_01.glb"));
   assert.ok(workflow.includes("m_walk_neutral_01.glb"));
   assert.ok(workflow.includes("m_run_neutral_01.glb"));
