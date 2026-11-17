@@ -3,6 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { clone as cloneSkeleton } from "three/addons/utils/SkeletonUtils.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 
+window.__p11ModuleStarted?.();
 const host=document.getElementById("view"),status=document.getElementById("status");
 const setStatus=(message,isError=false)=>{status.textContent=message;status.style.color=isError?"#ff9c9c":"#d6e1e8";};
 let renderer,scene,camera,mixers=[];
