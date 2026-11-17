@@ -1,0 +1,35 @@
+name: Current FBX retarget compatibility test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test/current-fbx-retarget]
+    paths:
+      - "scripts/retarget-current-fbx-test.py"
+      - ".github/workflows/retarget-current-fbx-test.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+      - name: Inspect jog-forward FBX against the player GLB
+        env:
+          FBX_PATH: input/player-package/jog forward.fbx
+          GLB_PATH: assets/players/player.glb
+          REPORT_PATH: retarget-test-report.json
+        run: blender --background --python scripts/retarget-current-fbx-test.py
+      - name: Upload compatibility report
+        if: always() && hashFiles('retarget-test-report.json') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-fbx-retarget-test
+          path: retarget-test-report.json
+          retention-days: 14
