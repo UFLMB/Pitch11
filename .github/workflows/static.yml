@@ -146,6 +146,13 @@ jobs:
           test -s vendor/three/examples/jsm/utils/SkeletonUtils.js
           test -s vendor/three/examples/jsm/libs/meshopt_decoder.module.js
           test -s vendor/three/LICENSE
+      - name: Bundle player direction diagnostic modules
+        run: |
+          mkdir -p node_modules
+          ln -s ../vendor/three node_modules/three
+          npx --yes esbuild@0.24.2 player-direction-test.js --bundle --format=esm --target=es2020 --outfile=player-direction-test.bundle.js
+          test -s player-direction-test.bundle.js
+          grep -q "GLTFLoader" player-direction-test.bundle.js
       - name: Download and validate stadium and player assets
         run: |
           sudo apt-get update
