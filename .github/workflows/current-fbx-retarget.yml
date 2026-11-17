@@ -18,14 +18,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender 4.5.3
+      - name: Install Blender
         run: |
           sudo apt-get update
-          sudo apt-get install -y curl xz-utils
-          curl -L --fail --retry 3 https://download.blender.org/release/Blender4.5/blender-4.5.3-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
-          tar -xf "$RUNNER_TEMP/blender.tar.xz" -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/blender-4.5.3-linux-x64" >> "$GITHUB_PATH"
-          "$RUNNER_TEMP/blender-4.5.3-linux-x64/blender" --background --python-expr "import numpy; print('BLENDER_NUMPY_OK', numpy.__version__)"
+          sudo apt-get install -y blender python3-numpy
+          blender --background --python-expr "import numpy; print('BLENDER_NUMPY_OK', numpy.__version__)"
       - name: Inspect source animation and target rig
         env:
           SOURCE_FBX: input/player-package/jog forward.fbx
