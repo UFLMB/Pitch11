@@ -18,20 +18,22 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender
+      - name: Install Blender and NumPy for Blender Python
         run: |
           sudo apt-get update
           sudo apt-get install -y blender python3-numpy
-          blender --background --python-expr "import numpy; print('BLENDER_NUMPY_OK', numpy.__version__)"
+          export PYTHONPATH="/usr/lib/python3/dist-packages:${PYTHONPATH:-}"
+          blender --background --python-expr "import sys, numpy; print('BLENDER_PYTHON', sys.version); print('BLENDER_NUMPY_OK', numpy.__version__)"
       - name: Inspect source animation and target rig
         env:
           SOURCE_FBX: input/player-package/jog forward.fbx
           TARGET_GLB: assets/players/player.glb
+          PYTHONPATH: /usr/lib/python3/dist-packages
         run: blender --background --python scripts/retarget-preflight.py
       - name: Verify preflight report
         run: |
           test -s retarget-preflight.json
-          python3 -c "import json; d=json.load(open('retarget-preflight.json')); assert d['status'] == 'PREFLIGHT_ONLY_RETARGET_NOT_EXPORTED'; print('Report validated:', d['source_action'], d['direct_name_mapping_count'], 'mapped bones')"
+          python3 -c "import json; d=json.load(open('retarget-preflight.json')); assert d['status'] == 'PREFLIGHT_ONLY_RETARGET_NOT_EXPORTED'; assert d['source_bone_count'] > 0 and d['target_bone_count'] > 0; print('Report validated:', d['source_action'], d['direct_name_mapping_count'], 'mapped bones')"
       - name: Upload preflight report
         if: always() && hashFiles('retarget-preflight.json') != ''
         uses: actions/upload-artifact@v4
