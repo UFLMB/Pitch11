@@ -41,7 +41,7 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <div class="row"><button id="stepBack" disabled>− FRAME</button><button id="loop" class="active" aria-pressed="true" disabled>LOOP ON</button><button id="stepForward" disabled>+ FRAME</button></div>
 <label class="field">Playback speed <span id="speedLabel">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
 <label class="field">Import animation GLB files<input id="animationFiles" type="file" accept=".glb,model/gltf-binary" multiple></label>
-<div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically. Imported animations work best when skeleton node names match the loaded model.</div>
+<div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically. Imported animations work best when skeleton node names match the loaded model.</div><div class="meta" id="compatibilityInfo" aria-live="polite">Rig compatibility report will appear after an animation is selected.</div>
 </div>
 <div class="group"><div class="group-title">Display</div>
 <div class="row"><button id="wireframe" aria-pressed="false">WIREFRAME</button><button id="rotate" aria-pressed="false">AUTO ROTATE</button></div>
@@ -80,13 +80,20 @@ function collectMaterials(root){materials.length=0;root.traverse(o=>{if(!o.isMes
 function applyWireframe(){for(const m of materials)m.wireframe=wireframe;$('wireframe').classList.toggle('active',wireframe);$('wireframe').setAttribute('aria-pressed',String(wireframe))}
 function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
 function updateAnimationControls(){const enabled=!!clips.length;$('timeline').disabled=!enabled;$('loop').disabled=!enabled;$('stepBack').disabled=!enabled;$('stepForward').disabled=!enabled}
+function inspectClipCompatibility(clip){
+ if(!activeRoot||!clip)return{matched:0,total:clip?.tracks?.length||0,missing:[]};
+ let matched=0;const missing=new Set();
+ for(const track of clip.tracks||[]){try{const parsed=THREE.PropertyBinding.parseTrackName(track.name);const target=THREE.PropertyBinding.findNode(activeRoot,parsed.nodeName);if(target)matched++;else missing.add(parsed.nodeName||track.name)}catch{missing.add(track.name)}}
+ return{matched,total:clip.tracks?.length||0,missing:[...missing]};
+}
+function updateCompatibilityInfo(){const clip=clips[Number($('animationSelect').value)];if(!clip){$('compatibilityInfo').textContent='No animation selected.';return}const r=inspectClipCompatibility(clip);const percent=r.total?Math.round(r.matched/r.total*100):0;const label=r.matched===r.total?'All animation tracks resolve on this model.':r.matched?'Partial rig match. Some tracks will not animate.':'No compatible rig targets found. This clip will not animate this model.';$('compatibilityInfo').textContent='RIG CHECK · '+r.matched+'/'+r.total+' tracks matched ('+percent+'%). '+label+(r.missing.length?' Unmatched: '+r.missing.slice(0,5).join(', ')+(r.missing.length>5?' …':''):'');$('compatibilityInfo').style.color=r.matched===r.total?'#a8d6b0':r.matched?'#e6c58d':'#fca5a5'}
 function refreshAnimationList(preferred=''){
  const select=$('animationSelect');select.innerHTML='';
  if(!clips.length){select.add(new Option('No animation clips found',''));select.disabled=true;$('playPause').disabled=true;$('stop').disabled=true;updateAnimationControls();animationInfo.textContent='No clips are available for this model yet. Import compatible animation GLB files below.';return}
  clips.forEach((clip,i)=>select.add(new Option(clip.name||('Animation '+(i+1)),String(i))));
  select.disabled=false;$('playPause').disabled=false;$('stop').disabled=false;updateAnimationControls();
  const match=clips.findIndex(c=>c.name.toLowerCase().includes(preferred.toLowerCase()));
- select.value=String(match>=0?match:0);playSelected();
+ select.value=String(match>=0?match:0);playSelected();updateCompatibilityInfo();
  animationInfo.textContent=clips.length+' clip(s) available · '+clips.map(c=>c.name||'Unnamed').join(' · ');
 }
 function stopAnimation(){if(mixer){mixer.stopAllAction();mixer.setTime(0)}currentAction=null;playing=false;$('playPause').textContent='PLAY';$('timeline').value='0';$('timeReadout').textContent='0.00 / 0.00 s'}
@@ -115,14 +122,14 @@ async function loadProjectAnimations(){
  const sources=[['Idle','./assets/players/idle.glb'],['Walk','./assets/players/walk.glb'],['Run','./assets/players/run.glb']];
  let loaded=0,failed=[];
  for(const [name,url] of sources){if(clips.some(c=>(c.name||'').toLowerCase().includes(name.toLowerCase())))continue;try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const c=clip.clone();if(!c.name||c.name==='Animation')c.name=name;clips.push(c);loaded++}}catch(e){failed.push(name)}}
- if(loaded){const current=$('animationSelect').value;refreshAnimationList('idle');if(current&&Number(current)<clips.length)$('animationSelect').value=current;animationInfo.textContent=clips.length+' clip(s) ready (embedded + project animations).'+(failed.length?' Missing files: '+failed.join(', '):'')}
+ if(loaded){const currentClip=clips[Number($('animationSelect').value)];const preferred=currentClip?.name||'idle';refreshAnimationList(preferred);animationInfo.textContent=clips.length+' clip(s) ready (embedded + project animations).'+(failed.length?' Missing files: '+failed.join(', '):'')}
  else if(failed.length)animationInfo.textContent=clips.length+' embedded clip(s). Project animation files unavailable: '+failed.join(', ');
 }
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCamera(b.dataset.view)));
 $('zoomIn').addEventListener('click',()=>{camera.position.sub(controls.target).multiplyScalar(.82);controls.update()});
 $('zoomOut').addEventListener('click',()=>{camera.position.sub(controls.target).multiplyScalar(1.22);controls.update()});
 $('reset').addEventListener('click',()=>{distance=radius*3.1;setCamera('front')});
-$('animationSelect').addEventListener('change',playSelected);
+$('animationSelect').addEventListener('change',()=>{playSelected();updateCompatibilityInfo()});
 $('playPause').addEventListener('click',()=>{if(!currentAction){playSelected();return}playing=!playing;currentAction.paused=!playing;$('playPause').textContent=playing?'PAUSE':'PLAY'});
 $('stop').addEventListener('click',()=>{stopAnimation()});
 $('timeline').addEventListener('input',()=>{if(!currentAction)return;const duration=currentAction.getClip().duration||0;currentAction.paused=true;currentAction.time=duration*(Number($('timeline').value)/1000);mixer.update(0);updateTimeline();playing=false;$('playPause').textContent='PLAY'});
