@@ -205,13 +205,13 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
         const pts = [indices[t * 3], indices[t * 3 + 1], indices[t * 3 + 2]].map(n => {
           const p = uv[n];
           if (!p) throw new Error(`UV index ${n} outside accessor ${uvIndex}`);
-          return `${(p[0] * 1024).toFixed(2)},${((1 - p[1]) * 1024).toFixed(2)}`;
+          return `${(p[0] * 1023).toFixed(2)},${(p[1] * 1024).toFixed(2)}`;
         }).join(" ");
         polygons.push(`<polygon points="${pts}" fill="none" stroke="${palette[islandIndex % palette.length]}" stroke-width="0.8" stroke-opacity="0.78" />`);
       }
       const labels = islands.map((island, i) => {
-        const x = ((island.uvBounds.min[0] + island.uvBounds.max[0]) / 2) * 1024;
-        const y = (1 - (island.uvBounds.min[1] + island.uvBounds.max[1]) / 2) * 1024;
+        const x = ((island.uvBounds.min[0] + island.uvBounds.max[0]) / 2) * 1023;
+        const y = ((island.uvBounds.min[1] + island.uvBounds.max[1]) / 2) * 1024;
         return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-family="Arial,sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="#111" stroke="#fff" stroke-width="3" paint-order="stroke">${i + 1}</text>`;
       }).join("");
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#fff"/><g>${polygons.join("")}</g><g>${labels}</g></svg>`;
