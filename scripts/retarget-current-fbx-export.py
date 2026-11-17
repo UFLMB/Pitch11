@@ -95,12 +95,12 @@ for frame in range(start, end + 1):
         dst_pb.keyframe_insert(data_path="rotation_quaternion", frame=frame, group=target_name)
         dst_pb.keyframe_insert(data_path="scale", frame=frame, group=target_name)
 
-# Remove the source rig and any imported source objects; only the original
-# target GLB scene is exported with the baked action.
-source_objects = [source] + list(source.children_recursive)
-for obj in source_objects:
-    if obj.name in bpy.data.objects:
-        bpy.data.objects.remove(obj, do_unlink=True)
+# The FBX package is animation-only. Remove its armature by its stable name
+# (not by retaining RNA object references while deleting datablocks).
+source_object_name = source.name
+source_object = bpy.data.objects.get(source_object_name)
+if source_object is not None:
+    bpy.data.objects.remove(source_object, do_unlink=True)
 # Ensure target and its original mesh objects are selected for export.
 bpy.ops.object.select_all(action='DESELECT')
 target.select_set(True)
