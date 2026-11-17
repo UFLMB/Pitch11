@@ -5,6 +5,23 @@
 <title>PITCH 11 · Player UV 3D Inspector</title>
 <style>
 :root{color-scheme:dark;font-family:Inter,system-ui,sans-serif;background:#090d12;color:#e5e7eb}*{box-sizing:border-box}body{margin:0;overflow:hidden}#view{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}.panel{position:fixed;z-index:2;left:16px;top:16px;width:min(350px,calc(100vw - 32px));padding:16px;background:#101820ee;border:1px solid #334155;border-radius:14px;backdrop-filter:blur(14px);box-shadow:0 12px 40px #0008}.eyebrow{font-size:10px;letter-spacing:.18em;color:#a3e635;font-weight:800}.panel h1{font-size:17px;margin:7px 0 4px}.desc{font-size:12px;color:#aab6c5;line-height:1.5;margin:0 0 14px}.status{font-size:11px;color:#a3e635;margin:0 0 12px}.group{border-top:1px solid #263341;padding-top:11px;margin-top:11px}.group strong{display:block;font-size:10px;letter-spacing:.12em;color:#94a3b8;margin-bottom:8px}.buttons{display:flex;flex-wrap:wrap;gap:6px}button{border:1px solid #344454;background:#172330;color:#dbe5ef;border-radius:8px;padding:8px 10px;font-size:11px;font-weight:650;cursor:pointer}button.active{border-color:#a3e635;background:#263719;color:#d9f99d}button:disabled{opacity:.45}.note{font-size:11px;line-height:1.5;color:#9aa9b9;margin-top:12px}.hint{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:30px;background:#101820cc;color:#b8c4d2;font-size:11px;white-space:nowrap}
+@media(max-width:680px){
+ html,body{width:100%;height:100%;height:100dvh;overscroll-behavior:none}
+ #view{inset:0}
+ #view canvas{touch-action:none}
+ .panel{left:8px;right:8px;top:auto;bottom:max(8px,env(safe-area-inset-bottom));width:auto;max-height:48dvh;overflow-y:auto;overscroll-behavior:contain;padding:12px;border-radius:13px}
+ .panel h1{font-size:16px}
+ .desc{font-size:10px;margin-bottom:9px}
+ .status{font-size:10px;margin-bottom:8px}
+ .group{padding-top:8px;margin-top:8px}
+ .group strong{font-size:9px;margin-bottom:6px}
+ .buttons{gap:5px}
+ button{min-height:40px;flex:1 1 auto;padding:8px 9px;font-size:10px;touch-action:manipulation}
+ .note{font-size:9px;line-height:1.4;margin-top:8px}
+ .hint{bottom:calc(48dvh + 14px + env(safe-area-inset-bottom));max-width:calc(100vw - 20px);white-space:normal;text-align:center;font-size:9px;padding:7px 10px}
+}
+@media(max-height:620px) and (max-width:680px){.panel{max-height:42dvh}.hint{bottom:calc(42dvh + 14px + env(safe-area-inset-bottom))}}
+
 </style>
 </head>
 <body><div id="view"></div>
