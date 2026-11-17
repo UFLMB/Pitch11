@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d12">
+<title>PITCH 11 | 3D Model Viewer</title>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#090d12;--panel:#101923;--panel2:#172230;--line:#2b3949;--text:#edf3f8;--muted:#91a0b2;--gold:#d1b27c;--green:#91c77a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select{font:inherit}#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:fixed;z-index:3;top:12px;left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}.brand,.status{padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:#0b111be8;backdrop-filter:blur(14px);pointer-events:auto}.brand{font-size:12px;font-weight:850;letter-spacing:.16em}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:9px;letter-spacing:.14em}.status{max-width:48vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+#tools{position:fixed;z-index:3;top:76px;right:14px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:min(420px,calc(100vw - 28px));padding:8px;border:1px solid var(--line);border-radius:12px;background:#0b111be8;backdrop-filter:blur(14px)}
+button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9px;background:#172230;color:#dce5ee;font-size:10px;font-weight:750;letter-spacing:.04em;cursor:pointer}button.active{border-color:var(--gold);background:#28251f;color:#f0d7a5}button:disabled{opacity:.4;cursor:not-allowed}
+#panel{position:fixed;z-index:4;left:14px;top:76px;bottom:14px;width:min(330px,calc(100vw - 28px));overflow:auto;padding:15px;border:1px solid var(--line);border-radius:15px;background:linear-gradient(160deg,#101923f5,#0b1119f2);backdrop-filter:blur(16px);box-shadow:0 18px 60px #0008}
+.eyebrow{color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.18em}.heading{margin:5px 0 5px;font-size:18px;font-weight:800;letter-spacing:-.03em}.intro{margin:0 0 14px;color:var(--muted);font-size:10px;line-height:1.55}
+.group{margin:13px 0;padding-top:12px;border-top:1px solid var(--line)}.group-title{margin-bottom:8px;color:#c2ccd7;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
+.field{display:grid;gap:6px;margin:9px 0;color:#cbd5e1;font-size:10px}.field input[type=file],.field select{width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;background:#0c151f;color:var(--text);font-size:11px}.field input[type=range]{width:100%;accent-color:var(--gold)}.row{display:flex;gap:7px}.row>*{flex:1;min-width:0}.note{padding:9px 10px;border:1px solid #33413c;border-radius:9px;background:#111b19;color:#b9c9bd;font-size:10px;line-height:1.5}.error{margin-top:9px;color:#fca5a5;font-size:10px;line-height:1.5;white-space:pre-wrap}.meta{margin-top:8px;color:var(--muted);font-size:9px;line-height:1.5;overflow-wrap:anywhere}
+#hint{position:fixed;z-index:2;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border:1px solid var(--line);border-radius:20px;background:#0b111be8;color:#cbd5e1;font-size:10px;white-space:nowrap;pointer-events:none}
+#panelToggle{display:none}
+@media(max-width:760px),(max-height:600px){header{top:7px;left:7px;right:7px}.brand,.status{padding:8px 10px}.brand{font-size:10px}.brand small{font-size:8px}#tools{top:54px;left:7px;right:7px;max-width:none;justify-content:center;gap:4px;padding:5px}#tools button{flex:1 1 auto;min-width:0;min-height:36px;padding:6px 5px;font-size:9px}#panel{top:auto;left:7px;right:7px;bottom:max(7px,env(safe-area-inset-bottom));width:auto;max-height:42dvh;padding:11px;border-radius:13px}.heading{font-size:16px}.intro{margin-bottom:8px}.group{margin:9px 0;padding-top:8px}.field{margin:7px 0}#hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 43dvh);font-size:9px}}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<header><div class="brand">PITCH 11<small>INDEPENDENT 3D MODEL VIEWER</small></div><div class="status" id="status">INITIALISING VIEWER</div></header>
+<nav id="tools" aria-label="Camera controls">
+<button class="active" data-view="front">FRONT</button><button data-view="back">BACK</button><button data-view="left">LEFT</button><button data-view="right">RIGHT</button><button id="zoomOut" aria-label="Zoom out">−</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="reset">RESET</button>
+</nav>
+<aside id="panel">
+<div class="eyebrow">PITCH 11 · TOOLS</div><div class="heading">3D Model Viewer</div>
+<p class="intro">A read-only inspection space. Models and animation files are loaded for preview only; this tool never edits or saves over game assets.</p>
+<div class="group"><div class="group-title">Model</div>
+<label class="field">Load a local GLB model<input id="modelFile" type="file" accept=".glb,model/gltf-binary"></label>
+<div class="note" id="modelInfo">Default model: assets/players/player.glb</div>
+</div>
+<div class="group"><div class="group-title">Animation</div>
+<label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
+<div class="row"><button id="playPause" disabled>PLAY</button><button id="stop" disabled>STOP</button></div>
+<label class="field">Playback speed <span id="speedLabel">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
+<label class="field">Load extra animation GLBs<input id="animationFiles" type="file" accept=".glb,model/gltf-binary" multiple></label>
+<div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically.</div>
+</div>
+<div class="group"><div class="group-title">Display</div>
+<div class="row"><button id="wireframe" aria-pressed="false">WIREFRAME</button><button id="rotate" aria-pressed="false">AUTO ROTATE</button></div>
+<label class="field">Background<select id="background"><option value="dark">Graphite</option><option value="stadium">Stadium green</option><option value="light">Light grey</option></select></label>
+</div>
+<div class="group"><div class="note">Independent page · Read-only preview · Original GLB files are not modified.</div><div class="error" id="error" role="alert"></div></div>
+</aside>
+<div id="hint">Drag to rotate · Pinch or scroll to zoom</div>
+<script type="module">
+import * as THREE from 'three';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+
+const $=id=>document.getElementById(id);
+const status=$('status'),error=$('error'),modelInfo=$('modelInfo'),animationInfo=$('animationInfo');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('stage').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,.9);fill.position.set(-4,2,-3);scene.add(fill);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.rotateSpeed=.72;controls.zoomSpeed=.85;
+const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
+let activeRoot=null,mixer=null,currentAction=null,clips=[],clipSources=[],radius=1,targetY=0,distance=3.1,autoRotate=false,wireframe=false,playing=false,clock=new THREE.Clock(),modelUrl=null;
+const materials=[];
+function setStatus(s){status.textContent=s}
+function setCamera(view){const d=distance,y=targetY;const positions={front:[0,y,d],back:[0,y,-d],left:[-d,y,0],right:[d,y,0]};const p=positions[view]||positions.front;camera.position.set(...p);camera.up.set(0,1,0);controls.target.set(0,y,0);controls.update();document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===view))}
+function frameModel(root){
+ const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());
+ root.position.sub(center);root.position.y+=size.y/2;
+ const sphere=new THREE.Box3().setFromObject(root).getBoundingSphere(new THREE.Sphere());
+ radius=Math.max(sphere.radius,.5);distance=radius*3.1;targetY=size.y*.5;
+ controls.minDistance=Math.max(.2,radius*1.15);controls.maxDistance=radius*8;
+ camera.near=Math.max(.005,radius/100);camera.far=radius*100;camera.updateProjectionMatrix();setCamera('front');
+}
+function collectMaterials(root){materials.length=0;root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&!materials.includes(m))materials.push(m)})});applyWireframe()}
+function applyWireframe(){for(const m of materials)m.wireframe=wireframe;$('wireframe').classList.toggle('active',wireframe);$('wireframe').setAttribute('aria-pressed',String(wireframe))}
+function refreshAnimationList(preferred=''){
+ const select=$('animationSelect');select.innerHTML='';
+ if(!clips.length){select.add(new Option('No animation clips found',''));select.disabled=true;$('playPause').disabled=true;$('stop').disabled=true;animationInfo.textContent='No clips are available for this model yet. Load compatible animation GLB files below.';return}
+ clips.forEach((clip,i)=>select.add(new Option(clip.name||('Animation '+(i+1)),String(i))));
+ select.disabled=false;$('playPause').disabled=false;$('stop').disabled=false;
+ const match=clips.findIndex(c=>c.name.toLowerCase().includes(preferred.toLowerCase()));
+ select.value=String(match>=0?match:0);playSelected();
+ animationInfo.textContent=clips.length+' clip(s) available · '+clips.map(c=>c.name||'Unnamed').join(' · ');
+}
+function stopAnimation(){if(mixer)mixer.stopAllAction();currentAction=null;playing=false;$('playPause').textContent='PLAY'}
+function playSelected(){if(!mixer||!clips.length)return;stopAnimation();const clip=clips[Number($('animationSelect').value)]||clips[0];if(!clip)return;currentAction=mixer.clipAction(clip,activeRoot);currentAction.reset().setLoop(THREE.LoopRepeat,Infinity).play();currentAction.timeScale=Number($('speed').value);playing=true;$('playPause').textContent='PAUSE'}
+async function loadExtraAnimations(){
+ if(!activeRoot)return;
+ const files=[...$('animationFiles').files];if(!files.length)return;
+ let added=0,failed=[];
+ for(const file of files){const url=URL.createObjectURL(file);try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const named=clip.clone();if(!named.name||named.name==='Animation')named.name=file.name.replace(/\.glb$/i,'');clips.push(named);added++}}catch(e){failed.push(file.name+': '+(e.message||e))}finally{URL.revokeObjectURL(url)}}
+ refreshAnimationList();animationInfo.textContent=added+' additional clip(s) loaded. '+(failed.length?'Could not load: '+failed.join(' | '):'');
+}
+async function loadModel(url,label,revokeAfter=false){
+ setStatus('LOADING MODEL');error.textContent='';stopAnimation();
+ try{
+  const gltf=await loader.loadAsync(url);
+  if(activeRoot)scene.remove(activeRoot);
+  activeRoot=gltf.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
+  mixer=new THREE.AnimationMixer(activeRoot);clips=[...(gltf.animations||[])];clipSources=[];
+  modelInfo.textContent=label+' · '+clips.length+' embedded clip(s)';
+  refreshAnimationList('idle');setStatus('MODEL LOADED');
+  if(revokeAfter){URL.revokeObjectURL(url);modelUrl=null}
+  await loadProjectAnimations();
+ }catch(e){setStatus('MODEL LOAD ERROR');error.textContent=e?.stack||String(e);modelInfo.textContent='Model could not be loaded. Use a self-contained GLB file.';if(revokeAfter)URL.revokeObjectURL(url)}
+}
+async function loadProjectAnimations(){
+ const sources=[['Idle','./assets/players/idle.glb'],['Walk','./assets/players/walk.glb'],['Run','./assets/players/run.glb']];
+ let loaded=0,failed=[];
+ for(const [name,url] of sources){if(clips.some(c=>(c.name||'').toLowerCase().includes(name.toLowerCase())))continue;try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const c=clip.clone();if(!c.name||c.name==='Animation')c.name=name;clips.push(c);loaded++}}catch(e){failed.push(name)}}
+ if(loaded){const current=$('animationSelect').value;refreshAnimationList('idle');if(current&&Number(current)<clips.length)$('animationSelect').value=current;animationInfo.textContent=clips.length+' clip(s) ready (embedded + project animations).'+(failed.length?' Missing files: '+failed.join(', '):'')}
+ else if(failed.length)animationInfo.textContent=clips.length+' embedded clip(s). Project animation files unavailable: '+failed.join(', ');
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setCamera(b.dataset.view)));
+$('zoomIn').addEventListener('click',()=>{camera.position.sub(controls.target).multiplyScalar(.82);controls.update()});
+$('zoomOut').addEventListener('click',()=>{camera.position.sub(controls.target).multiplyScalar(1.22);controls.update()});
+$('reset').addEventListener('click',()=>{distance=radius*3.1;setCamera('front')});
+$('animationSelect').addEventListener('change',playSelected);
+$('playPause').addEventListener('click',()=>{if(!currentAction){playSelected();return}playing=!playing;currentAction.paused=!playing;$('playPause').textContent=playing?'PAUSE':'PLAY'});
+$('stop').addEventListener('click',()=>{stopAnimation()});
+$('speed').addEventListener('input',()=>{$('speedLabel').textContent=Number($('speed').value).toFixed(2)+'×';if(currentAction)currentAction.timeScale=Number($('speed').value)});
+$('animationFiles').addEventListener('change',loadExtraAnimations);
+$('modelFile').addEventListener('change',()=>{const file=$('modelFile').files?.[0];if(!file)return;if(modelUrl)URL.revokeObjectURL(modelUrl);modelUrl=URL.createObjectURL(file);loadModel(modelUrl,file.name,true)});
+$('wireframe').addEventListener('click',()=>{wireframe=!wireframe;applyWireframe()});
+$('rotate').addEventListener('click',()=>{autoRotate=!autoRotate;controls.autoRotate=autoRotate;$('rotate').classList.toggle('active',autoRotate);$('rotate').setAttribute('aria-pressed',String(autoRotate))});
+$('background').addEventListener('change',e=>{const c={dark:0x090d12,stadium:0x173326,light:0x9ba4ad}[e.target.value];scene.background=new THREE.Color(c)});
+function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);if(mixer&&playing)mixer.update(dt);controls.update();renderer.render(scene,camera)}
+tick();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+loadModel('./assets/players/player.glb','assets/players/player.glb');
+</script>
+</body></html>
