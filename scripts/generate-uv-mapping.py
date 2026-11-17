@@ -28,10 +28,14 @@ def texture_for(audit, material_name):
 
 def draw_atlas(texture_path, islands, labels, filename):
     scale = 2
-    image = Image.open(texture_path).convert("RGB")
+    image = Image.open(texture_path).convert("RGBA")
     if image.size != (1024,1024): raise RuntimeError(f"Expected 1024x1024 texture, got {image.size}")
     image = image.resize((2048,2048), Image.Resampling.LANCZOS)
-    draw = ImageDraw.Draw(image, "RGBA")
+
+    # Draw the UV overlay on a transparent layer. Mirror only its horizontal
+    # positions; the original base-colour texture remains untouched.
+    overlay = Image.new("RGBA", image.size, (0,0,0,0))
+    draw = ImageDraw.Draw(overlay, "RGBA")
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
     centers = []
     for idx, island in enumerate(islands):
@@ -45,10 +49,14 @@ def draw_atlas(texture_path, islands, labels, filename):
                 u,v = float(p[0]),float(p[1])
                 if not (0 <= u <= 1 and 0 <= v <= 1): raise RuntimeError(f"UV outside 0..1: {p}")
                 points.append((u,v))
-                xy.append((round(u*1024*scale),round((1-v)*1024*scale)))
+                x = round((1-u)*(1024*scale-1))
+                y = round((1-v)*1024*scale)
+                xy.append((x,y))
             draw.line(xy+[xy[0]], fill=(255,238,65,235), width=2, joint="curve")
         xs=[p[0] for p in points]; ys=[p[1] for p in points]
-        centers.append((((min(xs)+max(xs))*0.5)*2048,(1-(min(ys)+max(ys))*0.5)*2048))
+        center_u=(min(xs)+max(xs))*0.5
+        center_v=(min(ys)+max(ys))*0.5
+        centers.append(((1-center_u)*(2048-1),(1-center_v)*2048))
     placed=[]
     offsets=[(0,0)]
     for radius in (42,60,80,102,128,158,192,230):
@@ -63,15 +71,17 @@ def draw_atlas(texture_path, islands, labels, filename):
                 chosen=(cx,cy); break
         if chosen is None: chosen=(x,y)
         cx,cy=chosen
-        if math.hypot(cx-x,cy-y)>4: draw.line((x,y,cx,cy),fill=(255,255,255,240),width=2)
+        if math.hypot(cx-x,cy-y)>4: draw.line((x,y,cx,y,cy),fill=(255,255,255,240),width=2)
         r=25
         draw.ellipse((cx-r,cy-r,cx+r,cy+r),fill=(5,12,19,245),outline=(255,255,255,255),width=3)
         s=str(idx+1); box=draw.textbbox((0,0),s,font=font)
         tw,th=box[2]-box[0],box[3]-box[1]
+        # Keep the digits upright/readable while mirroring the marker position.
         draw.text((cx-tw/2,cy-th/2-box[1]),s,font=font,fill=(255,255,255,255))
         placed.append((cx,cy))
+    image.alpha_composite(overlay)
     target=OUT/filename
-    image.save(target,format="PNG",optimize=True)
+    image.convert("RGB").save(target,format="PNG",optimize=True)
     return target
 
 def main():
@@ -81,7 +91,7 @@ def main():
     groups=full.get("groups",{})
     report={"project":"PITCH 11","model":full.get("model","PITCH 11 player.glb"),
       "purpose":"Diagnostic UV mapping only; no model or runtime asset is modified.",
-      "coordinate_convention":"x = u * texture_width; y = (1 - v) * texture_height",
+      "coordinate_convention":"diagnostic overlay x = (1 - u) * texture_width; y = (1 - v) * texture_height; base texture is unchanged",
       "validation":{},"materials":[]}
     counts={}
     for group,material_name,outname in [("body","m301_body","BODY-numbered-UV.png"),("head","m301_head","HEAD-numbered-UV.png")]:
@@ -109,7 +119,7 @@ def main():
         f.write("PITCH 11 – DIAGNOSZTIKAI UV MAPPING\\n\\n")
         f.write(f"Összesen {report['validation']['total_islands']} UV-sziget és {report['validation']['total_triangles']} UV-háromszög.\\n")
         f.write("A sárga kontúrok az eredeti UV-háromszögeket követik. A számok a JSON island mezőjével egyeznek.\\n")
-        f.write("Koordináta-vetítés: X=u*textúraszélesség; Y=(1-v)*textúramagasság.\\n\\n")
+        f.write("UV-háló vetítése: X=(1-u)*textúraszélesség; Y=(1-v)*textúramagasság. Az alatta lévő textúra változatlan.\\n\\n")
         for group in ("body","head"):
             f.write(group.upper()+"\\n")
             for i,label in enumerate(LABELS[group],1): f.write(f"{i:02d}. {label}\\n")
