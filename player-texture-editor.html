@@ -29,6 +29,13 @@ svg{display:block}@media(max-width:900px), (max-height:600px){header{top:9px;lef
 #panel.panel-collapsed #panelContent{display:none}
 #panel.panel-collapsed #panelToggle{min-height:36px}
 @media(max-width:900px),(max-height:600px){#panel.panel-collapsed{left:50%!important;right:auto!important;bottom:max(8px,env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important;width:min(210px,calc(100vw - 24px))!important;max-height:48px!important;padding:5px!important;border-radius:12px!important}#panel.panel-collapsed #panelToggle{min-height:34px;padding:6px 10px}}
+
+/* INFO remains visible; only the complete outer panel can collapse. */
+#panel .kit-intro{padding:10px 11px}
+#panel .kit-intro-heading .eyebrow{display:block;font-size:8px}
+#panel .kit-intro-heading .heading{display:block;margin:3px 0 0;font-size:16px}
+#panel .kit-intro .kit-intro-content{padding:0}
+#panel .kit-intro .intro{margin:8px 0 0}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
@@ -39,10 +46,10 @@ svg{display:block}@media(max-width:900px), (max-height:600px){header{top:9px;lef
 <aside id="panel">
  <button id="panelToggle" type="button" aria-expanded="true" aria-controls="panelContent"><span class="panel-toggle-title">PLAYER KIT STUDIO</span><span class="panel-toggle-icon" aria-hidden="true">−</span></button>
  <div id="panelContent">
- <details class="kit-intro">
-  <summary><span><span class="eyebrow">Appearance editor / 01</span><span class="heading">Player Kit Studio</span></span><span class="intro-toggle-label">INFO</span></summary>
+ <div class="kit-intro">
+  <div class="kit-intro-heading"><span class="eyebrow">Appearance editor / 01</span><span class="heading">Player Kit Studio</span></div>
   <div class="kit-intro-content"><p class="intro">Select a kit component and choose a colour. Every colour change is applied immediately to the complete mapped garment. Skin and non-clothing surfaces are protected. The jersey mask includes the torso and all four mapped sleeve panels. Football boots have a separate footwear mask. UVs are projected in the accepted stored orientation (x = u × 1023, y = v × 1024), with no mirroring or rotation. Colour edits do not alter UV coordinates.</p></div>
- </details>
+ </div>
  <div class="section-title"><span>AI Kit Designer</span><span>Prompt → 3D texture</span></div>
  <div class="prompt-layout"><textarea id="designPrompt" rows="4" maxlength="280" placeholder="Describe the kit design you want…"></textarea><div class="prompt-help"><strong>HOW TO USE</strong><p>Describe the base color, pattern, and accent color. The first recognized color becomes the base color; the second becomes the pattern or trim color.</p><strong>EXAMPLE</strong><p class="prompt-example">A dark navy jersey with thin vertical gold stripes and white trim.</p></div></div>
  <button class="primary" id="generateDesign" type="button">Generate Kit Design</button>
