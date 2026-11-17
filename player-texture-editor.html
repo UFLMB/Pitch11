@@ -1,114 +1,80 @@
 <!doctype html>
-<html lang="hu">
+<html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#090d12"><title>PITCH 11 · Player Texture Editor</title>
+<meta name="theme-color" content="#090d12"><title>PITCH 11 | Player Kit Studio</title>
 <style>
-:root{color-scheme:dark;--bg:#090d12;--panel:#111923;--line:#293647;--muted:#91a0b2;--lime:#a3e635}
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:#edf3f8;font:14px system-ui,sans-serif}
-#view{position:fixed;inset:0}canvas{display:block;width:100%;height:100%;touch-action:none}
-header{position:fixed;z-index:3;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;gap:8px;pointer-events:none}
-.brand,.status{background:#0b111be8;border:1px solid var(--line);border-radius:11px;padding:9px 12px;backdrop-filter:blur(12px);pointer-events:auto}.brand{font-weight:850;letter-spacing:.08em}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.13em}.status{font-size:11px;color:var(--muted)}
-#panel{position:fixed;z-index:4;left:12px;top:80px;bottom:12px;width:min(365px,calc(100vw - 24px));overflow:auto;background:#0c131eef;border:1px solid var(--line);border-radius:15px;padding:13px;backdrop-filter:blur(15px)}
-h1{font-size:15px;margin:0 0 5px}p,.hint{font-size:11px;line-height:1.45;color:var(--muted)}p{margin:0 0 10px}
-.row{display:flex;gap:7px;align-items:center;margin:8px 0}.row>*{min-width:0;flex:1}
-button,select,input{font:inherit}button,select{background:#182331;color:#edf3f8;border:1px solid #344356;border-radius:8px;padding:8px}button{cursor:pointer}button.active{border-color:var(--lime);color:var(--lime)}select{width:100%}
-label{display:block;font-size:11px;color:#cbd5e1;margin:8px 0}input[type=color]{width:100%;height:34px;border:0;background:none}input[type=range]{width:100%;accent-color:var(--lime)}
-#islands{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:8px}.island{font-size:10px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.meta{font-size:10px;color:var(--muted);line-height:1.45;margin-top:8px}.primary{border-color:#84cc16}.danger{border-color:#9f5555}
-#hint{position:fixed;z-index:2;bottom:15px;left:50%;transform:translateX(-50%);background:#0b111be8;border:1px solid var(--line);border-radius:20px;padding:8px 12px;font-size:10px;color:#cbd5e1;white-space:nowrap;pointer-events:none}
-@media(max-width:650px){#panel{top:auto;max-height:48dvh;bottom:10px;left:10px;right:10px;width:auto;padding:10px}.brand{padding:7px 9px}.status{padding:7px;font-size:9px}#hint{bottom:calc(48dvh + 18px)}}
+:root{color-scheme:dark;--bg:#090d12;--panel:#101720;--panel2:#151f2b;--line:#293747;--muted:#91a0b2;--text:#edf3f8;--accent:#c5a46d;--accent2:#e0c18a;--good:#91c77a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}#view{position:fixed;inset:0}#view canvas{display:block;width:100%;height:100%;touch-action:pan-y}
+header{position:fixed;z-index:3;top:16px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}.brand,.status{background:#0b111be8;border:1px solid var(--line);border-radius:12px;padding:10px 13px;backdrop-filter:blur(14px);pointer-events:auto}.brand{font-size:13px;font-weight:850;letter-spacing:.16em}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:9px;font-weight:650;letter-spacing:.17em}.status{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+#panel{position:fixed;z-index:4;left:16px;top:84px;bottom:16px;width:min(360px,calc(100vw - 32px));overflow:auto;background:linear-gradient(160deg,#101923f5,#0b1119f2);border:1px solid #2b3949;border-radius:17px;padding:17px;backdrop-filter:blur(18px);box-shadow:0 18px 60px #0008}
+.eyebrow{font-size:9px;font-weight:750;letter-spacing:.2em;color:var(--accent2);text-transform:uppercase}.heading{font-size:19px;font-weight:750;letter-spacing:-.035em;margin:6px 0 5px}.intro{font-size:11px;line-height:1.55;color:var(--muted);margin:0 0 17px}.section-title{display:flex;align-items:center;justify-content:space-between;margin:17px 0 9px;font-size:10px;font-weight:750;letter-spacing:.14em;text-transform:uppercase;color:#b7c2ce}.section-title span:last-child{color:var(--muted);font-weight:550;letter-spacing:.04em;text-transform:none}
+.garment{display:flex;align-items:center;gap:12px;width:100%;padding:12px;border:1px solid #53604f;border-radius:12px;background:linear-gradient(110deg,#1b2928,#17212a);color:var(--text);text-align:left}.garment.selected{border-color:var(--accent);box-shadow:inset 0 0 0 1px #c5a46d33,0 0 22px #c5a46d12}.garment-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:10px;background:#28332f;color:var(--accent2);flex:none}.garment-copy{flex:1;min-width:0}.garment-name{font-size:13px;font-weight:750}.garment-sub{font-size:10px;color:var(--muted);margin-top:3px}.check{color:var(--accent2)}
+.palette{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:10px 0 13px}.swatch{aspect-ratio:1;border:2px solid #ffffff24;border-radius:9px;padding:0;position:relative;cursor:pointer}.swatch.active{outline:2px solid var(--accent2);outline-offset:2px}.custom-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#111b26}.custom-row label{font-size:11px;color:#cbd5e1;flex:1}.custom-row input{width:38px;height:30px;padding:0;border:0;background:transparent}
+.primary,.secondary,.danger{display:flex;align-items:center;justify-content:center;gap:8px;min-height:41px;border-radius:10px;padding:9px 12px;cursor:pointer;font-size:11px;font-weight:750;letter-spacing:.025em}.primary{width:100%;border:1px solid #b69662;background:linear-gradient(135deg,#d1b27c,#a98752);color:#17130d}.secondary{border:1px solid var(--line);background:#172230;color:#dce5ee}.danger{border:1px solid #68454a;background:#24191d;color:#e7b6b6}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.note{display:flex;gap:8px;padding:10px;margin-top:14px;border:1px solid #33413c;border-radius:10px;background:#111b19;font-size:10px;line-height:1.5;color:#b9c9bd}.note svg{flex:none;color:var(--good);margin-top:1px}.foot{font-size:9px;line-height:1.55;color:#758395;margin-top:13px}.divider{height:1px;background:var(--line);margin:15px 0}.error{font-size:10px;color:#fca5a5;white-space:pre-wrap;margin-top:10px}
+#hint{position:fixed;z-index:2;bottom:17px;left:50%;transform:translateX(-50%);background:#0b111be8;border:1px solid var(--line);border-radius:20px;padding:8px 13px;font-size:10px;color:#cbd5e1;white-space:nowrap;pointer-events:none}
+svg{display:block}@media(max-width:680px){header{top:9px;left:10px;right:10px}.brand{padding:8px 10px}.status{padding:8px;font-size:9px}#panel{top:auto;left:9px;right:9px;bottom:9px;width:auto;max-height:min(55dvh,470px);padding:13px;border-radius:15px}.heading{font-size:17px}.intro{margin-bottom:10px}.section-title{margin:12px 0 8px}#hint{bottom:calc(min(55dvh,470px) + 17px);font-size:9px}.palette{gap:6px}.swatch{border-radius:7px}}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
 <body>
 <div id="view"></div>
-<header><div class="brand">PITCH 11<small>PLAYER TEXTURE EDITOR · NON-DESTRUCTIVE</small></div><div class="status" id="status">Modell betöltése…</div></header>
+<header><div class="brand">PITCH 11<small>PLAYER KIT STUDIO · TEXTURE WORKSPACE</small></div><div class="status" id="status">Loading player model</div></header>
 <aside id="panel">
-<h1>Játékos textúraszerkesztő</h1>
-<p>Válassz UV-szigetet, majd fess közvetlenül a 3D modellen. A festés csak a kiválasztott sziget UV-területére kerül. Az eredeti GLB nem módosul.</p>
-<div class="row"><button id="bodyBtn" class="active">BODY</button><button id="headBtn">HEAD</button></div>
-<div class="row"><select id="selection"><option>UV-sziget betöltése…</option></select></div>
-<div id="islands"></div>
-<div class="row"><div><label for="color">Ecset színe</label><input id="color" type="color" value="#a3e635"></div><div><label for="size">Ecsetméret</label><input id="size" type="range" min="2" max="90" value="18"><div class="meta" id="sizeValue">18 px</div></div></div>
-<label><input id="paintMode" type="checkbox" checked> Festés engedélyezése (kikapcsolva: csak forgatás)</label>
-<div class="row"><button id="undo">Visszavonás</button><button id="clear" class="danger">Sziget festésének törlése</button></div>
-<div class="row"><button id="exportBody" class="primary">BODY PNG export</button><button id="exportHead" class="primary">HEAD PNG export</button></div>
-<div class="meta" id="details">A modell és a textúrák betöltése folyamatban.</div>
-<div class="meta">Export: a szerkesztett alapszín-textúra PNG-ként menthető. A normal/roughness térképek változatlanok maradnak. A festés nem mentődik automatikusan a böngésző bezárásakor.</div>
-<div class="meta" id="error" style="color:#fca5a5"></div>
+ <div class="eyebrow">Appearance editor / 01</div>
+ <div class="heading">Player Kit Studio</div>
+ <p class="intro">Select a kit component, choose a colour and apply it to the complete mapped garment. Skin and non-clothing surfaces are protected.</p>
+ <div class="section-title"><span>Garment</span><span>1 available</span></div>
+ <button class="garment selected" id="jersey" type="button">
+  <span class="garment-icon"><svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m8 4-5 3 2 5 3-1v9h8v-9l3 1 2-5-5-3c-.7 2-1.9 3-4 3S8.7 6 8 4Z"/><path d="M9 4c.5 1.8 1.5 3 3 3s2.5-1.2 3-3"/></svg></span>
+  <span class="garment-copy"><span class="garment-name">Match Jersey</span><span class="garment-sub">Torso and mapped sleeve fabric</span></span>
+  <span class="check"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 4 4L19 6"/></svg></span>
+ </button>
+ <div class="section-title"><span>Colour</span><span id="colourLabel">Midnight Navy</span></div>
+ <div class="palette" id="palette">
+  <button class="swatch active" data-name="Midnight Navy" data-color="#17243b" style="background:#17243b" aria-label="Midnight Navy"></button>
+  <button class="swatch" data-name="Royal Blue" data-color="#174ca5" style="background:#174ca5" aria-label="Royal Blue"></button>
+  <button class="swatch" data-name="Crimson" data-color="#a51f35" style="background:#a51f35" aria-label="Crimson"></button>
+  <button class="swatch" data-name="Forest Green" data-color="#176447" style="background:#176447" aria-label="Forest Green"></button>
+  <button class="swatch" data-name="Black" data-color="#17191d" style="background:#17191d" aria-label="Black"></button>
+  <button class="swatch" data-name="White" data-color="#e6e8e9" style="background:#e6e8e9" aria-label="White"></button>
+  <button class="swatch" data-name="Gold" data-color="#b18a42" style="background:#b18a42" aria-label="Gold"></button>
+ </div>
+ <div class="custom-row"><label for="customColor">Custom colour</label><input id="customColor" type="color" value="#17243b" aria-label="Custom colour"></div>
+ <div class="divider"></div>
+ <button class="primary" id="apply"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m-5-5 5 5 5-5"/><path d="M5 17v3h14v-3"/></svg>Apply Colour to Jersey</button>
+ <div class="actions"><button class="secondary" id="undo"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7v6h6M4 13a8 8 0 1 0 2-6L3 10"/></svg>Undo</button><button class="danger" id="reset"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg>Reset Original</button></div>
+ <div class="actions"><button class="secondary" id="export"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m-5-5 5 5 5-5M5 17v3h14v-3"/></svg>Export Texture PNG</button><button class="secondary" id="save"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M8 20v-7h8v7"/></svg>Save Changes</button></div>
+ <div class="note"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 3 9 17H3L12 3Z"/><path d="M12 9v5m0 3h.01"/></svg><span>Only the mapped jersey fabric is recoloured. Skin pixels are excluded. Other kit components will be added after their surface masks are verified.</span></div>
+ <div class="foot">Non-destructive workflow · Original GLB remains unchanged. Changes are stored locally in this browser and can be exported as a separate base-colour texture.</div>
+ <div class="error" id="error"></div>
 </aside>
-<div id="hint">Modell forgatása · kiválasztott UV-sziget festése · pinch zoom</div>
+<div id="hint">Drag to rotate · Scroll or pinch to zoom</div>
 <script type="module">
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
-
-const $=s=>document.querySelector(s),status=$('#status'),details=$('#details'),error=$('#error');
+const $=s=>document.querySelector(s),status=$('#status'),error=$('#error');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
-const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('#view').appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.2);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,1);fill.position.set(-4,2,-3);scene.add(fill);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;$('#view').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,.9);fill.position.set(-4,2,-3);scene.add(fill);
 const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=1;controls.maxDistance=8;
-const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2();
-const labels={
-head:['Fej és arc fő felülete','Bal szem','Jobb szem','Szájüreg belső felülete / állkapocs','Felső fogsor környéke','Jobb szájzug és belső szájfelület','Bal szájzug és belső szájfelület','Alsó fogsor / állkapocs belső része','Nyelv fő felülete','Bal nyelvoldali felület','Jobb nyelvoldali felület'],
-body:['Törzs – mellkas, has és hát','Bal kar – alkar és kéz régiója','Jobb kar – alkar és kéz régiója','Bal lábszár','Jobb lábszár','Jobb comb fő felülete','Bal comb fő felülete','Bal felkar fő felülete','Jobb felkar fő felülete','Jobb térd / comb-lábszár átmenet','Bal térd / comb-lábszár átmenet','Bal lábfej fő felülete','Jobb lábfej fő felülete','Bal comb kisebb felülete','Jobb comb kisebb felülete','Bal felkar kisebb felülete','Jobb felkar kisebb felülete','Jobb lábfej – talp / lábujj felület','Bal lábfej – talp / lábujj felület','Jobb cipő – stoplik','Bal cipő – stoplik','Jobb cipő – nyelv oldalsó része','Bal cipő – nyelv oldalsó része','Bal cipő – külső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Jobb cipő – külső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Bal cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál','Jobb cipő – belső oldali vonalszerű részlet a cipőnyelv csatlakozásánál']};
-const groups={body:[],head:[]};let active='body',selected=0,painting=false,down=false,lastPoint=null,undoStack=[];
+const state={bodyCanvas:null,bodyCtx:null,bodyTexture:null,original:null,mask:null,undo:[],selected:'#17243b',savedKey:'p11-kit-studio-jersey-v1'};
 const pointKey=(uv,i)=>Math.round(uv.getX(i)*1e5)+','+Math.round(uv.getY(i)*1e5);
 function triIds(g,t){return g.index?[g.index.getX(t*3),g.index.getX(t*3+1),g.index.getX(t*3+2)]:[t*3,t*3+1,t*3+2]}
-function makeIslands(mesh,group,materialIndex=0){
- const g=mesh.geometry,uv=g.getAttribute('uv');if(!uv)return;
- const mat=Array.isArray(mesh.material)?mesh.material[materialIndex]:mesh.material;if(!mat)return;
- const count=(g.index?g.index.count:g.getAttribute('position').count)/3,parent=Array.from({length:count},(_,i)=>i);
- const find=x=>parent[x]===x?x:(parent[x]=find(parent[x]));const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[b]=a};
- const edges=new Map();
- for(let t=0;t<count;t++){const ids=triIds(g,t);for(let e=0;e<3;e++){const a=pointKey(uv,ids[e]),b=pointKey(uv,ids[(e+1)%3]),k=a<b?a+'|'+b:b+'|'+a;if(edges.has(k))join(t,edges.get(k));else edges.set(k,t)}}
- const buckets=new Map();for(let t=0;t<count;t++){const r=find(t);if(!buckets.has(r))buckets.set(r,[]);buckets.get(r).push(t)}
- const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1024;const ctx=canvas.getContext('2d');
- const originalCanvas=document.createElement('canvas');originalCanvas.width=1024;originalCanvas.height=1024;const originalCtx=originalCanvas.getContext('2d');
- const source=mat.map?.image;if(source){try{originalCtx.drawImage(source,0,0,1024,1024)}catch(e){originalCtx.fillStyle='#888';originalCtx.fillRect(0,0,1024,1024)}}else{originalCtx.fillStyle='#888';originalCtx.fillRect(0,0,1024,1024)}ctx.drawImage(originalCanvas,0,0);
- const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=mat.map?.flipY??true;texture.wrapS=mat.map?.wrapS??THREE.ClampToEdgeWrapping;texture.wrapT=mat.map?.wrapT??THREE.ClampToEdgeWrapping;texture.needsUpdate=true;
- const clone=mat.clone();clone.map=texture;clone.needsUpdate=true;
- if(Array.isArray(mesh.material)){const copy=mesh.material.slice();copy[materialIndex]=clone;mesh.material=copy}else mesh.material=clone;
- const islands=[...buckets.values()].map((triangles,i)=>({triangles,mesh,geometry:g,uv,ctx,canvas,originalCanvas,texture,material:clone,materialIndex,group,index:i,undo:[]}));
- islands.forEach((island,i)=>{const path=new Path2D();for(const t of island.triangles){const ids=triIds(g,t);const p=ids.map(id=>[uv.getX(id)*1024,(1-uv.getY(id))*1024]);path.moveTo(...p[0]);path.lineTo(...p[1]);path.lineTo(...p[2]);path.closePath()}island.path=path});
- groups[group].push(...islands);
-}
-function activeList(){return groups[active]}
-function updateUI(){
- const list=$('#islands'),sel=$('#selection');list.innerHTML='';sel.innerHTML='';
- activeList().forEach((x,i)=>{const label=labels[active][i]||'UV-sziget '+(i+1);const option=document.createElement('option');option.value=i;option.textContent=(i+1)+'. '+label;sel.append(option);
- const b=document.createElement('button');b.className='island'+(i===selected?' active':'');b.textContent=(i+1)+'. '+label;b.onclick=()=>choose(i);list.append(b)});
- sel.value=String(selected);details.textContent=activeList().length+' UV-sziget · '+(labels[active]?.length||0)+' elfogadott anatómiai címke. Kiválasztva: '+(labels[active]?.[selected]||'—');
-}
-function choose(i){selected=Math.max(0,Math.min(i,activeList().length-1));updateUI()}
-function mode(group){active=group;selected=0;$('#bodyBtn').classList.toggle('active',group==='body');$('#headBtn').classList.toggle('active',group==='head');updateUI()}
-$('#bodyBtn').onclick=()=>mode('body');$('#headBtn').onclick=()=>mode('head');$('#selection').onchange=e=>choose(Number(e.target.value));
-$('#size').oninput=e=>$('#sizeValue').textContent=e.target.value+' px';
-function saveUndo(item){if(item.undo.length>20)item.undo.shift();item.undo.push(item.ctx.getImageData(0,0,1024,1024))}
-function paintAt(item,uvPoint){
- if(!uvPoint)return;const x=uvPoint.x*1024,y=(1-uvPoint.y)*1024,ctx=item.ctx;
- ctx.save();ctx.clip(item.path);ctx.fillStyle=$('#color').value;ctx.beginPath();ctx.arc(x,y,Number($('#size').value)/2,0,Math.PI*2);ctx.fill();ctx.restore();item.texture.needsUpdate=true;
-}
-function hitAt(event){const r=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-r.left)/r.width)*2-1;pointer.y=-((event.clientY-r.top)/r.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects([...new Set(activeList().map(x=>x.mesh))],false);return hits.find(h=>h.uv&&h.faceIndex!==undefined)}
-renderer.domElement.addEventListener('pointerdown',e=>{if(!$('#paintMode').checked)return;const hit=hitAt(e);if(!hit)return;const item=activeList()[selected];if(!item||item.mesh!==hit.object)return;down=true;painting=true;lastPoint=hit.uv.clone();saveUndo(item);controls.enabled=false;paintAt(item,lastPoint);renderer.domElement.setPointerCapture(e.pointerId)});
-renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;const hit=hitAt(e);if(!hit||hit.object!==activeList()[selected]?.mesh||!hit.uv)return;const item=activeList()[selected],from=lastPoint,to=hit.uv;const dx=(to.x-from.x)*1024,dy=(to.y-from.y)*1024,dist=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(dist/(Number($('#size').value)*.22)));for(let i=1;i<=steps;i++)paintAt(item,new THREE.Vector2(from.x+(to.x-from.x)*i/steps,from.y+(to.y-from.y)*i/steps));lastPoint=to.clone()});
-function stopPaint(){if(down){down=false;painting=false;lastPoint=null;controls.enabled=true}}
-renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
-$('#undo').onclick=()=>{const item=activeList()[selected];if(!item?.undo.length)return;item.ctx.putImageData(item.undo.pop(),0,0);item.texture.needsUpdate=true};
-$('#clear').onclick=()=>{const item=activeList()[selected];if(!item)return;saveUndo(item);item.ctx.save();item.ctx.clip(item.path);item.ctx.clearRect(0,0,1024,1024);item.ctx.drawImage(item.originalCanvas,0,0);item.ctx.restore();item.texture.needsUpdate=true};
-function download(group){const items=groups[group];if(!items.length){status.textContent=group.toUpperCase()+' TEXTÚRA NEM TALÁLHATÓ';return}const item=items[0];item.canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-player-'+group+'-basecolor.png';a.click();URL.revokeObjectURL(url);status.textContent=group.toUpperCase()+' PNG EXPORT KÉSZ'},'image/png')}
-$('#exportBody').onclick=()=>download('body');$('#exportHead').onclick=()=>download('head');
-try{
- const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);const gltf=await loader.loadAsync('./assets/players/player.glb');const root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);
- const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());root.position.sub(center);root.position.y+=size.y/2;camera.position.set(size.x*1.7,size.y*.65,size.z*2.1);controls.target.set(0,0,0);controls.update();
- root.traverse(obj=>{if(!obj.isMesh)return;const material=Array.isArray(obj.material)?obj.material[0]:obj.material;const name=(material?.name||'').toLowerCase();const group=name.includes('head')?'head':'body';const count=Array.isArray(obj.material)?obj.material.length:1;for(let i=0;i<count;i++)makeIslands(obj,group,i)});
- if(!groups.body.length||!groups.head.length)throw new Error('Nem található mindkét textúracsoport. Ellenőrizd a m301_body és m301_head anyagokat.');
- status.textContent='MODELL BETÖLTVE · '+(groups.body.length+groups.head.length)+' UV-SZIGET';mode('body');
-}catch(e){status.textContent='BETÖLTÉSI HIBA';error.textContent=String(e);details.textContent='A modell vagy valamelyik textúra nem tölthető be.'}
-function tick(){requestAnimationFrame(tick);controls.update();renderer.render(scene,camera)}tick();
-addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
+function makeIslands(mesh,materialIndex){const g=mesh.geometry,uv=g.getAttribute('uv');if(!uv)return[];const mat=Array.isArray(mesh.material)?mesh.material[materialIndex]:mesh.material;if(!mat)return[];const count=(g.index?g.index.count:g.getAttribute('position').count)/3,parent=Array.from({length:count},(_,i)=>i);const find=x=>parent[x]===x?x:(parent[x]=find(parent[x]));const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent[b]=a};const edges=new Map();for(let t=0;t<count;t++){const ids=triIds(g,t);for(let e=0;e<3;e++){const a=pointKey(uv,ids[e]),b=pointKey(uv,ids[(e+1)%3]),k=a<b?a+'|'+b:b+'|'+a;if(edges.has(k))join(t,edges.get(k));else edges.set(k,t)}}const buckets=new Map();for(let t=0;t<count;t++){const root=find(t);if(!buckets.has(root))buckets.set(root,[]);buckets.get(root).push(t)}return [...buckets.values()].map(triangles=>({triangles,mesh,geometry:g,uv,material:mat})).sort((a,b)=>b.triangles.length-a.triangles.length)}
+function pathForIsland(item,path){for(const t of item.triangles){const ids=triIds(item.geometry,t),p=ids.map(id=>[item.uv.getX(id)*1024,(1-item.uv.getY(id))*1024]);path.moveTo(...p[0]);path.lineTo(...p[1]);path.lineTo(...p[2]);path.closePath()}}
+function isSkin(r,g,b){const rg=g/Math.max(1,r),br=b/Math.max(1,r);return r>58&&g>38&&b>24&&r>g*1.12&&g>b*1.04&&rg>.43&&rg<.88&&br>.25&&br<.78}
+function buildGarmentMask(islands){if(islands.length<9)throw new Error('The expected body UV layout was not found. Jersey mapping has been disabled for safety.');const maskCanvas=document.createElement('canvas');maskCanvas.width=maskCanvas.height=1024;const c=maskCanvas.getContext('2d',{willReadFrequently:true});const path=new Path2D();[islands[0],islands[7],islands[8]].forEach(item=>pathForIsland(item,path));c.fillStyle='#fff';c.fill(path);const mask=c.getImageData(0,0,1024,1024).data;const original=state.bodyCtx.getImageData(0,0,1024,1024),pixels=original.data,allowed=new Uint8Array(1024*1024);let count=0;for(let p=0,i=0;p<mask.length;p+=4,i++){if(mask[p+3]<128)continue;const r=pixels[p],g=pixels[p+1],b=pixels[p+2];if(isSkin(r,g,b))continue;allowed[i]=1;count++}if(count<15000)throw new Error('Jersey mask validation failed. No texture changes have been enabled.');state.mask=allowed;return count}
+function hexRgb(hex){return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)]}
+function applyColour(hex,record=true){if(!state.bodyCtx||!state.mask)return;if(record){if(state.undo.length>=8)state.undo.shift();state.undo.push(state.bodyCtx.getImageData(0,0,1024,1024))}const image=new ImageData(new Uint8ClampedArray(state.original.data),1024,1024),d=image.data,[cr,cg,cb]=hexRgb(hex);for(let i=0,p=0;i<state.mask.length;i++,p+=4){if(!state.mask[i])continue;const r=state.original.data[p],g=state.original.data[p+1],b=state.original.data[p+2],l=(.2126*r+.7152*g+.0722*b)/255;const factor=.22+l*.92;d[p]=Math.min(255,cr*factor);d[p+1]=Math.min(255,cg*factor);d[p+2]=Math.min(255,cb*factor);d[p+3]=state.original.data[p+3]}state.bodyCtx.putImageData(image,0,0);state.bodyTexture.needsUpdate=true;state.selected=hex;$('#colourLabel').textContent=hex.toUpperCase();saveLocal()}
+function saveLocal(){try{localStorage.setItem(state.savedKey,state.bodyCanvas.toDataURL('image/png'))}catch(e){status.textContent='LOCAL SAVE UNAVAILABLE'}}
+function restoreOriginal(){if(!state.original)return;state.bodyCtx.putImageData(state.original,0,0);state.bodyTexture.needsUpdate=true;state.undo=[];try{localStorage.removeItem(state.savedKey)}catch{}status.textContent='ORIGINAL TEXTURE RESTORED'}
+function exportTexture(){state.bodyCanvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-match-jersey-basecolor.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);status.textContent='TEXTURE EXPORTED'},'image/png')}
+$('#palette').addEventListener('click',e=>{const b=e.target.closest('[data-color]');if(!b)return;$('#palette').querySelectorAll('.swatch').forEach(x=>x.classList.toggle('active',x===b));state.selected=b.dataset.color;$('#customColor').value=state.selected;$('#colourLabel').textContent=b.dataset.name});$('#customColor').addEventListener('input',e=>{state.selected=e.target.value;$('#colourLabel').textContent=state.selected.toUpperCase();$('#palette').querySelectorAll('.swatch').forEach(x=>x.classList.remove('active'))});$('#apply').onclick=()=>applyColour(state.selected,true);$('#undo').onclick=()=>{const previous=state.undo.pop();if(!previous)return;state.bodyCtx.putImageData(previous,0,0);state.bodyTexture.needsUpdate=true;saveLocal();status.textContent='LAST CHANGE UNDONE'};$('#reset').onclick=()=>{if(confirm('Restore the original jersey texture and clear saved changes?'))restoreOriginal()};$('#export').onclick=exportTexture;$('#save').onclick=()=>{saveLocal();status.textContent='CHANGES SAVED IN THIS BROWSER'};
+try{const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);const gltf=await loader.loadAsync('./assets/players/player.glb');const root=gltf.scene;scene.add(root);root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(root),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());root.position.sub(center);root.position.y+=size.y/2;camera.position.set(size.x*1.7,size.y*.65,size.z*2.1);controls.target.set(0,0,0);controls.update();let bodyIslands=[];let bodyMaterial=null;root.traverse(obj=>{if(!obj.isMesh)return;const mats=Array.isArray(obj.material)?obj.material:[obj.material];mats.forEach((mat,index)=>{if((mat?.name||'').toLowerCase().includes('body')){const islands=makeIslands(obj,index);bodyIslands.push(...islands);if(!bodyMaterial&&mat.map){bodyMaterial=mat;}}})});if(!bodyMaterial?.map)throw new Error('Body base-colour texture not found.');const source=bodyMaterial.map.image;state.bodyCanvas=document.createElement('canvas');state.bodyCanvas.width=state.bodyCanvas.height=1024;state.bodyCtx=state.bodyCanvas.getContext('2d',{willReadFrequently:true});state.bodyCtx.drawImage(source,0,0,1024,1024);state.original=state.bodyCtx.getImageData(0,0,1024,1024);const maskCount=buildGarmentMask(bodyIslands);const canvasTexture=new THREE.CanvasTexture(state.bodyCanvas);canvasTexture.colorSpace=THREE.SRGBColorSpace;canvasTexture.flipY=bodyMaterial.map.flipY;canvasTexture.wrapS=bodyMaterial.map.wrapS;canvasTexture.wrapT=bodyMaterial.map.wrapT;canvasTexture.needsUpdate=true;state.bodyTexture=canvasTexture;const replacement=bodyMaterial.clone();replacement.map=canvasTexture;replacement.needsUpdate=true;root.traverse(obj=>{if(!obj.isMesh)return;if(Array.isArray(obj.material)){obj.material=obj.material.map(m=>(m?.name||'').toLowerCase().includes('body')?replacement:m)}else if((obj.material?.name||'').toLowerCase().includes('body'))obj.material=replacement});try{const saved=localStorage.getItem(state.savedKey);if(saved){const image=new Image();image.onload=()=>{state.bodyCtx.clearRect(0,0,1024,1024);state.bodyCtx.drawImage(image,0,0,1024,1024);state.bodyTexture.needsUpdate=true;status.textContent='SAVED KIT LOADED'};image.src=saved}}catch{}status.textContent='PLAYER MODEL READY';$('#jersey').setAttribute('aria-pressed','true');$('#error').textContent='';$('#panel').dataset.maskPixels=String(maskCount)}catch(e){status.textContent='MODEL LOAD ERROR';error.textContent=String(e);$('#apply').disabled=true;$('#apply').style.opacity='.45'}
+function tick(){requestAnimationFrame(tick);controls.update();renderer.render(scene,camera)}tick();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
 </script>
 </body></html>
