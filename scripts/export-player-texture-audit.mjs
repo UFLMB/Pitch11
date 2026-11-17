@@ -217,6 +217,23 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><rect width="1024" height="1024" fill="#fff"/><g>${polygons.join("")}</g><g>${labels}</g></svg>`;
       fs.writeFileSync(path.join(output, svgName), svg);
       fs.writeFileSync(path.join(output, `uv-material-${primitive.material ?? "none"}-islands.json`), JSON.stringify(islands, null, 2));
+      if (mesh.name === "m301_hipoly_81_bones" && primitive.material === 0) {
+        const jerseyIslandIndexes = [0, 7, 8, 15, 16];
+        const jerseyPolygons = [];
+        for (const islandIndex of jerseyIslandIndexes) {
+          const island = islands[islandIndex];
+          if (!island) throw new Error(`Missing expected jersey UV island ${islandIndex + 1}`);
+          for (const triangleIndex of island._triangleSet) {
+            const pts = [indices[triangleIndex * 3], indices[triangleIndex * 3 + 1], indices[triangleIndex * 3 + 2]].map(n => {
+              const p = uv[n];
+              return `${(p[0] * 1023).toFixed(2)},${(p[1] * 1024).toFixed(2)}`;
+            }).join(" ");
+            jerseyPolygons.push(`<polygon points="${pts}" fill="#a3e635" fill-opacity="0.48" stroke="#166534" stroke-width="0.35" />`);
+          }
+        }
+        const preview = `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024"><g>${jerseyPolygons.join("")}</g></svg>`;
+        fs.writeFileSync(path.join(output, "jersey-mask-preview.svg"), preview);
+      }
     }
     primitives.push({
       meshIndex, mesh: mesh.name || `mesh-${meshIndex}`, primitiveIndex,
