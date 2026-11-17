@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
       - name: Inspect FBX files
-        run: node scripts/inspect-player-fbx-package.mjs
+        run: node scripts/inspect-player-fbx-package.mjs --compare-model
       - name: Upload audit report
         if: always() && hashFiles('player-fbx-audit.json') != ''
         uses: actions/upload-artifact@v4
