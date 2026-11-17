@@ -67,11 +67,12 @@ function makeIslands(mesh,group,materialIndex=0){
  for(let t=0;t<count;t++){const ids=triIds(g,t);for(let e=0;e<3;e++){const a=pointKey(uv,ids[e]),b=pointKey(uv,ids[(e+1)%3]),k=a<b?a+'|'+b:b+'|'+a;if(edges.has(k))join(t,edges.get(k));else edges.set(k,t)}}
  const buckets=new Map();for(let t=0;t<count;t++){const r=find(t);if(!buckets.has(r))buckets.set(r,[]);buckets.get(r).push(t)}
  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=1024;const ctx=canvas.getContext('2d');
- const source=mat.map?.image;if(source){try{ctx.drawImage(source,0,0,1024,1024)}catch(e){ctx.fillStyle='#888';ctx.fillRect(0,0,1024,1024)}}else{ctx.fillStyle='#888';ctx.fillRect(0,0,1024,1024)}
+ const originalCanvas=document.createElement('canvas');originalCanvas.width=1024;originalCanvas.height=1024;const originalCtx=originalCanvas.getContext('2d');
+ const source=mat.map?.image;if(source){try{originalCtx.drawImage(source,0,0,1024,1024)}catch(e){originalCtx.fillStyle='#888';originalCtx.fillRect(0,0,1024,1024)}}else{originalCtx.fillStyle='#888';originalCtx.fillRect(0,0,1024,1024)}ctx.drawImage(originalCanvas,0,0);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.flipY=mat.map?.flipY??true;texture.wrapS=mat.map?.wrapS??THREE.ClampToEdgeWrapping;texture.wrapT=mat.map?.wrapT??THREE.ClampToEdgeWrapping;texture.needsUpdate=true;
  const clone=mat.clone();clone.map=texture;clone.needsUpdate=true;
  if(Array.isArray(mesh.material)){const copy=mesh.material.slice();copy[materialIndex]=clone;mesh.material=copy}else mesh.material=clone;
- const islands=[...buckets.values()].map((triangles,i)=>({triangles,mesh,geometry:g,uv,ctx,canvas,texture,material:clone,materialIndex,group,index:i,undo:[]}));
+ const islands=[...buckets.values()].map((triangles,i)=>({triangles,mesh,geometry:g,uv,ctx,canvas,originalCanvas,texture,material:clone,materialIndex,group,index:i,undo:[]}));
  islands.forEach((island,i)=>{const path=new Path2D();for(const t of island.triangles){const ids=triIds(g,t);const p=ids.map(id=>[uv.getX(id)*1024,(1-uv.getY(id))*1024]);path.moveTo(...p[0]);path.lineTo(...p[1]);path.lineTo(...p[2]);path.closePath()}island.path=path});
  groups[group].push(...islands);
 }
@@ -97,7 +98,7 @@ renderer.domElement.addEventListener('pointermove',e=>{if(!down)return;const hit
 function stopPaint(){if(down){down=false;painting=false;lastPoint=null;controls.enabled=true}}
 renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
 $('#undo').onclick=()=>{const item=activeList()[selected];if(!item?.undo.length)return;item.ctx.putImageData(item.undo.pop(),0,0);item.texture.needsUpdate=true};
-$('#clear').onclick=()=>{const item=activeList()[selected];if(!item)return;saveUndo(item);const image=new Image();const source=item.material.userData.originalImage;if(source){item.ctx.clearRect(0,0,1024,1024);item.ctx.drawImage(source,0,0,1024,1024)}else{item.ctx.clearRect(0,0,1024,1024);item.ctx.fillStyle='#888';item.ctx.fillRect(0,0,1024,1024)}item.ctx.save();item.ctx.globalCompositeOperation='destination-in';item.ctx.fillStyle='#fff';item.ctx.fill(item.path);item.ctx.restore();item.texture.needsUpdate=true};
+$('#clear').onclick=()=>{const item=activeList()[selected];if(!item)return;saveUndo(item);item.ctx.save();item.ctx.clip(item.path);item.ctx.clearRect(0,0,1024,1024);item.ctx.drawImage(item.originalCanvas,0,0);item.ctx.restore();item.texture.needsUpdate=true};
 function download(group){const items=groups[group];if(!items.length){status.textContent=group.toUpperCase()+' TEXTÚRA NEM TALÁLHATÓ';return}const item=items[0];item.canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-player-'+group+'-basecolor.png';a.click();URL.revokeObjectURL(url);status.textContent=group.toUpperCase()+' PNG EXPORT KÉSZ'},'image/png')}
 $('#exportBody').onclick=()=>download('body');$('#exportHead').onclick=()=>download('head');
 try{
