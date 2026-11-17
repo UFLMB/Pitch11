@@ -8,9 +8,21 @@ OUT = os.environ.get("REPORT", "retarget-preflight.json")
 def norm(name):
     value = name.lower().replace("mixamorig:", "").replace("bip01", "")
     value = re.sub(r"[^a-z0-9]+", "", value)
-    aliases = {"pelvis":"hips", "hip":"hips", "spine1":"spine", "leftupleg":"thighl",
-               "rightupleg":"thighr", "leftleg":"calfl", "rightleg":"calfr",
-               "leftfoot":"footl", "rightfoot":"footr"}
+    aliases = {
+        "pelvis":"hips", "hip":"hips",
+        "rightshoulder":"rclavicle", "leftshoulder":"lclavicle",
+        "rightarm":"rupperarm", "leftarm":"lupperarm",
+        "rightforearm":"rforearm", "leftforearm":"lforearm",
+        "righthand":"rhand", "lefthand":"lhand",
+        "rightupleg":"rthigh", "leftupleg":"lthigh",
+        "rightleg":"rcalf", "leftleg":"lcalf",
+        "rightfoot":"rfoot", "leftfoot":"lfoot",
+        "righttoebase":"rtoe0", "lefttoebase":"ltoe0"
+    }
+    for side, short in (("right", "r"), ("left", "l")):
+        for source_finger, target_finger in (("thumb", "0"), ("index", "1"), ("middle", "2"), ("ring", "3"), ("pinky", "4")):
+            for segment, target_segment in ((1, ""), (2, "1"), (3, "2")):
+                aliases[f"{side}hand{source_finger}{segment}"] = f"{short}finger{target_finger}{target_segment}"
     return aliases.get(value, value)
 
 def armatures():
