@@ -262,10 +262,55 @@ for (const [meshIndex, mesh] of (document.meshes || []).entries()) {
   }
 }
 
+function nodeTransform(node) {
+  if (Array.isArray(node.matrix)) return { matrix: node.matrix };
+  return {
+    translation: node.translation || [0, 0, 0],
+    rotation: node.rotation || [0, 0, 0, 1],
+    scale: node.scale || [1, 1, 1]
+  };
+}
+const nodeParents = new Map();
+for (const [parentIndex, node] of (document.nodes || []).entries()) {
+  for (const childIndex of node.children || []) nodeParents.set(childIndex, parentIndex);
+}
+const nodes = (document.nodes || []).map((node, index) => ({
+  index,
+  name: node.name || `node-${index}`,
+  parent: nodeParents.has(index) ? nodeParents.get(index) : null,
+  children: node.children || [],
+  mesh: Number.isInteger(node.mesh) ? node.mesh : null,
+  skin: Number.isInteger(node.skin) ? node.skin : null,
+  transform: nodeTransform(node)
+}));
+const skins = (document.skins || []).map((skin, index) => ({
+  index,
+  name: skin.name || `skin-${index}`,
+  skeleton: Number.isInteger(skin.skeleton) ? {
+    index: skin.skeleton,
+    name: document.nodes?.[skin.skeleton]?.name || `node-${skin.skeleton}`
+  } : null,
+  joints: (skin.joints || []).map((nodeIndex, jointIndex) => ({
+    jointIndex,
+    nodeIndex,
+    name: document.nodes?.[nodeIndex]?.name || `node-${nodeIndex}`,
+    parentNodeIndex: nodeParents.has(nodeIndex) ? nodeParents.get(nodeIndex) : null
+  })),
+  inverseBindMatrices: accessorRange(skin.inverseBindMatrices)
+}));
+const meshNodeBindings = nodes.filter(node => node.mesh !== null).map(node => ({
+  nodeIndex: node.index,
+  nodeName: node.name,
+  meshIndex: node.mesh,
+  skinIndex: node.skin,
+  skinName: Number.isInteger(node.skin) ? skins[node.skin]?.name || null : null,
+  transform: node.transform
+}));
+
 const report = {
   model: "Male Athlete 02",
   source: "https://models.codelove.in/models/sports-male-02.glb",
-  glbBytes: buffer.length, images, textures, materials, primitives,
+  glbBytes: buffer.length, images, textures, materials, nodes, skins, meshNodeBindings, primitives,
   note: "UV SVGs show triangle layout in texture space. Match each UV SVG to its material base-color image; semantic regions still require visual interpretation."
 };
 fs.writeFileSync(path.join(output, "texture-audit.json"), JSON.stringify(report, null, 2));
