@@ -151,7 +151,7 @@ function generateKitDesign(){
    const pixels=new ImageData(1024,1024),src=mask.mask,thickness=6;
    for(let y=0;y<1024;y++)for(let x=0;x<1024;x++){const i=y*1024+x;if(!src[i])continue;let edge=false;for(let d=1;d<=thickness&&!edge;d++)if(x<d||x>=1024-d||y<d||y>=1024-d||!src[i-d]||!src[i+d]||!src[i-d*1024]||!src[i+d*1024])edge=true;if(edge){const q=i*4;pixels.data[q]=255;pixels.data[q+1]=255;pixels.data[q+2]=255;pixels.data[q+3]=255}}
    const edgeCanvas=document.createElement('canvas');edgeCanvas.width=edgeCanvas.height=1024;edgeCanvas.getContext('2d').putImageData(pixels,0,0);
-   ctx.save();ctx.globalCompositeOperation='source-over';ctx.fillStyle=accent;ctx.fillRect(0,0,1024,1024);ctx.globalCompositeOperation='destination-in';ctx.drawImage(edgeCanvas,0,0);ctx.restore();
+   const trimCanvas=document.createElement('canvas');trimCanvas.width=trimCanvas.height=1024;const trimCtx=trimCanvas.getContext('2d');trimCtx.fillStyle=accent;trimCtx.fillRect(0,0,1024,1024);trimCtx.globalCompositeOperation='destination-in';trimCtx.drawImage(edgeCanvas,0,0);ctx.drawImage(trimCanvas,0,0);
   }
   ctx.globalCompositeOperation='destination-in';ctx.drawImage(mask.canvas,0,0);ctx.globalCompositeOperation='source-over';
   state.detailCtx.drawImage(pattern,0,0);renderTexture();
