@@ -56,7 +56,7 @@ def draw_atlas(texture_path, islands, labels, filename):
         xs=[p[0] for p in points]; ys=[p[1] for p in points]
         center_u=(min(xs)+max(xs))*0.5
         center_v=(min(ys)+max(ys))*0.5
-        centers.append((center_u * (2048 - 1), (1 - center_v) * 2048))
+        centers.append((center_u * (2048 - 1), center_v * 2048))
     placed=[]
     offsets=[(0,0)]
     for radius in (42,60,80,102,128,158,192,230):
