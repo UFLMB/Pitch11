@@ -126,7 +126,7 @@ const report = {
   fbxCount: results.length,
   totalMB: Number(results.reduce((sum, item) => sum + item.bytes, 0) / 1048576).toFixed(2),
   skeletonSignatureGroups: [...groups.entries()].map(([signature, groupFiles]) => ({ signature, count: groupFiles.length, files: groupFiles })),
-  ...(compareModel ? { comparisonModel: "assets/players/player.glb", modelNamedNodeCount: modelNodeNames.size } : {}),
+  ...(compareModel ? { comparisonModel: "assets/players/player.glb", modelNamedNodeCount: modelNodeNames.size, modelNamedNodeExamples: [...modelNodeNames].sort().slice(0, 100) } : {}),
   files: results
 };
 const reportText = JSON.stringify(report, null, 2);
