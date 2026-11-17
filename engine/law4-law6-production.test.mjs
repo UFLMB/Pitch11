@@ -19,10 +19,11 @@ test('Law 4 checks substitute equipment before the player enters', () => {
   assert.match(script, /p\.equipment=\{\.\.\.incomingEquipment,inspected:true\}/);
 });
 
-test('Law 4 identifies and displays the captain armband and transfers captaincy on substitution', () => {
+test('Law 4 assigns a captain and transfers captaincy when the captain is substituted', () => {
   assert.match(script, /function assignCaptain\(team,exclude\)/);
+  assert.match(script, /if\(pool\[0\]\)pool\[0\]\.captain=true;/);
   assert.match(script, /if\(wasCaptain\)assignCaptain\(t,p\)/);
-  assert.match(script, /if\(p\.captain\)\{const ax=/);
+  assert.match(script, /p\.captain=false/);
 });
 
 test('Law 6 includes two assistant referees and a fourth official with substitution and added-time boards', () => {
