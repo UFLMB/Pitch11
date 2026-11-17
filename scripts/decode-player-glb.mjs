@@ -16,9 +16,9 @@ const io = new NodeIO()
   .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
 
 const document = await io.read(input);
-const root = document.getRoot();
-for (const extension of root.listExtensions()) {
-  if (extension.extensionName === 'EXT_meshopt_compression') extension.dispose();
+document.disposeExtension('EXT_meshopt_compression');
+if (document.hasExtension('EXT_meshopt_compression')) {
+  throw new Error('Could not remove EXT_meshopt_compression from the decoded document');
 }
 await io.write(output, document);
 
