@@ -1,4 +1,4 @@
-const CACHE_NAME='pitch11-shell-v4';
+const CACHE_NAME='pitch11-shell-v5';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/pitch11-icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
