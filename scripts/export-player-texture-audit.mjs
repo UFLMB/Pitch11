@@ -358,5 +358,7 @@ fs.writeFileSync(path.join(output, "README.txt"),
   "PITCH 11 — PLAYER TEXTURE / UV AUDIT\n\n" +
   "Extracted embedded images and exported per-material UV triangle layouts from the existing Male Athlete 02 GLB.\n" +
   "Match each uv-material-N.svg with its material base-color image. SVGs now color-code connected UV islands and number them by descending UV area; matching JSON files list each island bounding box, triangle count, vertex count, and UV area.\n" +
-  "No game runtime files or player assets are modified by this diagnostic export.\n" +\n  "Skeleton-weight analysis: body islands 4-5 are dominated by left/right calf joints; 6-7 by left/right thigh joints; 10-11 by thigh/calf transition weights; 12-13 and 18-27 by foot/toe joints.\n" +\n  "lower-leg-calf-candidate-preview.svg and thigh-knee-candidate-preview.svg are diagnostic-only candidate overlays, not approved garment masks and not used by Kit Studio.\n");
+  "No game runtime files or player assets are modified by this diagnostic export.\n" +
+  "Skeleton-weight analysis: body islands 4-5 are dominated by left/right calf joints; 6-7 by left/right thigh joints; 10-11 by thigh/calf transition weights; 12-13 and 18-27 by foot/toe joints.\n" +
+  "lower-leg-calf-candidate-preview.svg and thigh-knee-candidate-preview.svg are diagnostic-only candidate overlays, not approved garment masks and not used by Kit Studio.\n");
 console.log(JSON.stringify(report, null, 2));
