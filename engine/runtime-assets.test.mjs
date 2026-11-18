@@ -9,10 +9,11 @@ test("Three.js runtime is loaded from the same origin in every 3D entry point", 
   const stadium = read("../stadium-runtime.js");
   const graphics = read("../graphics3d.html");
   const index = read("../index.html");
+  const playerRenderer = read("./match-player-renderer.mjs");
 
   assert.match(lab, /from ["']\.\.\/vendor\/three\/build\/three\.module\.js["']/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/build\/three\.module\.js["']/);
-  assert.match(renderer, /FBXLoader/);
+  assert.match(playerRenderer, /FBXLoader/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/examples\/jsm\/loaders\/GLTFLoader\.js["']/);
   assert.match(stadium, /football-stadium-mobile\.glb/);
   assert.match(stadium, /get diagnostics\(\)/);
