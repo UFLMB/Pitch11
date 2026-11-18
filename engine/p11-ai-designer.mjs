@@ -34,7 +34,7 @@ function addStyles() {
     .p11-ai-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
     .p11-ai-title{font-size:10px;font-weight:850;letter-spacing:.15em;color:#e0c18a;text-transform:uppercase}
     .p11-ai-model{font-size:8px;color:#91a0b2;letter-spacing:.08em}
-    .p11-ai-prompt{width:100%;min-height:82px;resize:vertical;padding:10px;border:1px solid #354457;border-radius:9px;background:#0b1119;color:#edf3f8;font:11px/1.5 inherit}
+    .p11-ai-prompt{width:100%;min-height:82px;resize:vertical;padding:10px;border:1px solid #354457;border-radius:9px;background:#0b1119;color:#edf3f8;font:inherit;font-size:11px;line-height:1.5}
     .p11-ai-actions{display:grid;grid-template-columns:1fr auto;gap:7px}
     .p11-ai-button{min-height:39px;padding:8px 11px;border:1px solid #b9975c;border-radius:9px;background:linear-gradient(135deg,#c5a46d,#8c6c3c);color:#111;font-size:10px;font-weight:850;cursor:pointer}
     .p11-ai-button:disabled{opacity:.55;cursor:wait}
