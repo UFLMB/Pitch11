@@ -1,6 +1,24 @@
 const SKIN_TONES = [0xd5a47f, 0xb97f5e, 0x8e5b43, 0xe2bd9b, 0x704936, 0xc99470];
 const HAIR_TONES = [0x171311, 0x302017, 0x4b3324, 0x17191c, 0x6a4b2e];
 
+/**
+ * Resolve a goalkeeper dive relative to the keeper's own facing direction.
+ * diveAng is stored in legacy pitch/world coordinates; Mixamo left/right
+ * clips are local to the character, so the world-space vector must be
+ * projected onto the keeper's local right axis.
+ */
+export function resolveKeeperDiveSide(diveAng, facing) {
+  const angle = Number.isFinite(diveAng) ? diveAng : 0;
+  const yaw = Number.isFinite(facing) ? facing : 0;
+  const diveX = Math.cos(angle);
+  const diveY = Math.sin(angle);
+  const localRightX = Math.sin(yaw);
+  const localRightY = -Math.cos(yaw);
+  const lateral = diveX * localRightX + diveY * localRightY;
+  if (Math.abs(lateral) < 1e-6) return angle < 0 ? "left" : "right";
+  return lateral < 0 ? "left" : "right";
+}
+
 export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = null, ballOwner = null, restart = null) {
   if (!player) return null;
   const team = Number.isInteger(player.team) ? player.team : 0;
@@ -13,7 +31,9 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   const speed = Math.hypot(Number(player.vx) || 0, Number(player.vy) || 0) * 0.1;
 
   let action = "idle";
-  if (player.dive > 0) action = player.gk ? (player.diveAng < 0 ? "keeper-dive-left" : "keeper-dive-right") : "fall";
+  if (player.dive > 0) action = player.gk
+    ? (resolveKeeperDiveSide(player.diveAng, player.face) === "left" ? "keeper-dive-left" : "keeper-dive-right")
+    : "fall";
   else if (player.sd) action = "slide-tackle";
   else if (player.down) action = "fallen-idle";
   else if (player.jump > 0) action = "header";
