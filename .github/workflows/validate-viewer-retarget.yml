@@ -1,0 +1,36 @@
+name: Validate 3D viewer retarget script
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test/current-fbx-retarget]
+    paths:
+      - "player-model-viewer.html"
+      - ".github/workflows/validate-viewer-retarget.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Extract and syntax-check viewer module
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("player-model-viewer.html").read_text(encoding="utf-8")
+          matches = re.findall(r'<script\\b([^>]*)>([\\s\\S]*?)</script>', html, re.I)
+          modules = [body for attrs, body in matches if re.search(r'type=["\\']module["\\']', attrs, re.I)]
+          if len(modules) != 1:
+              raise SystemExit(f"Expected exactly one module script, found {len(modules)}")
+          Path("/tmp/viewer-module.mjs").write_text(modules[0], encoding="utf-8")
+          print("Extracted viewer module:", len(modules[0]), "characters")
+          PY
+          node --check /tmp/viewer-module.mjs
+          echo "Viewer module syntax check passed."
