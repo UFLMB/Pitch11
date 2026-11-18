@@ -33,7 +33,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {mountP11AIDesigner} from './engine/p11-ai-designer.mjs';
+import {mountP11AIDesigner} from './engine/pitchy.mjs';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
@@ -145,7 +145,7 @@ function applyAIBallDesign(plan){
  if(plan.decalText){g.save();g.fillStyle=plan.trim?plan.trimColor:'#111820';g.font='900 92px Inter,Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(plan.decalText,size/2,size*.5,size*.82);g.restore()}
  $('baseColour').value=plan.baseColor;$('roughness').value=Math.round(plan.roughness*100);$('metalness').value=Math.round(plan.metalness*100);
  paintMaterials.forEach(m=>{m.roughness=plan.roughness;m.metalness=plan.metalness});
- refresh();saveLocal();status.textContent='AI DESIGN APPLIED · '+plan.designName.toUpperCase();
+ refresh();saveLocal();status.textContent='PITCHY DESIGN APPLIED · '+plan.designName.toUpperCase();
 }
 base();
 mountP11AIDesigner({type:'ball',onApply:applyAIBallDesign});
