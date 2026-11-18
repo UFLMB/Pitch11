@@ -65,3 +65,14 @@ test('creative alternatives remain deterministic for the same brief', () => {
   const b = analysePitchyBrief('Futuristic navy and cyan ball with geometric panels', 'ball');
   assert.deepEqual(a.creativeDirections, b.creativeDirections);
 });
+
+test('keeps design history newest-first and bounded', async () => {
+  const { prependPitchyHistory } = await import('./pitchy-v2.mjs');
+  const items = [{ id: 2 }, { id: 1 }];
+  assert.deepEqual(prependPitchyHistory(items, { id: 3 }, 2), [{ id: 3 }, { id: 2 }]);
+});
+
+test('handles an invalid history store without losing the new entry', async () => {
+  const { prependPitchyHistory } = await import('./pitchy-v2.mjs');
+  assert.deepEqual(prependPitchyHistory(null, { id: 'new' }), [{ id: 'new' }]);
+});
