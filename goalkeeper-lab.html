@@ -34,17 +34,17 @@ import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
-const renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:"high-performance"});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.4));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;host.appendChild(renderer.domElement);
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.5:2));renderer.setSize(host.clientWidth,host.clientHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;host.appendChild(renderer.domElement);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101b20);scene.fog=new THREE.Fog(0x101b20,45,100);
-scene.add(new THREE.HemisphereLight(0xd7e9ff,0x203027,1.8));const key=new THREE.DirectionalLight(0xffe5c4,2.2);key.position.set(-12,22,16);scene.add(key);const rim=new THREE.DirectionalLight(0x7ba9ff,1.1);rim.position.set(12,10,-15);scene.add(rim);
+scene.add(new THREE.HemisphereLight(0xd7e9ff,0x203027,1.8));const key=new THREE.DirectionalLight(0xffe5c4,2.5);key.position.set(-12,22,16);key.castShadow=true;key.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);key.shadow.camera.left=-12;key.shadow.camera.right=12;key.shadow.camera.top=12;key.shadow.camera.bottom=-12;key.shadow.bias=-0.00015;scene.add(key);const rim=new THREE.DirectionalLight(0x7ba9ff,1.1);rim.position.set(12,10,-15);scene.add(rim);
 const camera=new THREE.PerspectiveCamera(43,host.clientWidth/host.clientHeight,.1,160);
-const target=new THREE.Vector3(0,1.25,30),cameraState={yaw:0,pitch:.12,distance:15};
+const target=new THREE.Vector3(0,1.25,30),cameraState={yaw:Math.PI,pitch:.12,distance:15};
 function placeCamera(){camera.position.set(target.x+Math.sin(cameraState.yaw)*cameraState.distance,target.y+cameraState.pitch*cameraState.distance,target.z+Math.cos(cameraState.yaw)*cameraState.distance);camera.lookAt(target)}
 placeCamera();
 const mat=(c,r=.85,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
 const grass=mat(0x1b512f),line= new THREE.MeshBasicMaterial({color:0xe6eee3}),white=mat(0xf4f3e9,.5),dark=mat(0x1b2528);
-const floor=new THREE.Mesh(new THREE.PlaneGeometry(46,34),grass);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.03,24);scene.add(floor);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(46,34),grass);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.03,24);floor.receiveShadow=true;scene.add(floor);
 function box(w,h,d,x,y,z,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);scene.add(o);return o}
 function lineSeg(x1,z1,x2,z2){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const o=box(len,.025,.025,(x1+x2)/2,.025,(z1+z2)/2,line);o.rotation.y=-Math.atan2(dz,dx)}
 // Penalty area and goal mouth markings.
@@ -72,7 +72,7 @@ const net=new THREE.LineSegments(netGeometry,netMat);goal.add(net);
 // The source Mixamo FBX is ~52 MB. Give mobile a bounded chance to load it,
  // then fall back to the lightweight GLB instead of leaving the lab on a spinner.
 const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:60000});
-const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
+const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
 let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false;
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
 const targets={"left-low":{x:-2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:2.8,y:.35,z:34},"left-high":{x:-2.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:2.8,y:2.05,z:34}};
@@ -106,7 +106,7 @@ document.querySelector("#ai-mode").addEventListener("click",()=>{aiMode=!aiMode;
 document.querySelector("#ai-sequence").addEventListener("click",()=>{aiMode=true;document.querySelector("#ai-mode").textContent="AI MODE: ON";document.querySelector("#ai-mode").classList.add("active");resetKeeper();runSequence()});
 document.querySelectorAll("[data-shot]").forEach(b=>b.addEventListener("click",()=>fireShot(b.dataset.shot)));
 document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.action;if(a==="dive-left"||a==="dive-right")triggerSave(a.endsWith("left")?"left":"right");else if(a==="catch"){triggerAction("keeper-catch")}else if(a==="parry"){triggerAction("keeper-parry")}else if(a==="reset")resetKeeper();else if(a==="sequence")runSequence()}));
-document.querySelectorAll("[data-camera]").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.camera;if(c==="front")cameraState.yaw=0;else if(c==="side")cameraState.yaw=Math.PI/2;else if(c==="rear")cameraState.yaw=Math.PI;else{cameraState.yaw=0;cameraState.pitch=.12;cameraState.distance=15}placeCamera();document.querySelectorAll("[data-camera]").forEach(x=>x.classList.toggle("active",x===b))}));
+document.querySelectorAll("[data-camera]").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.camera;if(c==="front")cameraState.yaw=Math.PI;else if(c==="side")cameraState.yaw=Math.PI/2;else if(c==="rear")cameraState.yaw=0;else{cameraState.yaw=Math.PI;cameraState.pitch=.12;cameraState.distance=15}placeCamera();document.querySelectorAll("[data-camera]").forEach(x=>x.classList.toggle("active",x===b))}));
 let dragging=false,lastPointer=null;renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;lastPointer={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;lastPointer={x:e.clientX,y:e.clientY};cameraState.yaw-=dx*.006;cameraState.pitch=THREE.MathUtils.clamp(cameraState.pitch+dy*.003,-.15,.55);placeCamera()});renderer.domElement.addEventListener("pointerup",()=>dragging=false);renderer.domElement.addEventListener("wheel",e=>{cameraState.distance=THREE.MathUtils.clamp(cameraState.distance+e.deltaY*.012,7,28);placeCamera()},{passive:true});
 document.querySelector("#toggle").addEventListener("click",()=>{const p=document.querySelector("#panel");p.classList.toggle("collapsed");document.querySelector("#toggle").textContent=p.classList.contains("collapsed")?"SHOW CONTROLS":"HIDE CONTROLS"});
 addEventListener("resize",()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight)});
