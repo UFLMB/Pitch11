@@ -12,6 +12,7 @@ test("Three.js runtime is loaded from the same origin in every 3D entry point", 
 
   assert.match(lab, /from ["']\.\.\/vendor\/three\/build\/three\.module\.js["']/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/build\/three\.module\.js["']/);
+  assert.match(renderer, /FBXLoader/);
   assert.match(stadium, /from ["']\.\/vendor\/three\/examples\/jsm\/loaders\/GLTFLoader\.js["']/);
   assert.match(stadium, /football-stadium-mobile\.glb/);
   assert.match(stadium, /get diagnostics\(\)/);
@@ -33,6 +34,7 @@ test("Pages build vendors the pinned Three.js package and checks its license", (
   const workflow = read("../.github/workflows/static.yml");
   assert.match(workflow, /npm pack three@0\.170\.0/);
   assert.match(workflow, /vendor\/three\/build\/three\.module\.js/);
+  assert.match(workflow, /FBXLoader\\.js/);
   assert.match(workflow, /vendor\/three\/LICENSE/);
   assert.match(workflow, /vendor\/three\/examples\/jsm\/utils\/SkeletonUtils\.js/);
 });
