@@ -1,38 +1,38 @@
 const PATTERNS = [
-  ['vertical-stripes', /\\b(vertical stripes?|striped|stripes?)\\b|függőleges csík|csíkos|csíkok/],
-  ['horizontal-stripes', /\\b(horizontal stripes?)\\b|vízszintes csík/],
-  ['diagonal-stripes', /\\b(diagonal stripes?|slanted stripes?)\\b|átlós csík|ferde csík/],
-  ['chevron', /\\b(chevron|zig.?zag|v shape)\\b|cikkcakk|cikcakk|v alak/],
-  ['checkerboard', /\\b(checkerboard|checkered|checks?)\\b|sakktábla|kockás/],
-  ['dots', /\\b(dots?|polka dots?)\\b|pötty|pöttyös/],
-  ['side-panels', /\\b(side panels?|side stripes?)\\b|oldalpanel|oldalsó panel|oldalcsík/],
-  ['split', /\\b(split|half.?and.?half|two.?tone)\\b|felezett|két tónus|kettéosztott/],
-  ['geometric', /\\b(geometric|abstract geometry)\\b|geometrikus|geometriai/],
-  ['rings', /\\b(rings?|circular bands?)\\b|gyűrű|karika|körkörös/],
-  ['panel-graphics', /\\b(panel graphics?|graphic panels?)\\b|panelgrafika|panel minta|grafikus panelek/]
+  ['vertical-stripes', /\b(vertical stripes?|striped|stripes?)\b|függőleges csík|csíkos|csíkok/],
+  ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
+  ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
+  ['chevron', /\b(chevron|zig.?zag|v shape)\b|cikkcakk|cikcakk|v alak/],
+  ['checkerboard', /\b(checkerboard|checkered|checks?)\b|sakktábla|kockás/],
+  ['dots', /\b(dots?|polka dots?)\b|pötty|pöttyös/],
+  ['side-panels', /\b(side panels?|side stripes?)\b|oldalpanel|oldalsó panel|oldalcsík/],
+  ['split', /\b(split|half.?and.?half|two.?tone)\b|felezett|két tónus|kettéosztott/],
+  ['geometric', /\b(geometric|abstract geometry)\b|geometrikus|geometriai/],
+  ['rings', /\b(rings?|circular bands?)\b|gyűrű|karika|körkörös/],
+  ['panel-graphics', /\b(panel graphics?|graphic panels?)\b|panelgrafika|panel minta|grafikus panelek/]
 ];
 
 const COLOURS = [
-  ['black', '#101318', /\\b(black|jet black|charcoal)\\b|fekete|szénfekete/],
-  ['white', '#f4f3ed', /\\b(white|ivory)\\b|fehér|elefántcsont/],
-  ['red', '#d62935', /\\b(red|crimson|scarlet)\\b|piros|vörös|bordó/],
-  ['blue', '#1769aa', /\\b(blue|royal blue)\\b|kék|királykék/],
-  ['navy', '#142743', /\\b(navy|midnight blue)\\b|sötétkék|tengerészkék/],
-  ['sky blue', '#55b9e9', /\\b(sky blue|light blue)\\b|világoskék|égkék/],
-  ['green', '#168653', /\\b(green|forest green)\\b|zöld|sötétzöld/],
-  ['lime', '#a3e635', /\\b(lime|neon green)\\b|lime|neonzöld|élénkzöld/],
-  ['yellow', '#f2d22e', /\\b(yellow|golden yellow)\\b|sárga|citromsárga/],
-  ['gold', '#c5a46d', /\\b(gold|golden)\\b|arany|aranyszínű/],
-  ['orange', '#ef7627', /\\b(orange)\\b|narancs|narancssárga/],
-  ['purple', '#7545a6', /\\b(purple|violet)\\b|lila|ibolya/],
-  ['pink', '#ed78a8', /\\b(pink|magenta)\\b|rózsaszín|pink/],
-  ['grey', '#858b94', /\\b(gray|grey|silver)\\b|szürke|ezüst/],
-  ['brown', '#79513a', /\\b(brown)\\b|barna/]
+  ['black', '#101318', /\b(black|jet black|charcoal)\b|fekete|szénfekete/],
+  ['white', '#f4f3ed', /\b(white|ivory)\b|fehér|elefántcsont/],
+  ['red', '#d62935', /\b(red|crimson|scarlet)\b|piros|vörös|bordó/],
+  ['blue', '#1769aa', /\b(blue|royal blue)\b|kék|királykék/],
+  ['navy', '#142743', /\b(navy|midnight blue)\b|sötétkék|tengerészkék/],
+  ['sky blue', '#55b9e9', /\b(sky blue|light blue)\b|világoskék|égkék/],
+  ['green', '#168653', /\b(green|forest green)\b|zöld|sötétzöld/],
+  ['lime', '#a3e635', /\b(lime|neon green)\b|lime|neonzöld|élénkzöld/],
+  ['yellow', '#f2d22e', /\b(yellow|golden yellow)\b|sárga|citromsárga/],
+  ['gold', '#c5a46d', /\b(gold|golden)\b|arany|aranyszínű/],
+  ['orange', '#ef7627', /\b(orange)\b|narancs|narancssárga/],
+  ['purple', '#7545a6', /\b(purple|violet)\b|lila|ibolya/],
+  ['pink', '#ed78a8', /\b(pink|magenta)\b|rózsaszín|pink/],
+  ['grey', '#858b94', /\b(gray|grey|silver)\b|szürke|ezüst/],
+  ['brown', '#79513a', /\b(brown)\b|barna/]
 ];
 
 const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 const hexValid = value => /^#[0-9a-f]{6}$/i.test(value || '');
-const isHungarian = text => /[őűáéíóöüŐŰÁÉÍÓÖÜ]/.test(text) || /\\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\\b/i.test(text);
+const isHungarian = text => /[őűáéíóöüŐŰÁÉÍÓÖÜ]/.test(text) || /\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\b/i.test(text);
 
 function luminance(hex) {
   const rgb = hex.match(/[a-f0-9]{2}/gi).map(v => parseInt(v, 16) / 255).map(v => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4);
@@ -52,15 +52,15 @@ function extractColours(text) {
 }
 function detectPattern(text) {
   for (const [pattern, re] of PATTERNS) if (re.test(text)) return pattern;
-  if (/\\b(clean|minimal|plain|solid|simple)\\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(text)) return 'solid';
-  if (/\\b(aggressive|dynamic|fast|speed)\\b|agresszív|dinamikus|sebesség/i.test(text)) return 'diagonal-stripes';
+  if (/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(text)) return 'solid';
+  if (/\b(aggressive|dynamic|fast|speed)\b|agresszív|dinamikus|sebesség/i.test(text)) return 'diagonal-stripes';
   return 'panel-graphics';
 }
 function detectGarment(text, type) {
   if (type === 'ball') return 'jersey';
-  if (/\\b(shorts?|trunks?)\\b|nadrág|sort/i.test(text)) return 'shorts';
-  if (/\\b(socks?|stockings?)\\b|sportszár|zokni/i.test(text)) return 'socks';
-  if (/\\b(boots?|cleats?)\\b|cipő|stoplis/i.test(text)) return 'boots';
+  if (/\b(shorts?|trunks?)\b|nadrág|sort/i.test(text)) return 'shorts';
+  if (/\b(socks?|stockings?)\b|sportszár|zokni/i.test(text)) return 'socks';
+  if (/\b(boots?|cleats?)\b|cipő|stoplis/i.test(text)) return 'boots';
   return 'jersey';
 }
 function designLabel(text, pattern, colours, type) {
@@ -88,15 +88,15 @@ function buildPlan(brief, type) {
   if (!text) throw new Error('Add a design brief first.');
   const hu = isHungarian(text);
   const colours = extractColours(text);
-  let baseColor = colours[0]?.hex || (/\\b(dark|stealth|aggressive|blackout)\\b|sötét|agresszív|fekete/i.test(text) ? '#101318' : '#f4f3ed');
+  let baseColor = colours[0]?.hex || (/\b(dark|stealth|aggressive|blackout)\b|sötét|agresszív|fekete/i.test(text) ? '#101318' : '#f4f3ed');
   let accentColor = colours[1]?.hex || contrastAccent(baseColor);
   if (colours.length === 1 && luminance(baseColor) > .7) accentColor = '#172230';
   const pattern = detectPattern(text);
-  const width = /\\b(thin|fine|subtle)\\b|vékony|finom|visszafogott/i.test(text) ? 12 : /\\b(bold|wide|thick|strong)\\b|vastag|széles|erőteljes/i.test(text) ? 48 : 28;
-  const spacing = /\\b(dense|many|tight)\\b|sűrű|sok csík/i.test(text) ? 92 : /\\b(spaced|wide apart)\\b|ritka|távoli/i.test(text) ? 250 : 165;
-  const trim = /\\b(trim|piping|edge|outline|cuff)\\b|szegély|passzé|gallér|ujjszegély/i.test(text);
+  const width = /\b(thin|fine|subtle)\b|vékony|finom|visszafogott/i.test(text) ? 12 : /\b(bold|wide|thick|strong)\b|vastag|széles|erőteljes/i.test(text) ? 48 : 28;
+  const spacing = /\b(dense|many|tight)\b|sűrű|sok csík/i.test(text) ? 92 : /\b(spaced|wide apart)\b|ritka|távoli/i.test(text) ? 250 : 165;
+  const trim = /\b(trim|piping|edge|outline|cuff)\b|szegély|passzé|gallér|ujjszegély/i.test(text);
   const garment = detectGarment(text, type);
-  const decalMatch = text.match(/(?:text|write|number|felirat|szöveg|szám)\\s*[:=]?\\s*[“"']([^”"']{1,28})[”"']/i);
+  const decalMatch = text.match(/(?:text|write|number|felirat|szöveg|szám)\s*[:=]?\s*[“"']([^”"']{1,28})[”"']/i);
   return {
     designName: designLabel(text, pattern, colours, type).slice(0, 64),
     summary: hu
@@ -105,9 +105,9 @@ function buildPlan(brief, type) {
     garment, baseColor, accentColor, pattern,
     stripeWidth: width, stripeSpacing: spacing, trim,
     trimColor: colours[2]?.hex || accentColor,
-    seamColor: /\\b(black seams?|dark seams?)\\b|fekete varrás|sötét varrás/i.test(text) ? '#17191d' : accentColor,
-    roughness: type === 'ball' ? (/\\b(glossy|shiny|polished)\\b|fényes|csillogó/i.test(text) ? .28 : .58) : .78,
-    metalness: /\\b(metallic|chrome)\\b|fémes|króm/i.test(text) ? .22 : /\\b(matte)\\b|matt/i.test(text) ? 0 : .02,
+    seamColor: /\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(text) ? '#17191d' : accentColor,
+    roughness: type === 'ball' ? (/\b(glossy|shiny|polished)\b|fényes|csillogó/i.test(text) ? .28 : .58) : .78,
+    metalness: /\b(metallic|chrome)\b|fémes|króm/i.test(text) ? .22 : /\b(matte)\b|matt/i.test(text) ? 0 : .02,
     decalText: decalMatch?.[1] || ''
   };
 }
