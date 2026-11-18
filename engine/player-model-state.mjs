@@ -34,6 +34,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   if (player.dive > 0) action = player.gk
     ? (resolveKeeperDiveSide(player.diveAng, player.face) === "left" ? "keeper-dive-left" : "keeper-dive-right")
     : "fall";
+  else if (player.gk && player.diveRecover > 0) action = "get-up";
   else if (player.sd) action = "slide-tackle";
   else if (player.down) action = "fallen-idle";
   else if (player.jump > 0) action = "header";
