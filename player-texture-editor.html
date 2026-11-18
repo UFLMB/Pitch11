@@ -132,7 +132,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
-import {mountP11AIDesigner} from './engine/pitchy.mjs';
+import {mountPitchy} from './engine/pitchy.mjs';
 const $=s=>document.querySelector(s),status=$('#status'),error=$('#error');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
@@ -280,7 +280,7 @@ function generateKitDesign(plan=null){
  $('#designHint').textContent=plan?plan.summary:'Design applied to '+state.activeGarment+'. This instruction replaced earlier edits inside its target area. Later edits can replace it again. Undo reverts the complete change.';
 }
 $('#generateDesign').addEventListener('click',()=>generateKitDesign());
-mountP11AIDesigner({type:'kit',onApply:plan=>generateKitDesign(plan)});
+mountPitchy({type:'kit',onApply:plan=>generateKitDesign(plan)});
 
 
 const BODY_SHAPE_KEY='p11-kit-studio-body-shape-v1';
