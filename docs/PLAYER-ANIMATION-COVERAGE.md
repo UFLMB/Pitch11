@@ -120,4 +120,4 @@ The current pack is sufficient to prototype a convincing animated footballer and
 6. celebration and team reactions;
 7. goalkeeper punch, high claim and recovery.
 
-This is a coverage assessment, not an instruction to integrate or replace production assets yet.
+This is a coverage assessment, not an instruction to integrate or replace production assets yet. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD.
