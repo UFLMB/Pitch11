@@ -31,8 +31,8 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <div class="panel-top"><div class="panel-title-wrap"><div class="eyebrow">PITCH 11 · TOOLS</div><div class="heading">3D Model Viewer &amp; Animation Tester</div></div><button id="panelToggle" type="button" aria-label="Minimise panel" aria-expanded="true">⌄</button></div>
 <div class="panel-content"><p class="intro">A read-only inspection space. Models and animation files are loaded for preview only; this tool never edits or saves over game assets.</p>
 <div class="group"><div class="group-title">Model</div>
-<label class="field">Load a local GLB model<input id="modelFile" type="file" accept=".glb,model/gltf-binary"></label>
-<div class="note" id="modelInfo">Default model: assets/players/player.glb</div>
+<label class="field">Load a local GLB / FBX model<input id="modelFile" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream"></label>
+<div class="note" id="modelInfo">Default model: input/player-model-candidate/character.fbx</div>
 </div>
 <div class="group"><div class="group-title">Animation</div>
 <label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
@@ -40,7 +40,7 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <label class="field">Timeline <span id="timeReadout">0.00 / 0.00 s</span><input id="timeline" type="range" min="0" max="1000" step="1" value="0" disabled></label>
 <div class="row"><button id="stepBack" disabled>− FRAME</button><button id="loop" class="active" aria-pressed="true" disabled>LOOP ON</button><button id="stepForward" disabled>+ FRAME</button></div>
 <label class="field">Playback speed <span id="speedLabel">1.00×</span><input id="speed" type="range" min=".25" max="2" step=".05" value="1"></label>
-<label class="field">Import animation GLB files<input id="animationFiles" type="file" accept=".glb,model/gltf-binary" multiple></label>
+<label class="field">Import same-rig animation GLB / FBX files<input id="animationFiles" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream" multiple></label>
 <label class="field">Experimental FBX retarget test<input id="animationFbx" type="file" accept=".fbx,application/octet-stream"></label>
 <div class="meta" id="retargetInfo" aria-live="polite">FBX test uses a Mixamo-to-Bip01 mapping. Imported clips stay in this viewer session only.</div>
 <div class="meta" id="animationInfo">Embedded clips and the project's Idle / Walk / Run files are checked automatically. Imported animations work best when skeleton node names match the loaded model.</div><div class="meta" id="compatibilityInfo" aria-live="polite">Rig compatibility report will appear after an animation is selected.</div>
@@ -274,21 +274,26 @@ async function loadExtraAnimations(){
  if(!activeRoot)return;
  const files=[...$('animationFiles').files];if(!files.length)return;
  let added=0,failed=[];
- for(const file of files){const url=URL.createObjectURL(file);try{const gltf=await loader.loadAsync(url);for(const clip of gltf.animations||[]){const named=clip.clone();if(!named.name||named.name==='Animation')named.name=file.name.replace(/\.glb$/i,'');const targets=new Set();for(const track of named.tracks){try{const parsed=THREE.PropertyBinding.parseTrackName(track.name);if(parsed.nodeName&&activeRoot.getObjectByName(parsed.nodeName))targets.add(parsed.nodeName)}catch{}}named.userData={...(named.userData||{}),matchedTargets:targets.size,totalTracks:named.tracks.length};clips.push(named);added++}}catch(e){failed.push(file.name+': '+(e.message||e))}finally{URL.revokeObjectURL(url)}}
+ for(const file of files){const url=URL.createObjectURL(file);try{
+  const isFbx=/\.fbx$/i.test(file.name),asset=isFbx?await fbxLoader.loadAsync(url):await loader.loadAsync(url);
+  for(const clip of asset.animations||[]){const named=clip.clone();if(!named.name||named.name==='Animation')named.name=file.name.replace(/\.(glb|fbx)$/i,'');const targets=new Set();for(const track of named.tracks){try{const parsed=THREE.PropertyBinding.parseTrackName(track.name);if(parsed.nodeName&&activeRoot.getObjectByName(parsed.nodeName))targets.add(parsed.nodeName)}catch{}}named.userData={...(named.userData||{}),matchedTargets:targets.size,totalTracks:named.tracks.length};clips.push(named);added++}
+ }catch(e){failed.push(file.name+': '+(e.message||e))}finally{URL.revokeObjectURL(url)}}
  refreshAnimationList();animationInfo.textContent=added+' additional clip(s) imported. '+clips.slice(-added).map(c=>c.name+': '+(c.userData?.matchedTargets??'—')+'/'+(c.userData?.totalTracks??c.tracks.length)+' tracks matched').join(' · ')+(failed.length?' · Could not load: '+failed.join(' | '):'');$('animationFiles').value='';
 }
 async function loadModel(url,label,revokeAfter=false){
  setStatus('LOADING MODEL');error.textContent='';stopAnimation();
  try{
-  const gltf=await loader.loadAsync(url);
+  const isFbx=/\.fbx(?:$|\?)/i.test(label)||/\.fbx(?:$|\?)/i.test(url);
+  const asset=isFbx?await fbxLoader.loadAsync(url):await loader.loadAsync(url);
   if(activeRoot)scene.remove(activeRoot);
-  activeRoot=gltf.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
-  mixer=new THREE.AnimationMixer(activeRoot);clips=[...(gltf.animations||[])];clipSources=[];
+  activeRoot=isFbx?asset:asset.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
+  mixer=new THREE.AnimationMixer(activeRoot);clips=[...(asset.animations||[])];clipSources=[];
   modelInfo.textContent=label+' · '+clips.length+' embedded clip(s)';
-  refreshAnimationList('idle');setStatus('MODEL LOADED');
+  refreshAnimationList('idle');setStatus(isFbx?'MIXAMO FBX MODEL LOADED':'MODEL LOADED');
   if(revokeAfter){URL.revokeObjectURL(url);modelUrl=null}
-  await loadProjectAnimations();
- }catch(e){setStatus('MODEL LOAD ERROR');error.textContent=e?.stack||String(e);modelInfo.textContent='Model could not be loaded. Use a self-contained GLB file.';if(revokeAfter)URL.revokeObjectURL(url)}
+  if(!isFbx)await loadProjectAnimations();
+  else animationInfo.textContent='Mixamo FBX rig active. Import FBX clips from input/player-package; matching bone names are checked before playback.';
+ }catch(e){setStatus('MODEL LOAD ERROR');error.textContent=e?.stack||String(e);modelInfo.textContent='Model could not be loaded. Check that the FBX or GLB is self-contained.';if(revokeAfter)URL.revokeObjectURL(url)}
 }
 async function loadProjectAnimations(){
  const sources=[['Idle','./assets/players/idle.glb'],['Walk','./assets/players/walk.glb'],['Run','./assets/players/run.glb']];
@@ -319,6 +324,6 @@ $('background').addEventListener('change',e=>{const c={dark:0x090d12,stadium:0x1
 function tick(){requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);if(mixer&&playing){mixer.update(dt);updateTimeline()}controls.update();renderer.render(scene,camera)}
 tick();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-loadModel('./assets/players/player.glb','assets/players/player.glb');
+loadModel('./input/player-model-candidate/character.fbx','input/player-model-candidate/character.fbx');
 </script>
 </body></html>
