@@ -81,7 +81,7 @@ function replaceBall(root,label){
 }
 async function loadRemoteBall(){
  status.textContent='LOADING CC0 MODEL…';
- try{const gltf=await loader.loadAsync('https://files.innerscene.com/library/soccer-ball-f39dfd3f2d6e8be156/soccer-ball.glb');replaceBall(gltf.scene,'CC0 SOCCER BALL')}
+ try{const gltf=await loader.loadAsync('https://files.innerscene.com/library/soccer-ball-f39dfd50/4609d3f2e57d6e8be156/soccer-ball.glb');replaceBall(gltf.scene,'CC0 SOCCER BALL')}
  catch(err){console.error(err);status.textContent='MODEL LOAD FAILED · IMPORT GLB FILE INSTEAD'}
 }
 function loadLocalBall(file){
