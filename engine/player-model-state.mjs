@@ -15,7 +15,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   let action = "idle";
   if (player.dive > 0) action = player.gk ? (player.diveAng < 0 ? "keeper-dive-left" : "keeper-dive-right") : "fall";
   else if (player.sd) action = "slide-tackle";
-  else if (player.down) action = "fall";
+  else if (player.down) action = "fallen-idle";
   else if (player.jump > 0) action = "header";
   else if (player.ak === 1) action = "shot";
   else if (player.ak === 2) action = "pass";
