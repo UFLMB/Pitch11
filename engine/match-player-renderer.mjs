@@ -61,26 +61,59 @@ function inspectSkinnedModel(root) {
   return { skinnedMeshes, triangleCount, boneNames };
 }
 
-export function validateDirectMixamoClip(root, clip) {
-  const tracks = Array.isArray(clip?.tracks) ? clip.tracks : [];
-  if (!tracks.length) throw new Error("FBX contains no animation tracks");
-  const missing = new Set();
-  const targets = new Set();
-  for (const track of tracks) {
-    const parsed = THREE.PropertyBinding.parseTrackName(track.name);
-    const nodeName = parsed.nodeName || parsed.objectName;
-    if (!nodeName) {
-      missing.add(track.name);
+function canonicalBoneName(name) {
+  return String(name || "").replace(/[\\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\\d*/i, "").toLowerCase();
+}
+
+export function validateDirectMixamoClip(root, sourceClip) {
+  const boneNames = [];
+  root.traverse(node => { if (node.isBone && node.name) boneNames.push(node.name); });
+  const aliases = new Map();
+  for (const name of boneNames) {
+    const key = canonicalBoneName(name);
+    const list = aliases.get(key) || [];
+    if (!list.includes(name)) list.push(name);
+    aliases.set(key, list);
+  }
+  const sourceTracks = Array.isArray(sourceClip?.tracks) ? sourceClip.tracks : [];
+  if (!sourceTracks.length) throw new Error("FBX contains no animation tracks");
+  const tracks = [];
+  const unresolved = [];
+  const ambiguous = [];
+  const mapped = new Set();
+  for (const sourceTrack of sourceTracks) {
+    const track = sourceTrack.clone();
+    const dot = sourceTrack.name.lastIndexOf(".");
+    if (dot < 1) {
+      unresolved.push(sourceTrack.name);
+      tracks.push(track);
       continue;
     }
-    targets.add(nodeName);
-    if (!THREE.PropertyBinding.findNode(root, nodeName)) missing.add(nodeName);
+    const rawTarget = sourceTrack.name.slice(0, dot);
+    const property = sourceTrack.name.slice(dot + 1);
+    const matches = aliases.get(canonicalBoneName(rawTarget)) || [];
+    if (matches.length === 1) {
+      track.name = matches[0] + "." + property;
+      mapped.add(canonicalBoneName(rawTarget));
+    } else if (matches.length > 1) {
+      ambiguous.push({ track: sourceTrack.name, matches });
+    } else {
+      unresolved.push(sourceTrack.name);
+    }
+    tracks.push(track);
   }
-  if (missing.size) {
-    const preview = [...missing].slice(0, 8).join(", ");
-    throw new Error(`Direct Mixamo binding failed: ${missing.size} missing targets (${preview})`);
+  if (unresolved.length || ambiguous.length) {
+    const detail = [
+      unresolved.length ? unresolved.length + " unresolved" : "",
+      ambiguous.length ? ambiguous.length + " ambiguous" : ""
+    ].filter(Boolean).join(", ");
+    throw new Error(`Direct Mixamo bone binding failed: ${detail}`);
   }
-  return { trackCount: tracks.length, uniqueTargets: targets.size };
+  return {
+    clip: new THREE.AnimationClip(sourceClip.name, sourceClip.duration, tracks),
+    trackCount: tracks.length,
+    uniqueTargets: mapped.size
+  };
 }
 
 export class MatchPlayerRenderer {
@@ -203,7 +236,7 @@ export class MatchPlayerRenderer {
       const sourceClip = source.animations?.[0];
       if (!sourceClip) throw new Error("FBX contains no animation clip");
       const binding = validateDirectMixamoClip(this.template, sourceClip);
-      const clip = sourceClip.clone();
+      const clip = binding.clip;
       clip.name = file.replace(/\.fbx$/i, "");
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
       this.clipCache.set(file, clip);
