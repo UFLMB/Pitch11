@@ -27,8 +27,9 @@ function uniqueXmlNames(xml, tag) {
     const attrs = match[1] || "";
     const body = match[2] || "";
     const attributeName = attrs.match(/name="([^"]+)"/i)?.[1];
+    const propertyName = body.match(/<Property\b[^>]*\bkey="\$mat\.name"[^>]*\b(?:value|type)="([^"]+)"/i)?.[1];
     const childName = body.match(/<(?:name|Name|string)\b[^>]*>([^<]+)<\//)?.[1];
-    const value = attributeName || childName;
+    const value = attributeName || propertyName || childName;
     if (value) names.push(value.replaceAll("&amp;", "&").trim());
   };
   for (const match of xml.matchAll(elementPattern)) collect(match);
@@ -36,12 +37,12 @@ function uniqueXmlNames(xml, tag) {
   return [...new Set(names.filter(Boolean))].sort();
 }
 function xmlElementSamples(xml, tag) {
-  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]{0,700}?)", "gi");
+  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]{1,700})", "gi");
   return [...xml.matchAll(pattern)].slice(0, 8).map(match => match[0].replace(/\s+/g, " ").slice(0, 700));
 }
 
 function verifyXmlNameParser() {
-  const fixture = '<Root><Mesh name="BodyMesh"><Name>ignored</Name></Mesh><Mesh><Name>JerseyMesh</Name></Mesh><Mesh name="Boot&amp;Sole"/><Material name="KeeperFabric"/></Root>';
+  const fixture = '<Root><Mesh name="BodyMesh"><Name>ignored</Name></Mesh><Mesh><Name>JerseyMesh</Name></Mesh><Mesh name="Boot&amp;Sole"/><Material><Property key="$mat.name" value="KeeperFabric"/></Material></Root>';
   const meshes = uniqueXmlNames(fixture, "Mesh");
   const materials = uniqueXmlNames(fixture, "Material");
   if (meshes.join("|") !== "BodyMesh|Boot&Sole|JerseyMesh" || materials.join("|") !== "KeeperFabric") {
