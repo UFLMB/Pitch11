@@ -137,18 +137,63 @@ export function mountPitchy({type='kit',onApply}={}){
   card.innerHTML='<div class="p11-pitchy-head"><span class="p11-pitchy-title">🤖 PITCHY DESIGN ROBOT</span><span class="p11-pitchy-tag">LOCAL · OFFLINE</span></div><textarea class="p11-pitchy-prompt" maxlength="700" placeholder="'+(type==='ball'?'Describe your match ball design…':'Describe your kit design…')+'"></textarea><div class="p11-pitchy-chips"><button class="p11-pitchy-chip" type="button">Premium</button><button class="p11-pitchy-chip" type="button">Retro</button><button class="p11-pitchy-chip" type="button">Futuristic</button><button class="p11-pitchy-chip" type="button">Performance</button></div><button class="p11-pitchy-button" type="button">Ask PITCHY</button><div class="p11-pitchy-status" aria-live="polite">Ready · English interface</div><div class="p11-pitchy-note">No API · No network · No subscription. Hungarian understanding stays hidden.</div>';
   host.appendChild(card);
   const prompt=card.querySelector('.p11-pitchy-prompt'),button=card.querySelector('.p11-pitchy-button'),status=card.querySelector('.p11-pitchy-status');
+  const controls=document.createElement('div');controls.className='p11-pitchy-history-controls';
+  controls.innerHTML='<button class="p11-pitchy-chip" type="button" data-action="history">Design history</button><button class="p11-pitchy-chip" type="button" data-action="undo" disabled>Undo last</button>';
+  const historyPanel=document.createElement('div');historyPanel.className='p11-pitchy-history';historyPanel.hidden=true;
+  card.insertBefore(controls,card.querySelector('.p11-pitchy-note'));card.insertBefore(historyPanel,card.querySelector('.p11-pitchy-note'));
+  style.textContent += '.p11-pitchy-history-controls{display:flex;gap:7px;flex-wrap:wrap}.p11-pitchy-history{display:grid;gap:6px;padding:8px;border:1px solid #354457;border-radius:9px;background:#0b1119}.p11-pitchy-history[hidden]{display:none}.p11-pitchy-history-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:9px;color:#cbd5e1}.p11-pitchy-history-row button{flex-shrink:0}.p11-pitchy-empty{font-size:9px;color:#94a3b8}';
+  const HISTORY_KEY='p11-pitchy-history',ACTIVE_KEY='p11-pitchy-active',UNDO_KEY='p11-pitchy-undo';
+  const read=(key,fallback)=>{try{const value=JSON.parse(localStorage.getItem(key));return value??fallback;}catch{return fallback;}};
+  const write=(key,value)=>{try{localStorage.setItem(key,JSON.stringify(value));return true;}catch{return false;}};
+  const getHistory=()=>{const value=read(HISTORY_KEY,[]);return Array.isArray(value)?value:[];};
+  const refreshHistory=()=>{
+    const items=getHistory();historyPanel.replaceChildren();
+    if(!items.length){const empty=document.createElement('div');empty.className='p11-pitchy-empty';empty.textContent='No saved designs yet.';historyPanel.appendChild(empty);}
+    for(const item of items){
+      if(!item?.plan)continue;
+      const row=document.createElement('div');row.className='p11-pitchy-history-row';
+      const label=document.createElement('span');label.textContent=(item.name||'Untitled design')+' · '+new Date(item.at||0).toLocaleString();
+      const restore=document.createElement('button');restore.type='button';restore.className='p11-pitchy-chip';restore.textContent='Restore';
+      restore.addEventListener('click',async()=>{
+        restore.disabled=true;
+        try{
+          const current=read(ACTIVE_KEY,null),stack=read(UNDO_KEY,[]);
+          if(current)write(UNDO_KEY,[current,...(Array.isArray(stack)?stack:[])].slice(0,8));
+          await onApply(item.plan);write(ACTIVE_KEY,{plan:item.plan,name:item.name,at:Date.now(),type:item.type});
+          status.textContent='Restored · '+(item.name||'Saved design');status.dataset.state='success';refreshHistory();
+        }catch(error){status.textContent=error?.message||'Could not restore this design.';status.dataset.state='error';}
+        finally{restore.disabled=false;}
+      });
+      row.append(label,restore);historyPanel.appendChild(row);
+    }
+    const undo=controls.querySelector('[data-action="undo"]');undo.disabled=!read(UNDO_KEY,[]).length;
+  };
   const appendText=value=>{prompt.value=(prompt.value.trim()?prompt.value.trim()+', ':'')+value;prompt.focus();};
-  card.querySelectorAll('.p11-pitchy-chip').forEach(chip=>chip.addEventListener('click',()=>appendText(chip.textContent.toLowerCase()+' style')));
+  card.querySelectorAll('.p11-pitchy-chip').forEach(chip=>{if(!chip.dataset.action)chip.addEventListener('click',()=>appendText(chip.textContent.toLowerCase()+' style'));});
+  controls.querySelector('[data-action="history"]').addEventListener('click',()=>{historyPanel.hidden=!historyPanel.hidden;if(!historyPanel.hidden)refreshHistory();});
+  controls.querySelector('[data-action="undo"]').addEventListener('click',async()=>{
+    const stack=read(UNDO_KEY,[]);if(!Array.isArray(stack)||!stack.length)return;
+    const previous=stack[0];controls.querySelector('[data-action="undo"]').disabled=true;
+    try{
+      await onApply(previous.plan);write(ACTIVE_KEY,previous);write(UNDO_KEY,stack.slice(1));
+      status.textContent='Undo complete · '+(previous.name||'Previous design');status.dataset.state='success';refreshHistory();
+    }catch(error){status.textContent=error?.message||'Undo failed; current design was not changed.';status.dataset.state='error';controls.querySelector('[data-action="undo"]').disabled=false;}
+  });
   button.addEventListener('click',async()=>{
     button.disabled=true;button.textContent='Designing…';status.dataset.state='';status.textContent='Analysing colours, visual style, pattern and finish locally…';
     try{
-      const plan=buildPlan(prompt.value,type);await onApply(plan);
+      const plan=buildPlan(prompt.value,type),current=read(ACTIVE_KEY,null),undo=read(UNDO_KEY,[]);
+      await onApply(plan);
+      if(current)write(UNDO_KEY,[current,...(Array.isArray(undo)?undo:[])].slice(0,8));
+      const entry={at:Date.now(),type,name:plan.designName,brief:prompt.value.slice(0,240),plan};
+      write(ACTIVE_KEY,{plan,name:plan.designName,at:entry.at,type});
+      write(HISTORY_KEY,[entry,...getHistory()].slice(0,8));
       const pct=Math.round(plan.confidence*100);
       status.textContent=plan.designName+' · '+pct+'% confidence'+(plan.questions.length?' · '+plan.questions[0]:'');
-      status.dataset.state='success';
-      try{const history=JSON.parse(localStorage.getItem('p11-pitchy-history')||'[]');history.unshift({at:Date.now(),type,name:plan.designName,brief:prompt.value.slice(0,240),plan});localStorage.setItem('p11-pitchy-history',JSON.stringify(history.slice(0,8)));}catch{}
+      status.dataset.state='success';refreshHistory();
     }catch(error){status.textContent=error?.message||'Could not create the design.';status.dataset.state='error';}
     finally{button.disabled=false;button.textContent='Ask PITCHY';}
   });
+  refreshHistory();
   return {element:card,setStatus(message){status.textContent=message;}};
 }
