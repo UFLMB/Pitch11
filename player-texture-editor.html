@@ -132,7 +132,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
-import {mountPitchy} from './engine/pitchy.mjs';
+import {mountPitchy} from './engine/pitchy-v2.mjs';
 const $=s=>document.querySelector(s),status=$('#status'),error=$('#error');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
