@@ -54,7 +54,9 @@ for(const x of [-3.66,3.66]){const post=new THREE.Mesh(new THREE.CylinderGeometr
 const cross=new THREE.Mesh(new THREE.BoxGeometry(7.42,.14,.14),white);cross.position.set(0,2.44,34);goal.add(cross);
 const netMat=new THREE.MeshBasicMaterial({color:0xdde8df,wireframe:true,transparent:true,opacity:.18});
 const net=new THREE.Mesh(new THREE.BoxGeometry(7.25,2.35,2.2,10,5,5),netMat);net.position.set(0,1.18,35.05);goal.add(net);
-const keeperRenderer=new MatchPlayerRenderer(scene,{mobile});
+// The source Mixamo FBX is ~52 MB. Give mobile a bounded chance to load it,
+ // then fall back to the lightweight GLB instead of leaving the lab on a spinner.
+const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:12000});
 const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
 let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false;
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
