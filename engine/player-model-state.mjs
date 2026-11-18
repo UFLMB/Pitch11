@@ -31,7 +31,8 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   const speed = Math.hypot(Number(player.vx) || 0, Number(player.vy) || 0) * 0.1;
 
   let action = "idle";
-  if (player.dive > 0) action = player.gk
+  if (typeof player.animationOverride === "string" && player.animationOverride) action = player.animationOverride;
+  else if (player.dive > 0) action = player.gk
     ? (resolveKeeperDiveSide(player.diveAng, player.face) === "left" ? "keeper-dive-left" : "keeper-dive-right")
     : "fall";
   else if (player.gk && player.diveRecover > 0) action = "get-up";
