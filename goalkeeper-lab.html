@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover"><meta name="theme-color" content="#080e12"><title>PITCH 11 — Goalkeeper Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#080e12;--panel:#111a20;--line:#2a3940;--text:#eef4f1;--muted:#91a49b;--gold:#d8b66e;--green:#9edb83}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px Inter,system-ui,sans-serif}#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:fixed;z-index:3;top:10px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}.brand,.status{padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#081117e8;backdrop-filter:blur(12px)}.brand{font-size:12px;font-weight:950;letter-spacing:.14em}.brand span{color:var(--gold)}.brand small{display:block;margin-top:3px;color:var(--muted);font-size:8px;letter-spacing:.18em}.status{font-size:9px;color:var(--green);letter-spacing:.12em;text-transform:uppercase}
+#panel{position:fixed;z-index:3;left:12px;top:82px;bottom:12px;width:min(300px,calc(100vw - 24px));overflow:auto;padding:13px;border:1px solid var(--line);border-radius:14px;background:#0b141bea;backdrop-filter:blur(14px)}
+h1{font-size:17px;margin:0 0 5px}.desc{font-size:10px;line-height:1.5;color:var(--muted);margin:0 0 12px}.section{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}.label{font-size:9px;font-weight:850;letter-spacing:.15em;color:var(--gold);margin-bottom:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}button,select{min-width:0;min-height:39px;border:1px solid #35464d;border-radius:9px;background:#17242a;color:#edf4f0;padding:8px 7px;font-size:10px;font-weight:800;letter-spacing:.04em;touch-action:manipulation}button:active{transform:scale(.98)}button.primary{border-color:#9d8046;background:linear-gradient(180deg,#6b5731,#382d1b);color:#fff0c9}button.active{border-color:var(--green);color:var(--green)}button.wide{width:100%;margin-top:6px}
+#readout{font-size:10px;line-height:1.6;color:#c8d4ce;min-height:58px;padding:9px;border-radius:9px;background:#101c20}#readout strong{color:var(--green)}
+#hint{position:fixed;z-index:2;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border:1px solid var(--line);border-radius:30px;background:#081117dc;color:#c9d6d0;font-size:9px;white-space:nowrap;pointer-events:none}
+#toggle{display:none}
+@media(max-width:760px){header{top:6px;left:6px;right:6px}.brand,.status{padding:8px 9px}.brand{font-size:10px}.brand small{font-size:7px}#panel{left:6px;right:6px;top:auto;bottom:max(6px,env(safe-area-inset-bottom));width:auto;max-height:44dvh;padding:10px;border-radius:12px}.desc{margin-bottom:7px}.section{padding-top:7px;margin-top:7px}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}button{min-height:35px;padding:6px 4px;font-size:9px}#readout{min-height:42px;padding:7px;font-size:9px}#hint{bottom:calc(max(6px,env(safe-area-inset-bottom)) + 45dvh);font-size:8px}#toggle{display:block;min-height:32px}#panel.collapsed{max-height:none;height:auto;overflow:hidden}#panel.collapsed .content{display:none}}
+</style></head><body>
+<div id="stage"></div>
+<header><div class="brand">PITCH <span>11</span><small>GOALKEEPER LAB · 3D SAVE TEST</small></div><div class="status" id="status">LOADING 3D KEEPER…</div></header>
+<aside id="panel"><button id="toggle" class="wide">HIDE CONTROLS</button><div class="content">
+<h1>Goalkeeper Lab</h1><p class="desc">Test real keeper animations, save reactions, landing position and recovery. Use the buttons to fire repeatable shots.</p>
+<div class="section"><div class="label">SHOT TARGET</div><div class="grid">
+<button data-shot="left-low">LEFT · LOW</button><button data-shot="center-low" class="primary">CENTER</button><button data-shot="right-low">RIGHT · LOW</button>
+<button data-shot="left-high">LEFT · HIGH</button><button data-shot="center-high">CENTER · HIGH</button><button data-shot="right-high">RIGHT · HIGH</button>
+</div></div>
+<div class="section"><div class="label">KEEPER ACTION</div><div class="grid">
+<button data-action="dive-left">DIVE LEFT</button><button data-action="dive-right">DIVE RIGHT</button><button data-action="catch">CATCH</button><button data-action="parry">PARRY</button><button data-action="reset">RESET POSITION</button><button data-action="sequence" class="primary">5 SHOT TEST</button>
+</div></div>
+<div class="section"><div class="label">CAMERA</div><div class="grid"><button data-camera="front" class="active">FRONT</button><button data-camera="side">SIDE</button><button data-camera="rear">REAR</button><button data-camera="reset">RESET VIEW</button></div></div>
+<div class="section"><div class="label">LIVE DIAGNOSTICS</div><div id="readout">Waiting for model and animation assets…</div></div>
+</div></aside>
+<div id="hint">DRAG TO ORBIT · PINCH / WHEEL TO ZOOM · TEST SHOTS WITH THE LEFT PANEL</div>
+<script type="module">
+import * as THREE from "./vendor/three/build/three.module.js";
+import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
+const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
+const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
+const renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:"high-performance"});
+renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.4));renderer.setSize(host.clientWidth,host.clientHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;host.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x101b20);scene.fog=new THREE.Fog(0x101b20,45,100);
+scene.add(new THREE.HemisphereLight(0xd7e9ff,0x203027,1.8));const key=new THREE.DirectionalLight(0xffe5c4,2.2);key.position.set(-12,22,16);scene.add(key);const rim=new THREE.DirectionalLight(0x7ba9ff,1.1);rim.position.set(12,10,-15);scene.add(rim);
+const camera=new THREE.PerspectiveCamera(43,host.clientWidth/host.clientHeight,.1,160);
+const target=new THREE.Vector3(0,1.25,30),cameraState={yaw:0,pitch:.12,distance:15};
+function placeCamera(){camera.position.set(target.x+Math.sin(cameraState.yaw)*cameraState.distance,target.y+cameraState.pitch*cameraState.distance,target.z+Math.cos(cameraState.yaw)*cameraState.distance);camera.lookAt(target)}
+placeCamera();
+const mat=(c,r=.85,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m});
+const grass=mat(0x1b512f),line= new THREE.MeshBasicMaterial({color:0xe6eee3}),white=mat(0xf4f3e9,.5),dark=mat(0x1b2528);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(46,34),grass);floor.rotation.x=-Math.PI/2;floor.position.set(0,-.03,24);scene.add(floor);
+function box(w,h,d,x,y,z,m){const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);scene.add(o);return o}
+function lineSeg(x1,z1,x2,z2){const dx=x2-x1,dz=z2-z1,len=Math.hypot(dx,dz);const o=box(len,.025,.025,(x1+x2)/2,.025,(z1+z2)/2,line);o.rotation.y=-Math.atan2(dz,dx)}
+// Penalty area and goal mouth markings.
+lineSeg(-20,34,20,34);lineSeg(-20,34,-20,16);lineSeg(20,34,20,16);lineSeg(-20,16,20,16);
+lineSeg(-9,34,-9,25);lineSeg(9,34,9,25);lineSeg(-9,25,9,25);
+const goal=new THREE.Group();scene.add(goal);
+for(const x of [-3.66,3.66]){const post=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,2.44,10),white);post.position.set(x,1.22,34);goal.add(post)}
+const cross=new THREE.Mesh(new THREE.BoxGeometry(7.42,.14,.14),white);cross.position.set(0,2.44,34);goal.add(cross);
+const netMat=new THREE.MeshBasicMaterial({color:0xdde8df,wireframe:true,transparent:true,opacity:.18});
+const net=new THREE.Mesh(new THREE.BoxGeometry(7.25,2.35,2.2,10,5,5),netMat);net.position.set(0,1.18,35.05);goal.add(net);
+const keeperRenderer=new MatchPlayerRenderer(scene,{mobile});
+const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
+let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0;
+const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
+const targets={"left-low":{x:-2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:2.8,y:.35,z:34},"left-high":{x:-2.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:2.8,y:2.05,z:34}};
+function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=700;keeper.vx=keeper.vy=0}
+function setPhase(next,duration=0){phase=next;phaseTimer=duration}
+function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.58,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;setTimeout(()=>{},0)}
+function triggerSave(side,kind="dive"){if(!keeperRenderer.ready)return;keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=side==="left"?Math.PI:0;keeper.down=false;keeper.ak=0;const offset=side==="left"?-1.25:side==="right"?1.25:0;keeper.x=keeper.px=585+offset*10;keeper.vx=keeper.vy=0;shotResult=kind==="catch"?"CATCH ATTEMPT":kind==="parry"?"PARRY ATTEMPT":side.toUpperCase()+" DIVE";setPhase("diving",.78)}
+function resetKeeper(){shot=null;ball.visible=false;keeper.dive=0;keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
+function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
+function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;const side=targetSide(shot.kind),height=shot.to.y;const canReach=side==="center"||Math.abs(shot.to.x)<3.2;const low=height<.9;const saved=canReach?(low||Math.random()>.18):Math.random()>(height>1.7?.42:.12);if(saved){saveCount++;triggerSave(side==="center"?(Math.random()>.5?"left":"right"):side);shotResult="SAVE · "+side.toUpperCase()}else{goalCount++;keeper.dive=0;shotResult="GOAL · OUT OF REACH";setPhase("miss",.5)}}
+function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));if(t>=1){resolveShot();shot=null;ball.visible=false}}
+function updateKeeper(dt){if(phase==="diving"){phaseTimer-=dt;if(phaseTimer<=0){keeper.dive=0;keeper.diveRecover=.72;setPhase("recover",.72)}}else if(phase==="recover"){phaseTimer-=dt;keeper.diveRecover=Math.max(0,phaseTimer);if(phaseTimer<=0){keeper.diveRecover=0;setPhase("return",.55)}}else if(phase==="return"){phaseTimer-=dt;const x=THREE.MathUtils.damp(keeper.x,585,.65,dt);keeper.x=keeper.px=x;if(phaseTimer<=0){setKeeperPosition(0);setPhase("idle")}}else if(phase==="miss"){phaseTimer-=dt;if(phaseTimer<=0){keeper.diveRecover=.5;setPhase("recover",.5)}}}
+function updateReadout(){readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount}
+const clock=new THREE.Clock();let last=0;
+function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);if(shot&&shot.elapsed>.12&&!shot.saveResolved&&phase==="shot"){const targetSideName=targetSide(shot.kind);if(targetSideName!=="center")triggerSave(targetSideName)} }renderer.render(scene,camera);updateReadout()}
+keeperRenderer.load().then(()=>{status.textContent="3D KEEPER READY";setPhase("idle");ball.visible=false}).catch(e=>{status.textContent="MODEL ERROR";readout.textContent=e.message});
+function runSequence(){if(sequenceIndex>=0)return;sequenceIndex=0;const list=["left-low","right-low","center-high","left-high","right-high"];const next=()=>{if(sequenceIndex>=list.length){sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE";return}fireShot(list[sequenceIndex++]);sequenceTimer=1.9};next();const tick=()=>{if(sequenceIndex<0)return;sequenceTimer-=.05;if(sequenceTimer<=0){if(sequenceIndex<list.length)next();else{sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE"}}else setTimeout(tick,50)};setTimeout(tick,50)}
+document.querySelectorAll("[data-shot]").forEach(b=>b.addEventListener("click",()=>fireShot(b.dataset.shot)));
+document.querySelectorAll("[data-action]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.action;if(a==="dive-left"||a==="dive-right")triggerSave(a.endsWith("left")?"left":"right");else if(a==="catch"){keeper.dive=0;keeper.diveRecover=0;shotResult="CATCH CLIP REQUESTED";keeperRenderer.ensureMixamoState("keeperCatch",0).then(()=>{keeper.dive=0;keeper.diveRecover=0});setPhase("idle")}else if(a==="parry"){triggerSave("left","parry")}else if(a==="reset")resetKeeper();else if(a==="sequence")runSequence()}));
+document.querySelectorAll("[data-camera]").forEach(b=>b.addEventListener("click",()=>{const c=b.dataset.camera;if(c==="front")cameraState.yaw=0;else if(c==="side")cameraState.yaw=Math.PI/2;else if(c==="rear")cameraState.yaw=Math.PI;else{cameraState.yaw=0;cameraState.pitch=.12;cameraState.distance=15}placeCamera();document.querySelectorAll("[data-camera]").forEach(x=>x.classList.toggle("active",x===b))}));
+let dragging=false,lastPointer=null;renderer.domElement.addEventListener("pointerdown",e=>{dragging=true;lastPointer={x:e.clientX,y:e.clientY};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener("pointermove",e=>{if(!dragging)return;const dx=e.clientX-lastPointer.x,dy=e.clientY-lastPointer.y;lastPointer={x:e.clientX,y:e.clientY};cameraState.yaw-=dx*.006;cameraState.pitch=THREE.MathUtils.clamp(cameraState.pitch+dy*.003,-.15,.55);placeCamera()});renderer.domElement.addEventListener("pointerup",()=>dragging=false);renderer.domElement.addEventListener("wheel",e=>{cameraState.distance=THREE.MathUtils.clamp(cameraState.distance+e.deltaY*.012,7,28);placeCamera()},{passive:true});
+document.querySelector("#toggle").addEventListener("click",()=>{const p=document.querySelector("#panel");p.classList.toggle("collapsed");document.querySelector("#toggle").textContent=p.classList.contains("collapsed")?"SHOW CONTROLS":"HIDE CONTROLS"});
+addEventListener("resize",()=>{camera.aspect=host.clientWidth/host.clientHeight;camera.updateProjectionMatrix();renderer.setSize(host.clientWidth,host.clientHeight)});
+</script></body></html>
