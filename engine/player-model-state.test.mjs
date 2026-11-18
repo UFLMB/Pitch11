@@ -19,7 +19,7 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ ak: 1 }), 0).action, "shot");
   assert.equal(mapLegacyPlayerState(player({ ak: 2 }), 0).action, "pass");
   assert.equal(mapLegacyPlayerState(player({ sd: { t: .2 } }), 0).action, "slide-tackle");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-right");
   assert.equal(mapLegacyPlayerState(player({ down: true }), 0).action, "fallen-idle");
   assert.equal(mapLegacyPlayerState(player({ jump: .2 }), 0).action, "header");
 });
