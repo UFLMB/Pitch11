@@ -17,7 +17,7 @@ function count(label, info) {
   return match ? Number.parseInt(match[1], 10) : 0;
 }
 function canonical(name) {
-  return String(name || "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
+  return String(name || "").replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "").replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
 }
 function uniqueXmlNames(xml, tag) {
   return [...new Set([...xml.matchAll(new RegExp(`<${tag}\\b[^>]*\\bname="([^"]+)"`, "g"))]
