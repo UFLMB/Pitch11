@@ -40,3 +40,10 @@ test("omits players who are off the pitch and maps the full active squad", () =>
   assert.equal(states[1].visible, false);
   assert.equal(states[2].role, "GK");
 });
+
+test("maps stationary possession and throw-in restarts to dedicated Mixamo action states", () => {
+  const carrier = player({ vx: 0, vy: 0 });
+  assert.equal(mapLegacyPlayerState(carrier, 0, 1, null, carrier).action, "dribble");
+  const thrower = player();
+  assert.equal(mapLegacyPlayerState(thrower, 0, 1, null, null, { kind: "throw", p: thrower }).action, "throw-in");
+});
