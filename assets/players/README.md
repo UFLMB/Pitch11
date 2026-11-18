@@ -1,5 +1,14 @@
 # PITCH 11 — Player model asset contract
 
+## Mixamo production hand-off
+
+The match renderer now prefers the verified Mixamo FBX at `input/player-model-candidate/character.fbx` and loads the animation clips directly from `input/player-package/`. The FBX model and its clips are validated against the same named skeleton; no retargeting or Bip01 conversion is used on this path.
+
+The existing Male Athlete 02 `player.glb` and its three locomotion GLBs remain a temporary fallback only. They are retained so the live game continues rendering if the Mixamo character asset has not yet been uploaded or fails validation.
+
+The Mixamo character is intentionally stored outside this folder because it is a 49.4 MB source FBX and is tracked with Git LFS. See `input/player-model-candidate/README.md` for the exact upload instructions.
+
+
 ## First integrated prototype
 
 The first prototype uses **Male Athlete 02** from CodeLove 3D Models:
