@@ -128,8 +128,8 @@ const mixamoToBip01={
  'Bip01 R Foot':'RightFoot',
  'Bip01 R Toe0':'RightToeBase'
 };
-function normalizeMixamoBoneName(name){
- return String(name||'').toLowerCase().replace(/^mixamorig[:_]?/,'').replace(/[^a-z0-9]/g,'');
+function normalizeRigBoneName(name){
+ return String(name||'').toLowerCase().replace(/^(mixamorig|bip01)[:_]?/,'').replace(/[^a-z0-9]/g,'');
 }
 async function retargetFbxAnimation(){
  const file=$('animationFbx').files?.[0];if(!file)return;
@@ -142,15 +142,19 @@ async function retargetFbxAnimation(){
   const sourceSkeleton=new THREE.Skeleton(sourceBones);
   const targetMeshes=[];activeRoot.traverse(o=>{if(o.isSkinnedMesh&&o.skeleton)targetMeshes.push(o)});
   if(!targetMeshes.length)throw new Error('The active player model has no skinned mesh.');
-  const targetMesh=targetMeshes.find(m=>m.skeleton.bones.some(b=>b.name==='Bip01 Pelvis'))||targetMeshes[0];
-  const targetNames=new Set(targetMesh.skeleton.bones.map(b=>b.name));
-  const sourceBoneByName=new Map(sourceBones.map(b=>[normalizeMixamoBoneName(b.name),b]));
+  const hasTargetPelvis=m=>m.skeleton.bones.some(b=>normalizeRigBoneName(b.name)==='pelvis');
+  const targetMesh=targetMeshes.find(hasTargetPelvis)||targetMeshes[0];
+  const targetBoneByName=new Map(targetMesh.skeleton.bones.map(b=>[normalizeRigBoneName(b.name),b]));
+  const sourceBoneByName=new Map(sourceBones.map(b=>[normalizeRigBoneName(b.name),b]));
   const names={};for(const [targetName,sourceShortName] of Object.entries(mixamoToBip01)){
-   const sourceBone=sourceBoneByName.get(normalizeMixamoBoneName(sourceShortName));
-   if(targetNames.has(targetName)&&sourceBone)names[targetName]=sourceBone.name;
+   const targetBone=targetBoneByName.get(normalizeRigBoneName(targetName));
+   const sourceBone=sourceBoneByName.get(normalizeRigBoneName(sourceShortName));
+   if(targetBone&&sourceBone)names[targetBone.name]=sourceBone.name;
   }
   const sourceHip=sourceBoneByName.get('hips');
-  if(!names['Bip01 Pelvis']||!sourceHip)throw new Error('Could not match the pelvis bone. Source FBX names: '+[...sourceBoneByName.values()].filter(b=>normalizeMixamoBoneName(b.name).includes('hip')).slice(0,5).map(b=>b.name).join(', '));
+  const targetHip=targetBoneByName.get('pelvis');
+  if(!targetHip||!sourceHip)throw new Error('Could not match pelvis. Target pelvis candidates: '+targetMesh.skeleton.bones.filter(b=>normalizeRigBoneName(b.name).includes('pelvis')).map(b=>b.name).join(', ')+'; source hip candidates: '+[...sourceBoneByName.values()].filter(b=>normalizeRigBoneName(b.name).includes('hip')).slice(0,5).map(b=>b.name).join(', '));
+  if(!names[targetHip.name])names[targetHip.name]=sourceHip.name;
   if(Object.keys(names).length<18)throw new Error('Only '+Object.keys(names).length+' compatible Mixamo/Bip01 bones found. Check the target model rig.');
   const sourceClip=(sourceRoot.animations||[])[0];if(!sourceClip)throw new Error('FBX contains no animation clip.');
   const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceSkeleton,sourceClip,{
