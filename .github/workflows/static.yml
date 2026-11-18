@@ -176,6 +176,7 @@ jobs:
           console.log('PITCHY bilingual design reasoning tests passed.');
           NODE
           node --check engine/pitchy-v2.mjs
+          node --test engine/pitchy-v2.test.mjs
           node --check engine/simulation.mjs
           node --check engine/simulation-lab.mjs
           node --check engine/pitch11-adapter.mjs
