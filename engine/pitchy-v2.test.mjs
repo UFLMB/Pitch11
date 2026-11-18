@@ -50,3 +50,18 @@ test('retains Hungarian ball and finish recognition', () => {
 test('rejects an empty brief', () => {
   assert.throws(() => analysePitchyBrief(''));
 });
+
+test('offers three coherent creative directions without changing the requested design', () => {
+  const plan = analysePitchyBrief('Premium black and gold jersey with diagonal stripes', 'kit');
+  assert.equal(plan.creativeDirections.length, 3);
+  assert.equal(plan.creativeDirections[0].pattern, plan.pattern);
+  assert.equal(plan.creativeDirections[0].accent, plan.accentColor);
+  assert.ok(plan.creativeDirections[1].description.length > 10);
+  assert.ok(plan.creativeDirections[2].finish);
+});
+
+test('creative alternatives remain deterministic for the same brief', () => {
+  const a = analysePitchyBrief('Futuristic navy and cyan ball with geometric panels', 'ball');
+  const b = analysePitchyBrief('Futuristic navy and cyan ball with geometric panels', 'ball');
+  assert.deepEqual(a.creativeDirections, b.creativeDirections);
+});
