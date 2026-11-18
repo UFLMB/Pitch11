@@ -161,29 +161,55 @@ async function retargetFbxAnimation(){
   if(!names[targetHip.name])names[targetHip.name]=sourceHip.name;
   if(Object.keys(names).length<18)throw new Error('Only '+Object.keys(names).length+' compatible Mixamo/Bip01 bones found. Check the target model rig.');
   const sourceClip=(sourceRoot.animations||[])[0];if(!sourceClip)throw new Error('FBX contains no animation clip.');
-  // Retarget rotations relative to each rig's rest pose.
-  // Directly copying FBX world rotations onto Bip01 local bones causes the
-  // characteristic twisted/collapsed body when the rigs use different bone axes.
+  // Retarget each bone relative to its nearest mapped parent. FBXLoader inserts
+  // helper transforms between real bones, so world-space deltas from the scene
+  // origin cause parent motion to be applied repeatedly.
   sourceRoot.updateMatrixWorld(true);
   targetMesh.skeleton.pose();
   retargetRoot.updateMatrixWorld(true);
-  const sourceByName=new Map(sourceBones.map(b=>[b.name,b]));
   const targetRest=new Map();
-  const sourceRest=new Map();
   const mapped=[];
   for(const [targetName,sourceName] of Object.entries(names)){
    const tb=targetMesh.skeleton.bones.find(b=>b.name===targetName);
    const sb=sourceByName.get(sourceName);
    if(!tb||!sb)continue;
-   const targetWorldQ=tb.getWorldQuaternion(new THREE.Quaternion()).clone();
-   const sourceWorldQ=sb.getWorldQuaternion(new THREE.Quaternion()).clone();
-   targetRest.set(tb,{worldQ:targetWorldQ,position:tb.position.clone(),quaternion:tb.quaternion.clone(),scale:tb.scale.clone()});
-   sourceRest.set(sb,sourceWorldQ);
+   targetRest.set(tb,{position:tb.position.clone(),quaternion:tb.quaternion.clone(),scale:tb.scale.clone()});
    let depth=0;for(let p=tb.parent;p;p=p.parent)depth++;
-   mapped.push({target:tb,source:sb,depth});
+   mapped.push({target:tb,source:sb,depth,sourceParent:null,targetParent:null,sourceRestRelative:null,targetRestRelative:null});
   }
   if(mapped.length<18)throw new Error('Only '+mapped.length+' rest-pose bone pairs could be prepared.');
+  const sourcePairByBone=new Map(mapped.map(pair=>[pair.source,pair]));
+  const targetPairByBone=new Map(mapped.map(pair=>[pair.target,pair]));
+  function nearestMappedAncestor(object,pairMap){
+   for(let p=object.parent;p;p=p.parent){const found=pairMap.get(p);if(found)return found}
+   return null;
+  }
+  for(const pair of mapped){
+   pair.sourceParent=nearestMappedAncestor(pair.source,sourcePairByBone);
+   pair.targetParent=nearestMappedAncestor(pair.target,targetPairByBone);
+  }
   mapped.sort((a,b)=>a.depth-b.depth);
+  const sourceParentWorldQ=new THREE.Quaternion();
+  const targetParentWorldQ=new THREE.Quaternion();
+  const sourceWorldQ=new THREE.Quaternion();
+  const sourceRelativeQ=new THREE.Quaternion();
+  const targetRelativeQ=new THREE.Quaternion();
+  const sourceRestInverse=new THREE.Quaternion();
+  const sourceDelta=new THREE.Quaternion();
+  const basisCorrection=new THREE.Quaternion();
+  const basisCorrectionInverse=new THREE.Quaternion();
+  const desiredWorldQ=new THREE.Quaternion();
+  const actualParentInverseQ=new THREE.Quaternion();
+  for(const pair of mapped){
+   const sourceParent=pair.sourceParent?pair.sourceParent.source:sourceRoot;
+   const targetParent=pair.targetParent?pair.targetParent.target:retargetRoot;
+   sourceParent.getWorldQuaternion(sourceParentWorldQ);
+   pair.source.getWorldQuaternion(sourceWorldQ);
+   pair.sourceRestRelative=sourceRelativeQ.copy(sourceParentWorldQ).invert().multiply(sourceWorldQ).clone();
+   targetParent.getWorldQuaternion(targetParentWorldQ);
+   pair.target.getWorldQuaternion(desiredWorldQ);
+   pair.targetRestRelative=targetRelativeQ.copy(targetParentWorldQ).invert().multiply(desiredWorldQ).clone();
+  }
   const duration=sourceClip.duration;
   const fps=30;
   const frameCount=Math.max(2,Math.ceil(duration*fps)+1);
@@ -192,15 +218,10 @@ async function retargetFbxAnimation(){
   const sourceMixer=new THREE.AnimationMixer(sourceRoot);
   const sourceAction=sourceMixer.clipAction(sourceClip);
   sourceAction.play();
-  const inverseSourceRest=new Map();
-  for(const pair of mapped)inverseSourceRest.set(pair.source,sourceRest.get(pair.source).clone().invert());
-  const inverseParent=new THREE.Quaternion();
-  const sourceDelta=new THREE.Quaternion();
-  const targetWorldQ=new THREE.Quaternion();
   for(let frame=0;frame<frameCount;frame++){
    const time=duration*frame/(frameCount-1);
    times[frame]=time;
-   // Restore the target's exact rest pose before evaluating this sample.
+   // Restore the isolated target rig to its exact rest pose before each sample.
    for(const [bone,rest] of targetRest){
     bone.position.copy(rest.position);
     bone.quaternion.copy(rest.quaternion);
@@ -211,21 +232,29 @@ async function retargetFbxAnimation(){
    sourceMixer.setTime(time);
    sourceRoot.updateMatrixWorld(true);
    for(const pair of mapped){
-    const rest=targetRest.get(pair.target);
-    const sourceCurrent=pair.source.getWorldQuaternion(new THREE.Quaternion());
-    // World-space rotational change from source rest pose, applied to target rest pose.
-    sourceDelta.copy(sourceCurrent).multiply(inverseSourceRest.get(pair.source));
-    targetWorldQ.copy(sourceDelta).multiply(rest.worldQ);
+    const sourceParent=pair.sourceParent?pair.sourceParent.source:sourceRoot;
+    const targetParent=pair.targetParent?pair.targetParent.target:retargetRoot;
+    sourceParent.getWorldQuaternion(sourceParentWorldQ);
+    pair.source.getWorldQuaternion(sourceWorldQ);
+    sourceRelativeQ.copy(sourceParentWorldQ).invert().multiply(sourceWorldQ);
+    // Convert the source local-space delta through the rest-pose basis change.
+    sourceRestInverse.copy(pair.sourceRestRelative).invert();
+    sourceDelta.copy(sourceRestInverse).multiply(sourceRelativeQ);
+    basisCorrection.copy(pair.targetRestRelative).multiply(sourceRestInverse);
+    basisCorrectionInverse.copy(basisCorrection).invert();
+    targetRelativeQ.copy(basisCorrection).multiply(sourceDelta).multiply(basisCorrectionInverse);
+    targetRelativeQ.premultiply(pair.targetRestRelative);
+    targetParent.getWorldQuaternion(targetParentWorldQ);
+    desiredWorldQ.copy(targetParentWorldQ).multiply(targetRelativeQ);
     if(pair.target.parent){
-     pair.target.parent.getWorldQuaternion(inverseParent).invert();
-     pair.target.quaternion.copy(inverseParent).multiply(targetWorldQ);
+     pair.target.parent.getWorldQuaternion(actualParentInverseQ).invert();
+     pair.target.quaternion.copy(actualParentInverseQ).multiply(desiredWorldQ);
     }else{
-     pair.target.quaternion.copy(targetWorldQ);
+     pair.target.quaternion.copy(desiredWorldQ);
     }
     pair.target.updateMatrix();
     pair.target.updateWorldMatrix(false,true);
-    targetWorldQ.copy(pair.target.quaternion);
-    trackValues.get(pair.target).set(targetWorldQ.toArray(),frame*4);
+    trackValues.get(pair.target).set(pair.target.quaternion.toArray(),frame*4);
    }
   }
   sourceAction.stop();
