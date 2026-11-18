@@ -11,7 +11,7 @@
 <body><div class="wrap">
 <header><div class="brand">PITCH 11<div class="sub">MIXAMO · DIRECT FBX ANIMATION TEST</div></div><div class="status" id="status">WAITING FOR CHARACTER FBX</div></header>
 <main><section class="panel stage"><div id="stage" style="position:absolute;inset:0"></div><div class="tools"><button id="front">FRONT</button><button id="back">BACK</button><button id="reset">RESET VIEW</button><button id="play">PLAY</button></div></section>
-<section class="panel"><div class="eyebrow">NO RETARGETING · PREFIX NORMALIZATION ONLY</div><div class="title">Direct animation playback</div><p class="desc">Load the Mixamo character.fbx. The jog forward.fbx animation is fetched from this repository. The test only changes the Mixamo namespace in animation track names (mixamorig: → mixamorig5:); it does not transfer motion between different skeletons.</p>
+<section class="panel"><div class="eyebrow">NO RETARGETING · PREFIX NORMALIZATION ONLY</div><div class="title">Direct animation playback</div><p class="desc">Load the Mixamo character.fbx. The jog forward.fbx animation is fetched from this repository. The test matches equivalent Mixamo bone names across exporter namespace variants (for example mixamorigHips ↔ mixamorig5Hips). It renames track targets only; it does not retarget motion or transfer animation between different skeletons.</p>
 <label class="file">1 · CHARACTER FBX<input id="modelFile" type="file" accept=".fbx,application/octet-stream"></label>
 <div class="section"><h2 style="font-size:10px;letter-spacing:.12em">ANIMATION SOURCE</h2><div class="metric"><span>File</span><strong>jog forward.fbx</strong></div><div class="metric"><span>Source</span><strong>UFLMB/Pitch11 · main</strong></div><div class="metric"><span>Expected rig</span><strong>Mixamo · 65 bones</strong></div></div>
 <div class="section"><h2 style="font-size:10px;letter-spacing:.12em">LIVE TEST REPORT</h2><div id="report" class="desc">Choose character.fbx to begin.</div><div id="log" class="log">No files loaded.</div></div>
@@ -35,15 +35,35 @@ function bones(root){const a=[];root.traverse(o=>{if(o.isBone)a.push(o)});return
 function setReport(lines,status){$('report').innerHTML=lines.map(([k,v,c])=>'<div class="metric"><span>'+k+'</span><strong class="'+(c||'')+'">'+v+'</strong></div>').join('');$('status').textContent=status}
 function log(s){$('log').textContent=s}
 async function loadAnimation(){const response=await fetch('./input/player-package/jog%20forward.fbx');if(!response.ok)throw Error('Could not load jog forward.fbx · HTTP '+response.status);const buffer=await response.arrayBuffer();const animRoot=loader.parse(buffer,'');clip=animRoot.animations?.[0];if(!clip)throw Error('No animation clip found in jog forward.fbx');return {animRoot,clip,bytes:buffer.byteLength}}
-function normalizedClip(sourceClip,targetRoot){const targetNames=new Set(bones(targetRoot).map(b=>b.name));const tracks=sourceClip.tracks.map(t=>{const clone=t.clone();clone.name=clone.name.replace(/mixamorig:/g,'mixamorig5:');return clone});const unresolved=tracks.filter(t=>{const base=t.name.split('.')[0];return !targetNames.has(base)});return {clip:new THREE.AnimationClip(sourceClip.name,sourceClip.duration,tracks),unresolved,tracks}}
+function canonicalBoneName(name){return String(name||'').replace(/[\\s_]/g,'').replace(/[^a-z0-9]/gi,'').replace(/^mixamorig\\d*/i,'').toLowerCase()}
+function trackTarget(trackName){const dot=trackName.lastIndexOf('.');if(dot<1)return null;return {raw:trackName.slice(0,dot),property:trackName.slice(dot+1)}}
+function normalizedClip(sourceClip,targetRoot){
+ const targetNames=[...new Set(bones(targetRoot).map(b=>b.name).filter(Boolean))];
+ const aliases=new Map();
+ for(const name of targetNames){const key=canonicalBoneName(name);if(!key)continue;const list=aliases.get(key)||[];if(!list.includes(name))list.push(name);aliases.set(key,list)}
+ const tracks=[],unresolved=[],ambiguous=[],mapping=[];
+ for(const sourceTrack of sourceClip.tracks){
+  const clone=sourceTrack.clone(),parsed=trackTarget(sourceTrack.name);
+  if(!parsed){unresolved.push(sourceTrack.name);tracks.push(clone);continue}
+  const matches=aliases.get(canonicalBoneName(parsed.raw))||[];
+  if(matches.length===1){clone.name=matches[0]+'.'+parsed.property;mapping.push([sourceTrack.name,clone.name])}
+  else if(matches.length>1){ambiguous.push({source:sourceTrack.name,candidates:matches})}
+  else unresolved.push(sourceTrack.name);
+  tracks.push(clone);
+ }
+ return {clip:new THREE.AnimationClip(sourceClip.name,sourceClip.duration,tracks),unresolved,ambiguous,tracks,mapping,targetNames}
+}
 async function loadCharacter(file){$('status').textContent='PARSING CHARACTER FBX…';$('report').textContent='Loading character and animation…';try{const buffer=await file.arrayBuffer();const root=loader.parse(buffer,'');root.traverse(o=>{if(o.isMesh){o.frustumCulled=false;if(o.material){for(const m of (Array.isArray(o.material)?o.material:[o.material])){m.side=THREE.DoubleSide;m.needsUpdate=true}}}});if(model)scene.remove(model);model=root;scene.add(model);model.updateMatrixWorld(true);frame(model);
 const b=bones(model),names=b.map(x=>x.name);const anim=await loadAnimation();const normalized=normalizedClip(anim.clip,model);const uniqueTargets=[...new Set(normalized.tracks.map(t=>t.name.split('.')[0]))];const unresolvedTargets=[...new Set(normalized.unresolved.map(t=>t.name.split('.')[0]))];
-mixer=new THREE.AnimationMixer(model);action=mixer.clipAction(normalized.clip);action.reset().play();playing=true;$('play').textContent='PAUSE';
-const exactTargets=uniqueTargets.length-unresolvedTargets.length;
-const ok=unresolvedTargets.length===0;
-const lines=[['Character file',file.name],['Character FBX size',(buffer.byteLength/1048576).toFixed(1)+' MB'],['Character skeleton bones',b.length],['Animation clip',anim.clip.name||'Jog forward'],['Animation tracks',anim.clip.tracks.length],['Unique animated targets',uniqueTargets.length],['Targets resolved after prefix normalization',exactTargets+' / '+uniqueTargets.length,ok?'good':'bad'],['Unresolved targets',unresolvedTargets.length,unresolvedTargets.length?'bad':'good'],['Playback',ok?'STARTED':'PARTIAL · CHECK LOG',ok?'good':'warn']];
-setReport(lines,ok?'ANIMATION PLAYING':'TRACKS UNRESOLVED');
-log('CHARACTER BONES\n'+names.join('\n')+'\n\nANIMATION TRACK TARGETS\n'+uniqueTargets.join('\n')+'\n\nUNRESOLVED\n'+(unresolvedTargets.join('\n')||'None')+'\n\nNOTE: Track binding is a name-level check. Inspect the model in motion for bind-pose and deformation correctness.');
+mixer=new THREE.AnimationMixer(model);action=mixer.clipAction(normalized.clip);action.reset().play();mixer.update(0);playing=true;$('play').textContent='PAUSE';
+const bindingObjects=action._propertyBindings||[];
+const boundCount=bindingObjects.filter(pb=>pb&&pb.binding&&pb.binding.node).length;
+const unboundTracks=normalized.tracks.filter((t,i)=>!(bindingObjects[i]&&bindingObjects[i].binding&&bindingObjects[i].binding.node)).map(t=>t.name);
+const uniqueMapped=[...new Set(normalized.mapping.map(x=>x[1].slice(0,x[1].lastIndexOf('.'))))];
+const ok=normalized.unresolved.length===0&&normalized.ambiguous.length===0&&boundCount===normalized.tracks.length;
+const lines=[['Character file',file.name],['Character FBX size',(buffer.byteLength/1048576).toFixed(1)+' MB'],['Character skeleton bones',b.length],['Unique Mixamo bone names',new Set(names).size],['Animation clip',anim.clip.name||'Jog forward'],['Animation tracks',anim.clip.tracks.length],['Unique animated targets',uniqueTargets.length],['Matched Mixamo targets',uniqueMapped.length+' / '+uniqueTargets.length,normalized.unresolved.length===0?'good':'bad'],['Actual Three.js bindings',boundCount+' / '+normalized.tracks.length,boundCount===normalized.tracks.length?'good':'bad'],['Unresolved / ambiguous',normalized.unresolved.length+' / '+normalized.ambiguous.length,(normalized.unresolved.length||normalized.ambiguous.length)?'bad':'good'],['Playback',ok?'RUNNING · VISUAL CHECK REQUIRED':'INCOMPLETE · SEE LOG',ok?'good':'warn']];
+setReport(lines,ok?'ALL TRACKS BOUND · PLAYING':'TRACK BINDING INCOMPLETE');
+log('CHARACTER BONES\\n'+names.join('\\n')+'\\n\\nRAW ANIMATION TRACKS\\n'+anim.clip.tracks.map(t=>t.name).join('\\n')+'\\n\\nTRACK MAPPING\\n'+normalized.mapping.map(x=>x[0]+'  =>  '+x[1]).join('\\n')+'\\n\\nUNRESOLVED\\n'+(normalized.unresolved.join('\\n')||'None')+'\\n\\nAMBIGUOUS\\n'+(normalized.ambiguous.map(x=>x.source+' => '+x.candidates.join(', ')).join('\\n')||'None')+'\\n\\nTHREE.JS UNBOUND TRACKS\\n'+(unboundTracks.join('\\n')||'None')+'\\n\\nNOTE: Binding success confirms target resolution, not yet correct bind-pose/deformation. Confirm the visible motion in the preview.');
 }catch(e){$('status').textContent='TEST FAILED';$('report').textContent=e.message;log(e.stack||String(e));}}
 $('modelFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(f)loadCharacter(f)});
 $('play').onclick=()=>{if(!action)return;if(playing){action.paused=true;playing=false;$('play').textContent='PLAY'}else{action.paused=false;playing=true;$('play').textContent='PAUSE'}};
