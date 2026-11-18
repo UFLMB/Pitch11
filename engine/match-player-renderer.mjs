@@ -8,7 +8,7 @@ import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animatio
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 
 const ONE_SHOT_STATES = new Set([
-  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "fallenIdle", "getUp", "throwIn",
+  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "getUp", "throwIn",
   "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss",
   "keeperDropKick", "keeperThrow", "keeperPlace"
 ]);
