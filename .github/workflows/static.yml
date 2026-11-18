@@ -79,6 +79,24 @@ jobs:
           }
           console.log('Player Kit Studio module syntax is valid.');
           NODE
+      - name: Check Ball Studio module syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('ball-editor.html', 'utf8');
+          const startTag = '<script type="module">';
+          const start = html.indexOf(startTag);
+          const end = start < 0 ? -1 : html.indexOf('</script>', start + startTag.length);
+          if (start < 0 || end < 0) throw new Error('Ball Studio module script not found');
+          fs.writeFileSync('/tmp/pitch11-ball-studio.mjs', html.slice(start + startTag.length, end));
+          const result = spawnSync(process.execPath, ['--check', '/tmp/pitch11-ball-studio.mjs'], { encoding: 'utf8' });
+          if (result.status !== 0) {
+            process.stderr.write(result.stderr || result.stdout);
+            process.exit(result.status || 1);
+          }
+          console.log('Ball Studio module syntax is valid.');
+          NODE
       - name: Check 3D model viewer module syntax
         run: |
           node --input-type=module <<'NODE'
