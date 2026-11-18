@@ -203,6 +203,23 @@ export class MatchPlayerRenderer {
       const binding = validateDirectMixamoClip(this.template, sourceClip);
       const clip = binding.clip;
       clip.name = file.replace(/\.fbx$/i, "");
+      // Match movement to the simulation's player transform: locomotion clips animate
+      // the gait in place, rather than translating the skeleton and then snapping on loop.
+      if (/^(jog forward|jog backward|jog strafe left|jog strafe right)\.fbx$/i.test(file)) {
+        for (const track of clip.tracks) {
+          if (!/\.position$/i.test(track.name)) continue;
+          const bone = track.name.slice(0, track.name.lastIndexOf(".")).replace(/[\s_]/g, "").toLowerCase();
+          if (!/(mixamorig)?hips$/.test(bone) && !/(mixamorig)?root$/.test(bone)) continue;
+          const values = track.values;
+          if (!values || values.length < 3) continue;
+          const x = values[0];
+          const z = values[2];
+          for (let i = 0; i + 2 < values.length; i += 3) {
+            values[i] = x;
+            values[i + 2] = z;
+          }
+        }
+      }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
       this.clipCache.set(file, clip);
       this.animations.push(clip);
@@ -250,7 +267,13 @@ export class MatchPlayerRenderer {
     if (!Number.isFinite(height) || height < 0.5) return null;
     const scale = 1.8 / height;
     model.scale.setScalar(scale);
-    model.position.y = -bounds.min.y * scale;
+    // Recompute bounds after applying scale, then anchor the actual mesh bottom to y=0.
+    // This avoids relying on FBX source-space bounds, which may include root transforms.
+    model.position.y = 0;
+    model.updateMatrixWorld(true);
+    const scaledBounds = new THREE.Box3().setFromObject(model);
+    model.position.y -= scaledBounds.min.y;
+    model.updateMatrixWorld(true);
     model.traverse(node => {
       if (!node.isMesh) return;
       node.castShadow = false;
