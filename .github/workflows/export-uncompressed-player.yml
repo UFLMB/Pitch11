@@ -1,0 +1,39 @@
+name: Export uncompressed player GLB for online tools
+
+on:
+  push:
+    branches: [test/current-fbx-retarget]
+    paths:
+      - ".github/workflows/export-uncompressed-player.yml"
+      - "scripts/decode-player-glb.mjs"
+      - "assets/players/player.glb"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  decode:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install GLB processing dependencies
+        run: npm install --no-save @gltf-transform/core @gltf-transform/extensions meshoptimizer
+      - name: Decode Meshopt-compressed model
+        env:
+          INPUT_GLB: assets/players/player.glb
+          OUTPUT_GLB: /tmp/player-uncompressed.glb
+        run: node scripts/decode-player-glb.mjs
+      - name: Verify decoded GLB
+        run: |
+          test -s /tmp/player-uncompressed.glb
+          node --input-type=module -e "import { readFile } from 'node:fs/promises'; const b=await readFile('/tmp/player-uncompressed.glb'); if(b.toString('ascii',0,4)!=='glTF'||b.readUInt32LE(4)!==2) throw new Error('Invalid GLB'); console.log('Verified uncompressed GLB:', b.length, 'bytes')"
+      - name: Upload compatible model
+        uses: actions/upload-artifact@v4
+        with:
+          name: player-glb-uncompressed
+          path: /tmp/player-uncompressed.glb
+          retention-days: 14
