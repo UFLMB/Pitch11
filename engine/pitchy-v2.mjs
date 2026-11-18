@@ -29,8 +29,8 @@ const COLOURS = [
   ['brown','#79513a',/\b(brown)\b|barna/]
 ];
 const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
-const HU_WORDS = /[őűáéíóöüŐŰÁÉÍÓÖÜ]/.test.bind(null);
-const isHU = s => HU_WORDS(s) || /\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\b/i.test(s);
+const HU_WORDS = /[őűáéíóöüŐŰÁÉÍÓÖÜ]/;
+const isHU = s => HU_WORDS.test(s) || /\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\b/i.test(s);
 function luminance(hex){
   const c=hex.match(/[a-f0-9]{2}/gi).map(x=>parseInt(x,16)/255).map(x=>x<=.03928?x/12.92:((x+.055)/1.055)**2.4);
   return .2126*c[0]+.7152*c[1]+.0722*c[2];
