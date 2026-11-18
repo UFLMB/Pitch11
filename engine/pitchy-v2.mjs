@@ -44,6 +44,9 @@ function coloursIn(s){
 }
 function pick(re,s,fallback){const m=s.match(re);return m?m[1]||m[0]:fallback;}
 function patternOf(s){
+  const noStripes=/\b(no|without|avoid|exclude)\s+(?:any\s+)?(?:stripes?|striping)\b|csíkok? nélkül|ne legyen csíkos/i.test(s);
+  const otherExplicit=PATTERNS.some(([id,re])=>!['vertical-stripes','horizontal-stripes','diagonal-stripes'].includes(id)&&re.test(s));
+  if(noStripes&&!otherExplicit)return 'solid';
   for(const [id,re] of PATTERNS)if(re.test(s))return id;
   if(/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(s))return 'solid';
   if(/\b(aggressive|dynamic|fast|speed)\b|agresszív|dinamikus|sebesség/i.test(s))return 'diagonal-stripes';
@@ -58,11 +61,21 @@ function styleOf(s){
   return 'pro';
 }
 function materialOf(s,type){
-  if(/\b(glossy|shiny|polished)\b|fényes|csillogó/i.test(s))return 'glossy';
-  if(/\b(matte|matte finish)\b|matt/i.test(s))return 'matte';
+  const glossy=/\b(glossy|shiny|polished)\b|fényes|csillogó/i.test(s);
+  const matte=/\b(matte|matte finish)\b|matt/i.test(s);
+  if(glossy&&!/\b(not|no|without)\s+(?:very\s+)?(?:glossy|shiny)\b|ne legyen fényes|ne legyen csillogó/i.test(s))return 'glossy';
+  if(matte)return 'matte';
   if(/\b(metallic|chrome)\b|fémes|króm/i.test(s))return 'metallic';
   if(/\b(soft.?touch|rubberized)\b|gumírozott|puha tapintás/i.test(s))return 'soft-touch';
   return type==='ball'?'match-ball':'performance-fabric';
+}
+function findConflicts(s){
+  const conflicts=[];
+  const patternHits=PATTERNS.filter(([id,re])=>re.test(s)&&['vertical-stripes','horizontal-stripes','diagonal-stripes','chevron','checkerboard','dots','split','rings'].includes(id)).map(([id])=>id);
+  if(new Set(patternHits).size>1)conflicts.push({field:'pattern',values:[...new Set(patternHits)]});
+  const materials=[['glossy',/\b(glossy|shiny|polished)\b|fényes|csillogó/i],['matte',/\b(matte)\b|matt/i],['metallic',/\b(metallic|chrome)\b|fémes|króm/i],['soft-touch',/\b(soft.?touch|rubberized)\b|gumírozott|puha tapintás/i]].filter(([,re])=>re.test(s)).map(([id])=>id);
+  if(new Set(materials).size>1)conflicts.push({field:'material',values:[...new Set(materials)]});
+  return conflicts;
 }
 const HU_PATTERN={'vertical-stripes':'függőleges csíkos','horizontal-stripes':'vízszintes csíkos','diagonal-stripes':'átlós csíkos',chevron:'cikkcakk',checkerboard:'kockás',dots:'pöttyös','side-panels':'oldalpaneles',split:'két tónusú',geometric:'geometrikus',rings:'gyűrűs','panel-graphics':'panelgrafikás',solid:'letisztult'};
 const HU_COLOUR={black:'fekete',white:'fehér',red:'piros',blue:'kék',navy:'sötétkék','sky blue':'világoskék',green:'zöld',lime:'lime',yellow:'sárga',gold:'arany',orange:'narancssárga',purple:'lila',pink:'rózsaszín',grey:'szürke',brown:'barna',custom:'egyedi'};
@@ -80,17 +93,24 @@ function buildPlan(brief,type='kit'){
   const material=materialOf(s,type),metallic=material==='metallic';
   const patternName=hu?(HU_PATTERN[pattern]||pattern):pattern.replaceAll('-',' ');
   const name=[cs.slice(0,2).map(c=>hu?(HU_COLOUR[c.name]||c.name):c.name).join(' / ')|| (hu?'Egyedi':'Custom'),patternName,type==='ball'?(hu?'labda':'ball'):(hu?'mez':'kit')].join(' · ');
+  const conflicts=findConflicts(s);
   const questions=[];
+  const explicitPattern=PATTERNS.some(([,re])=>re.test(s))||/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül|aggressive|dynamic|fast|speed|agresszív|dinamikus|sebesség/i.test(s);
+  const explicitStyle=/\b(retro|classic|vintage|stealth|minimal|clean|elegant|aggressive|bold|dynamic|speed|futuristic|cyber|neon|luxury|premium|elite)\b|retró|retro|klasszikus|régi iskola|letisztult|elegáns|visszafogott|agresszív|dinamikus|gyors|erőteljes|futurisztikus|neon|jövő|luxus|prémium|elit/i.test(s);
+  const explicitMaterial=/\b(glossy|shiny|polished|matte|metallic|chrome|soft.?touch|rubberized)\b|fényes|csillogó|matt|fémes|króm|gumírozott|puha tapintás/i.test(s);
+  const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt|kit)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
-  if(!PATTERNS.some(([,re])=>re.test(s))&&!/minimal|clean|plain|solid|simple|letisztult|egyszínű/i.test(s))questions.push(hu?'A mintát a stílusleírás alapján választottam.':'Pattern selected from the overall style description.');
-  const confidence=clamp(.48+Math.min(cs.length,3)*.09+(PATTERNS.some(([,re])=>re.test(s))?0.15:0)+(style!=='pro'?.08:0),.4,.96);
+  if(!explicitPattern)questions.push(hu?'A mintát még nem határoztad meg; alapértelmezett mintát választottam.':'The pattern is unspecified; I selected a default pattern.');
+  for(const conflict of conflicts)questions.push(hu?conflict.field==='pattern'?'Több, egymást kizáró mintát adtál meg. Melyiket részesíted előnyben?':'Több, egymásnak ellentmondó anyaghatást adtál meg. Melyiket válasszam?':conflict.field==='pattern'?'You specified multiple primary patterns. Which one should take priority?':'You specified conflicting material finishes. Which one should take priority?');
+  const signalCount=[cs.length>0,explicitPattern,explicitStyle,explicitMaterial,explicitGarment,/\b(thin|fine|subtle|bold|wide|thick|strong|dense|many|tight|spaced)\b|vékony|finom|vastag|széles|sűrű|ritka/i.test(s)].filter(Boolean).length;
+  const confidence=clamp(.34+Math.min(signalCount,5)*.12-conflicts.length*.14,.34,.94);
   return {
     designName:name.slice(0,64),summary:hu?'A kérésből szín-, minta-, stílus- és anyagprofilt állítottam össze.':'Built an editable colour, pattern, style and material profile from your brief.',
     garment,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
     seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
     roughness:material==='glossy'?.26:material==='matte'?.9:material==='soft-touch'?.82:.58,
-    metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,
-    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment}
+    metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,conflicts,needsClarification:conflicts.length>0||confidence<.55,
+    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,signals:signalCount}
   };
 }
 export function analysePitchyBrief(brief,type='kit'){return buildPlan(brief,type);}
@@ -112,7 +132,7 @@ export function mountPitchy({type='kit',onApply}={}){
     try{
       const plan=buildPlan(prompt.value,type);await onApply(plan);
       const pct=Math.round(plan.confidence*100);
-      status.textContent=plan.designName+' · '+pct+'% brief match'+(plan.questions.length?' · '+plan.questions[0]:'');
+      status.textContent=plan.designName+' · '+pct+'% confidence'+(plan.questions.length?' · '+plan.questions[0]:'');
       status.dataset.state='success';
       try{const history=JSON.parse(localStorage.getItem('p11-pitchy-history')||'[]');history.unshift({at:Date.now(),type,name:plan.designName,brief:prompt.value.slice(0,240),plan});localStorage.setItem('p11-pitchy-history',JSON.stringify(history.slice(0,8)));}catch{}
     }catch(error){status.textContent=error?.message||'Could not create the design.';status.dataset.state='error';}
