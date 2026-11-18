@@ -156,6 +156,26 @@ jobs:
           node --check engine/law-compliance.js
           node --check engine/pitchy.mjs
           node --check engine/pitchy-v2.mjs
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { analysePitchyBrief } from './engine/pitchy-v2.mjs';
+          const hu = analysePitchyBrief('Készíts fekete-arany, agresszív, vékony átlós csíkos mezt fekete gallérral', 'kit');
+          assert.equal(hu.detected.language, 'hu');
+          assert.equal(hu.baseColor, '#101318');
+          assert.equal(hu.accentColor, '#c5a46d');
+          assert.equal(hu.pattern, 'diagonal-stripes');
+          assert.equal(hu.style, 'performance');
+          const en = analysePitchyBrief('Create a premium navy and gold jersey with a matte finish and vertical stripes', 'kit');
+          assert.equal(en.detected.language, 'en');
+          assert.equal(en.pattern, 'vertical-stripes');
+          assert.equal(en.material, 'matte');
+          const ball = analysePitchyBrief('Fényes piros-fehér labda', 'ball');
+          assert.equal(ball.detected.language, 'hu');
+          assert.equal(ball.material, 'glossy');
+          assert.throws(() => analysePitchyBrief(''));
+          console.log('PITCHY bilingual design reasoning tests passed.');
+          NODE
+          node --check engine/pitchy-v2.mjs
           node --check engine/simulation.mjs
           node --check engine/simulation-lab.mjs
           node --check engine/pitch11-adapter.mjs
