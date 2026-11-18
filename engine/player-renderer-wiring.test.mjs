@@ -10,6 +10,8 @@ test("production stadium renderer owns the skinned player runtime", () => {
   const renderer = read("./match-player-renderer.mjs");
   assert.ok(runtime.includes("MatchPlayerRenderer"));
   assert.ok(runtime.includes("playerRenderer.update(options.players"));
+  assert.ok(runtime.includes("options.delta,options)"));
+  assert.ok(index.includes("ballOwner:ball.owner,restart:S.rs"));
   assert.ok(runtime.includes("playerRenderer.setGroundHeight(pitchSurfaceY + 0.025)"));
   assert.ok(runtime.includes("get playerModelsReady(){"));
   assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
@@ -18,6 +20,8 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("new FBXLoader()"));
   assert.ok(renderer.includes("validateDirectMixamoClip"));
   assert.ok(renderer.includes("resolveMixamoClipCandidates"));
+  assert.ok(renderer.includes("context.ballOwner"));
+  assert.ok(renderer.includes("context.restart"));
   assert.ok(renderer.includes("CORE_MIXAMO_CLIPS"));
   assert.ok(renderer.includes("cloneSkeleton"));
   assert.ok(renderer.includes("setGroundHeight(value)"));
