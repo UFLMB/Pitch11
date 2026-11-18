@@ -92,13 +92,13 @@ function inspectClipCompatibility(clip){
  return{matched,total:clip.tracks?.length||0,missing:[...missing]};
 }
 function updateCompatibilityInfo(){const clip=clips[Number($('animationSelect').value)];if(!clip){$('compatibilityInfo').textContent='No animation selected.';return}const r=inspectClipCompatibility(clip);const percent=r.total?Math.round(r.matched/r.total*100):0;const label=r.matched===r.total?'All animation tracks resolve on this model.':r.matched?'Partial rig match. Some tracks will not animate.':'No compatible rig targets found. This clip will not animate this model.';$('compatibilityInfo').textContent='RIG CHECK · '+r.matched+'/'+r.total+' tracks matched ('+percent+'%). '+label+(r.missing.length?' Unmatched: '+r.missing.slice(0,5).join(', ')+(r.missing.length>5?' …':''):'');$('compatibilityInfo').style.color=r.matched===r.total?'#a8d6b0':r.matched?'#e6c58d':'#fca5a5'}
-function refreshAnimationList(preferred=''){
+function refreshAnimationList(preferred='',autoPlay=true){
  const select=$('animationSelect');select.innerHTML='';
  if(!clips.length){select.add(new Option('No animation clips found',''));select.disabled=true;$('playPause').disabled=true;$('stop').disabled=true;updateAnimationControls();animationInfo.textContent='No clips are available for this model yet. Import compatible animation GLB files below.';return}
  clips.forEach((clip,i)=>select.add(new Option(clip.name||('Animation '+(i+1)),String(i))));
  select.disabled=false;$('playPause').disabled=false;$('stop').disabled=false;updateAnimationControls();
  const match=clips.findIndex(c=>c.name.toLowerCase().includes(preferred.toLowerCase()));
- select.value=String(match>=0?match:0);playSelected();updateCompatibilityInfo();
+ select.value=String(match>=0?match:0);if(autoPlay){playSelected()}else{stopAnimation()}updateCompatibilityInfo();
  animationInfo.textContent=clips.length+' clip(s) available · '+clips.map(c=>c.name||'Unnamed').join(' · ');
 }
 function stopAnimation(){if(mixer){mixer.stopAllAction();mixer.setTime(0)}currentAction=null;playing=false;$('playPause').textContent='PLAY';$('timeline').value='0';$('timeReadout').textContent='0.00 / 0.00 s'}
@@ -180,8 +180,8 @@ async function retargetFbxAnimation(){
   retargeted.name=file.name.replace(/\.fbx$/i,'')+' · Bip01 retarget test';
   const valid=retargeted.tracks.filter(t=>{try{const p=THREE.PropertyBinding.parseTrackName(t.name);return !!THREE.PropertyBinding.findNode(activeRoot,p.nodeName)}catch{return false}});
   retargeted.userData={...(retargeted.userData||{}),retargetedFrom:file.name,targetMeshName:targetMesh.name,mappedBones:Object.keys(names).length,totalTracks:retargeted.tracks.length,resolvedTracks:valid.length};
-  clips.push(retargeted);refreshAnimationList(retargeted.name);
-  $('retargetInfo').textContent='RETARGET TEST READY · '+Object.keys(names).length+' mapped bones · '+valid.length+'/'+retargeted.tracks.length+' tracks resolve on the player. Preview the new clip in the animation selector. This is an experimental first pass; inspect limb alignment and foot contact before using it in-game.';
+  clips.push(retargeted);refreshAnimationList(retargeted.name,false);
+  $('retargetInfo').textContent='RETARGET TEST READY · '+Object.keys(names).length+' mapped bones · '+valid.length+'/'+retargeted.tracks.length+' tracks resolve on the player. The player remains in its original pose. Press PLAY to test the imported clip; inspect limb alignment and foot contact before using it in-game.';
  }catch(e){$('retargetInfo').textContent='RETARGET TEST FAILED · '+(e.message||String(e));error.textContent=e?.stack||String(e)}
  finally{$('animationFbx').value=''}
 }
