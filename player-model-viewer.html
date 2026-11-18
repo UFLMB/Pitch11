@@ -171,7 +171,7 @@ async function retargetFbxAnimation(){
   const mapped=[];
   for(const [targetName,sourceName] of Object.entries(names)){
    const tb=targetMesh.skeleton.bones.find(b=>b.name===targetName);
-   const sb=sourceByName.get(sourceName);
+   const sb=sourceBoneByName.get(normalizeRigBoneName(sourceName));
    if(!tb||!sb)continue;
    targetRest.set(tb,{position:tb.position.clone(),quaternion:tb.quaternion.clone(),scale:tb.scale.clone()});
    let depth=0;for(let p=tb.parent;p;p=p.parent)depth++;
