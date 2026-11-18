@@ -65,7 +65,8 @@ function detectGarment(text, type) {
 }
 function designLabel(text, pattern, colours, type) {
   const hu = isHungarian(text);
-  const colourNames = colours.slice(0, 2).map(c => c.name).join(' / ');
+  const huColours = { black: 'fekete', white: 'fehér', red: 'piros', blue: 'kék', navy: 'sötétkék', 'sky blue': 'világoskék', green: 'zöld', lime: 'lime', yellow: 'sárga', gold: 'arany', orange: 'narancssárga', purple: 'lila', pink: 'rózsaszín', grey: 'szürke', brown: 'barna', custom: 'egyedi' };
+  const colourNames = colours.slice(0, 2).map(c => hu ? (huColours[c.name] || c.name) : c.name).join(' / ');
   const patternNames = {
     'vertical-stripes': hu ? 'függőleges csíkos' : 'vertical stripe',
     'horizontal-stripes': hu ? 'vízszintes csíkos' : 'horizontal stripe',
