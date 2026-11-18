@@ -23,6 +23,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (player.ak === 5) action = "celebrate";
   else if (player.ak === 6) action = "get-up";
   else if (restart?.kind === "throw" && restart.p === player) action = "throw-in";
+  else if (player.gk && ballOwner === player) action = "keeper-catch";
   else if (ballOwner === player && speed < 1.8) action = "dribble";
 
   const id = Number.isInteger(index) ? index : team * 11 + (Number(player.role) || 0);
