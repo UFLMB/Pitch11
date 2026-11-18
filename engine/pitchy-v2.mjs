@@ -1,4 +1,7 @@
 const PATTERNS = [
+  // Specific Hungarian direction words must win before the generic "csíkos" fallback.
+  ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
+  ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
   ['vertical-stripes', /\b(vertical stripes?|striped|stripes?)\b|függőleges csík|csíkos|csíkok/],
   ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
   ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
