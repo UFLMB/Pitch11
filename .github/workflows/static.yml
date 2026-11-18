@@ -153,6 +153,24 @@ jobs:
           }
           console.log('Mixamo direct playback module syntax is valid.');
           NODE
+      - name: Check Goalkeeper Lab module syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('goalkeeper-lab.html', 'utf8');
+          const startTag = '<script type="module">';
+          const start = html.indexOf(startTag);
+          const end = start < 0 ? -1 : html.indexOf('</script>', start + startTag.length);
+          if (start < 0 || end < 0) throw new Error('Goalkeeper Lab module script not found');
+          fs.writeFileSync('/tmp/pitch11-goalkeeper-lab.mjs', html.slice(start + startTag.length, end));
+          const result = spawnSync(process.execPath, ['--check', '/tmp/pitch11-goalkeeper-lab.mjs'], { encoding: 'utf8' });
+          if (result.status !== 0) {
+            process.stderr.write(result.stderr || result.stdout);
+            process.exit(result.status || 1);
+          }
+          console.log('Goalkeeper Lab module syntax is valid.');
+          NODE
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
