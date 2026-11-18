@@ -79,6 +79,16 @@ function findConflicts(s){
 }
 const HU_PATTERN={'vertical-stripes':'függőleges csíkos','horizontal-stripes':'vízszintes csíkos','diagonal-stripes':'átlós csíkos',chevron:'cikkcakk',checkerboard:'kockás',dots:'pöttyös','side-panels':'oldalpaneles',split:'két tónusú',geometric:'geometrikus',rings:'gyűrűs','panel-graphics':'panelgrafikás',solid:'letisztult'};
 const HU_COLOUR={black:'fekete',white:'fehér',red:'piros',blue:'kék',navy:'sötétkék','sky blue':'világoskék',green:'zöld',lime:'lime',yellow:'sárga',gold:'arany',orange:'narancssárga',purple:'lila',pink:'rózsaszín',grey:'szürke',brown:'barna',custom:'egyedi'};
+const STYLE_ACCENTS={retro:['#c5a46d','#8c3b32'],minimal:['#a3aab4','#d8dce2'],performance:['#a3e635','#f2d22e'],futuristic:['#36d7ff','#a855f7'],premium:['#c5a46d','#f0dfb5'],pro:['#a3e635','#c5a46d']};
+function creativeDirections(plan){
+  const accents=STYLE_ACCENTS[plan.style]||STYLE_ACCENTS.pro;
+  const contrast=luminance(plan.baseColor)<.22?'dark-base':'light-base';
+  return [
+    {name:'Signature',pattern:plan.pattern,accent:plan.accentColor,trim:plan.trimColor,finish:plan.material,base:plan.baseColor,contrast,description:'Keeps your requested direction intact.'},
+    {name:'Studio contrast',pattern:plan.pattern==='solid'?'side-panels':'solid',accent:accents[0],trim:accents[1],finish:'matte',base:plan.baseColor,contrast,description:'A restrained alternate with clearer panel separation.'},
+    {name:'Matchday energy',pattern:plan.pattern==='diagonal-stripes'?'chevron':'diagonal-stripes',accent:accents[1],trim:accents[0],finish:plan.type==='ball'?'glossy':'performance-fabric',base:plan.baseColor,contrast,description:'A bolder matchday alternate with stronger visual movement.'}
+  ];
+}
 function buildPlan(brief,type='kit'){
   const s=String(brief||'').trim();if(!s)throw new Error('Describe the design first.');
   const hu=isHU(s),cs=coloursIn(s),style=styleOf(s),pattern=patternOf(s);
@@ -104,7 +114,9 @@ function buildPlan(brief,type='kit'){
   for(const conflict of conflicts)questions.push(hu?conflict.field==='pattern'?'Több, egymást kizáró mintát adtál meg. Melyiket részesíted előnyben?':'Több, egymásnak ellentmondó anyaghatást adtál meg. Melyiket válasszam?':conflict.field==='pattern'?'You specified multiple primary patterns. Which one should take priority?':'You specified conflicting material finishes. Which one should take priority?');
   const signalCount=[cs.length>0,explicitPattern,explicitStyle,explicitMaterial,explicitGarment,/\b(thin|fine|subtle|bold|wide|thick|strong|dense|many|tight|spaced)\b|vékony|finom|vastag|széles|sűrű|ritka/i.test(s)].filter(Boolean).length;
   const confidence=clamp(.34+Math.min(signalCount,5)*.12-conflicts.length*.14,.34,.94);
+  const draft={style,pattern,baseColor,accentColor,trimColor:cs[2]?.hex||accentColor,material,type};
   return {
+    creativeDirections:creativeDirections(draft),
     designName:name.slice(0,64),summary:hu?'A kérésből szín-, minta-, stílus- és anyagprofilt állítottam össze.':'Built an editable colour, pattern, style and material profile from your brief.',
     garment,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
     seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
