@@ -154,6 +154,7 @@ jobs:
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
+          node --check engine/p11-ai-designer.mjs
           node --check engine/simulation.mjs
           node --check engine/simulation-lab.mjs
           node --check engine/pitch11-adapter.mjs

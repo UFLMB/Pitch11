@@ -132,6 +132,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {mountP11AIDesigner} from './engine/p11-ai-designer.mjs';
 const $=s=>document.querySelector(s),status=$('#status'),error=$('#error');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
@@ -230,38 +231,57 @@ function findDesignColours(prompt){
  return unique;
 }
 function findDesignGarment(prompt){const p=prompt.toLowerCase();const rules=[['jersey',/\b(jersey|shirt|top|referee|referees|official|goalkeeper|keeper|kit top|polo)\b/],['shorts',/\b(shorts|short)\b/],['socks',/\b(socks|sock|stockings)\b/],['boots',/\b(boots|boot|cleats|football boots)\b/]];for(const [name,re] of rules)if(re.test(p))return name;return null}
-function generateKitDesign(){
- const prompt=$('#designPrompt').value.trim();
+function generateKitDesign(plan=null){
+ const prompt=plan?(plan.garment+' '+plan.baseColor+' '+plan.pattern+' '+plan.accentColor):$('#designPrompt').value.trim();
  if(!prompt){status.textContent='ADD A DESIGN DESCRIPTION FIRST';return}
- const p=prompt.toLowerCase(),requestedGarment=findDesignGarment(prompt);if(requestedGarment&&state.masks[requestedGarment])selectGarment(requestedGarment);const colours=findDesignColours(prompt),base=colours[0]?.hex||null,accent=colours[1]?.hex||'#e0c18a';
- const stripeWords=/stripe|striped|csík|csíkos/.test(p),horizontal=/horizontal|vízszintes|hoop/.test(p),diagonal=/diagonal|átlós|ferde/.test(p),pinstripe=/pinstripe|fine stripe|thin stripe|vékony csík/.test(p),wide=/wide stripe|bold stripe|vastag csík/.test(p),sidePanels=/side panel|side panels|oldalpanel|oldalsó panel/.test(p),trim=/trim|szegély|gallér|collar|cuff|mandzsetta/.test(p);
- if(!base&&!stripeWords&&!sidePanels&&!trim){status.textContent='DESIGN NOT RECOGNISED · ADD A COLOUR OR PATTERN';return}
+ const p=prompt.toLowerCase(),requestedGarment=plan?.garment||findDesignGarment(prompt);if(requestedGarment&&state.masks[requestedGarment])selectGarment(requestedGarment);
+ const colours=plan?[{hex:plan.baseColor},{hex:plan.accentColor}]:findDesignColours(prompt),base=colours[0]?.hex||null,accent=colours[1]?.hex||'#e0c18a';
+ const patternType=plan?.pattern||null;
+ const stripeWords=plan?['vertical-stripes','horizontal-stripes','diagonal-stripes'].includes(patternType):/stripe|striped|csík|csíkos/.test(p);
+ const horizontal=plan?patternType==='horizontal-stripes':/horizontal|vízszintes|hoop/.test(p);
+ const diagonal=plan?patternType==='diagonal-stripes':/diagonal|átlós|ferde/.test(p);
+ const pinstripe=plan?plan.stripeWidth<=14:/pinstripe|fine stripe|thin stripe|vékony csík/.test(p);
+ const wide=plan?plan.stripeWidth>=70:/wide stripe|bold stripe|vastag csík/.test(p);
+ const sidePanels=plan?patternType==='side-panels':/side panel|side panels|oldalpanel|oldalsó panel/.test(p);
+ const trim=plan?plan.trim:/trim|szegély|gallér|collar|cuff|mandzsetta/.test(p);
+ const extraPattern=plan&&['chevron','checkerboard','dots','split','geometric','rings','panel-graphics'].includes(patternType);
+ if(!base&&!stripeWords&&!sidePanels&&!trim&&!extraPattern){status.textContent='DESIGN NOT RECOGNISED · ADD A COLOUR OR PATTERN';return}
  const target=$('#designTarget').value,wholeTarget=target==='whole',targetMask=wholeTarget?state.masks[state.activeGarment]:state.islandMasks[state.activeGarment]?.[target];if(!targetMask){status.textContent='DESIGN TARGET MASK UNAVAILABLE';return}
  pushUndo();clearDetailsInMask(targetMask.mask);if(wholeTarget)clearPanelOverrides(state.activeGarment);else delete state.panelColours[state.activeGarment+':'+target];
  if(base){if(wholeTarget){state.colours[state.activeGarment]=base}else state.panelColours[state.activeGarment+':'+target]=base;state.selected=base;$('#customColor').value=base;$('#colourLabel').textContent=base.toUpperCase();renderTexture()}
- if(stripeWords||sidePanels||trim){
+ if(stripeWords||sidePanels||trim||extraPattern){
   const mask=targetMask,pattern=document.createElement('canvas');pattern.width=pattern.height=1024;
   const ctx=pattern.getContext('2d');ctx.fillStyle=accent;
   if(stripeWords){
-   const width=pinstripe?9:(wide?92:34),spacing=pinstripe?72:(wide?260:190);
+   const width=plan?Math.max(5,plan.stripeWidth):pinstripe?9:(wide?92:34),spacing=plan?Math.max(width+8,plan.stripeSpacing):(pinstripe?72:(wide?260:190));
    if(diagonal){for(let x=-1024;x<2048;x+=spacing){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+1024,1024);ctx.lineTo(x+1024+width,1024);ctx.lineTo(x+width,0);ctx.closePath();ctx.fill()}}
    else if(horizontal){for(let y=pinstripe?48:110;y<1024;y+=spacing)ctx.fillRect(0,y,1024,width)}
    else{for(let x=pinstripe?48:100;x<1024;x+=spacing)ctx.fillRect(x,0,width,1024)}
   }
   if(sidePanels){ctx.fillRect(0,0,wide?180:112,1024);ctx.fillRect(1024-(wide?180:112),0,wide?180:112,1024)}
+  if(extraPattern){
+   if(patternType==='chevron'){const step=plan?.stripeSpacing||180,w=plan?.stripeWidth||42;for(let y=-step;y<2048;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(512,y+step/2);ctx.lineTo(1024,y);ctx.lineTo(1024,y+w);ctx.lineTo(512,y+step/2+w);ctx.lineTo(0,y+w);ctx.closePath();ctx.fill()}}
+   if(patternType==='checkerboard'){const cell=Math.max(32,plan?.stripeSpacing||128);for(let y=0;y<1024;y+=cell)for(let x=0;x<1024;x+=cell)if(((x/cell)+(y/cell))%2===0)ctx.fillRect(x,y,cell,cell)}
+   if(patternType==='dots'){const cell=Math.max(40,plan?.stripeSpacing||120),r=Math.max(5,(plan?.stripeWidth||28)/2);for(let y=cell/2;y<1024;y+=cell)for(let x=cell/2;x<1024;x+=cell){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}}
+   if(patternType==='split')ctx.fillRect(512,0,512,1024);
+   if(patternType==='geometric'||patternType==='panel-graphics'){const step=plan?.stripeSpacing||180,w=plan?.stripeWidth||38;for(let x=-1024;x<2048;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x+w,0);ctx.lineTo(x+1024+w,1024);ctx.lineTo(x+1024,1024);ctx.closePath();ctx.fill()}}
+   if(patternType==='rings'){for(let r=48;r<740;r+=Math.max(60,plan?.stripeSpacing||150)){ctx.beginPath();ctx.arc(512,512,r,0,Math.PI*2);ctx.lineWidth=Math.max(8,plan?.stripeWidth||24);ctx.strokeStyle=accent;ctx.stroke()}}
+  }
   if(trim){
    const pixels=new ImageData(1024,1024),src=mask.mask,thickness=6;
    for(let y=0;y<1024;y++)for(let x=0;x<1024;x++){const i=y*1024+x;if(!src[i])continue;let edge=false;for(let d=1;d<=thickness&&!edge;d++)if(x<d||x>=1024-d||y<d||y>=1024-d||!src[i-d]||!src[i+d]||!src[i-d*1024]||!src[i+d*1024])edge=true;if(edge){const q=i*4;pixels.data[q]=255;pixels.data[q+1]=255;pixels.data[q+2]=255;pixels.data[q+3]=255}}
    const edgeCanvas=document.createElement('canvas');edgeCanvas.width=edgeCanvas.height=1024;edgeCanvas.getContext('2d').putImageData(pixels,0,0);
-   const trimCanvas=document.createElement('canvas');trimCanvas.width=trimCanvas.height=1024;const trimCtx=trimCanvas.getContext('2d');trimCtx.fillStyle=accent;trimCtx.fillRect(0,0,1024,1024);trimCtx.globalCompositeOperation='destination-in';trimCtx.drawImage(edgeCanvas,0,0);ctx.drawImage(trimCanvas,0,0);
+   const trimCanvas=document.createElement('canvas');trimCanvas.width=trimCanvas.height=1024;const trimCtx=trimCanvas.getContext('2d');trimCtx.fillStyle=plan?.trimColor||accent;trimCtx.fillRect(0,0,1024,1024);trimCtx.globalCompositeOperation='destination-in';trimCtx.drawImage(edgeCanvas,0,0);ctx.drawImage(trimCanvas,0,0);
   }
   ctx.globalCompositeOperation='destination-in';ctx.drawImage(mask.canvas,0,0);ctx.globalCompositeOperation='source-over';
   state.detailCtx.drawImage(pattern,0,0);renderTexture();
  }
- saveLocal();status.textContent='DESIGN GENERATED · '+state.activeGarment.toUpperCase();
- $('#designHint').textContent='Design applied to '+state.activeGarment+'. This instruction replaced earlier edits inside its target area. Later edits can replace it again. Undo reverts the complete change.';
+ saveLocal();status.textContent=(plan?'AI DESIGN APPLIED · '+plan.designName:'DESIGN GENERATED')+' · '+state.activeGarment.toUpperCase();
+ $('#designHint').textContent=plan?plan.summary:'Design applied to '+state.activeGarment+'. This instruction replaced earlier edits inside its target area. Later edits can replace it again. Undo reverts the complete change.';
 }
-$('#generateDesign').addEventListener('click',generateKitDesign);
+$('#generateDesign').addEventListener('click',()=>generateKitDesign());
+mountP11AIDesigner({type:'kit',onApply:plan=>generateKitDesign(plan)});
+
 
 const BODY_SHAPE_KEY='p11-kit-studio-body-shape-v1';
 const bodyShapeDefaults={muscle:35,mass:25,shoulder:50,legs:40};
