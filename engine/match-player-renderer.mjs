@@ -432,7 +432,7 @@ export class MatchPlayerRenderer {
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
-  get loadedClipNames() { return [...this.clipCache.keys()].map(file => file.replace(/\\.fbx$/i, "")).sort(); }
+  get loadedClipNames() { return [...this.clipCache.keys()].map(file => file.replace(/\.fbx$/i, "")).sort(); }
   get failedClipNames() { return [...this.failedClips.entries()].map(([file, error]) => ({ file, error })); }
   get count() { return this.players.size; }
   get expectedCount() { return this.inputPlayerCount; }
