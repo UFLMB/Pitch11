@@ -1,7 +1,7 @@
 const SKIN_TONES = [0xd5a47f, 0xb97f5e, 0x8e5b43, 0xe2bd9b, 0x704936, 0xc99470];
 const HAIR_TONES = [0x171311, 0x302017, 0x4b3324, 0x17191c, 0x6a4b2e];
 
-export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = null) {
+export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = null, ballOwner = null, restart = null) {
   if (!player) return null;
   const team = Number.isInteger(player.team) ? player.team : 0;
   const role = player.gk ? "GK" : String(player.pos || "DEF").toUpperCase();
@@ -22,6 +22,8 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (player.ak === 3) action = "tackle";
   else if (player.ak === 5) action = "celebrate";
   else if (player.ak === 6) action = "get-up";
+  else if (restart?.kind === "throw" && restart.p === player) action = "throw-in";
+  else if (ballOwner === player && speed < 1.8) action = "dribble";
 
   const id = Number.isInteger(index) ? index : team * 11 + (Number(player.role) || 0);
   return {
@@ -43,7 +45,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   };
 }
 
-export function mapLegacyPlayers(players, alpha = 1, selectedPlayer = null) {
+export function mapLegacyPlayers(players, alpha = 1, selectedPlayer = null, ballOwner = null, restart = null) {
   if (!Array.isArray(players)) return [];
-  return players.map((player, index) => mapLegacyPlayerState(player, index, alpha, selectedPlayer)).filter(Boolean);
+  return players.map((player, index) => mapLegacyPlayerState(player, index, alpha, selectedPlayer, ballOwner, restart)).filter(Boolean);
 }
