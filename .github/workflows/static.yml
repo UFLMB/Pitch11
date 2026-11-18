@@ -143,6 +143,7 @@ jobs:
           node --check engine/stadium-atmosphere.mjs
           node --check engine/goal-geometry.mjs
           node --check engine/player-animation-map.mjs
+          node --check engine/mixamo-animation-catalog.mjs
           node --check engine/player-animation.mjs
           node --check engine/player-model-state.mjs
           node --check engine/match-player-renderer.mjs
@@ -179,6 +180,7 @@ jobs:
           mv vendor/package vendor/three
           test -s vendor/three/build/three.module.js
           test -s vendor/three/examples/jsm/loaders/GLTFLoader.js
+          test -s vendor/three/examples/jsm/loaders/FBXLoader.js
           test -s vendor/three/examples/jsm/utils/SkeletonUtils.js
           test -s vendor/three/examples/jsm/libs/meshopt_decoder.module.js
           test -s vendor/three/LICENSE
