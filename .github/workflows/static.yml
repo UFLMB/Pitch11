@@ -146,6 +146,7 @@ jobs:
           node --check engine/goal-geometry.mjs
           node --check engine/player-animation-map.mjs
           node --check engine/mixamo-animation-catalog.mjs
+          node --check engine/mixamo-track-binding.mjs
           node --check engine/player-animation.mjs
           node --check engine/player-model-state.mjs
           node --check engine/match-player-renderer.mjs
