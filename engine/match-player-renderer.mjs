@@ -16,6 +16,17 @@ const CORE_MIXAMO_CLIPS = [
   "jog strafe left.fbx",
   "jog strafe right.fbx"
 ];
+function loadWithTimeout(promise, timeoutMs, label) {
+  if (!(timeoutMs > 0)) return promise;
+  let timeoutId;
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error(`${label} load timed out after ${timeoutMs} ms`)), timeoutMs);
+    })
+  ]).finally(() => clearTimeout(timeoutId));
+}
+
 const TEAM_KITS = [
   { shirt: 0x1f6fff, shorts: 0xffffff, socks: 0xffffff, keeper: 0xf2c200 },
   { shirt: 0xe5342b, shorts: 0x1b1b1b, socks: 0x1b1b1b, keeper: 0x27c46b }
@@ -165,7 +176,7 @@ export class MatchPlayerRenderer {
 
     this.status = "loading-fallback-model";
     try {
-      const gltf = await this.loader.loadAsync(this.fallbackModelUrl);
+      const gltf = await loadWithTimeout(this.loader.loadAsync(this.fallbackModelUrl), this.modelLoadTimeoutMs, "Fallback player GLB");
       const template = gltf.scene;
       template.updateMatrixWorld(true);
       const stats = inspectSkinnedModel(template);
@@ -181,7 +192,7 @@ export class MatchPlayerRenderer {
         { name: "Run", url: new URL("../assets/players/run.glb", import.meta.url).href }
       ];
       const clipResults = await Promise.allSettled(clipFiles.map(async source => {
-        const clipAsset = await this.loader.loadAsync(source.url);
+        const clipAsset = await loadWithTimeout(this.loader.loadAsync(source.url), this.modelLoadTimeoutMs, `${source.name} fallback animation`);
         const sourceClip = clipAsset.animations?.[0];
         if (!sourceClip) throw new Error(`${source.name} animation file contains no animation clip`);
         const clip = sourceClip.clone();
