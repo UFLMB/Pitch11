@@ -35,6 +35,8 @@ const report = {
   meshCount: 0,
   materialCount: 0,
   animationClipCount: 0,
+  meshNames: [],
+  materialNames: [],
   animationRigCoverage: null,
   status: "missing"
 };
@@ -59,6 +61,8 @@ try {
     const xml = await readFile(dumpPath, "utf8");
     const boneNames = uniqueXmlNames(xml, "Bone");
     const nodeNames = uniqueXmlNames(xml, "Node");
+    report.meshNames = uniqueXmlNames(xml, "Mesh");
+    report.materialNames = uniqueXmlNames(xml, "Material");
     const info = run(["info", modelPath]);
     report.skinnedBoneCount = boneNames.length;
     report.hierarchyNodeCount = nodeNames.length;
