@@ -139,9 +139,9 @@ export function mountPitchy({ type = 'kit', onApply } = {}) {
   card.className = 'p11-pitchy-card';
   card.innerHTML = `
     <div class="p11-pitchy-head"><span class="p11-pitchy-title">🤖 PITCHY DESIGN ROBOT</span><span class="p11-pitchy-tag">LOCAL · OFFLINE</span></div>
-    <textarea class="p11-pitchy-prompt" maxlength="700" placeholder="${type === 'ball' ? 'Describe your match ball design… / Írd le a labda kinézetét…' : 'Describe your kit design… / Írd le a mez kinézetét…'}"></textarea>
-    <button class="p11-pitchy-button" type="button">Ask PITCHY · PITCHY tervezzen</button>
-    <div class="p11-pitchy-status" aria-live="polite">Ready · Készen áll</div>
+    <textarea class="p11-pitchy-prompt" maxlength="700" placeholder="${type === 'ball' ? 'Describe your match ball design…' : 'Describe your kit design…'}"></textarea>
+    <button class="p11-pitchy-button" type="button">Ask PITCHY</button>
+    <div class="p11-pitchy-status" aria-live="polite">Ready</div>
     <div class="p11-pitchy-note">No API key · No network request · No subscription. Your brief is processed locally in this editor.</div>`;
   host.appendChild(card);
   const prompt = card.querySelector('.p11-pitchy-prompt');
@@ -151,8 +151,8 @@ export function mountPitchy({ type = 'kit', onApply } = {}) {
     try {
       const plan = buildPlan(prompt.value, type);
       button.disabled = true;
-      button.textContent = 'Designing… · Tervezés…';
-      status.textContent = 'Interpreting your brief locally… · A kérés helyi értelmezése…';
+      button.textContent = 'Designing…';
+      status.textContent = 'Interpreting design brief locally…';
       await onApply(plan);
       status.textContent = plan.designName + ' · ' + plan.summary;
       status.dataset.state = 'success';
@@ -161,7 +161,7 @@ export function mountPitchy({ type = 'kit', onApply } = {}) {
       status.dataset.state = 'error';
     } finally {
       button.disabled = false;
-      button.textContent = 'Ask PITCHY · PITCHY tervezzen';
+      button.textContent = 'Ask PITCHY';
     }
   });
   return { element: card, setStatus(message) { status.textContent = message; } };
