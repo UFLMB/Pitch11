@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mapLegacyPlayerState, mapLegacyPlayers } from "./player-model-state.mjs";
+import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide } from "./player-model-state.mjs";
 
 const player = (overrides = {}) => ({
   team: 0, role: 4, pos: "DEF", gk: false, px: 60, py: 60, x: 160, y: 260,
@@ -22,6 +22,20 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-left");
   assert.equal(mapLegacyPlayerState(player({ down: true }), 0).action, "fallen-idle");
   assert.equal(mapLegacyPlayerState(player({ jump: .2 }), 0).action, "header");
+});
+
+test("resolves keeper dive clips in local left/right space for both goal directions", () => {
+  const upfield = Math.PI / 2;
+  const downfield = -Math.PI / 2;
+  assert.equal(resolveKeeperDiveSide(upfield, 0), "left");
+  assert.equal(resolveKeeperDiveSide(downfield, 0), "right");
+  assert.equal(resolveKeeperDiveSide(upfield, Math.PI), "right");
+  assert.equal(resolveKeeperDiveSide(downfield, Math.PI), "left");
+});
+
+test("maps goalkeeper dive direction relative to the keeper's facing", () => {
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");
 });
 
 test("preserves selection, team, goalkeeper role and player appearance variants", () => {
