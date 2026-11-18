@@ -234,7 +234,7 @@ async function retargetFbxAnimation(){
   ));
   if(!retargeted.tracks.length)throw new Error('Retargeting produced no usable bone rotation tracks.');
   retargeted.name=file.name.replace(/\.fbx$/i,'')+' · Bip01 retarget test';
-  const valid=retargeted.tracks.filter(t=>{const m=t.name.match(/^\\.bones\\[([^\\]]+)\\]\\.quaternion$/);return !!m&&!!targetMesh.skeleton.getBoneByName(m[1])});
+  const valid=retargeted.tracks.filter(t=>{const m=t.name.match(/^\.bones\[([^\]]+)\]\.quaternion$/);return !!m&&!!targetMesh.skeleton.getBoneByName(m[1])});
   retargeted.userData={...(retargeted.userData||{}),retargetedFrom:file.name,targetMeshName:targetMesh.name,mappedBones:mapped.length,totalTracks:retargeted.tracks.length,resolvedTracks:valid.length};
   clips.push(retargeted);refreshAnimationList(retargeted.name,false);
   $('retargetInfo').textContent='RETARGET TEST READY · '+Object.keys(names).length+' mapped bones · '+valid.length+'/'+retargeted.tracks.length+' tracks resolve on the player. The player remains in its original pose. Press PLAY to test the imported clip; inspect limb alignment and foot contact before using it in-game.';
