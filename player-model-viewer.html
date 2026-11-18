@@ -177,6 +177,11 @@ async function retargetFbxAnimation(){
    preserveBoneMatrix:true,preserveBonePositions:true
   });
   if(!retargeted.tracks.length)throw new Error('Retargeting produced no animation tracks.');
+  // FBX hip translation is commonly in source-scene coordinates. Applying it
+  // directly to the target pelvis can move the skinned player out of view.
+  // Keep the target rig's original pelvis position and retarget rotations only.
+  retargeted.tracks=retargeted.tracks.filter(track=>track.name!=='.bones['+targetHip.name+'].position');
+  if(!retargeted.tracks.length)throw new Error('Retargeting produced no usable bone rotation tracks.');
   retargeted.name=file.name.replace(/\.fbx$/i,'')+' · Bip01 retarget test';
   const valid=retargeted.tracks.filter(t=>{try{const p=THREE.PropertyBinding.parseTrackName(t.name);return !!THREE.PropertyBinding.findNode(activeRoot,p.nodeName)}catch{return false}});
   retargeted.userData={...(retargeted.userData||{}),retargetedFrom:file.name,targetMeshName:targetMesh.name,mappedBones:Object.keys(names).length,totalTracks:retargeted.tracks.length,resolvedTracks:valid.length};
