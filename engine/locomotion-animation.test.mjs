@@ -5,7 +5,7 @@ function vectorTrack(name, values) { return { name, values: new Float32Array(val
 test("flattens horizontal Hips translation while preserving vertical pelvis motion", () => {
  const hips=vectorTrack("mixamorigHips.position",[1,0,2,4,.2,6,8,.4,10]); const clip={tracks:[hips]};
  assert.equal(flattenHorizontalRootMotion(clip),clip);
- assert.deepEqual(Array.from(hips.values),[1,0,2,1,.2,2,1,.4,2]);
+ assert.deepEqual(Array.from(hips.values).map(value => Math.round(value * 1000) / 1000),[1,0,2,1,.2,2,1,.4,2]);
  assert.equal(clip.userData.rootMotionFlattened,true); assert.equal(clip.userData.rootMotionTracksAdjusted,1);
 });
 test("supports namespaced Mixamo roots and leaves unrelated bones unchanged", () => {
