@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide } from "./player-model-state.mjs";
+import { resolvePlayerAnimationState } from "./player-animation-map.mjs";
 
 const player = (overrides = {}) => ({
   team: 0, role: 4, pos: "DEF", gk: false, px: 60, py: 60, x: 160, y: 260,
@@ -20,8 +21,11 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ ak: 2 }), 0).action, "pass");
   assert.equal(mapLegacyPlayerState(player({ sd: { t: .2 } }), 0).action, "slide-tackle");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-right");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 0, diveRecover: .4 }), 0).action, "get-up");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 0, diveRecover: 0 }), 0).action, "keeper-set");
+  const recoveringKeeper = mapLegacyPlayerState(player({ gk: true, dive: 0, diveRecover: .4 }), 0);
+  assert.equal(recoveringKeeper.action, "get-up");
+  assert.equal(resolvePlayerAnimationState(recoveringKeeper, recoveringKeeper.speed), "getUp");
+  const recoveredKeeper = mapLegacyPlayerState(player({ gk: true, dive: 0, diveRecover: 0, vx: 0, vy: 0 }), 0);
+  assert.equal(resolvePlayerAnimationState(recoveredKeeper, recoveredKeeper.speed), "keeperSet");
   assert.equal(mapLegacyPlayerState(player({ down: true }), 0).action, "fallen-idle");
   assert.equal(mapLegacyPlayerState(player({ jump: .2 }), 0).action, "header");
 });
