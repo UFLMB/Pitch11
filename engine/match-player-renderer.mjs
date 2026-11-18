@@ -1,14 +1,24 @@
 import * as THREE from "../vendor/three/build/three.module.js";
 import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
 import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
+import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 
 const ONE_SHOT_STATES = new Set([
-  "pass", "shot", "tackle", "slide", "jump", "fall", "getUp", "celebrate",
-  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry"
+  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "fallenIdle", "getUp", "throwIn",
+  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss",
+  "keeperDropKick", "keeperThrow", "keeperPlace"
 ]);
+const CORE_MIXAMO_CLIPS = [
+  "offensive idle.fbx",
+  "jog forward.fbx",
+  "jog backward.fbx",
+  "jog strafe left.fbx",
+  "jog strafe right.fbx"
+];
 const TEAM_KITS = [
   { shirt: 0x1f6fff, shorts: 0xffffff, socks: 0xffffff, keeper: 0xf2c200 },
   { shirt: 0xe5342b, shorts: 0x1b1b1b, socks: 0x1b1b1b, keeper: 0x27c46b }
@@ -35,19 +45,69 @@ function kitMaterial(material, meshName, player, cache) {
   return copy;
 }
 
+function inspectSkinnedModel(root) {
+  let skinnedMeshes = 0;
+  let triangleCount = 0;
+  const boneNames = new Set();
+  root.traverse(node => {
+    if (node.isSkinnedMesh) skinnedMeshes++;
+    if (node.isBone && node.name) boneNames.add(node.name);
+    if (node.isMesh && node.geometry) {
+      const geometry = node.geometry;
+      const indexCount = geometry.index ? geometry.index.count : geometry.attributes.position?.count || 0;
+      triangleCount += Math.floor(indexCount / 3);
+    }
+  });
+  return { skinnedMeshes, triangleCount, boneNames };
+}
+
+export function validateDirectMixamoClip(root, clip) {
+  const tracks = Array.isArray(clip?.tracks) ? clip.tracks : [];
+  if (!tracks.length) throw new Error("FBX contains no animation tracks");
+  const missing = new Set();
+  const targets = new Set();
+  for (const track of tracks) {
+    const parsed = THREE.PropertyBinding.parseTrackName(track.name);
+    const nodeName = parsed.nodeName || parsed.objectName;
+    if (!nodeName) {
+      missing.add(track.name);
+      continue;
+    }
+    targets.add(nodeName);
+    if (!THREE.PropertyBinding.findNode(root, nodeName)) missing.add(nodeName);
+  }
+  if (missing.size) {
+    const preview = [...missing].slice(0, 8).join(", ");
+    throw new Error(`Direct Mixamo binding failed: ${missing.size} missing targets (${preview})`);
+  }
+  return { trackCount: tracks.length, uniqueTargets: targets.size };
+}
+
 export class MatchPlayerRenderer {
-  constructor(scene, { mobile = false, modelUrl = new URL("../assets/players/player.glb", import.meta.url).href } = {}) {
+  constructor(scene, {
+    mobile = false,
+    modelUrl = new URL("../input/player-model-candidate/character.fbx", import.meta.url).href,
+    fallbackModelUrl = new URL("../assets/players/player.glb", import.meta.url).href
+  } = {}) {
     this.scene = scene;
     this.mobile = !!mobile;
     this.groundHeight = 0;
     this.modelUrl = modelUrl;
+    this.fallbackModelUrl = fallbackModelUrl;
+    this.fbxLoader = new FBXLoader();
     this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
     this.animations = [];
     this.players = new Map();
     this.status = "loading";
     this.error = "";
+    this.mixamoError = "";
+    this.modelSource = "";
     this.clipCount = 0;
+    this.clipCache = new Map();
+    this.clipPromises = new Map();
+    this.failedClips = new Map();
+    this.pendingStates = new Map();
     this.lastAnimationUpdate = 0;
     this.animationAccumulator = 0;
     this.animationHz = this.mobile ? 20 : 30;
@@ -57,32 +117,50 @@ export class MatchPlayerRenderer {
     this.modelTriangleCount = 0;
     this.inputPlayerCount = 0;
     this.visiblePlayerCount = 0;
+    this.boneNames = new Set();
   }
 
   async load() {
-    this.status = "loading-model";
+    this.status = "loading-mixamo-model";
     this.error = "";
     try {
-      const gltf = await this.loader.loadAsync(this.modelUrl);
+      const fbx = await this.fbxLoader.loadAsync(this.modelUrl);
+      fbx.updateMatrixWorld(true);
+      const stats = inspectSkinnedModel(fbx);
+      if (!stats.skinnedMeshes) throw new Error("Mixamo character FBX contains no skinned mesh");
+      if (!stats.boneNames.size) throw new Error("Mixamo character FBX contains no named bones");
+      this.template = fbx;
+      this.modelSource = "mixamo-fbx";
+      this.modelTriangleCount = stats.triangleCount;
+      this.boneNames = stats.boneNames;
+      this.status = "loading-mixamo-animations";
+      const results = await Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)));
+      const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${CORE_MIXAMO_CLIPS[index]}: ${result.reason?.message || String(result.reason)}`] : []);
+      this.clipCount = this.clipCache.size;
+      this.error = failures.join("; ");
+      this.status = "ready";
+      return;
+    } catch (error) {
+      this.mixamoError = error?.message || String(error || "Mixamo character unavailable");
+      this.template = null;
+      this.animations = [];
+      this.clipCache.clear();
+      this.clipPromises.clear();
+      this.failedClips.clear();
+    }
+
+    this.status = "loading-fallback-model";
+    try {
+      const gltf = await this.loader.loadAsync(this.fallbackModelUrl);
       const template = gltf.scene;
       template.updateMatrixWorld(true);
-      let skinnedMeshes = 0;
-      let triangleCount = 0;
-      template.traverse(node => {
-        if (node.isSkinnedMesh) skinnedMeshes++;
-        if (node.isMesh && node.geometry) {
-          const geometry = node.geometry;
-          const indexCount = geometry.index ? geometry.index.count : geometry.attributes.position?.count || 0;
-          triangleCount += Math.floor(indexCount / 3);
-        }
-      });
-      if (!skinnedMeshes) throw new Error("player.glb contains no skinned mesh");
+      const stats = inspectSkinnedModel(template);
+      if (!stats.skinnedMeshes) throw new Error("Fallback player.glb contains no skinned mesh");
       this.template = template;
-      this.modelTriangleCount = triangleCount;
-
-      // The skinned player body is the required asset. Animation clips are
-      // optional: a missing or incompatible clip must never hide all players.
-      this.status = "loading-animations";
+      this.modelSource = "legacy-glb-fallback";
+      this.modelTriangleCount = stats.triangleCount;
+      this.boneNames = stats.boneNames;
+      this.status = "loading-fallback-animations";
       const clipFiles = [
         { name: "Idle", url: new URL("../assets/players/idle.glb", import.meta.url).href },
         { name: "Walk", url: new URL("../assets/players/walk.glb", import.meta.url).href },
@@ -103,15 +181,65 @@ export class MatchPlayerRenderer {
         else animationErrors.push(`${clipFiles[index].name}: ${result.reason?.message || String(result.reason)}`);
       });
       this.clipCount = this.animations.length;
-      this.error = animationErrors.join("; ");
+      this.error = [this.mixamoError, ...animationErrors].filter(Boolean).join("; ");
       this.status = "ready";
     } catch (error) {
       this.template = null;
       this.animations = [];
       this.clipCount = 0;
       this.status = "asset-error";
-      this.error = error && error.message ? error.message : String(error || "Player model unavailable");
+      this.error = [this.mixamoError, error?.message || String(error || "Player model unavailable")].filter(Boolean).join("; ");
     }
+  }
+
+  async loadMixamoClip(file) {
+    if (!isMixamoClipFile(file)) throw new Error(`Unknown Mixamo clip: ${file}`);
+    if (this.clipCache.has(file)) return this.clipCache.get(file);
+    if (this.clipPromises.has(file)) return this.clipPromises.get(file);
+    if (this.failedClips.has(file)) throw new Error(this.failedClips.get(file));
+    const promise = (async () => {
+      const url = new URL(`../input/player-package/${encodeURIComponent(file)}`, import.meta.url).href;
+      const source = await this.fbxLoader.loadAsync(url);
+      const sourceClip = source.animations?.[0];
+      if (!sourceClip) throw new Error("FBX contains no animation clip");
+      const binding = validateDirectMixamoClip(this.template, sourceClip);
+      const clip = sourceClip.clone();
+      clip.name = file.replace(/\.fbx$/i, "");
+      clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
+      this.clipCache.set(file, clip);
+      this.animations.push(clip);
+      this.clipCount = this.clipCache.size;
+      return clip;
+    })();
+    this.clipPromises.set(file, promise);
+    try {
+      return await promise;
+    } catch (error) {
+      const message = error?.message || String(error);
+      this.failedClips.set(file, message);
+      throw error;
+    } finally {
+      this.clipPromises.delete(file);
+    }
+  }
+
+  ensureMixamoState(state, playerId) {
+    const key = `${state}:${playerId}`;
+    if (this.pendingStates.has(key)) return this.pendingStates.get(key);
+    const promise = (async () => {
+      const candidates = resolveMixamoClipCandidates(state, playerId);
+      for (const file of candidates) {
+        if (this.clipCache.has(file)) return this.clipCache.get(file);
+        if (this.failedClips.has(file)) continue;
+        try {
+          return await this.loadMixamoClip(file);
+        } catch {}
+      }
+      return null;
+    })();
+    this.pendingStates.set(key, promise);
+    promise.finally(() => this.pendingStates.delete(key));
+    return promise;
   }
 
   createPlayer(state) {
@@ -129,7 +257,6 @@ export class MatchPlayerRenderer {
       if (!node.isMesh) return;
       node.castShadow = false;
       node.receiveShadow = false;
-      // Skinned GLB bounds can be stale while the skeleton animates; keep all player parts in the draw list.
       node.frustumCulled = false;
       if (Array.isArray(node.material)) node.material = node.material.map(material => kitMaterial(material, node.name, state, this.materialVariants));
       else if (node.material) node.material = kitMaterial(node.material, node.name, state, this.materialVariants);
@@ -175,19 +302,25 @@ export class MatchPlayerRenderer {
       const { group, mixer, ring } = entry;
       group.visible = state.visible;
       group.position.set(state.x, this.groundHeight, state.z);
-      // The supplied GLB faces local +Z, so compensate for the 180° asset-forward offset.
       const targetYaw = -state.facing + Math.PI / 2;
       const angleDelta = Math.atan2(Math.sin(targetYaw - group.rotation.y), Math.cos(targetYaw - group.rotation.y));
       group.rotation.y += angleDelta * (1 - Math.exp(-12 * Math.max(dt, 1 / 120)));
       ring.visible = state.selected;
 
       const animationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
-      const clip = resolvePlayerClip(this.animations, animationState);
+      let clip = null;
+      if (this.modelSource === "mixamo-fbx") {
+        const candidates = resolveMixamoClipCandidates(animationState, state.id);
+        clip = candidates.map(file => this.clipCache.get(file)).find(Boolean) || null;
+        if (!clip) this.ensureMixamoState(animationState, state.id);
+      } else {
+        clip = resolvePlayerClip(this.animations, animationState);
+      }
+
       if (clip && entry.activeClipName !== clip.name) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
-        const isLocomotionFallback = ["Idle", "Walk", "Run"].includes(clip.name);
-        if (ONE_SHOT_STATES.has(animationState) && !isLocomotionFallback) {
+        if (ONE_SHOT_STATES.has(animationState)) {
           nextAction.setLoop(THREE.LoopOnce, 1);
           nextAction.clampWhenFinished = true;
         } else {
@@ -199,6 +332,9 @@ export class MatchPlayerRenderer {
         entry.activeAction = nextAction;
         entry.activeClipName = clip.name;
         entry.state = animationState;
+      }
+      if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
+        entry.activeAction.timeScale = animationState === "walk" ? 0.72 : animationState === "sprint" ? 1.28 : 1;
       }
       if (updateAnimations) mixer.update(animationDelta);
     }
