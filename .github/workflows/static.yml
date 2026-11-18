@@ -113,6 +113,24 @@ jobs:
           }
           console.log('Diagnostic 3D UV inspector module syntax is valid.');
           NODE
+      - name: Check isolated Mixamo direct playback module syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('mixamo-direct-playback-test.html', 'utf8');
+          const startTag = '<script type="module">';
+          const start = html.indexOf(startTag);
+          const end = start < 0 ? -1 : html.indexOf('</script>', start + startTag.length);
+          if (start < 0 || end < 0) throw new Error('Mixamo direct playback module not found');
+          fs.writeFileSync('/tmp/pitch11-mixamo-direct.mjs', html.slice(start + startTag.length, end));
+          const result = spawnSync(process.execPath, ['--check', '/tmp/pitch11-mixamo-direct.mjs'], { encoding: 'utf8' });
+          if (result.status !== 0) {
+            process.stderr.write(result.stderr || result.stdout);
+            process.exit(result.status || 1);
+          }
+          console.log('Mixamo direct playback module syntax is valid.');
+          NODE
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
