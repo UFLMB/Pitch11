@@ -125,6 +125,10 @@ function buildPlan(brief,type='kit'){
     detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,signals:signalCount}
   };
 }
+export function prependPitchyHistory(items,entry,limit=8){
+  const safeLimit=clamp(Math.floor(Number(limit)||8),1,50);
+  return [entry,...(Array.isArray(items)?items:[])].filter(Boolean).slice(0,safeLimit);
+}
 export function analysePitchyBrief(brief,type='kit'){return buildPlan(brief,type);}
 export function mountPitchy({type='kit',onApply}={}){
   const host=document.querySelector('#panelContent')||document.querySelector('#panel');
@@ -158,8 +162,8 @@ export function mountPitchy({type='kit',onApply}={}){
         restore.disabled=true;
         try{
           const current=read(ACTIVE_KEY,null),stack=read(UNDO_KEY,[]);
-          if(current)write(UNDO_KEY,[current,...(Array.isArray(stack)?stack:[])].slice(0,8));
-          await onApply(item.plan);write(ACTIVE_KEY,{plan:item.plan,name:item.name,at:Date.now(),type:item.type});
+          await onApply(item.plan);
+          if(current)write(UNDO_KEY,prependPitchyHistory(stack,current,8));write(ACTIVE_KEY,{plan:item.plan,name:item.name,at:Date.now(),type:item.type});
           status.textContent='Restored · '+(item.name||'Saved design');status.dataset.state='success';refreshHistory();
         }catch(error){status.textContent=error?.message||'Could not restore this design.';status.dataset.state='error';}
         finally{restore.disabled=false;}
@@ -187,7 +191,7 @@ export function mountPitchy({type='kit',onApply}={}){
       if(current)write(UNDO_KEY,[current,...(Array.isArray(undo)?undo:[])].slice(0,8));
       const entry={at:Date.now(),type,name:plan.designName,brief:prompt.value.slice(0,240),plan};
       write(ACTIVE_KEY,{plan,name:plan.designName,at:entry.at,type});
-      write(HISTORY_KEY,[entry,...getHistory()].slice(0,8));
+      write(HISTORY_KEY,prependPitchyHistory(getHistory(),entry,8));
       const pct=Math.round(plan.confidence*100);
       status.textContent=plan.designName+' · '+pct+'% confidence'+(plan.questions.length?' · '+plan.questions[0]:'');
       status.dataset.state='success';refreshHistory();
