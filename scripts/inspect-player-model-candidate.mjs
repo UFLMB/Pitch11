@@ -17,7 +17,7 @@ function count(label, info) {
   return match ? Number.parseInt(match[1], 10) : 0;
 }
 function canonical(name) {
-  return String(name || "").replace(/[\\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\\d*/i, "").toLowerCase();
+  return String(name || "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
 }
 function uniqueXmlNames(xml, tag) {
   return [...new Set([...xml.matchAll(new RegExp(`<${tag}\\b[^>]*\\bname="([^"]+)"`, "g"))]
@@ -73,9 +73,9 @@ try {
       const clipDump = `/tmp/pitch11-clip-${Buffer.from(file).toString("hex")}.assxml`;
       run(["dump", clipPath, clipDump]);
       const clipXml = await readFile(clipDump, "utf8");
-      for (const match of clipXml.matchAll(/<NodeAnim\\b([^>]*)>/g)) {
+      for (const match of clipXml.matchAll(/<NodeAnim\b([^>]*)>/g)) {
         const attrs = match[1];
-        const name = attrs.match(/\\bnode="([^"]+)"/)?.[1] || attrs.match(/\\bname="([^"]+)"/)?.[1];
+        const name = attrs.match(/\bnode="([^"]+)"/)?.[1] || attrs.match(/\bname="([^"]+)"/)?.[1];
         if (name) targetNames.add(name.replaceAll("&amp;", "&"));
       }
     }
@@ -95,7 +95,7 @@ try {
   report.error = error?.message || String(error);
 }
 
-await writeFile(reportPath, JSON.stringify(report, null, 2) + "\\n");
+await writeFile(reportPath, JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify(report, null, 2));
 if (!report.available || report.status !== "fbx-loaded-and-inspected" ||
     !report.animationRigCoverage || report.animationRigCoverage.coveragePercent < 95) {
