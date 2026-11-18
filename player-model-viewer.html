@@ -157,7 +157,17 @@ async function retargetFbxAnimation(){
   if(!names[targetHip.name])names[targetHip.name]=sourceHip.name;
   if(Object.keys(names).length<18)throw new Error('Only '+Object.keys(names).length+' compatible Mixamo/Bip01 bones found. Check the target model rig.');
   const sourceClip=(sourceRoot.animations||[])[0];if(!sourceClip)throw new Error('FBX contains no animation clip.');
-  const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceRoot,sourceClip,{
+  // FBX animation-only files may contain a bone hierarchy but no skinned mesh.
+  // SkeletonUtils.retargetClip requires source.skeleton.bones, so wrap that hierarchy
+  // in a lightweight, non-rendered SkinnedMesh without changing the visible GLB.
+  sourceRoot.updateMatrixWorld(true);
+  const sourceSkeleton=new THREE.Skeleton(sourceBones);
+  const sourceRigMesh=new THREE.SkinnedMesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial());
+  sourceRigMesh.name='__PITCH11_FBX_SOURCE_RIG__';
+  sourceRoot.add(sourceRigMesh);
+  sourceRigMesh.bind(sourceSkeleton);
+  sourceRoot.updateMatrixWorld(true);
+  const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceRigMesh,sourceClip,{
    names,hip:sourceHip.name,fps:30,useFirstFramePosition:false,
    preserveBoneMatrix:true,preserveBonePositions:true
   });
