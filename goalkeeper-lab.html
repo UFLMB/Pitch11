@@ -71,7 +71,7 @@ const netMat=new THREE.LineBasicMaterial({color:0xe8eee8,transparent:true,opacit
 const net=new THREE.LineSegments(netGeometry,netMat);goal.add(net);
 // The source Mixamo FBX is ~52 MB. Give mobile a bounded chance to load it,
  // then fall back to the lightweight GLB instead of leaving the lab on a spinner.
-const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:12000});
+const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:60000});
 const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
 let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false;
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
