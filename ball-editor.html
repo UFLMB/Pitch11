@@ -123,6 +123,7 @@ $('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)re
 $('resetView').addEventListener('click',()=>{camera.position.set(0,0,3.25);controls.target.set(0,0,0);controls.update()});
 $('togglePanel').addEventListener('click',()=>$('panel').classList.toggle('collapsed'));
 base();
+loadRemoteBall();
 function animate(){requestAnimationFrame(animate);controls.update();ballRoot.rotation.y+=.0018;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5))});
 </script>
