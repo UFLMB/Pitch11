@@ -34,7 +34,7 @@ const TEAM_KITS = [
 
 function kitMaterial(material, meshName, player, cache) {
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
-  const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
+  const part = /jersey|shirt|kit|top/.test(label) ? "shirt" : /short/.test(label) ? "shorts" : /sock/.test(label) ? "socks" : /skin|body/.test(label) ? "skin" : /hair/.test(label) ? "hair" : "base";
   const variant = part === "shirt" ? (player.role === "GK" ? "keeper" : "shirt") : part;
   const teamKey = ["shirt", "shorts", "socks"].includes(part) ? player.team : 0;
   const toneKey = part === "skin" ? player.skinTone : part === "hair" ? player.hairTone : 0;
@@ -51,6 +51,39 @@ function kitMaterial(material, meshName, player, cache) {
   }
   cache.set(key, copy);
   return copy;
+}
+
+function inspectModelGeometry(root) {
+  const meshNames = new Set();
+  const materialNames = new Set();
+  const kitParts = new Set();
+  let meshCount = 0;
+  let skinnedMeshCount = 0;
+  root.traverse(node => {
+    if (!node.isMesh) return;
+    meshCount++;
+    if (node.isSkinnedMesh) skinnedMeshCount++;
+    if (node.name) {
+      meshNames.add(node.name);
+      const name = node.name.toLowerCase();
+      if (/shirt|jersey|kit|top/.test(name)) kitParts.add("shirt");
+      if (/short/.test(name)) kitParts.add("shorts");
+      if (/sock/.test(name)) kitParts.add("socks");
+      if (/body|skin/.test(name)) kitParts.add("body");
+      if (/hair/.test(name)) kitParts.add("hair");
+      if (/shoe|boot/.test(name)) kitParts.add("shoes");
+    }
+    for (const material of (Array.isArray(node.material) ? node.material : [node.material])) {
+      if (material?.name) materialNames.add(material.name);
+    }
+  });
+  return {
+    meshCount,
+    skinnedMeshCount,
+    meshNames: [...meshNames].sort(),
+    materialNames: [...materialNames].sort(),
+    kitParts: [...kitParts].sort()
+  };
 }
 
 function inspectSkinnedModel(root) {
@@ -122,6 +155,7 @@ export class MatchPlayerRenderer {
     this.ringGeometry = new THREE.TorusGeometry(0.62, 0.035, 6, 32);
     this.ringMaterial = new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false });
     this.modelTriangleCount = 0;
+    this.modelDiagnostics = { meshCount: 0, skinnedMeshCount: 0, meshNames: [], materialNames: [], kitParts: [] };
     this.inputPlayerCount = 0;
     this.visiblePlayerCount = 0;
     this.boneNames = new Set();
@@ -157,6 +191,7 @@ export class MatchPlayerRenderer {
       this.template = fbx;
       this.modelSource = "mixamo-fbx";
       this.modelTriangleCount = stats.triangleCount;
+      this.modelDiagnostics = inspectModelGeometry(fbx);
       this.boneNames = stats.boneNames;
       this.status = "loading-mixamo-animations";
       const results = await Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)));
@@ -184,6 +219,7 @@ export class MatchPlayerRenderer {
       this.template = template;
       this.modelSource = "legacy-glb-fallback";
       this.modelTriangleCount = stats.triangleCount;
+      this.modelDiagnostics = inspectModelGeometry(template);
       this.boneNames = stats.boneNames;
       this.status = "loading-fallback-animations";
       const clipFiles = [
@@ -251,6 +287,24 @@ export class MatchPlayerRenderer {
     } finally {
       this.clipPromises.delete(file);
     }
+  }
+
+  async preloadGoalkeeperTestClips() {
+    const tests = [
+      ["keeperSet", 0],
+      ["keeperDiveLeft", 0],
+      ["keeperDiveRight", 1],
+      ["keeperCatch", 0],
+      ["keeperParry", 0],
+      ["getUp", 0]
+    ];
+    const results = await Promise.allSettled(tests.map(([state, playerId]) => this.ensureMixamoState(state, playerId)));
+    return results.map((result, index) => ({
+      state: tests[index][0],
+      ok: result.status === "fulfilled" && !!result.value,
+      clip: result.status === "fulfilled" && result.value ? result.value.name : "",
+      error: result.status === "rejected" ? result.reason?.message || String(result.reason) : ""
+    }));
   }
 
   ensureMixamoState(state, playerId) {
@@ -378,6 +432,8 @@ export class MatchPlayerRenderer {
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
+  get loadedClipNames() { return [...this.clipCache.keys()].map(file => file.replace(/\.fbx$/i, "")).sort(); }
+  get failedClipNames() { return [...this.failedClips.entries()].map(([file, error]) => ({ file, error })); }
   get count() { return this.players.size; }
   get expectedCount() { return this.inputPlayerCount; }
   get visibleCount() { return this.visiblePlayerCount; }
