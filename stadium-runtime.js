@@ -4,6 +4,7 @@ import { MeshoptDecoder } from './vendor/three/examples/jsm/libs/meshopt_decoder
 import { createGoalNetPositions, DEFAULT_GOAL_LAYOUT } from './engine/goal-geometry.mjs';
 import { createProductionSecurityPositions } from './engine/stadium-atmosphere.mjs';
 import { MatchPlayerRenderer } from './engine/match-player-renderer.mjs';
+import { mapLegacyBallState } from './engine/match-ball-state.mjs';
 (() => {
  const host=document.getElementById('stadium3d');if(!host)return;
  const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
@@ -28,7 +29,46 @@ import { MatchPlayerRenderer } from './engine/match-player-renderer.mjs';
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();
  const playerRenderer=new MatchPlayerRenderer(scene,{mobile});
- playerRenderer.load();scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,620);
+ playerRenderer.load();
+ function createMatchBallTexture(){
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;
+  const c=canvas.getContext('2d');c.fillStyle='#f4f2e9';c.fillRect(0,0,512,256);
+  const pentagon=(cx,cy,r,rotation=0)=>{
+   c.beginPath();
+   for(let i=0;i<5;i++){const a=rotation-Math.PI/2+i*Math.PI*2/5,x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r;i?c.lineTo(x,y):c.moveTo(x,y);}
+   c.closePath();c.fill();
+  };
+  c.fillStyle='#20242a';
+  [[64,64],[190,52],[320,72],[448,54],[120,184],[256,174],[390,188],[500,166]].forEach(([x,y],i)=>pentagon(x,y,25,i*.13));
+  c.strokeStyle='rgba(20,24,28,.22)';c.lineWidth=3;
+  for(let y=0;y<=256;y+=64){c.beginPath();c.moveTo(0,y);c.lineTo(512,y);c.stroke();}
+  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return texture;
+ }
+ const matchBallTexture=createMatchBallTexture();
+ const matchBallMesh=new THREE.Mesh(
+  new THREE.SphereGeometry(.11,28,20),
+  new THREE.MeshStandardMaterial({map:matchBallTexture,color:0xffffff,roughness:.48,metalness:0})
+ );
+ matchBallMesh.name='PITCH 11 3D match ball';matchBallMesh.visible=false;scene.add(matchBallMesh);
+ const matchBallShadow=new THREE.Mesh(
+  new THREE.CircleGeometry(.15,24),
+  new THREE.MeshBasicMaterial({color:0x050806,transparent:true,opacity:.24,depthWrite:false})
+ );
+ matchBallShadow.name='PITCH 11 match ball ground shadow';matchBallShadow.rotation.x=-Math.PI/2;matchBallShadow.visible=false;matchBallShadow.renderOrder=2;scene.add(matchBallShadow);
+ function syncMatchBall(legacyBall,alpha=1){
+  const state=mapLegacyBallState(legacyBall,alpha);
+  if(!state){matchBallMesh.visible=false;matchBallShadow.visible=false;return;}
+  const ground=playerRenderer.groundHeight-.025;
+  matchBallMesh.visible=state.visible;
+  matchBallMesh.position.set(state.x,ground+.11+state.height,state.z);
+  matchBallMesh.rotation.set(state.rotation,0,state.rotation*.18);
+  matchBallShadow.visible=state.visible;
+  matchBallShadow.position.set(state.x,ground+.012,state.z);
+  const spread=1+Math.min(1.5,state.height*1.8);
+  matchBallShadow.scale.set(spread,spread,1);
+  matchBallShadow.material.opacity=Math.max(.06,.26/(1+state.height*2.4));
+ }
+scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,620);
  const hemi=new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.5);scene.add(hemi);
  const key=new THREE.DirectionalLight(0xffdfb5,1.35);key.position.set(-90,150,100);scene.add(key);
  const fill=new THREE.DirectionalLight(0x8dbbff,.65);fill.position.set(100,80,-120);scene.add(fill);
@@ -610,8 +650,8 @@ import { MatchPlayerRenderer } from './engine/match-player-renderer.mjs';
  loadStadium();
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*viewportWidth,sy=(-v3.y*.5+.5)*viewportHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*viewportWidth,sy2=(-v4.y*.5+.5)*viewportHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
- function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);renderer.render(scene,camera);lastRender=now;}}
- function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);renderer.render(scene,topCamera);lastRender=now;}}
+ function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,camera);lastRender=now;}}
+ function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
    if(!ready){previewFailure=stadiumLoadState;return false;}
    if(!rect||rect.w<2||rect.h<2){previewFailure='invalid-preview-rect';return false;}

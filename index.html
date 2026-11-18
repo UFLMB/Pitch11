@@ -1598,19 +1598,19 @@ function render2D(a){
   let cx=cam.px+(cam.x-cam.px)*a,cy=cam.py+(cam.y-cam.py)*a;
   cx=vw>=WW?WW/2:clamp(cx,vw/2,WW-vw/2);cy=vh>=WH?WH/2:clamp(cy,vh/2,WH-vh/2);
   const stadiumTop=!!(window.P11Stadium&&window.P11Stadium.ready);
-  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT,ballOwner:ball.owner,restart:S.rs});ctx.clearRect(0,0,cw,ch);}
+  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT,ball,ballOwner:ball.owner,restart:S.rs});ctx.clearRect(0,0,cw,ch);}
   else{ctx.fillStyle='#24602f';ctx.fillRect(0,0,cw,ch);}
   ctx.setTransform(sc,0,0,sc,cw/2-cx*sc,ch/2-cy*sc);
   if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
   if(!stadiumTop)drawPitch();
-  drawBallShadow(a);
+  if(!stadiumTop)drawBallShadow(a);
   for(let i=1;i<22;i++){const v=ORD[i];let j=i-1;while(j>=0&&ORD[j].y>v.y){ORD[j+1]=ORD[j];j--;}ORD[j+1]=v;}   // depth sort (insertion, nearly sorted)
   drawMarker(a);
   // Player bodies are rendered exclusively by the 3D skinned-model renderer.
   // Keep only the lightweight 2D selection/stamina overlay; never draw legacy 2D bodies.
   for(const p of ORD)if(!p.out)drawModelPlayerOverlay2D(p,a);
   for(const p of P)if(p.down){const x=p.x,y=p.y;ctx.fillStyle='#fff';ctx.fillRect(x-5,y-24,10,10);ctx.fillStyle='#e22';ctx.fillRect(x-1.5,y-23,3,8);ctx.fillRect(x-4,y-20.5,8,3);}   // medic cross
-  drawBall(a);
+  if(!stadiumTop)drawBall(a);
   drawParts();
   drawRet2();
   drawHud();
@@ -2260,11 +2260,11 @@ function drawPlayer3(p,a,markersOnly=false){                                 // 
 function render3D(a){
   ctx.setTransform(dpr,0,0,dpr,0,0);camSet(a);
   if(window.P11Stadium&&window.P11Stadium.ready){
-    window.P11Stadium.render(V,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT});ctx.clearRect(0,0,W,H);ctx.save();
+    window.P11Stadium.render(V,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT,ball});ctx.clearRect(0,0,W,H);ctx.save();
     if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());
-    sortOrd();drawBallShadow3(a);let stadiumBallDrawn=false;
-    for(const p of ORD){if(p.out)continue;if(!stadiumBallDrawn&&ballBehind(p)){drawBall3(a);stadiumBallDrawn=true;}drawPlayer3(p,a,true);}
-    if(!stadiumBallDrawn)drawBall3(a);
+    sortOrd();
+    // Player markers remain in the 2D interaction layer; the match ball is rendered in Three.js.
+    for(const p of ORD){if(p.out)continue;drawPlayer3(p,a,true);}
     for(const q of parts){pj(q.x,q.y,4+(1.6-q.l)*8);const z=Math.max(1.5,V.s*1.8);ctx.fillStyle=q.c;ctx.fillRect(V.sx-z/2,V.sy-z/2,z,z);}
     drawRet3();drawHud();ctx.restore();return;
   }
