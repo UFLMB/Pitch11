@@ -16,13 +16,47 @@ function count(label, info) {
   const match = info.match(new RegExp(`^\\s*${label}:\\s*(.+)$`, "mi"));
   return match ? Number.parseInt(match[1], 10) : 0;
 }
-function canonical(name) {
-  return String(name || "").replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "").replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
+function decodeXml(value) {
+  return value.replaceAll("&amp;", "&").replaceAll("&quot;", '"').replaceAll("&apos;", "'")
+    .replaceAll("&lt;", "<").replaceAll("&gt;", ">");
 }
 function uniqueXmlNames(xml, tag) {
-  return [...new Set([...xml.matchAll(new RegExp(`<${tag}\\b[^>]*\\bname="([^"]+)"`, "g"))]
-    .map(match => match[1].replaceAll("&amp;", "&")))].sort();
+  const names = [];
+  const elementPattern = new RegExp("<" + tag + "\\b([^>]*)>([\\s\\S]*?)</" + tag + ">", "gi");
+  const selfClosingPattern = new RegExp("<" + tag + "\\b([^>]*)/>", "gi");
+  const collect = (match) => {
+    const attrs = match[1] || "";
+    const body = match[2] || "";
+    const attributeName = attrs.match(/\bname="([^"]+)"/i)?.[1];
+    const materialProperty = body.match(/<MatProperty\b[^>]*\bkey="\?mat\.name"[^>]*>([\s\S]*?)<\/MatProperty>/i)?.[1];
+    const legacyProperty = body.match(/<Property\b[^>]*\bkey="\$mat\.name"[^>]*\bvalue="([^"]+)"/i)?.[1];
+    const childName = body.match(/<(?:name|Name|string)\b[^>]*>([^<]+)<\//)?.[1];
+    const value = attributeName || materialProperty || legacyProperty || childName;
+    if (value) names.push(decodeXml(value.trim().replace(/^["']|["']$/g, "").trim()));
+  };
+  for (const match of xml.matchAll(elementPattern)) collect(match);
+  for (const match of xml.matchAll(selfClosingPattern)) collect(match);
+  return [...new Set(names.filter(Boolean))].sort();
 }
+function xmlElementSamples(xml, tag, limit = 8) {
+  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]{1,700})", "gi");
+  return [...xml.matchAll(pattern)].slice(0, limit).map(match => match[0].replace(/\s+/g, " ").slice(0, 700));
+}
+function inspectMeshMaterials(xml) {
+  const indices = [...xml.matchAll(/<Mesh\b[^>]*\bmaterial_index="(\d+)"/gi)].map(match => Number(match[1]));
+  const counts = {};
+  for (const index of indices) counts[index] = (counts[index] || 0) + 1;
+  return { meshEntries: indices.length, materialIndexCounts: counts };
+}
+function verifyXmlNameParser() {
+  const fixture = '<Root><Mesh name="BodyMesh"><Name>ignored</Name></Mesh><Mesh><Name>JerseyMesh</Name></Mesh><Mesh name="Boot&amp;Sole"/><Material><MatProperty key="?mat.name" type="string">"KeeperFabric"</MatProperty></Material></Root>';
+  const meshes = uniqueXmlNames(fixture, "Mesh");
+  const materials = uniqueXmlNames(fixture, "Material");
+  if (meshes.join("|") !== "BodyMesh|Boot&Sole|JerseyMesh" || materials.join("|") !== "KeeperFabric") {
+    throw new Error("Assimp XML mesh/material name parser self-test failed");
+  }
+}
+verifyXmlNameParser();
 
 const report = {
   path: "input/player-model-candidate/character.fbx",
@@ -35,6 +69,14 @@ const report = {
   meshCount: 0,
   materialCount: 0,
   animationClipCount: 0,
+  meshNames: [],
+  materialNames: [],
+  geometryNodeNames: [],
+  meshMaterialAssignments: { meshEntries: 0, materialIndexCounts: {} },
+  nodeNames: [],
+  meshXmlSamples: [],
+  materialXmlSamples: [],
+  nodeXmlSamples: [],
   animationRigCoverage: null,
   status: "missing"
 };
@@ -59,6 +101,14 @@ try {
     const xml = await readFile(dumpPath, "utf8");
     const boneNames = uniqueXmlNames(xml, "Bone");
     const nodeNames = uniqueXmlNames(xml, "Node");
+    report.meshNames = uniqueXmlNames(xml, "Mesh");
+    report.materialNames = uniqueXmlNames(xml, "Material");
+    report.geometryNodeNames = [...new Set([...xml.matchAll(/<Node\b[^>]*\bname="(Ch38_[^"]+)"/gi)].map(match => decodeXml(match[1])))].sort();
+    report.meshMaterialAssignments = inspectMeshMaterials(xml);
+    report.nodeNames = nodeNames;
+    report.meshXmlSamples = xmlElementSamples(xml, "Mesh");
+    report.materialXmlSamples = xmlElementSamples(xml, "Material");
+    report.nodeXmlSamples = xmlElementSamples(xml, "Node");
     const info = run(["info", modelPath]);
     report.skinnedBoneCount = boneNames.length;
     report.hierarchyNodeCount = nodeNames.length;
@@ -76,10 +126,17 @@ try {
       for (const match of clipXml.matchAll(/<NodeAnim\b([^>]*)>/g)) {
         const attrs = match[1];
         const name = attrs.match(/\bnode="([^"]+)"/)?.[1] || attrs.match(/\bname="([^"]+)"/)?.[1];
-        if (name) targetNames.add(name.replaceAll("&amp;", "&"));
+        if (name) targetNames.add(decodeXml(name));
       }
     }
-    const modelNames = new Set([...boneNames, ...nodeNames].map(canonical));
+    const modelNames = new Set([...boneNames, ...nodeNames].map(name =>
+      String(name).replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
+        .replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "")
+        .replace(/^mixamorig\d*/i, "").toLowerCase()
+    ));
+    const canonical = name => String(name || "").replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
+      .replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "")
+      .replace(/^mixamorig\d*/i, "").toLowerCase();
     const matched = [...targetNames].filter(name => modelNames.has(canonical(name)));
     const unmatched = [...targetNames].filter(name => !modelNames.has(canonical(name)));
     report.animationRigCoverage = {
