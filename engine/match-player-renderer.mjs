@@ -6,6 +6,7 @@ import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decode
 import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
+import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 
 const ONE_SHOT_STATES = new Set([
   "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "getUp", "throwIn",
@@ -61,58 +62,22 @@ function inspectSkinnedModel(root) {
   return { skinnedMeshes, triangleCount, boneNames };
 }
 
-function canonicalBoneName(name) {
-  return String(name || "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
-}
-
 export function validateDirectMixamoClip(root, sourceClip) {
   const boneNames = [];
   root.traverse(node => { if (node.isBone && node.name) boneNames.push(node.name); });
-  const aliases = new Map();
-  for (const name of boneNames) {
-    const key = canonicalBoneName(name);
-    const list = aliases.get(key) || [];
-    if (!list.includes(name)) list.push(name);
-    aliases.set(key, list);
-  }
-  const sourceTracks = Array.isArray(sourceClip?.tracks) ? sourceClip.tracks : [];
-  if (!sourceTracks.length) throw new Error("FBX contains no animation tracks");
-  const tracks = [];
-  const unresolved = [];
-  const ambiguous = [];
-  const mapped = new Set();
-  for (const sourceTrack of sourceTracks) {
-    const track = sourceTrack.clone();
-    const dot = sourceTrack.name.lastIndexOf(".");
-    if (dot < 1) {
-      unresolved.push(sourceTrack.name);
-      tracks.push(track);
-      continue;
-    }
-    const rawTarget = sourceTrack.name.slice(0, dot);
-    const property = sourceTrack.name.slice(dot + 1);
-    const matches = aliases.get(canonicalBoneName(rawTarget)) || [];
-    if (matches.length === 1) {
-      track.name = matches[0] + "." + property;
-      mapped.add(canonicalBoneName(rawTarget));
-    } else if (matches.length > 1) {
-      ambiguous.push({ track: sourceTrack.name, matches });
-    } else {
-      unresolved.push(sourceTrack.name);
-    }
-    tracks.push(track);
-  }
-  if (unresolved.length || ambiguous.length) {
+  const normalized = normalizeMixamoTrackTargets(boneNames, sourceClip?.tracks);
+  if (!normalized.trackCount) throw new Error("FBX contains no animation tracks");
+  if (normalized.unresolved.length || normalized.ambiguous.length) {
     const detail = [
-      unresolved.length ? unresolved.length + " unresolved" : "",
-      ambiguous.length ? ambiguous.length + " ambiguous" : ""
+      normalized.unresolved.length ? normalized.unresolved.length + " unresolved" : "",
+      normalized.ambiguous.length ? normalized.ambiguous.length + " ambiguous" : ""
     ].filter(Boolean).join(", ");
     throw new Error(`Direct Mixamo bone binding failed: ${detail}`);
   }
   return {
-    clip: new THREE.AnimationClip(sourceClip.name, sourceClip.duration, tracks),
-    trackCount: tracks.length,
-    uniqueTargets: mapped.size
+    clip: new THREE.AnimationClip(sourceClip.name, sourceClip.duration, normalized.tracks),
+    trackCount: normalized.trackCount,
+    uniqueTargets: normalized.uniqueTargets
   };
 }
 
