@@ -25,7 +25,8 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("node.frustumCulled = false"));
   assert.ok(renderer.includes("isSkinnedMesh"));
   assert.ok(renderer.includes("setMeshoptDecoder(MeshoptDecoder)"));
-  assert.ok(renderer.includes("loading-animations"));
+  assert.ok(renderer.includes("loading-mixamo-animations"));
+  assert.ok(renderer.includes("loading-fallback-animations"));
   assert.ok(renderer.includes("idle.glb"));
   assert.ok(renderer.includes("walk.glb"));
   assert.ok(renderer.includes("run.glb"));
