@@ -20,8 +20,24 @@ function canonical(name) {
   return String(name || "").replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "").replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
 }
 function uniqueXmlNames(xml, tag) {
-  return [...new Set([...xml.matchAll(new RegExp(`<${tag}\\b[^>]*\\bname="([^"]+)"`, "g"))]
-    .map(match => match[1].replaceAll("&amp;", "&")))].sort();
+  const names = [];
+  const elementPattern = new RegExp("<" + tag + "\\b([^>]*)>([\\s\\S]*?)</" + tag + ">", "gi");
+  const selfClosingPattern = new RegExp("<" + tag + "\\b([^>]*)/>", "gi");
+  const collect = (match) => {
+    const attrs = match[1] || "";
+    const body = match[2] || "";
+    const attributeName = attrs.match(/name="([^"]+)"/i)?.[1];
+    const childName = body.match(/<(?:name|Name|string)\\b[^>]*>([^<]+)<\\//)?.[1];
+    const value = attributeName || childName;
+    if (value) names.push(value.replaceAll("&amp;", "&").trim());
+  };
+  for (const match of xml.matchAll(elementPattern)) collect(match);
+  for (const match of xml.matchAll(selfClosingPattern)) collect(match);
+  return [...new Set(names.filter(Boolean))].sort();
+}
+function xmlElementSamples(xml, tag) {
+  const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]{0,700}?)", "gi");
+  return [...xml.matchAll(pattern)].slice(0, 8).map(match => match[0].replace(/\\s+/g, " ").slice(0, 700));
 }
 
 const report = {
@@ -37,6 +53,8 @@ const report = {
   animationClipCount: 0,
   meshNames: [],
   materialNames: [],
+  meshXmlSamples: [],
+  materialXmlSamples: [],
   animationRigCoverage: null,
   status: "missing"
 };
@@ -63,6 +81,8 @@ try {
     const nodeNames = uniqueXmlNames(xml, "Node");
     report.meshNames = uniqueXmlNames(xml, "Mesh");
     report.materialNames = uniqueXmlNames(xml, "Material");
+    report.meshXmlSamples = xmlElementSamples(xml, "Mesh");
+    report.materialXmlSamples = xmlElementSamples(xml, "Material");
     const info = run(["info", modelPath]);
     report.skinnedBoneCount = boneNames.length;
     report.hierarchyNodeCount = nodeNames.length;
