@@ -40,6 +40,16 @@ function xmlElementSamples(xml, tag) {
   return [...xml.matchAll(pattern)].slice(0, 8).map(match => match[0].replace(/\s+/g, " ").slice(0, 700));
 }
 
+function verifyXmlNameParser() {
+  const fixture = '<Root><Mesh name="BodyMesh"><Name>ignored</Name></Mesh><Mesh><Name>JerseyMesh</Name></Mesh><Mesh name="Boot&amp;Sole"/><Material name="KeeperFabric"/></Root>';
+  const meshes = uniqueXmlNames(fixture, "Mesh");
+  const materials = uniqueXmlNames(fixture, "Material");
+  if (meshes.join("|") !== "BodyMesh|Boot&Sole|JerseyMesh" || materials.join("|") !== "KeeperFabric") {
+    throw new Error("Assimp XML mesh/material name parser self-test failed");
+  }
+}
+verifyXmlNameParser();
+
 const report = {
   path: "input/player-model-candidate/character.fbx",
   available: false,
