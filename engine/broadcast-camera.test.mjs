@@ -17,9 +17,11 @@ test("camera is in the clear pitch-side lane, under the roof and before the firs
   const state = createBroadcastCamera(camera);
   assert.equal(camera.fov, 63);
   assert.equal(camera.position.x, 0);
-  assert.equal(camera.position.y, 13.5);
+  assert.equal(camera.position.y, 8.5);
   assert.equal(camera.position.z, 45);
   assert.deepEqual(camera.target, {x:0,y:.6,z:22.5});
+  const downAngle = Math.atan2(camera.position.y-camera.target.y, camera.position.z-camera.target.z) * 180 / Math.PI;
+  assert.ok(downAngle >= 18 && downAngle <= 20, `Expected 18–20 degree broadcast angle, got ${downAngle.toFixed(2)}`);
   // Roof spans Z=44..74 and Y=21.7..23.9; first stand starts at Z=47.
   assert.ok(camera.position.z >= 44 && camera.position.z < 47);
   assert.ok(camera.position.y < 21.7);
@@ -59,7 +61,7 @@ test("camera stays under the canopy and in front of the stand at both goal lines
   }), .08);
   assert.ok(state.targetX <= 45 && state.targetX >= -45);
   assert.equal(state.sideZ, 45);
-  assert.equal(state.height, 13.5);
+  assert.equal(state.height, 8.5);
   assert.ok(camera.position.z < 47);
   assert.ok(camera.position.y < 21.7);
   assert.equal(camera.fov, 63);
