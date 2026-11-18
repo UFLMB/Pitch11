@@ -32,6 +32,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y assimp-utils
       - name: Inspect uploaded FBX animation package
+        env:
+          PITCH11_FBX_DEBUG: '1'
         run: node scripts/inspect-player-fbx-package.mjs
       - name: Check inline application scripts
         run: |
