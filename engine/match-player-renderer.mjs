@@ -81,13 +81,15 @@ export class MatchPlayerRenderer {
   constructor(scene, {
     mobile = false,
     modelUrl = new URL("../input/player-model-candidate/character.fbx", import.meta.url).href,
-    fallbackModelUrl = new URL("../assets/players/player.glb", import.meta.url).href
+    fallbackModelUrl = new URL("../assets/players/player.glb", import.meta.url).href,
+    modelLoadTimeoutMs = 0
   } = {}) {
     this.scene = scene;
     this.mobile = !!mobile;
     this.groundHeight = 0;
     this.modelUrl = modelUrl;
     this.fallbackModelUrl = fallbackModelUrl;
+    this.modelLoadTimeoutMs = Math.max(0, Number(modelLoadTimeoutMs) || 0);
     this.fbxLoader = new FBXLoader();
     this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
@@ -118,7 +120,25 @@ export class MatchPlayerRenderer {
     this.status = "loading-mixamo-model";
     this.error = "";
     try {
-      const fbx = await this.fbxLoader.loadAsync(this.modelUrl);
+      const fbxRequest = this.fbxLoader.loadAsync(this.modelUrl);
+      let fbx;
+      if (this.modelLoadTimeoutMs > 0) {
+        let timeoutId;
+        try {
+          fbx = await Promise.race([
+            fbxRequest,
+            new Promise((_, reject) => {
+              timeoutId = setTimeout(() => reject(new Error(
+                `Mixamo FBX load timed out after ${this.modelLoadTimeoutMs} ms; using the lightweight GLB fallback`
+              )), this.modelLoadTimeoutMs);
+            })
+          ]);
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } else {
+        fbx = await fbxRequest;
+      }
       fbx.updateMatrixWorld(true);
       const stats = inspectSkinnedModel(fbx);
       if (!stats.skinnedMeshes) throw new Error("Mixamo character FBX contains no skinned mesh");
