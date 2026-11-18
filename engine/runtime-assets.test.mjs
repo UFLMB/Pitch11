@@ -35,7 +35,7 @@ test("Pages build vendors the pinned Three.js package and checks its license", (
   const workflow = read("../.github/workflows/static.yml");
   assert.match(workflow, /npm pack three@0\.170\.0/);
   assert.match(workflow, /vendor\/three\/build\/three\.module\.js/);
-  assert.match(workflow, /FBXLoader\\.js/);
+  assert.ok(workflow.includes("FBXLoader.js"));
   assert.match(workflow, /vendor\/three\/LICENSE/);
   assert.match(workflow, /vendor\/three\/examples\/jsm\/utils\/SkeletonUtils\.js/);
 });
