@@ -1,36 +1,36 @@
 const PATTERNS = [
-  ['vertical-stripes', /\\b(vertical stripes?|striped|stripes?)\\b|függőleges csík|csíkos|csíkok/],
-  ['horizontal-stripes', /\\b(horizontal stripes?)\\b|vízszintes csík/],
-  ['diagonal-stripes', /\\b(diagonal stripes?|slanted stripes?)\\b|átlós csík|ferde csík/],
-  ['chevron', /\\b(chevron|zig.?zag|v shape)\\b|cikkcakk|cikcakk|v alak/],
-  ['checkerboard', /\\b(checkerboard|checkered|checks?)\\b|sakktábla|kockás/],
-  ['dots', /\\b(dots?|polka dots?)\\b|pötty|pöttyös/],
-  ['side-panels', /\\b(side panels?|side stripes?)\\b|oldalpanel|oldalsó panel|oldalcsík/],
-  ['split', /\\b(split|half.?and.?half|two.?tone)\\b|felezett|két tónus|kettéosztott/],
-  ['geometric', /\\b(geometric|abstract geometry)\\b|geometrikus|geometriai/],
-  ['rings', /\\b(rings?|circular bands?)\\b|gyűrű|karika|körkörös/],
-  ['panel-graphics', /\\b(panel graphics?|graphic panels?)\\b|panelgrafika|panel minta|grafikus panelek/]
+  ['vertical-stripes', /\b(vertical stripes?|striped|stripes?)\b|függőleges csík|csíkos|csíkok/],
+  ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
+  ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
+  ['chevron', /\b(chevron|zig.?zag|v shape)\b|cikkcakk|cikcakk|v alak/],
+  ['checkerboard', /\b(checkerboard|checkered|checks?)\b|sakktábla|kockás/],
+  ['dots', /\b(dots?|polka dots?)\b|pötty|pöttyös/],
+  ['side-panels', /\b(side panels?|side stripes?)\b|oldalpanel|oldalsó panel|oldalcsík/],
+  ['split', /\b(split|half.?and.?half|two.?tone)\b|felezett|két tónus|kettéosztott/],
+  ['geometric', /\b(geometric|abstract geometry)\b|geometrikus|geometriai/],
+  ['rings', /\b(rings?|circular bands?)\b|gyűrű|karika|körkörös/],
+  ['panel-graphics', /\b(panel graphics?|graphic panels?)\b|panelgrafika|panel minta|grafikus panelek/]
 ];
 const COLOURS = [
-  ['black','#101318',/\\b(black|jet black|charcoal)\\b|fekete|szénfekete/],
-  ['white','#f4f3ed',/\\b(white|ivory)\\b|fehér|elefántcsont/],
-  ['red','#d62935',/\\b(red|crimson|scarlet)\\b|piros|vörös|bordó/],
-  ['blue','#1769aa',/\\b(blue|royal blue)\\b|kék|királykék/],
-  ['navy','#142743',/\\b(navy|midnight blue)\\b|sötétkék|tengerészkék/],
-  ['sky blue','#55b9e9',/\\b(sky blue|light blue)\\b|világoskék|égkék/],
-  ['green','#168653',/\\b(green|forest green)\\b|zöld|sötétzöld/],
-  ['lime','#a3e635',/\\b(lime|neon green)\\b|neonzöld|élénkzöld/],
-  ['yellow','#f2d22e',/\\b(yellow|golden yellow)\\b|sárga|citromsárga/],
-  ['gold','#c5a46d',/\\b(gold|golden)\\b|arany|aranyszínű/],
-  ['orange','#ef7627',/\\b(orange)\\b|narancs|narancssárga/],
-  ['purple','#7545a6',/\\b(purple|violet)\\b|lila|ibolya/],
-  ['pink','#ed78a8',/\\b(pink|magenta)\\b|rózsaszín/],
-  ['grey','#858b94',/\\b(gray|grey|silver)\\b|szürke|ezüst/],
-  ['brown','#79513a',/\\b(brown)\\b|barna/]
+  ['black','#101318',/\b(black|jet black|charcoal)\b|fekete|szénfekete/],
+  ['white','#f4f3ed',/\b(white|ivory)\b|fehér|elefántcsont/],
+  ['red','#d62935',/\b(red|crimson|scarlet)\b|piros|vörös|bordó/],
+  ['blue','#1769aa',/\b(blue|royal blue)\b|kék|királykék/],
+  ['navy','#142743',/\b(navy|midnight blue)\b|sötétkék|tengerészkék/],
+  ['sky blue','#55b9e9',/\b(sky blue|light blue)\b|világoskék|égkék/],
+  ['green','#168653',/\b(green|forest green)\b|zöld|sötétzöld/],
+  ['lime','#a3e635',/\b(lime|neon green)\b|neonzöld|élénkzöld/],
+  ['yellow','#f2d22e',/\b(yellow|golden yellow)\b|sárga|citromsárga/],
+  ['gold','#c5a46d',/\b(gold|golden)\b|arany|aranyszínű/],
+  ['orange','#ef7627',/\b(orange)\b|narancs|narancssárga/],
+  ['purple','#7545a6',/\b(purple|violet)\b|lila|ibolya/],
+  ['pink','#ed78a8',/\b(pink|magenta)\b|rózsaszín/],
+  ['grey','#858b94',/\b(gray|grey|silver)\b|szürke|ezüst/],
+  ['brown','#79513a',/\b(brown)\b|barna/]
 ];
 const clamp = (n,a,b) => Math.max(a,Math.min(b,n));
 const HU_WORDS = /[őűáéíóöüŐŰÁÉÍÓÖÜ]/.test.bind(null);
-const isHU = s => HU_WORDS(s) || /\\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\\b/i.test(s);
+const isHU = s => HU_WORDS(s) || /\b(készíts|csinálj|legyen|kérek|fekete|fehér|piros|kék|zöld|arany|mez|labda|csíkos|mintás)\b/i.test(s);
 function luminance(hex){
   const c=hex.match(/[a-f0-9]{2}/gi).map(x=>parseInt(x,16)/255).map(x=>x<=.03928?x/12.92:((x+.055)/1.055)**2.4);
   return .2126*c[0]+.7152*c[1]+.0722*c[2];
@@ -44,23 +44,23 @@ function coloursIn(s){
 function pick(re,s,fallback){const m=s.match(re);return m?m[1]||m[0]:fallback;}
 function patternOf(s){
   for(const [id,re] of PATTERNS)if(re.test(s))return id;
-  if(/\\b(clean|minimal|plain|solid|simple)\\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(s))return 'solid';
-  if(/\\b(aggressive|dynamic|fast|speed)\\b|agresszív|dinamikus|sebesség/i.test(s))return 'diagonal-stripes';
+  if(/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(s))return 'solid';
+  if(/\b(aggressive|dynamic|fast|speed)\b|agresszív|dinamikus|sebesség/i.test(s))return 'diagonal-stripes';
   return 'panel-graphics';
 }
 function styleOf(s){
-  if(/\\b(retro|classic|vintage)\\b|retró|retro|klasszikus|régi iskola/i.test(s))return 'retro';
-  if(/\\b(stealth|minimal|clean|elegant)\\b|letisztult|elegáns|visszafogott/i.test(s))return 'minimal';
-  if(/\\b(aggressive|bold|dynamic|speed)\\b|agresszív|dinamikus|gyors|erőteljes/i.test(s))return 'performance';
-  if(/\\b(futuristic|cyber|neon)\\b|futurisztikus|neon|jövő/i.test(s))return 'futuristic';
-  if(/\\b(luxury|premium|elite)\\b|luxus|prémium|elit/i.test(s))return 'premium';
+  if(/\b(retro|classic|vintage)\b|retró|retro|klasszikus|régi iskola/i.test(s))return 'retro';
+  if(/\b(stealth|minimal|clean|elegant)\b|letisztult|elegáns|visszafogott/i.test(s))return 'minimal';
+  if(/\b(aggressive|bold|dynamic|speed)\b|agresszív|dinamikus|gyors|erőteljes/i.test(s))return 'performance';
+  if(/\b(futuristic|cyber|neon)\b|futurisztikus|neon|jövő/i.test(s))return 'futuristic';
+  if(/\b(luxury|premium|elite)\b|luxus|prémium|elit/i.test(s))return 'premium';
   return 'pro';
 }
 function materialOf(s,type){
-  if(/\\b(glossy|shiny|polished)\\b|fényes|csillogó/i.test(s))return 'glossy';
-  if(/\\b(matte|matte finish)\\b|matt/i.test(s))return 'matte';
-  if(/\\b(metallic|chrome)\\b|fémes|króm/i.test(s))return 'metallic';
-  if(/\\b(soft.?touch|rubberized)\\b|gumírozott|puha tapintás/i.test(s))return 'soft-touch';
+  if(/\b(glossy|shiny|polished)\b|fényes|csillogó/i.test(s))return 'glossy';
+  if(/\b(matte|matte finish)\b|matt/i.test(s))return 'matte';
+  if(/\b(metallic|chrome)\b|fémes|króm/i.test(s))return 'metallic';
+  if(/\b(soft.?touch|rubberized)\b|gumírozott|puha tapintás/i.test(s))return 'soft-touch';
   return type==='ball'?'match-ball':'performance-fabric';
 }
 const HU_PATTERN={'vertical-stripes':'függőleges csíkos','horizontal-stripes':'vízszintes csíkos','diagonal-stripes':'átlós csíkos',chevron:'cikkcakk',checkerboard:'kockás',dots:'pöttyös','side-panels':'oldalpaneles',split:'két tónusú',geometric:'geometrikus',rings:'gyűrűs','panel-graphics':'panelgrafikás',solid:'letisztult'};
@@ -68,14 +68,14 @@ const HU_COLOUR={black:'fekete',white:'fehér',red:'piros',blue:'kék',navy:'sö
 function buildPlan(brief,type='kit'){
   const s=String(brief||'').trim();if(!s)throw new Error('Describe the design first.');
   const hu=isHU(s),cs=coloursIn(s),style=styleOf(s),pattern=patternOf(s);
-  const dark=/\\b(dark|stealth|aggressive|blackout)\\b|sötét|agresszív/i.test(s);
+  const dark=/\b(dark|stealth|aggressive|blackout)\b|sötét|agresszív/i.test(s);
   const baseColor=cs[0]?.hex||(dark?'#101318':'#f4f3ed');
   const accentColor=cs[1]?.hex||(luminance(baseColor)<.22?'#a3e635':'#172230');
-  const trim=/\\b(trim|piping|edge|outline|cuff)\\b|szegély|passzé|gallér|ujjszegély/i.test(s);
-  const width=/\\b(thin|fine|subtle)\\b|vékony|finom|visszafogott/i.test(s)?12:/\\b(bold|wide|thick|strong)\\b|vastag|széles|erőteljes/i.test(s)?48:28;
-  const spacing=/\\b(dense|many|tight)\\b|sűrű|sok csík/i.test(s)?92:/\\b(spaced|wide apart)\\b|ritka|távoli/i.test(s)?250:165;
-  const garment=type==='ball'?'jersey':/\\b(shorts?|trunks?)\\b|nadrág|sort/i.test(s)?'shorts':/\\b(socks?|stockings?)\\b|sportszár|zokni/i.test(s)?'socks':/\\b(boots?|cleats?)\\b|cipő|stoplis/i.test(s)?'boots':'jersey';
-  const textMatch=s.match(/(?:text|write|number|felirat|szöveg|szám)\\s*[:=]?\\s*[“\"']([^”\"']{1,28})[”\"']/i);
+  const trim=/\b(trim|piping|edge|outline|cuff)\b|szegély|passzé|gallér|ujjszegély/i.test(s);
+  const width=/\b(thin|fine|subtle)\b|vékony|finom|visszafogott/i.test(s)?12:/\b(bold|wide|thick|strong)\b|vastag|széles|erőteljes/i.test(s)?48:28;
+  const spacing=/\b(dense|many|tight)\b|sűrű|sok csík/i.test(s)?92:/\b(spaced|wide apart)\b|ritka|távoli/i.test(s)?250:165;
+  const garment=type==='ball'?'jersey':/\b(shorts?|trunks?)\b|nadrág|sort/i.test(s)?'shorts':/\b(socks?|stockings?)\b|sportszár|zokni/i.test(s)?'socks':/\b(boots?|cleats?)\b|cipő|stoplis/i.test(s)?'boots':'jersey';
+  const textMatch=s.match(/(?:text|write|number|felirat|szöveg|szám)\s*[:=]?\s*[“\"']([^”\"']{1,28})[”\"']/i);
   const material=materialOf(s,type),metallic=material==='metallic';
   const patternName=hu?(HU_PATTERN[pattern]||pattern):pattern.replaceAll('-',' ');
   const name=[cs.slice(0,2).map(c=>hu?(HU_COLOUR[c.name]||c.name):c.name).join(' / ')|| (hu?'Egyedi':'Custom'),patternName,type==='ball'?(hu?'labda':'ball'):(hu?'mez':'kit')].join(' · ');
@@ -86,7 +86,7 @@ function buildPlan(brief,type='kit'){
   return {
     designName:name.slice(0,64),summary:hu?'A kérésből szín-, minta-, stílus- és anyagprofilt állítottam össze.':'Built an editable colour, pattern, style and material profile from your brief.',
     garment,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
-    seamColor:/\\b(black seams?|dark seams?)\\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
+    seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
     roughness:material==='glossy'?.26:material==='matte'?.9:material==='soft-touch'?.82:.58,
     metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,
     detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment}
