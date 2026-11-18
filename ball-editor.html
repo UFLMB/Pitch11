@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#090d12"><title>PITCH 11 | Ball Studio</title>
+<style>
+:root{color-scheme:dark;--bg:#090d12;--panel:#101720;--panel2:#151f2b;--line:#293747;--muted:#91a0b2;--text:#edf3f8;--gold:#c5a46d;--gold2:#e0c18a}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font:14px Inter,system-ui,sans-serif}button,input,select{font:inherit}#view{position:fixed;inset:0}#view canvas{display:block;width:100%;height:100%;touch-action:none}
+header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}.brand,.status{background:#0b111be8;border:1px solid var(--line);border-radius:12px;padding:10px 13px;backdrop-filter:blur(14px);pointer-events:auto}.brand{font-weight:850;letter-spacing:.16em;font-size:12px}.brand small{display:block;color:var(--muted);font-size:9px;letter-spacing:.17em;margin-top:3px}.status{font-size:9px;color:var(--muted);letter-spacing:.1em}
+#panel{position:fixed;z-index:4;left:14px;top:78px;bottom:14px;width:min(350px,calc(100vw - 28px));overflow:auto;background:linear-gradient(160deg,#101923f5,#0b1119f2);border:1px solid #2b3949;border-radius:16px;padding:15px;backdrop-filter:blur(18px);box-shadow:0 18px 60px #0008}
+.eyebrow{font-size:9px;font-weight:800;letter-spacing:.2em;color:var(--gold2)}h1{font-size:19px;letter-spacing:-.04em;margin:5px 0}.intro{font-size:10px;line-height:1.5;color:var(--muted);margin:0 0 14px}.section{margin-top:15px;padding-top:12px;border-top:1px solid #293747}.section-title{font-size:9px;font-weight:800;letter-spacing:.15em;color:#b7c2ce;margin-bottom:9px}.row{display:flex;align-items:center;gap:8px}.row>*{min-width:0;flex:1}.palette{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.swatch{height:29px;border:2px solid #ffffff26;border-radius:8px;padding:0}.swatch.active{outline:2px solid var(--gold2);outline-offset:2px}label{display:grid;gap:5px;color:#cbd5e1;font-size:10px;margin:7px 0}input[type=color]{height:34px;width:100%;border:1px solid var(--line);border-radius:8px;background:#111b26;padding:3px}input[type=text],select{width:100%;padding:9px;border:1px solid var(--line);border-radius:8px;background:#111b26;color:var(--text);font-size:11px}input[type=file]{width:100%;font-size:10px;color:var(--muted)}input[type=range]{width:100%;accent-color:var(--gold)}button{border:1px solid #354457;border-radius:9px;background:#141e29;color:#dce5ee;padding:9px 10px;font-size:10px;font-weight:750;cursor:pointer}button.primary{border-color:#b9975c;background:linear-gradient(135deg,#c5a46d,#8c6c3c);color:#111}button:active{transform:translateY(1px)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:7px}.hint{font-size:9px;line-height:1.45;color:var(--muted);margin-top:7px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:12px}.actions button{min-height:38px}.toolrow{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+#togglePanel{display:none;position:fixed;z-index:5;left:14px;bottom:14px}.crosshair{position:fixed;right:18px;bottom:18px;color:#c5a46d99;font-size:9px;letter-spacing:.14em;pointer-events:none}
+@media(max-width:700px){#panel{top:auto;bottom:62px;left:10px;width:min(330px,calc(100vw - 20px));max-height:43vh;padding:12px}header{top:9px;left:10px;right:10px}.brand,.status{padding:8px 10px}#togglePanel{display:block}.intro{display:none}.section{margin-top:11px;padding-top:9px}.swatch{height:24px}.crosshair{display:none}}
+</style>
+</head>
+<body>
+<div id="view"></div>
+<header><div class="brand">PITCH 11 <small>BALL STUDIO · CUSTOM EQUIPMENT</small></div><div class="status" id="status">3D PREVIEW READY</div></header>
+<aside id="panel">
+ <div class="eyebrow">EQUIPMENT LAB</div><h1>Ball Studio</h1><p class="intro">Create an original match ball. Paint directly on the 3D surface, add decals and export the texture profile.</p>
+ <div class="section"><div class="section-title">BASE COLOUR</div><div class="palette" id="palette"></div><label>Custom colour<input id="baseColour" type="color" value="#f4f3ed"></label><div class="grid2"><button id="classic">Classic panel pattern</button><button id="clear">Clear design</button></div></div>
+ <div class="section"><div class="section-title">PAINT TOOL</div><div class="toolrow"><button id="paintMode" class="primary">Paint on ball</button><button id="rotateMode">Rotate view</button></div><div class="row"><label>Brush colour<input id="brushColour" type="color" value="#a3e635"></label><label>Brush size<input id="brushSize" type="range" min="4" max="100" value="28"></label></div><div class="hint">Drag on the ball to paint. On mobile, use one finger; rotate the view when the paint tool is off.</div></div>
+ <div class="section"><div class="section-title">DECALS & GRAPHICS</div><label>Text / number<input id="decalText" type="text" maxlength="28" placeholder="PITCH 11 · 2026"></label><div class="row"><label>Text colour<input id="textColour" type="color" value="#111820"></label><label>Text size<input id="textSize" type="range" min="18" max="150" value="68"></label></div><div class="grid2"><button id="addText" class="primary">Add text decal</button><button id="addBadge">Add P11 mark</button></div><label>Upload PNG / JPG sticker<input id="stickerFile" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="hint">Text and image stickers are baked into the UV texture, so they remain attached to the ball as it spins.</div></div>
+ <div class="section"><div class="section-title">FINISH</div><label>Surface roughness<input id="roughness" type="range" min="10" max="100" value="58"></label><label>Metalness<input id="metalness" type="range" min="0" max="35" value="2"></label><div class="grid2"><button id="undo">Undo</button><button id="resetView">Reset view</button></div></div>
+ <div class="actions"><button id="save">Save design</button><button id="exportPng" class="primary">Export texture PNG</button><button id="exportJson">Export profile JSON</button><button id="importJson">Import profile</button></div>
+ <input id="jsonFile" type="file" accept="application/json" hidden>
+ <p class="hint">Current base mesh is a UV-mapped sphere prototype. The editor is structured so a verified CC0 GLB ball can replace it without changing the painting tools or match physics.</p>
+</aside>
+<button id="togglePanel">BALL TOOLS</button><div class="crosshair">PITCH 11 · ORIGINAL EQUIPMENT</div>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id),status=$('status');
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;$('view').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xe6efff,0x28313b,2));const key=new THREE.DirectionalLight(0xffe2b5,2.4);key.position.set(3,4,4);scene.add(key);const fill=new THREE.DirectionalLight(0x9dc5ff,1.1);fill.position.set(-4,1,-3);scene.add(fill);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=1.7;controls.maxDistance=7;controls.rotateSpeed=.7;
+const size=2048,textureCanvas=document.createElement('canvas');textureCanvas.width=textureCanvas.height=size;const g=textureCanvas.getContext('2d',{willReadFrequently:true});
+const undoStack=[];let paintEnabled=true,painting=false,lastUV=null;
+function base(hex='#f4f3ed'){g.fillStyle=hex;g.fillRect(0,0,size,size);drawPanelPattern();refresh()}
+function drawPanelPattern(){g.save();g.strokeStyle='rgba(15,22,28,.18)';g.lineWidth=7;g.beginPath();for(let x=0;x<=size;x+=size/8){g.moveTo(x,0);g.lineTo(x,size)}g.stroke();for(let y=0;y<=size;y+=size/4){g.beginPath();g.moveTo(0,y);g.lineTo(size,y);g.stroke()}g.restore()}
+function snapshot(){try{undoStack.push(g.getImageData(0,0,size,size));if(undoStack.length>8)undoStack.shift()}catch{}}
+const texture=new THREE.CanvasTexture(textureCanvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();
+const material=new THREE.MeshStandardMaterial({map:texture,roughness:.58,metalness:.02});
+const ball=new THREE.Mesh(new THREE.SphereGeometry(1,96,64),material);scene.add(ball);
+const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.02,64),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.24,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=-1.12;shadow.scale.set(1.1,.34,1);scene.add(shadow);
+function refresh(){texture.needsUpdate=true}
+function drawBrush(uv,colour,radius){const x=uv.x*size,y=(1-uv.y)*size;g.fillStyle=colour;g.beginPath();g.arc(x,y,radius,0,Math.PI*2);g.fill();refresh()}
+const raycaster=new THREE.Raycaster(),ndc=new THREE.Vector2();
+function uvAt(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(ndc,camera);const hit=raycaster.intersectObject(ball,false)[0];return hit?.uv||null}
+renderer.domElement.addEventListener('pointerdown',e=>{if(!paintEnabled)return;const uv=uvAt(e);if(!uv)return;snapshot();painting=true;lastUV=uv;renderer.domElement.setPointerCapture(e.pointerId);drawBrush(uv,$('brushColour').value,Number($('brushSize').value));});
+renderer.domElement.addEventListener('pointermove',e=>{if(!painting)return;const uv=uvAt(e);if(!uv)return;const dx=(uv.x-lastUV.x)*size,dy=(uv.y-lastUV.y)*size,dist=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(dist/8));for(let i=1;i<=steps;i++){const t=i/steps;drawBrush({x:lastUV.x+(uv.x-lastUV.x)*t,y:lastUV.y+(uv.y-lastUV.y)*t},$('brushColour').value,Number($('brushSize').value))}lastUV=uv});
+function stopPaint(){painting=false;lastUV=null}renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
+function saveDownload(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+function addText(text,colour,sizePx){if(!text.trim())return;snapshot();g.save();g.fillStyle=colour;g.textAlign='center';g.textBaseline='middle';g.font='900 '+sizePx+'px Inter,Arial,sans-serif';g.shadowColor='#0004';g.shadowBlur=5;g.fillText(text,size/2,size*.5, size*.86);g.restore();refresh()}
+function addBadge(){snapshot();g.save();g.translate(size/2,size/2);g.fillStyle='#a3e635';g.beginPath();g.arc(0,0,180,0,Math.PI*2);g.fill();g.fillStyle='#0b1117';g.font='900 190px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('P11',0,8);g.restore();refresh()}
+function exportPNG(){textureCanvas.toBlob(b=>b&&saveDownload(b,'pitch11-ball-texture.png'),'image/png')}
+function profile(){return {format:'PITCH11-BALL-1',name:'PITCH 11 Custom Ball',texture: textureCanvas.toDataURL('image/png'),roughness:Number($('roughness').value)/100,metalness:Number($('metalness').value)/100,createdAt:new Date().toISOString(),model:'uv-sphere-prototype'}}
+function saveLocal(){try{localStorage.setItem('p11-ball-studio-profile',JSON.stringify(profile()));status.textContent='DESIGN SAVED LOCALLY'}catch(e){status.textContent='STORAGE FULL · EXPORT PNG INSTEAD'}}
+$('palette').innerHTML=['#f4f3ed','#111820','#a3e635','#d7ad63','#e63946','#1769aa','#f5a623','#7c3aed','#ffffff','#00a6a6','#394b59','#d1d5db','#ff6b35','#8b5e3c'].map((c,i)=>'<button class="swatch '+(!i?'active':'')+'" data-colour="'+c+'" style="background:'+c+'"></button>').join('');
+$('palette').addEventListener('click',e=>{const b=e.target.closest('[data-colour]');if(!b)return;$('baseColour').value=b.dataset.colour;$('palette').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));base(b.dataset.colour)});
+$('baseColour').addEventListener('input',e=>base(e.target.value));
+$('classic').addEventListener('click',()=>{snapshot();base($('baseColour').value)});
+$('clear').addEventListener('click',()=>{snapshot();g.clearRect(0,0,size,size);g.fillStyle=$('baseColour').value;g.fillRect(0,0,size,size);refresh()});
+$('paintMode').addEventListener('click',()=>{paintEnabled=true;$('paintMode').classList.add('primary');$('rotateMode').classList.remove('primary');controls.enabled=false;status.textContent='PAINT MODE · DRAG ON BALL'});
+$('rotateMode').addEventListener('click',()=>{paintEnabled=false;$('rotateMode').classList.add('primary');$('paintMode').classList.remove('primary');controls.enabled=true;status.textContent='ORBIT MODE · DRAG TO ROTATE'});
+$('addText').addEventListener('click',()=>addText($('decalText').value,$('textColour').value,Number($('textSize').value)));
+$('addBadge').addEventListener('click',addBadge);
+$('stickerFile').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;const img=new Image();img.onload=()=>{snapshot();const w=Math.min(size*.48,img.width),h=w*img.height/img.width;g.drawImage(img,(size-w)/2,(size-h)/2,w,h);refresh();URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(file)});
+$('roughness').addEventListener('input',e=>material.roughness=Number(e.target.value)/100);$('metalness').addEventListener('input',e=>material.metalness=Number(e.target.value)/100);
+$('undo').addEventListener('click',()=>{const im=undoStack.pop();if(im){g.putImageData(im,0,0);refresh();status.textContent='LAST EDIT UNDONE'}});
+$('save').addEventListener('click',saveLocal);$('exportPng').addEventListener('click',exportPNG);
+$('exportJson').addEventListener('click',()=>saveDownload(new Blob([JSON.stringify(profile())],{type:'application/json'}),'pitch11-ball-profile.json'));
+$('importJson').addEventListener('click',()=>$('jsonFile').click());
+$('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);if(p.format!=='PITCH11-BALL-1'||typeof p.texture!=='string')throw Error('Invalid PITCH 11 ball profile');const img=new Image();img.onload=()=>{snapshot();g.clearRect(0,0,size,size);g.drawImage(img,0,0,size,size);$('roughness').value=Math.round((p.roughness??.58)*100);$('metalness').value=Math.round((p.metalness??.02)*100);material.roughness=Number($('roughness').value)/100;material.metalness=Number($('metalness').value)/100;refresh();status.textContent='PROFILE IMPORTED'};img.src=p.texture}catch(err){status.textContent='IMPORT FAILED · INVALID PROFILE'}};reader.readAsText(f)});
+$('resetView').addEventListener('click',()=>{camera.position.set(0,0,3.25);controls.target.set(0,0,0);controls.update()});
+$('togglePanel').addEventListener('click',()=>$('panel').classList.toggle('collapsed'));
+base();
+function animate(){requestAnimationFrame(animate);controls.update();ball.rotation.y+=.0018;renderer.render(scene,camera)}animate();
+addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5))});
+</script>
+</body></html>
