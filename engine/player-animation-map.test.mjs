@@ -43,4 +43,6 @@ test("resolves Mixamo-specific receive, pass, fall, recovery and goalkeeper move
   assert.equal(resolvePlayerAnimationState({ role: "DEF", action: "get-up" }, 0), "getUp");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "idle" }, 2), "keeperMove");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-pass" }, 0), "keeperPass");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "pass" }, 0), "keeperPass");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "kick" }, 0), "keeperDropKick");
 });
