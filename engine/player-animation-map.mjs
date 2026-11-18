@@ -3,6 +3,19 @@ const CLIP_ALIASES = Object.freeze({
   walk: ["walk", "walking"],
   run: ["run", "running", "jog", "jogging"],
   sprint: ["sprint", "sprinting"],
+  receive: ["receive", "firsttouch"],
+  dribble: ["dribble", "ballcontrol"],
+  shotHigh: ["shothigh", "kickup"],
+  throwIn: ["throwin"],
+  fallenIdle: ["fallenidle", "downedidle"],
+  keeperMove: ["gkmove", "keepersidestep"],
+  keeperDirect: ["gkdirect", "keeperdirecting"],
+  keeperScoop: ["gkscoop", "keeperscoop"],
+  keeperMiss: ["gkmiss", "keepermiss"],
+  keeperPass: ["gkpass", "keeperpass"],
+  keeperDropKick: ["gkdropkick", "keeperdropkick"],
+  keeperThrow: ["gkthrow", "keeperthrow"],
+  keeperPlace: ["gkplace", "keeperplace"],
   pass: ["pass", "shortpass", "kickpass"],
   shot: ["shot", "shoot", "shooting", "strike", "kick"],
   tackle: ["tackle", "standingtackle", "tacklewin", "tacklemissed"],
@@ -33,6 +46,19 @@ const FALLBACKS = Object.freeze({
   keeperSet: ["idle"],
   keeperDiveLeft: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveRight: ["keeperParry", "fall", "keeperSet", "idle"],
+  receive: ["pass", "idle"],
+  dribble: ["run", "walk", "idle"],
+  shotHigh: ["shot", "pass", "idle"],
+  throwIn: ["pass", "idle"],
+  fallenIdle: ["fall", "idle"],
+  keeperMove: ["run", "walk", "idle"],
+  keeperDirect: ["keeperSet", "idle"],
+  keeperScoop: ["keeperCatch", "keeperSet", "idle"],
+  keeperMiss: ["fall", "keeperSet", "idle"],
+  keeperPass: ["pass", "keeperSet", "idle"],
+  keeperDropKick: ["keeperPass", "pass", "idle"],
+  keeperThrow: ["keeperPass", "pass", "idle"],
+  keeperPlace: ["keeperSet", "idle"],
   keeperCatch: ["keeperSet", "idle"],
   keeperParry: ["keeperSet", "idle"]
 });
@@ -46,15 +72,35 @@ const ALIAS_TO_STATE = new Map(
 export function resolvePlayerAnimationState(player, speed = 0) {
   const action = normalize(player?.action);
   if (action.includes("keepercatch") || action.includes("keeperclaim")) return "keeperCatch";
+  if (action.includes("keeperpass")) return "keeperPass";
+  if (player?.role === "GK" && action.includes("pass")) return "keeperPass";
+  if (player?.role === "GK" && action === "kick") return "keeperDropKick";
+  if (action.includes("keeperscoop")) return "keeperScoop";
+  if (action.includes("keepermiss")) return "keeperMiss";
+  if (action.includes("keeperthrow")) return "keeperThrow";
+  if (action.includes("keeperdropkick")) return "keeperDropKick";
+  if (action.includes("keeperplace")) return "keeperPlace";
+  if (action.includes("keeperdirect")) return "keeperDirect";
+  if (action.includes("keepersidestep") || action.includes("keepermove")) return "keeperMove";
   if (action.includes("keeperparry")) return "keeperParry";
   if (action.includes("keeperdiveleft")) return "keeperDiveLeft";
   if (action.includes("keeperdiveright")) return "keeperDiveRight";
   if (action.includes("celebrat")) return "celebrate";
+  if (action.includes("transition")) return "transition";
+  if (action.includes("throwin")) return "throwIn";
+  if (action.includes("receive")) return "receive";
+  if (action.includes("dribble")) return "dribble";
+  if (action.includes("fallenidle")) return "fallenIdle";
+  if (action.includes("header")) return "header";
+  if (action.includes("shot")) return "shot";
+  if (action.includes("pass")) return "pass";
+  if (action.includes("getup")) return "getUp";
+  if (action.includes("fall")) return "fall";
   if (action.includes("slidetackle")) return "slide";
   if (action.includes("tackle")) return "tackle";
   if (action === "kick") return "shot";
   if (action === "restart") return "pass";
-  if (player?.role === "GK" && speed < .2) return "keeperSet";
+  if (player?.role === "GK") return speed < .2 ? "keeperSet" : "keeperMove";
   if (!Number.isFinite(speed) || speed < .2) return "idle";
   if (speed < 2.1) return "walk";
   if (speed < 5.2) return "run";

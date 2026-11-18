@@ -1598,7 +1598,7 @@ function render2D(a){
   let cx=cam.px+(cam.x-cam.px)*a,cy=cam.py+(cam.y-cam.py)*a;
   cx=vw>=WW?WW/2:clamp(cx,vw/2,WW-vw/2);cy=vh>=WH?WH/2:clamp(cy,vh/2,WH-vh/2);
   const stadiumTop=!!(window.P11Stadium&&window.P11Stadium.ready);
-  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT});ctx.clearRect(0,0,cw,ch);}
+  if(stadiumTop){window.P11Stadium.renderTopDown(cx,cy,vw,vh,W,H,{timeOfDay:G.tod|0,players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT,ballOwner:ball.owner,restart:S.rs});ctx.clearRect(0,0,cw,ch);}
   else{ctx.fillStyle='#24602f';ctx.fillRect(0,0,cw,ch);}
   ctx.setTransform(sc,0,0,sc,cw/2-cx*sc,ch/2-cy*sc);
   if(FX.shake>0)ctx.translate((Math.random()-0.5)*FX.shake*2*SHKM(),(Math.random()-0.5)*FX.shake*2*SHKM());

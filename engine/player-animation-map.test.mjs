@@ -35,3 +35,14 @@ test("resolves clips with exporter and armature prefixes", () => {
   assert.equal(resolvePlayerClip(clips, "idle"), clips[0]);
   assert.equal(resolvePlayerClip(clips, "keeperDiveLeft"), clips[1]);
 });
+
+test("resolves Mixamo-specific receive, pass, fall, recovery and goalkeeper movement states", () => {
+  assert.equal(resolvePlayerAnimationState({ role: "FWD", action: "receive" }, 0), "receive");
+  assert.equal(resolvePlayerAnimationState({ role: "MID", action: "pass" }, 0), "pass");
+  assert.equal(resolvePlayerAnimationState({ role: "DEF", action: "fallen-idle" }, 0), "fallenIdle");
+  assert.equal(resolvePlayerAnimationState({ role: "DEF", action: "get-up" }, 0), "getUp");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "idle" }, 2), "keeperMove");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-pass" }, 0), "keeperPass");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "pass" }, 0), "keeperPass");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "kick" }, 0), "keeperDropKick");
+});

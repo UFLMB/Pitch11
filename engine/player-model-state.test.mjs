@@ -20,7 +20,7 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ ak: 2 }), 0).action, "pass");
   assert.equal(mapLegacyPlayerState(player({ sd: { t: .2 } }), 0).action, "slide-tackle");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-left");
-  assert.equal(mapLegacyPlayerState(player({ down: true }), 0).action, "fall");
+  assert.equal(mapLegacyPlayerState(player({ down: true }), 0).action, "fallen-idle");
   assert.equal(mapLegacyPlayerState(player({ jump: .2 }), 0).action, "header");
 });
 
@@ -39,4 +39,13 @@ test("omits players who are off the pitch and maps the full active squad", () =>
   assert.equal(states.length, 3);
   assert.equal(states[1].visible, false);
   assert.equal(states[2].role, "GK");
+});
+
+test("maps stationary possession and throw-in restarts to dedicated Mixamo action states", () => {
+  const carrier = player({ vx: 0, vy: 0 });
+  assert.equal(mapLegacyPlayerState(carrier, 0, 1, null, carrier).action, "dribble");
+  const keeper = player({ gk: true, vx: 0, vy: 0 });
+  assert.equal(mapLegacyPlayerState(keeper, 1, 1, null, keeper).action, "keeper-catch");
+  const thrower = player();
+  assert.equal(mapLegacyPlayerState(thrower, 0, 1, null, null, { kind: "throw", p: thrower }).action, "throw-in");
 });
