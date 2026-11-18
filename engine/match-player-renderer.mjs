@@ -10,7 +10,7 @@ import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 
 const ONE_SHOT_STATES = new Set([
   "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "getUp", "throwIn",
-  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss",
+  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass",
   "keeperDropKick", "keeperThrow", "keeperPlace"
 ]);
 const CORE_MIXAMO_CLIPS = [
