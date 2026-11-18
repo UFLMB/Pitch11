@@ -35,7 +35,7 @@ function bones(root){const a=[];root.traverse(o=>{if(o.isBone)a.push(o)});return
 function setReport(lines,status){$('report').innerHTML=lines.map(([k,v,c])=>'<div class="metric"><span>'+k+'</span><strong class="'+(c||'')+'">'+v+'</strong></div>').join('');$('status').textContent=status}
 function log(s){$('log').textContent=s}
 async function loadAnimation(){const response=await fetch('./input/player-package/jog%20forward.fbx');if(!response.ok)throw Error('Could not load jog forward.fbx · HTTP '+response.status);const buffer=await response.arrayBuffer();const animRoot=loader.parse(buffer,'');clip=animRoot.animations?.[0];if(!clip)throw Error('No animation clip found in jog forward.fbx');return {animRoot,clip,bytes:buffer.byteLength}}
-function canonicalBoneName(name){return String(name||'').replace(/[\\s_]/g,'').replace(/[^a-z0-9]/gi,'').replace(/^mixamorig\\d*/i,'').toLowerCase()}
+function canonicalBoneName(name){return String(name||'').replace(/[\s_]/g,'').replace(/[^a-z0-9]/gi,'').replace(/^mixamorig\d*/i,'').toLowerCase()}
 function trackTarget(trackName){const dot=trackName.lastIndexOf('.');if(dot<1)return null;return {raw:trackName.slice(0,dot),property:trackName.slice(dot+1)}}
 function normalizedClip(sourceClip,targetRoot){
  const targetNames=[...new Set(bones(targetRoot).map(b=>b.name).filter(Boolean))];
