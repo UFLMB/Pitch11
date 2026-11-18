@@ -52,6 +52,46 @@ function readGlbJson(file) {
 function requireBuffer(file) {
   return glbBuffers.get(file);
 }
+function mapMixamoTarget(rawName) {
+  const clean = rawName
+    .replace(/_\$AssimpFbx\$_(?:PreRotation|Rotation|Translation)$/i, "")
+    .replace(/^mixamorig:/i, "");
+  const direct = {
+    Hips: "Bip01 Pelvis",
+    Spine: "Bip01 Spine",
+    Spine1: "Bip01 Spine1",
+    Spine2: "Bip01 Spine2",
+    Neck: "Bip01 Neck",
+    Head: "Bip01 Head",
+    LeftShoulder: "Bip01 L Clavicle",
+    LeftArm: "Bip01 L UpperArm",
+    LeftForeArm: "Bip01 L Forearm",
+    LeftHand: "Bip01 L Hand",
+    LeftUpLeg: "Bip01 L Thigh",
+    LeftLeg: "Bip01 L Calf",
+    LeftFoot: "Bip01 L Foot",
+    LeftToeBase: "Bip01 L Toe0",
+    RightShoulder: "Bip01 R Clavicle",
+    RightArm: "Bip01 R UpperArm",
+    RightForeArm: "Bip01 R Forearm",
+    RightHand: "Bip01 R Hand",
+    RightUpLeg: "Bip01 R Thigh",
+    RightLeg: "Bip01 R Calf",
+    RightFoot: "Bip01 R Foot",
+    RightToeBase: "Bip01 R Toe0"
+  };
+  if (direct[clean]) return direct[clean];
+  const finger = clean.match(/^(Left|Right)Hand(Thumb|Index|Middle|Ring|Pinky)([123])$/);
+  if (finger) {
+    const side = finger[1] === "Left" ? "L" : "R";
+    const digit = { Thumb: 0, Index: 1, Middle: 2, Ring: 3, Pinky: 4 }[finger[2]];
+    const segment = Number(finger[3]) - 1;
+    return segment === 0
+      ? `Bip01 ${side} Finger${digit}`
+      : `Bip01 ${side} Finger${digit}${segment}`;
+  }
+  return null;
+}
 const glbBuffers = new Map();
 let modelNodeNames = null;
 if (compareModel) {
@@ -117,14 +157,18 @@ for (const entry of files) {
     skeletonSignature: signature
   };
   if (compareModel) {
-    const matched = uniqueTrackTargets.filter(name => modelNodeNames.has(name));
-    const unmatched = uniqueTrackTargets.filter(name => !modelNodeNames.has(name));
+    const mapped = uniqueTrackTargets.map(source => ({ source, target: mapMixamoTarget(source) }));
+    const matched = mapped.filter(item => item.target && modelNodeNames.has(item.target));
+    const unmatched = mapped.filter(item => !item.target || !modelNodeNames.has(item.target));
+    const matchedBones = [...new Set(matched.map(item => item.target))].sort();
     result.modelRigComparison = {
       uniqueAnimationTargets: uniqueTrackTargets.length,
-      matchedTargets: matched.length,
-      unmatchedTargets: unmatched.length,
-      coveragePercent: uniqueTrackTargets.length ? Number((matched.length / uniqueTrackTargets.length * 100).toFixed(1)) : 0,
-      unmatchedTargetExamples: unmatched.slice(0, 20)
+      matchedTrackTargets: matched.length,
+      matchedModelBones: matchedBones.length,
+      modelBoneCoveragePercent: Number((matchedBones.length / modelNodeNames.size * 100).toFixed(1)),
+      unmatchedTrackTargets: unmatched.length,
+      matchedExamples: matched.slice(0, 30),
+      unmatchedExamples: unmatched.slice(0, 20)
     };
   }
   results.push(result);
