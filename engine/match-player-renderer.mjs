@@ -224,7 +224,7 @@ export class MatchPlayerRenderer {
     if (this.failedClips.has(file)) throw new Error(this.failedClips.get(file));
     const promise = (async () => {
       const url = new URL(`../input/player-package/${encodeURIComponent(file)}`, import.meta.url).href;
-      const source = await this.fbxLoader.loadAsync(url);
+      const source = await loadWithTimeout(this.fbxLoader.loadAsync(url), this.modelLoadTimeoutMs, `Mixamo animation ${file}`);
       const sourceClip = source.animations?.[0];
       if (!sourceClip) throw new Error("FBX contains no animation clip");
       const binding = validateDirectMixamoClip(this.template, sourceClip);
