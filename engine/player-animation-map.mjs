@@ -73,6 +73,8 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   const action = normalize(player?.action);
   if (action.includes("keepercatch") || action.includes("keeperclaim")) return "keeperCatch";
   if (action.includes("keeperpass")) return "keeperPass";
+  if (player?.role === "GK" && action.includes("pass")) return "keeperPass";
+  if (player?.role === "GK" && action === "kick") return "keeperDropKick";
   if (action.includes("keeperscoop")) return "keeperScoop";
   if (action.includes("keepermiss")) return "keeperMiss";
   if (action.includes("keeperthrow")) return "keeperThrow";
