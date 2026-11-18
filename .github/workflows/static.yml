@@ -34,7 +34,7 @@ jobs:
       - name: Inspect uploaded FBX animation package
         env:
           PITCH11_FBX_DEBUG: '1'
-        run: node scripts/inspect-player-fbx-package.mjs
+        run: node scripts/inspect-player-fbx-package.mjs --compare-model
       - name: Check inline application scripts
         run: |
           node --input-type=module <<'NODE'
