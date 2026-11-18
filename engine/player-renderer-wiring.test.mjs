@@ -14,6 +14,11 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(runtime.includes("get playerModelsReady(){"));
   assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
   assert.ok(renderer.includes("../assets/players/player.glb"));
+  assert.ok(renderer.includes("../input/player-model-candidate/character.fbx"));
+  assert.ok(renderer.includes("new FBXLoader()"));
+  assert.ok(renderer.includes("validateDirectMixamoClip"));
+  assert.ok(renderer.includes("resolveMixamoClipCandidates"));
+  assert.ok(renderer.includes("CORE_MIXAMO_CLIPS"));
   assert.ok(renderer.includes("cloneSkeleton"));
   assert.ok(renderer.includes("setGroundHeight(value)"));
   assert.ok(renderer.includes("group.position.set(state.x, this.groundHeight, state.z)"));
