@@ -16,7 +16,7 @@
 
 All entries below are present in the repository. Numbered variants are separate source files and should be preserved until their differences are reviewed.
 
-### Locomotion and basic movement — 8 files
+### Locomotion and basic movement — 9 files
 
 | Source clip | Coverage |
 |---|---|
@@ -48,7 +48,7 @@ All entries below are present in the repository. Numbered variants are separate 
 
 **Gap:** no clearly identified dedicated short pass, driven pass, long pass, through-ball pass, cross, volley, controlled shot, finesse shot, power shot, or distinct weak-foot action. Some may be approximated with the general kick clips, but that is a gameplay mapping decision—not proof of a dedicated animation.
 
-### Defending, falls and recovery — 6 files
+### Defending, falls and recovery — 7 files
 
 | Source clip(s) | Coverage |
 |---|---|
@@ -60,7 +60,7 @@ All entries below are present in the repository. Numbered variants are separate 
 
 **Gap:** no clearly identified jockey / defensive side-shuffle, standing block, shoulder challenge, push-off, stumble recovery, or separate left/right fall and get-up variants.
 
-### Goalkeeper — 23 files
+### Goalkeeper — 22 files
 
 | Source clip(s) | Coverage |
 |---|---|
@@ -76,7 +76,6 @@ All entries below are present in the repository. Numbered variants are separate 
 | `goalkeeper drop kick.fbx` | Drop-kick distribution |
 | `goalkeeper overhand throw.fbx` | Overarm distribution |
 | `goalkeeper placing ball.fbx`, `goalkeeper placing ball (2).fbx` | Ball placement / restart |
-| `goalkeeper body block.fbx` | Body-block action |
 
 **Gap:** no clearly identified high claim / jumping catch, punch clearance, one-handed fingertip save, post-save recovery/get-up, goalkeeper sprint/run, or dedicated penalty-ready stance. Confirm whether the current catch and dive variants cover these before sourcing more clips.
 
