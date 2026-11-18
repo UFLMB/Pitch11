@@ -3,8 +3,6 @@ const PATTERNS = [
   ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
   ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
   ['vertical-stripes', /\b(vertical stripes?|striped|stripes?)\b|függőleges csík|csíkos|csíkok/],
-  ['horizontal-stripes', /\b(horizontal stripes?)\b|vízszintes csík/],
-  ['diagonal-stripes', /\b(diagonal stripes?|slanted stripes?)\b|átlós csík|ferde csík/],
   ['chevron', /\b(chevron|zig.?zag|v shape)\b|cikkcakk|cikcakk|v alak/],
   ['checkerboard', /\b(checkerboard|checkered|checks?)\b|sakktábla|kockás/],
   ['dots', /\b(dots?|polka dots?)\b|pötty|pöttyös/],
