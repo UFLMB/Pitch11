@@ -44,8 +44,9 @@ function coloursIn(s){
 }
 function pick(re,s,fallback){const m=s.match(re);return m?m[1]||m[0]:fallback;}
 function patternOf(s){
-  const explicit=PATTERNS.some(([,re])=>re.test(s));
-  if(!explicit&&/\b(no|without|avoid|exclude)\s+(?:any\s+)?(?:stripes?|striping)\b|csíkok? nélkül|ne legyen csíkos/i.test(s))return 'solid';
+  const noStripes=/\b(no|without|avoid|exclude)\s+(?:any\s+)?(?:stripes?|striping)\b|csíkok? nélkül|ne legyen csíkos/i.test(s);
+  const otherExplicit=PATTERNS.some(([id,re])=>!['vertical-stripes','horizontal-stripes','diagonal-stripes'].includes(id)&&re.test(s));
+  if(noStripes&&!otherExplicit)return 'solid';
   for(const [id,re] of PATTERNS)if(re.test(s))return id;
   if(/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül/i.test(s))return 'solid';
   if(/\b(aggressive|dynamic|fast|speed)\b|agresszív|dinamikus|sebesség/i.test(s))return 'diagonal-stripes';
