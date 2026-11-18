@@ -33,6 +33,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {mountP11AIDesigner} from './engine/p11-ai-designer.mjs';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
@@ -122,7 +123,32 @@ $('importJson').addEventListener('click',()=>$('jsonFile').click());
 $('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);if(p.format!=='PITCH11-BALL-1'||typeof p.texture!=='string')throw Error('Invalid PITCH 11 ball profile');const img=new Image();img.onload=()=>{snapshot();g.clearRect(0,0,size,size);g.drawImage(img,0,0,size,size);$('roughness').value=Math.round((p.roughness??.58)*100);$('metalness').value=Math.round((p.metalness??.02)*100);paintMaterials.forEach(m=>{m.roughness=Number($('roughness').value)/100;m.metalness=Number($('metalness').value)/100});refresh();status.textContent='PROFILE IMPORTED'};img.src=p.texture}catch(err){status.textContent='IMPORT FAILED · INVALID PROFILE'}};reader.readAsText(f)});
 $('resetView').addEventListener('click',()=>{camera.position.set(0,0,3.25);controls.target.set(0,0,0);controls.update()});
 $('togglePanel').addEventListener('click',()=>$('panel').classList.toggle('collapsed'));
+function applyAIBallDesign(plan){
+ snapshot();
+ g.fillStyle=plan.baseColor;g.fillRect(0,0,size,size);
+ const accent=plan.accentColor,step=Math.max(48,plan.stripeSpacing*4),width=Math.max(18,plan.stripeWidth*3);
+ g.save();g.fillStyle=accent;g.strokeStyle=accent;
+ if(plan.pattern==='vertical-stripes'){for(let x=0;x<size;x+=step)g.fillRect(x,0,width,size)}
+ else if(plan.pattern==='horizontal-stripes'){for(let y=0;y<size;y+=step)g.fillRect(0,y,size,width)}
+ else if(plan.pattern==='diagonal-stripes'||plan.pattern==='geometric'){for(let x=-size;x<size*2;x+=step){g.beginPath();g.moveTo(x,0);g.lineTo(x+width,0);g.lineTo(x+size+width,size);g.lineTo(x+size,size);g.closePath();g.fill()}}
+ else if(plan.pattern==='chevron'){for(let y=-size;y<size*2;y+=step){g.beginPath();g.moveTo(0,y);g.lineTo(size/2,y+step/2);g.lineTo(size,y);g.lineTo(size,y+width);g.lineTo(size/2,y+step/2+width);g.lineTo(0,y+width);g.closePath();g.fill()}}
+ else if(plan.pattern==='checkerboard'){const cell=Math.max(64,Math.round(step/2));for(let y=0;y<size;y+=cell)for(let x=0;x<size;x+=cell)if(((x/cell)+(y/cell))%2===0)g.fillRect(x,y,cell,cell)}
+ else if(plan.pattern==='dots'){const cell=Math.max(80,step);for(let y=cell/2;y<size;y+=cell)for(let x=cell/2;x<size;x+=cell){g.beginPath();g.arc(x,y,Math.max(10,width/2),0,Math.PI*2);g.fill()}}
+ else if(plan.pattern==='side-panels'){g.fillRect(0,0,size*.18,size);g.fillRect(size*.82,0,size*.18,size)}
+ else if(plan.pattern==='split'){g.fillRect(size/2,0,size/2,size)}
+ else if(plan.pattern==='rings'){for(let r=width;r<size;r+=step){g.beginPath();g.arc(size/2,size/2,r,0,Math.PI*2);g.lineWidth=Math.max(12,width/3);g.stroke()}}
+ else if(plan.pattern==='panel-graphics'){for(let i=0;i<8;i++){const a=i*Math.PI/4;g.save();g.translate(size/2,size/2);g.rotate(a);g.fillRect(-width/2,-size*.48,width,size*.96);g.restore()}}
+ g.restore();
+ g.save();g.strokeStyle=plan.seamColor;g.globalAlpha=.48;g.lineWidth=9;
+ for(let y=size*.12;y<size;y+=size*.25){g.beginPath();g.moveTo(0,y);g.bezierCurveTo(size*.28,y-size*.12,size*.72,y+size*.12,size,y);g.stroke()}
+ g.restore();
+ if(plan.decalText){g.save();g.fillStyle=plan.trim?plan.trimColor:'#111820';g.font='900 92px Inter,Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(plan.decalText,size/2,size*.5,size*.82);g.restore()}
+ $('baseColour').value=plan.baseColor;$('roughness').value=Math.round(plan.roughness*100);$('metalness').value=Math.round(plan.metalness*100);
+ paintMaterials.forEach(m=>{m.roughness=plan.roughness;m.metalness=plan.metalness});
+ refresh();saveLocal();status.textContent='AI DESIGN APPLIED · '+plan.designName.toUpperCase();
+}
 base();
+mountP11AIDesigner({type:'ball',onApply:applyAIBallDesign});
 loadRemoteBall();
 function animate(){requestAnimationFrame(animate);controls.update();ballRoot.rotation.y+=.0018;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5))});
