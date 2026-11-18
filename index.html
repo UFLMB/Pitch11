@@ -2187,7 +2187,6 @@ function drawPlayer3(p,a,markersOnly=false){                                 // 
   const sk=SKIN[p.skin],lie=p.dive>0||p.down,gk=p.gk;
   const hipY=-9.8,L1=4.9,L2=4.9;                            // hip height, thigh & shin lengths
   ctx.save();ctx.translate(sx,sy);ctx.scale(s*fc*PLAYER_SCALE,s*PLAYER_SCALE);
-  ctx.fillStyle='rgba(0,0,0,'+(lie?.22:.3)+')';ctx.beginPath();ctx.ellipse(0,0,lie?13:6.5,lie?2.1:2.3,0,0,TAU);ctx.fill();
   if(p!==ctrl&&indCol(p)){ctx.strokeStyle=indCol(p);ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();}
   if(p===ctrl){
     ctx.strokeStyle=indCol(p)||'#ffe600';ctx.lineWidth=.9;ctx.beginPath();ctx.ellipse(0,0,10,3.6,0,0,TAU);ctx.stroke();
