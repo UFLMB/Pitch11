@@ -36,7 +36,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;$('view').appendChild(renderer.domElement);
 scene.add(new THREE.HemisphereLight(0xe6efff,0x28313b,2));const key=new THREE.DirectionalLight(0xffe2b5,2.4);key.position.set(3,4,4);scene.add(key);const fill=new THREE.DirectionalLight(0x9dc5ff,1.1);fill.position.set(-4,1,-3);scene.add(fill);
-const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.minDistance=1.7;controls.maxDistance=7;controls.rotateSpeed=.7;
+const controls=new OrbitControls(camera,renderer.domElement);controls.enabled=false;controls.enableDamping=true;controls.enablePan=false;controls.minDistance=1.7;controls.maxDistance=7;controls.rotateSpeed=.7;
 const size=2048,textureCanvas=document.createElement('canvas');textureCanvas.width=textureCanvas.height=size;const g=textureCanvas.getContext('2d',{willReadFrequently:true});
 const undoStack=[];let paintEnabled=true,painting=false,lastUV=null;
 function base(hex='#f4f3ed'){g.fillStyle=hex;g.fillRect(0,0,size,size);drawPanelPattern();refresh()}
