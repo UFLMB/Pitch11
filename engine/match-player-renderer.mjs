@@ -62,7 +62,7 @@ function inspectSkinnedModel(root) {
 }
 
 function canonicalBoneName(name) {
-  return String(name || "").replace(/[\\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\\d*/i, "").toLowerCase();
+  return String(name || "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
 }
 
 export function validateDirectMixamoClip(root, sourceClip) {
