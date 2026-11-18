@@ -126,3 +126,17 @@ export function resolvePlayerClip(animations, state) {
 }
 
 export const PLAYER_ANIMATION_STATES = Object.freeze(Object.keys(CLIP_ALIASES));
+
+
+// Action clips that should play once and hold their final pose until the
+// simulation reports the next state. Header is the production state name;
+// "jump" remains listed for compatible callers that use the older alias.
+export const ONE_SHOT_ANIMATION_STATES = Object.freeze([
+  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "header", "fall", "getUp", "throwIn",
+  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass",
+  "keeperDropKick", "keeperThrow", "keeperPlace"
+]);
+const ONE_SHOT_ANIMATION_STATE_SET = new Set(ONE_SHOT_ANIMATION_STATES);
+export function isOneShotAnimationState(state) {
+  return ONE_SHOT_ANIMATION_STATE_SET.has(state);
+}

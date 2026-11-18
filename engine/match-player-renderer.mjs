@@ -3,17 +3,12 @@ import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
-import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
+import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { flattenHorizontalRootMotion, getLocomotionTimeScale } from "./locomotion-animation.mjs";
 
-const ONE_SHOT_STATES = new Set([
-  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "getUp", "throwIn",
-  "keeperDiveLeft", "keeperDiveRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass",
-  "keeperDropKick", "keeperThrow", "keeperPlace"
-]);
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
   "jog forward.fbx",
@@ -330,7 +325,7 @@ export class MatchPlayerRenderer {
       if (clip && entry.activeClipName !== clip.name) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
-        if (ONE_SHOT_STATES.has(animationState)) {
+        if (isOneShotAnimationState(animationState)) {
           nextAction.setLoop(THREE.LoopOnce, 1);
           nextAction.clampWhenFinished = true;
         } else {

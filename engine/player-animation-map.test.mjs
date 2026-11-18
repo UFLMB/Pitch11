@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animation-map.mjs";
+import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
 
 test("maps simulation action states to goalkeeper and outfield animation states", () => {
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch" }, 0), "keeperCatch");
@@ -45,4 +45,14 @@ test("resolves Mixamo-specific receive, pass, fall, recovery and goalkeeper move
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-pass" }, 0), "keeperPass");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "pass" }, 0), "keeperPass");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "kick" }, 0), "keeperDropKick");
+});
+
+
+test("treats header and other action clips as one-shot animations", () => {
+  for (const state of ["header", "jump", "keeperDiveLeft", "keeperDiveRight", "pass", "shot", "getUp"]) {
+    assert.equal(isOneShotAnimationState(state), true, `${state} should play once`);
+  }
+  for (const state of ["idle", "walk", "run", "sprint", "keeperSet", "fallenIdle"]) {
+    assert.equal(isOneShotAnimationState(state), false, `${state} should remain looped`);
+  }
 });
