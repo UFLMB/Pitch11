@@ -139,7 +139,7 @@ async function retargetFbxAnimation(){
   const sourceRoot=fbxLoader.parse(await file.arrayBuffer(),'');
   const sourceBones=[];sourceRoot.traverse(o=>{if(o.isBone)sourceBones.push(o)});
   if(!sourceBones.length)throw new Error('FBX contains no readable bone hierarchy.');
-  const sourceSkeleton=new THREE.Skeleton(sourceBones);
+  // SkeletonUtils.retargetClip expects the source Object3D hierarchy, not a THREE.Skeleton.
   const targetMeshes=[];activeRoot.traverse(o=>{if(o.isSkinnedMesh&&o.skeleton)targetMeshes.push(o)});
   if(!targetMeshes.length)throw new Error('The active player model has no skinned mesh.');
   const hasTargetPelvis=m=>m.skeleton.bones.some(b=>normalizeRigBoneName(b.name)==='pelvis');
@@ -157,7 +157,7 @@ async function retargetFbxAnimation(){
   if(!names[targetHip.name])names[targetHip.name]=sourceHip.name;
   if(Object.keys(names).length<18)throw new Error('Only '+Object.keys(names).length+' compatible Mixamo/Bip01 bones found. Check the target model rig.');
   const sourceClip=(sourceRoot.animations||[])[0];if(!sourceClip)throw new Error('FBX contains no animation clip.');
-  const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceSkeleton,sourceClip,{
+  const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceRoot,sourceClip,{
    names,hip:sourceHip.name,fps:30,useFirstFramePosition:false,
    preserveBoneMatrix:true,preserveBonePositions:true
   });
