@@ -140,7 +140,11 @@ async function retargetFbxAnimation(){
   const sourceBones=[];sourceRoot.traverse(o=>{if(o.isBone)sourceBones.push(o)});
   if(!sourceBones.length)throw new Error('FBX contains no readable bone hierarchy.');
   // SkeletonUtils.retargetClip expects the source Object3D hierarchy, not a THREE.Skeleton.
-  const targetMeshes=[];activeRoot.traverse(o=>{if(o.isSkinnedMesh&&o.skeleton)targetMeshes.push(o)});
+  // Retarget only against an isolated clone. SkeletonUtils.retargetClip may alter
+  // target bone transforms while sampling; never let that touch the visible model.
+  const retargetRoot=SkeletonUtils.clone(activeRoot);
+  retargetRoot.updateMatrixWorld(true);
+  const targetMeshes=[];retargetRoot.traverse(o=>{if(o.isSkinnedMesh&&o.skeleton)targetMeshes.push(o)});
   if(!targetMeshes.length)throw new Error('The active player model has no skinned mesh.');
   const hasTargetPelvis=m=>m.skeleton.bones.some(b=>normalizeRigBoneName(b.name)==='pelvis');
   const targetMesh=targetMeshes.find(hasTargetPelvis)||targetMeshes[0];
@@ -167,6 +171,7 @@ async function retargetFbxAnimation(){
   sourceRoot.add(sourceRigMesh);
   sourceRigMesh.bind(sourceSkeleton);
   sourceRoot.updateMatrixWorld(true);
+  retargetRoot.updateMatrixWorld(true);
   const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceRigMesh,sourceClip,{
    names,hip:sourceHip.name,fps:30,useFirstFramePosition:false,
    preserveBoneMatrix:true,preserveBonePositions:true
