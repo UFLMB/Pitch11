@@ -27,7 +27,7 @@ function uniqueXmlNames(xml, tag) {
     const attrs = match[1] || "";
     const body = match[2] || "";
     const attributeName = attrs.match(/name="([^"]+)"/i)?.[1];
-    const childName = body.match(/<(?:name|Name|string)\\b[^>]*>([^<]+)<\\//)?.[1];
+    const childName = body.match(/<(?:name|Name|string)\b[^>]*>([^<]+)<\//)?.[1];
     const value = attributeName || childName;
     if (value) names.push(value.replaceAll("&amp;", "&").trim());
   };
@@ -37,7 +37,7 @@ function uniqueXmlNames(xml, tag) {
 }
 function xmlElementSamples(xml, tag) {
   const pattern = new RegExp("<" + tag + "\\b[^>]*>([\\s\\S]{0,700}?)", "gi");
-  return [...xml.matchAll(pattern)].slice(0, 8).map(match => match[0].replace(/\\s+/g, " ").slice(0, 700));
+  return [...xml.matchAll(pattern)].slice(0, 8).map(match => match[0].replace(/\s+/g, " ").slice(0, 700));
 }
 
 const report = {
