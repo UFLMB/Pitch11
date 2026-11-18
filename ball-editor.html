@@ -18,6 +18,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 <header><div class="brand">PITCH 11 <small>BALL STUDIO · CUSTOM EQUIPMENT</small></div><div class="status" id="status">3D PREVIEW READY</div></header>
 <aside id="panel">
  <div class="eyebrow">EQUIPMENT LAB</div><h1>Ball Studio</h1><p class="intro">Create an original match ball. Paint directly on the 3D surface, add decals and export the texture profile.</p>
+ <div class="section"><div class="section-title">3D MODEL</div><div class="grid2"><button id="loadCC0" class="primary">Load free CC0 ball</button><button id="modelFileButton">Import own GLB</button></div><input id="modelFile" type="file" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden><div class="hint">Loads the free Innerscene size-5 ball or a local GLB. Painting requires UV coordinates in the model. The match physics remain unchanged.</div></div>
  <div class="section"><div class="section-title">BASE COLOUR</div><div class="palette" id="palette"></div><label>Custom colour<input id="baseColour" type="color" value="#f4f3ed"></label><div class="grid2"><button id="classic">Hex panel pattern</button><button id="clear">Clear design</button></div></div>
  <div class="section"><div class="section-title">PAINT TOOL</div><div class="toolrow"><button id="paintMode" class="primary">Paint on ball</button><button id="rotateMode">Rotate view</button></div><div class="row"><label>Brush colour<input id="brushColour" type="color" value="#a3e635"></label><label>Brush size<input id="brushSize" type="range" min="4" max="100" value="28"></label></div><div class="hint">Drag on the ball to paint. On mobile, use one finger; rotate the view when the paint tool is off.</div></div>
  <div class="section"><div class="section-title">DECALS & GRAPHICS</div><label>Text / number<input id="decalText" type="text" maxlength="28" placeholder="PITCH 11 · 2026"></label><div class="row"><label>Text colour<input id="textColour" type="color" value="#111820"></label><label>Text size<input id="textSize" type="range" min="18" max="150" value="68"></label></div><div class="grid2"><button id="addText" class="primary">Add text decal</button><button id="addBadge">Add P11 mark</button></div><label>Upload PNG / JPG sticker<input id="stickerFile" type="file" accept="image/png,image/jpeg,image/webp"></label><div class="hint">Text and image stickers are baked into the UV texture, so they remain attached to the ball as it spins.</div></div>
@@ -30,7 +31,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';\nimport {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
@@ -49,7 +50,7 @@ const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.02,64),new THREE.MeshBasi
 function refresh(){texture.needsUpdate=true}
 function drawBrush(uv,colour,radius){const x=uv.x*size,y=(1-uv.y)*size;g.fillStyle=colour;g.beginPath();g.arc(x,y,radius,0,Math.PI*2);g.fill();refresh()}
 const raycaster=new THREE.Raycaster(),ndc=new THREE.Vector2();
-function uvAt(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(ndc,camera);const hit=raycaster.intersectObject(ball,false)[0];return hit?.uv||null}
+function uvAt(e){const r=renderer.domElement.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1);raycaster.setFromCamera(ndc,camera);const hit=raycaster.intersectObjects(ballRoot.children,true)[0];return hit?.uv||null}
 renderer.domElement.addEventListener('pointerdown',e=>{if(!paintEnabled)return;const uv=uvAt(e);if(!uv)return;snapshot();painting=true;lastUV=uv;renderer.domElement.setPointerCapture(e.pointerId);drawBrush(uv,$('brushColour').value,Number($('brushSize').value));});
 renderer.domElement.addEventListener('pointermove',e=>{if(!painting)return;const uv=uvAt(e);if(!uv)return;const dx=(uv.x-lastUV.x)*size,dy=(uv.y-lastUV.y)*size,dist=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(dist/8));for(let i=1;i<=steps;i++){const t=i/steps;drawBrush({x:lastUV.x+(uv.x-lastUV.x)*t,y:lastUV.y+(uv.y-lastUV.y)*t},$('brushColour').value,Number($('brushSize').value))}lastUV=uv});
 function stopPaint(){painting=false;lastUV=null}renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
@@ -69,7 +70,8 @@ $('rotateMode').addEventListener('click',()=>{paintEnabled=false;$('rotateMode')
 $('addText').addEventListener('click',()=>addText($('decalText').value,$('textColour').value,Number($('textSize').value)));
 $('addBadge').addEventListener('click',addBadge);
 $('stickerFile').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;const img=new Image();img.onload=()=>{snapshot();const w=Math.min(size*.48,img.width),h=w*img.height/img.width;g.drawImage(img,(size-w)/2,(size-h)/2,w,h);refresh();URL.revokeObjectURL(img.src)};img.src=URL.createObjectURL(file)});
-$('roughness').addEventListener('input',e=>material.roughness=Number(e.target.value)/100);$('metalness').addEventListener('input',e=>material.metalness=Number(e.target.value)/100);
+$('roughness').addEventListener('input',e=>paintMaterials.forEach(m=>m.roughness=Number(e.target.value)/100));$('metalness').addEventListener('input',e=>paintMaterials.forEach(m=>m.metalness=Number(e.target.value)/100));
+$('loadCC0').addEventListener('click',loadRemoteBall);$('modelFileButton').addEventListener('click',()=>$('modelFile').click());$('modelFile').addEventListener('change',e=>loadLocalBall(e.target.files?.[0]));
 $('undo').addEventListener('click',()=>{const im=undoStack.pop();if(im){g.putImageData(im,0,0);refresh();status.textContent='LAST EDIT UNDONE'}});
 $('save').addEventListener('click',saveLocal);$('exportPng').addEventListener('click',exportPNG);
 $('exportJson').addEventListener('click',()=>saveDownload(new Blob([JSON.stringify(profile())],{type:'application/json'}),'pitch11-ball-profile.json'));
@@ -78,7 +80,7 @@ $('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)re
 $('resetView').addEventListener('click',()=>{camera.position.set(0,0,3.25);controls.target.set(0,0,0);controls.update()});
 $('togglePanel').addEventListener('click',()=>$('panel').classList.toggle('collapsed'));
 base();
-function animate(){requestAnimationFrame(animate);controls.update();ball.rotation.y+=.0018;renderer.render(scene,camera)}animate();
+function animate(){requestAnimationFrame(animate);controls.update();ballRoot.rotation.y+=.0018;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5))});
 </script>
 </body></html>
