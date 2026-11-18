@@ -50,15 +50,15 @@ svg{display:block}@media(max-width:900px), (max-height:600px){header{top:9px;lef
   <div class="kit-intro-heading"><span class="eyebrow">Appearance editor / 01</span><span class="heading">Player Kit Studio</span></div>
   <div class="kit-intro-content"><p class="intro">Select a kit component and choose a colour. Every colour change is applied immediately to the complete mapped garment. Skin and non-clothing surfaces are protected. The jersey mask includes the torso and all four mapped sleeve panels. Football boots have a separate footwear mask. UVs are projected in the accepted stored orientation (x = u × 1023, y = v × 1024), with no mirroring or rotation. Colour edits do not alter UV coordinates.</p></div>
  </div>
- <div class="section-title"><span>AI Kit Designer</span><span>Prompt → 3D texture</span></div>
+ <div class="section-title"><span>PITCHY Kit Designer</span><span>Prompt → 3D texture</span></div>
  <div class="prompt-layout"><textarea id="designPrompt" rows="4" maxlength="280" placeholder="Describe the kit design you want…"></textarea><div class="prompt-help"><strong>HOW TO USE</strong><p>Describe the base color, pattern, and accent color. The first recognized color becomes the base color; the second becomes the pattern or trim color.</p><strong>EXAMPLE</strong><p class="prompt-example">A dark navy jersey with thin vertical gold stripes and white trim.</p></div></div>
- <button class="primary" id="generateDesign" type="button">Generate Kit Design</button>
- <div class="foot" id="designHint">Local instruction-based designer · later edits replace earlier edits in the same area. Manual editing remains available.</div>
+ <button class="primary" id="generateDesign" type="button">Ask PITCHY</button>
+ <div class="foot" id="designHint">PITCHY local design robot · later edits replace earlier edits in the same area. Manual editing remains available.</div>
  <div class="section-title"><span>Design target</span><span>Independent UV region</span></div>
  <select id="designTarget" aria-label="Choose design target" style="display:block;width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#111b26;color:var(--text);font-size:11px;font-family:inherit">
   <option value="whole">Whole selected garment</option>
  </select>
- <div class="foot">Choose one UV panel to apply AI Designer patterns or trim to that region only. The garment base colour remains independent.</div>
+ <div class="foot">Choose one UV panel to apply PITCHY patterns or trim to that region only. The garment base colour remains independent.</div>
  <div class="section-title"><span>Kit Graphics</span><span>Text · Numbers · Logos</span></div>
  <div class="graphics-card">
   <label>Element type<select id="graphicElementType"><option value="club-logo">Club Crest / Logo</option><option value="club-name">Club Name</option><option value="player-name">Player Name</option><option value="jersey-number">Jersey Number</option><option value="team-name">Team Name</option><option value="additional-text">Additional Text</option><option value="sponsor" disabled>Sponsor · Coming Soon</option></select></label>
@@ -132,7 +132,7 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
-import {mountP11AIDesigner} from './engine/p11-ai-designer.mjs';
+import {mountPitchy} from './engine/pitchy.mjs';
 const $=s=>document.querySelector(s),status=$('#status'),error=$('#error');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
@@ -276,11 +276,11 @@ function generateKitDesign(plan=null){
   ctx.globalCompositeOperation='destination-in';ctx.drawImage(mask.canvas,0,0);ctx.globalCompositeOperation='source-over';
   state.detailCtx.drawImage(pattern,0,0);renderTexture();
  }
- saveLocal();status.textContent=(plan?'AI DESIGN APPLIED · '+plan.designName:'DESIGN GENERATED')+' · '+state.activeGarment.toUpperCase();
+ saveLocal();status.textContent=(plan?'PITCHY DESIGN APPLIED · '+plan.designName:'DESIGN GENERATED')+' · '+state.activeGarment.toUpperCase();
  $('#designHint').textContent=plan?plan.summary:'Design applied to '+state.activeGarment+'. This instruction replaced earlier edits inside its target area. Later edits can replace it again. Undo reverts the complete change.';
 }
 $('#generateDesign').addEventListener('click',()=>generateKitDesign());
-mountP11AIDesigner({type:'kit',onApply:plan=>generateKitDesign(plan)});
+mountPitchy({type:'kit',onApply:plan=>generateKitDesign(plan)});
 
 
 const BODY_SHAPE_KEY='p11-kit-studio-body-shape-v1';
