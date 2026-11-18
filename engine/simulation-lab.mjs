@@ -11,13 +11,14 @@ import { createSecurityPositions, crowdReactionProfile, crowdReactionEnvelope } 
 
 const host = document.querySelector("#scene");
 const mobile = matchMedia("(pointer: coarse)").matches || innerWidth < 800;
-const renderer = new THREE.WebGLRenderer({ antialias: !mobile, alpha: false, powerPreference: "high-performance", stencil: false });
-renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1 : 1.25));
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false });
+renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2));
 renderer.setSize(host.clientWidth, host.clientHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.12;
-renderer.shadowMap.enabled = false;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 host.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -30,8 +31,15 @@ scene.add(stadiumAtmosphere);
 scene.background = new THREE.Color(0x101e2a);
 scene.fog = new THREE.Fog(0x101e2a, 180, 360);
 scene.add(new THREE.HemisphereLight(0xc9e0ff, 0x1a241c, 1.65));
-const keyLight = new THREE.DirectionalLight(0xffe2bd, 1.65);
-keyLight.position.set(-65, 110, 45); scene.add(keyLight);
+const keyLight = new THREE.DirectionalLight(0xffe2bd, 1.9);
+keyLight.position.set(-65, 110, 45);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(mobile ? 1024 : 2048, mobile ? 1024 : 2048);
+keyLight.shadow.camera.left = -72; keyLight.shadow.camera.right = 72;
+keyLight.shadow.camera.top = 58; keyLight.shadow.camera.bottom = -58;
+keyLight.shadow.camera.near = 1; keyLight.shadow.camera.far = 220;
+keyLight.shadow.bias = -0.00012;
+scene.add(keyLight);
 const fillLight = new THREE.DirectionalLight(0x91bfff, .65);
 fillLight.position.set(70, 70, -85); scene.add(fillLight);
 
@@ -70,7 +78,7 @@ const grassTexture = new THREE.CanvasTexture(grassCanvas);
 grassTexture.colorSpace = THREE.SRGBColorSpace;
 grassTexture.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
 const pitch = new THREE.Mesh(new THREE.PlaneGeometry(105, 68), new THREE.MeshStandardMaterial({ map: grassTexture, roughness: 1 }));
-pitch.rotation.x = -Math.PI / 2; pitch.position.y = .025; scene.add(pitch);
+pitch.rotation.x = -Math.PI / 2; pitch.position.y = .025; pitch.receiveShadow = true; scene.add(pitch);
 
 const lineMat = new THREE.MeshBasicMaterial({ color: 0xe6eee3 });
 function lineRect(w, d, x, z, thickness = .12) {
@@ -318,7 +326,9 @@ function createSkinnedPlayerMesh(p) {
   if (!Number.isFinite(height) || height < .5) return null;
   const scale = 1.8 / height;
   model.scale.setScalar(scale);
+  model.rotation.y = Math.PI; // The shared player asset faces local +Z; the match rigs use local -Z.
   model.position.y = -bounds.min.y * scale;
+  model.traverse(node => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = false; } });
   group.add(model);
   const mixer = new THREE.AnimationMixer(model);
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .045, 6, 28), new THREE.MeshBasicMaterial({ color: 0xf4d36d }));
@@ -403,6 +413,7 @@ function createPlayerMesh(p) {
   ring.rotation.x = Math.PI / 2; ring.position.y = .09; ring.visible = false; group.add(ring);
   group.userData.ring = ring;
   group.userData.rig = { torso, legs, knees, arms, elbows };
+  group.traverse(node => { if (node.isMesh) { node.castShadow = true; node.receiveShadow = false; } });
   scene.add(group); playerMeshes.set(p.id, group); return group;
 }
 for (const p of simulation.players) createPlayerMesh(p);
@@ -528,7 +539,11 @@ function syncMeshes(snapshot, dt) {
     group.visible = !p.out;
     if (!p.out) {
       group.position.set(p.x - 52.5, 0, p.y - 34);
-      group.rotation.y = -p.facing - Math.PI / 2;
+      const targetYaw = p.role === "GK"
+        ? Math.atan2(-(snapshot.ball.y - p.y), -(snapshot.ball.x - p.x))
+        : -p.facing - Math.PI / 2;
+      const yawDelta = Math.atan2(Math.sin(targetYaw - group.rotation.y), Math.cos(targetYaw - group.rotation.y));
+      group.rotation.y += yawDelta * (1 - Math.exp(-14 * Math.max(dt, 1 / 120)));
       group.userData.ring.visible = p.selected;
       const speed = Math.hypot(p.vx, p.vy);
       const rig = group.userData.rig;
@@ -587,6 +602,6 @@ document.addEventListener("visibilitychange", () => { last = performance.now(); 
 window.addEventListener("resize", () => {
   const width = host.clientWidth, height = host.clientHeight;
   camera.aspect = width / height; camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1 : 1.25)); renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.5 : 2)); renderer.setSize(width, height);
 });
 requestAnimationFrame(frame);

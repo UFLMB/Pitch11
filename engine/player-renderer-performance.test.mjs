@@ -38,3 +38,24 @@ test("optimized GLB asset contract defines mobile-conscious geometry and texture
   assert.ok(workflow.includes("m_run_neutral_01.glb"));
   assert.ok(workflow.includes("node scripts/validate-player-assets.mjs"));
 });
+
+
+test("3D match runtime keeps goalkeepers facing the live ball and corrects the shared GLB forward axis", () => {
+  const runtime = read("./simulation-lab.mjs");
+  assert.ok(runtime.includes('p.role === "GK"'));
+  assert.ok(runtime.includes("snapshot.ball.y - p.y"));
+  assert.ok(runtime.includes("snapshot.ball.x - p.x"));
+  assert.ok(runtime.includes("model.rotation.y = Math.PI"));
+  assert.ok(runtime.includes("group.rotation.y += yawDelta"));
+});
+
+test("3D match runtime enables mobile antialiasing, higher resolution and player shadows", () => {
+  const runtime = read("./simulation-lab.mjs");
+  assert.ok(runtime.includes("antialias: true"));
+  assert.ok(runtime.includes("mobile ? 1.5 : 2"));
+  assert.ok(runtime.includes("renderer.shadowMap.enabled = true"));
+  assert.ok(runtime.includes("THREE.PCFSoftShadowMap"));
+  assert.ok(runtime.includes("keyLight.castShadow = true"));
+  assert.ok(runtime.includes("pitch.receiveShadow = true"));
+  assert.ok(runtime.includes("node.castShadow = true"));
+});
