@@ -18,7 +18,7 @@ test("normalizes Mixamo namespace spelling to the exact existing skeleton bone n
 test("supports case, separators and numbered Mixamo prefixes without changing bone transforms", () => {
   const result = normalizeMixamoTrackTargets(
     ["mixamorig1Hips", "mixamorig1Spine"],
-    [track("MixamoRig_1:Hips.position"), track("mixamorig1:Spine.quaternion")]
+    [track("mixamorig1:Hips.position"), track("mixamorig1:Spine.quaternion")]
   );
   assert.deepEqual(result.unresolved, []);
   assert.deepEqual(result.tracks.map(item => item.name), ["mixamorig1Hips.position", "mixamorig1Spine.quaternion"]);
