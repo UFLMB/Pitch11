@@ -33,7 +33,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {mountP11AIDesigner} from './engine/pitchy.mjs';
+import {mountPitchy} from './engine/pitchy.mjs';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
@@ -148,7 +148,7 @@ function applyAIBallDesign(plan){
  refresh();saveLocal();status.textContent='PITCHY DESIGN APPLIED · '+plan.designName.toUpperCase();
 }
 base();
-mountP11AIDesigner({type:'ball',onApply:applyAIBallDesign});
+mountPitchy({type:'ball',onApply:applyAIBallDesign});
 loadRemoteBall();
 function animate(){requestAnimationFrame(animate);controls.update();ballRoot.rotation.y+=.0018;renderer.render(scene,camera)}animate();
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5))});
