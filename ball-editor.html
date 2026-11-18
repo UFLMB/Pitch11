@@ -33,7 +33,7 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {mountPitchy} from './engine/pitchy.mjs';
+import {mountPitchy} from './engine/pitchy-v2.mjs';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
