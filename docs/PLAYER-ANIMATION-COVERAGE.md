@@ -9,7 +9,7 @@
 - **54/54 FBX files are present** in `input/player-package/`.
 - The isolated Mixamo direct-binding audit previously reported **54 PASS / 0 FAIL** against the uploaded `character.fbx`.
 - The passing audit proves that the clips can bind to that character skeleton in the diagnostic player. It does **not** prove that every football gameplay action has a dedicated clip, or that the clips are already wired into the live match state machine.
-- The current game has a 3D skinned-player rendering path (`drawPlayer3` / stadium renderer). The Mixamo audit page remains a separate diagnostic; do not treat it as production integration.
+- The current match players are still drawn by the procedural Canvas 2D player renderer (`drawPlayer3`; the legacy `drawPlayer` functions are disabled). Despite its name, `drawPlayer3` is not a skinned 3D character renderer. The Mixamo audit page remains a separate diagnostic; the FBX clips are not yet integrated into the live match.
 - The existing set is a strong first animation pack, but **not yet complete for a full UFL/EA FC-style 11v11 animation system**.
 
 ## Current clip inventory
@@ -120,4 +120,4 @@ The current pack is sufficient to prototype a convincing animated footballer and
 6. celebration and team reactions;
 7. goalkeeper punch, high claim and recovery.
 
-This is a coverage assessment, not an instruction to integrate or replace production assets yet. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD.
+This is a coverage assessment, not an instruction to integrate or replace production assets yet. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD.
