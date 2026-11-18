@@ -64,8 +64,10 @@ const report = {
   animationClipCount: 0,
   meshNames: [],
   materialNames: [],
+  nodeNames: [],
   meshXmlSamples: [],
   materialXmlSamples: [],
+  nodeXmlSamples: [],
   animationRigCoverage: null,
   status: "missing"
 };
@@ -92,8 +94,10 @@ try {
     const nodeNames = uniqueXmlNames(xml, "Node");
     report.meshNames = uniqueXmlNames(xml, "Mesh");
     report.materialNames = uniqueXmlNames(xml, "Material");
+    report.nodeNames = nodeNames;
     report.meshXmlSamples = xmlElementSamples(xml, "Mesh");
     report.materialXmlSamples = xmlElementSamples(xml, "Material");
+    report.nodeXmlSamples = xmlElementSamples(xml, "Node");
     const info = run(["info", modelPath]);
     report.skinnedBoneCount = boneNames.length;
     report.hierarchyNodeCount = nodeNames.length;
