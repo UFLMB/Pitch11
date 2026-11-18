@@ -126,7 +126,8 @@ export class MatchPlayerRenderer {
     mobile = false,
     modelUrl = new URL("../input/player-model-candidate/character.fbx", import.meta.url).href,
     fallbackModelUrl = new URL("../assets/players/player.glb", import.meta.url).href,
-    modelLoadTimeoutMs = 0
+    modelLoadTimeoutMs = 0,
+    castShadows = false
   } = {}) {
     this.scene = scene;
     this.mobile = !!mobile;
@@ -134,6 +135,7 @@ export class MatchPlayerRenderer {
     this.modelUrl = modelUrl;
     this.fallbackModelUrl = fallbackModelUrl;
     this.modelLoadTimeoutMs = Math.max(0, Number(modelLoadTimeoutMs) || 0);
+    this.castShadows = !!castShadows;
     this.fbxLoader = new FBXLoader();
     this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
@@ -345,8 +347,8 @@ export class MatchPlayerRenderer {
     model.updateMatrixWorld(true);
     model.traverse(node => {
       if (!node.isMesh) return;
-      node.castShadow = false;
-      node.receiveShadow = false;
+      node.castShadow = this.castShadows;
+      node.receiveShadow = this.castShadows;
       node.frustumCulled = false;
       if (Array.isArray(node.material)) node.material = node.material.map(material => kitMaterial(material, node.name, state, this.materialVariants));
       else if (node.material) node.material = kitMaterial(node.material, node.name, state, this.materialVariants);
