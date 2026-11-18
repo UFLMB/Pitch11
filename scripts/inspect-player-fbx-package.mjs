@@ -73,14 +73,14 @@ for (const entry of files) {
   run("assimp", ["dump", target, xmlPath]);
   const xml = await readFile(xmlPath, "utf8");
   if (process.env.PITCH11_FBX_DEBUG === "1" && entry.name.toLowerCase() === "jog forward.fbx") {
-    console.log("\\n===== ASSIMP XML HEADER: jog forward.fbx =====\\n" + xml.slice(0, 12000));
-    const nodeAnim = xml.match(/<NodeAnim\\b[\\s\\S]*?(?:<\\/NodeAnim>|\\/>)/i);
-    console.log("\\n===== FIRST NODE ANIMATION =====\\n" + (nodeAnim?.[0] || "NO NodeAnim element found"));
-    console.log("\\n===== PARSER COUNTS =====\\n" + JSON.stringify({
-      nodeTags: (xml.match(/<Node\\b/gi) || []).length,
-      boneTags: (xml.match(/<Bone\\b/gi) || []).length,
-      animationTags: (xml.match(/<Animation\\b/gi) || []).length,
-      nodeAnimTags: (xml.match(/<NodeAnim\\b/gi) || []).length,
+    console.log("\n===== ASSIMP XML HEADER: jog forward.fbx =====\n" + xml.slice(0, 12000));
+    const nodeAnim = xml.match(/<NodeAnim\b[\s\S]*?(?:<\/NodeAnim>|\/>)/i);
+    console.log("\n===== FIRST NODE ANIMATION =====\n" + (nodeAnim?.[0] || "NO NodeAnim element found"));
+    console.log("\n===== PARSER COUNTS =====\n" + JSON.stringify({
+      nodeTags: (xml.match(/<Node\b/gi) || []).length,
+      boneTags: (xml.match(/<Bone\b/gi) || []).length,
+      animationTags: (xml.match(/<Animation\b/gi) || []).length,
+      nodeAnimTags: (xml.match(/<NodeAnim\b/gi) || []).length,
       nodeNames: names(xml, "Node").slice(0, 30),
       boneNames: names(xml, "Bone").slice(0, 30)
     }, null, 2));
