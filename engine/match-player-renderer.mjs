@@ -7,6 +7,7 @@ import { resolvePlayerAnimationState, resolvePlayerClip } from "./player-animati
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
+import { flattenHorizontalRootMotion, getLocomotionTimeScale } from "./locomotion-animation.mjs";
 
 const ONE_SHOT_STATES = new Set([
   "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "fall", "getUp", "throwIn",
@@ -203,22 +204,10 @@ export class MatchPlayerRenderer {
       const binding = validateDirectMixamoClip(this.template, sourceClip);
       const clip = binding.clip;
       clip.name = file.replace(/\.fbx$/i, "");
-      // Match movement to the simulation's player transform: locomotion clips animate
-      // the gait in place, rather than translating the skeleton and then snapping on loop.
+      // The simulation owns world translation; flatten horizontal root drift
+      // while retaining vertical pelvis motion for natural gait bounce.
       if (/^(jog forward|jog backward|jog strafe left|jog strafe right)\.fbx$/i.test(file)) {
-        for (const track of clip.tracks) {
-          if (!/\.position$/i.test(track.name)) continue;
-          const bone = track.name.slice(0, track.name.lastIndexOf(".")).replace(/[\s_]/g, "").toLowerCase();
-          if (!/(mixamorig)?hips$/.test(bone) && !/(mixamorig)?root$/.test(bone)) continue;
-          const values = track.values;
-          if (!values || values.length < 3) continue;
-          const x = values[0];
-          const z = values[2];
-          for (let i = 0; i + 2 < values.length; i += 3) {
-            values[i] = x;
-            values[i + 2] = z;
-          }
-        }
+        flattenHorizontalRootMotion(clip);
       }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
       this.clipCache.set(file, clip);
@@ -355,7 +344,7 @@ export class MatchPlayerRenderer {
         entry.state = animationState;
       }
       if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
-        entry.activeAction.timeScale = animationState === "walk" ? 0.72 : animationState === "sprint" ? 1.28 : 1;
+        entry.activeAction.timeScale = getLocomotionTimeScale(animationState, state.speed);
       }
       if (updateAnimations) mixer.update(animationDelta);
     }
