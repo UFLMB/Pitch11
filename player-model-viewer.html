@@ -105,29 +105,32 @@ function stopAnimation(){if(mixer){mixer.stopAllAction();mixer.setTime(0)}curren
 function playSelected(){if(!mixer||!clips.length)return;stopAnimation();const clip=clips[Number($('animationSelect').value)]||clips[0];if(!clip)return;currentAction=mixer.clipAction(clip,activeRoot);currentAction.reset().setLoop(looping?THREE.LoopRepeat:THREE.LoopOnce,looping?Infinity:1);currentAction.clampWhenFinished=!looping;currentAction.play();currentAction.timeScale=Number($('speed').value);playing=true;$('playPause').textContent='PAUSE';updateTimeline()
 }
 const mixamoToBip01={
- 'Bip01 Pelvis':'mixamorig:Hips',
- 'Bip01 Spine':'mixamorig:Spine',
- 'Bip01 Spine1':'mixamorig:Spine1',
- 'Bip01 Spine2':'mixamorig:Spine2',
- 'Bip01 Neck':'mixamorig:Neck',
- 'Bip01 Head':'mixamorig:Head',
- 'Bip01 L Clavicle':'mixamorig:LeftShoulder',
- 'Bip01 L UpperArm':'mixamorig:LeftArm',
- 'Bip01 L Forearm':'mixamorig:LeftForeArm',
- 'Bip01 L Hand':'mixamorig:LeftHand',
- 'Bip01 L Thigh':'mixamorig:LeftUpLeg',
- 'Bip01 L Calf':'mixamorig:LeftLeg',
- 'Bip01 L Foot':'mixamorig:LeftFoot',
- 'Bip01 L Toe0':'mixamorig:LeftToeBase',
- 'Bip01 R Clavicle':'mixamorig:RightShoulder',
- 'Bip01 R UpperArm':'mixamorig:RightArm',
- 'Bip01 R Forearm':'mixamorig:RightForeArm',
- 'Bip01 R Hand':'mixamorig:RightHand',
- 'Bip01 R Thigh':'mixamorig:RightUpLeg',
- 'Bip01 R Calf':'mixamorig:RightLeg',
- 'Bip01 R Foot':'mixamorig:RightFoot',
- 'Bip01 R Toe0':'mixamorig:RightToeBase'
+ 'Bip01 Pelvis':'Hips',
+ 'Bip01 Spine':'Spine',
+ 'Bip01 Spine1':'Spine1',
+ 'Bip01 Spine2':'Spine2',
+ 'Bip01 Neck':'Neck',
+ 'Bip01 Head':'Head',
+ 'Bip01 L Clavicle':'LeftShoulder',
+ 'Bip01 L UpperArm':'LeftArm',
+ 'Bip01 L Forearm':'LeftForeArm',
+ 'Bip01 L Hand':'LeftHand',
+ 'Bip01 L Thigh':'LeftUpLeg',
+ 'Bip01 L Calf':'LeftLeg',
+ 'Bip01 L Foot':'LeftFoot',
+ 'Bip01 L Toe0':'LeftToeBase',
+ 'Bip01 R Clavicle':'RightShoulder',
+ 'Bip01 R UpperArm':'RightArm',
+ 'Bip01 R Forearm':'RightForeArm',
+ 'Bip01 R Hand':'RightHand',
+ 'Bip01 R Thigh':'RightUpLeg',
+ 'Bip01 R Calf':'RightLeg',
+ 'Bip01 R Foot':'RightFoot',
+ 'Bip01 R Toe0':'RightToeBase'
 };
+function normalizeMixamoBoneName(name){
+ return String(name||'').toLowerCase().replace(/^mixamorig[:_]?/,'').replace(/[^a-z0-9]/g,'');
+}
 async function retargetFbxAnimation(){
  const file=$('animationFbx').files?.[0];if(!file)return;
  if(!activeRoot){$('retargetInfo').textContent='Load a player model first.';return}
@@ -141,12 +144,17 @@ async function retargetFbxAnimation(){
   if(!targetMeshes.length)throw new Error('The active player model has no skinned mesh.');
   const targetMesh=targetMeshes.find(m=>m.skeleton.bones.some(b=>b.name==='Bip01 Pelvis'))||targetMeshes[0];
   const targetNames=new Set(targetMesh.skeleton.bones.map(b=>b.name));
-  const sourceNames=new Set(sourceBones.map(b=>b.name));
-  const names={};for(const [targetName,sourceName] of Object.entries(mixamoToBip01)){if(targetNames.has(targetName)&&sourceNames.has(sourceName))names[targetName]=sourceName}
-  if(!names['Bip01 Pelvis'])throw new Error('Could not match the pelvis bone. Source FBX names: '+[...sourceNames].filter(n=>n.toLowerCase().includes('hip')).slice(0,5).join(', '));
+  const sourceBoneByName=new Map(sourceBones.map(b=>[normalizeMixamoBoneName(b.name),b]));
+  const names={};for(const [targetName,sourceShortName] of Object.entries(mixamoToBip01)){
+   const sourceBone=sourceBoneByName.get(normalizeMixamoBoneName(sourceShortName));
+   if(targetNames.has(targetName)&&sourceBone)names[targetName]=sourceBone.name;
+  }
+  const sourceHip=sourceBoneByName.get('hips');
+  if(!names['Bip01 Pelvis']||!sourceHip)throw new Error('Could not match the pelvis bone. Source FBX names: '+[...sourceBoneByName.values()].filter(b=>normalizeMixamoBoneName(b.name).includes('hip')).slice(0,5).map(b=>b.name).join(', '));
+  if(Object.keys(names).length<18)throw new Error('Only '+Object.keys(names).length+' compatible Mixamo/Bip01 bones found. Check the target model rig.');
   const sourceClip=(sourceRoot.animations||[])[0];if(!sourceClip)throw new Error('FBX contains no animation clip.');
   const retargeted=SkeletonUtils.retargetClip(targetMesh,sourceSkeleton,sourceClip,{
-   names,hip:'mixamorig:Hips',fps:30,useFirstFramePosition:false,
+   names,hip:sourceHip.name,fps:30,useFirstFramePosition:false,
    preserveBoneMatrix:true,preserveBonePositions:true
   });
   if(!retargeted.tracks.length)throw new Error('Retargeting produced no animation tracks.');
