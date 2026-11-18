@@ -278,8 +278,8 @@ export class MatchPlayerRenderer {
     this.groundHeight = Number.isFinite(value) ? value : 0;
   }
 
-  update(legacyPlayers, selectedPlayer, alpha = 1, delta = 1 / 60) {
-    const states = mapLegacyPlayers(legacyPlayers, alpha, selectedPlayer);
+  update(legacyPlayers, selectedPlayer, alpha = 1, delta = 1 / 60, context = {}) {
+    const states = mapLegacyPlayers(legacyPlayers, alpha, selectedPlayer, context.ballOwner || null, context.restart || null);
     this.inputPlayerCount = states.length;
     this.visiblePlayerCount = states.reduce((count, state) => count + (state.visible ? 1 : 0), 0);
     if (!this.template || this.status !== "ready") return false;
