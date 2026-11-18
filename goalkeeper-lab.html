@@ -30,6 +30,7 @@ h1{font-size:17px;margin:0 0 5px}.desc{font-size:10px;line-height:1.5;color:var(
 <script type="module">
 import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
+import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 const renderer=new THREE.WebGLRenderer({antialias:!mobile,powerPreference:"high-performance"});
