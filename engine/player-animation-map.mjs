@@ -46,6 +46,7 @@ const ALIAS_TO_STATE = new Map(
 export function resolvePlayerAnimationState(player, speed = 0) {
   const action = normalize(player?.action);
   if (action.includes("keepercatch") || action.includes("keeperclaim")) return "keeperCatch";
+  if (action.includes("keeperpass")) return "keeperPass";
   if (action.includes("keeperscoop")) return "keeperScoop";
   if (action.includes("keepermiss")) return "keeperMiss";
   if (action.includes("keeperthrow")) return "keeperThrow";
@@ -63,6 +64,9 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (action.includes("fallenidle")) return "fallenIdle";
   if (action.includes("header")) return "header";
   if (action.includes("shot")) return "shot";
+  if (action.includes("pass")) return "pass";
+  if (action.includes("getup")) return "getUp";
+  if (action.includes("fall")) return "fall";
   if (action.includes("slidetackle")) return "slide";
   if (action.includes("tackle")) return "tackle";
   if (action === "kick") return "shot";
