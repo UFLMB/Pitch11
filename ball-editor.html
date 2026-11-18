@@ -31,7 +31,8 @@ header{position:fixed;z-index:3;top:14px;left:16px;right:16px;display:flex;justi
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 <script type="module">
 import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';\nimport {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 const $=id=>document.getElementById(id),status=$('status');
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,100);camera.position.set(0,0,3.25);
@@ -45,7 +46,49 @@ function drawPanelPattern(){g.save();g.strokeStyle='rgba(15,22,28,.18)';g.lineWi
 function snapshot(){try{undoStack.push(g.getImageData(0,0,size,size));if(undoStack.length>8)undoStack.shift()}catch{}}
 const texture=new THREE.CanvasTexture(textureCanvas);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=renderer.capabilities.getMaxAnisotropy();
 const material=new THREE.MeshStandardMaterial({map:texture,roughness:.58,metalness:.02});
-const ball=new THREE.Mesh(new THREE.SphereGeometry(1,96,64),material);scene.add(ball);
+let paintMaterials=[material];
+let ballRoot=new THREE.Group();scene.add(ballRoot);
+const loader=new GLTFLoader();
+function applyPaintMaterial(root){
+ paintMaterials=[];
+ root.traverse(node=>{
+  if(!node.isMesh)return;
+  const source=Array.isArray(node.material)?node.material:[node.material];
+  const mapped=source.map(old=>{
+   const next=old?.clone?.()||new THREE.MeshStandardMaterial();
+   next.map=texture;next.color.set(0xffffff);next.roughness=Number($('roughness').value)/100;next.metalness=Number($('metalness').value)/100;next.needsUpdate=true;paintMaterials.push(next);return next;
+  });
+  node.material=Array.isArray(node.material)?mapped:mapped[0];
+ });
+}
+function fitBall(root){
+ const bounds=new THREE.Box3().setFromObject(root),center=bounds.getCenter(new THREE.Vector3()),extent=bounds.getSize(new THREE.Vector3()),maxDim=Math.max(extent.x,extent.y,extent.z);
+ if(!Number.isFinite(maxDim)||maxDim<=0)throw new Error('Model has no measurable geometry');
+ root.position.sub(center);root.scale.multiplyScalar(2/maxDim);
+}
+function replaceBall(root,label){
+ scene.remove(ballRoot);
+ let sourceMap=null,sourceColour=null;
+ root.traverse(node=>{if(!sourceMap&&node.isMesh){const mats=Array.isArray(node.material)?node.material:[node.material];for(const m of mats){if(m?.map?.image){sourceMap=m.map;break}if(m?.color&&!sourceColour)sourceColour=m.color.getStyle()}}});
+ g.clearRect(0,0,size,size);
+ if(sourceMap?.image){try{g.drawImage(sourceMap.image,0,0,size,size)}catch{g.fillStyle='#f4f3ed';g.fillRect(0,0,size,size)}}
+ else{g.fillStyle=sourceColour||'#f4f3ed';g.fillRect(0,0,size,size)}
+ refresh();
+ ballRoot=root;fitBall(ballRoot);applyPaintMaterial(ballRoot);scene.add(ballRoot);
+ controls.target.set(0,0,0);camera.position.set(0,0,3.25);controls.update();
+ const hasUv=[];ballRoot.traverse(n=>{if(n.isMesh)hasUv.push(!!n.geometry.getAttribute('uv'))});
+ status.textContent=hasUv.length&&hasUv.every(Boolean)?label+' · UV PAINT READY':label+' · UV MAP MISSING';
+}
+async function loadRemoteBall(){
+ status.textContent='LOADING CC0 MODEL…';
+ try{const gltf=await loader.loadAsync('https://files.innerscene.com/library/soccer-ball-f39dfd3f2d6e8be156/soccer-ball.glb');replaceBall(gltf.scene,'CC0 SOCCER BALL')}
+ catch(err){console.error(err);status.textContent='MODEL LOAD FAILED · IMPORT GLB FILE INSTEAD'}
+}
+function loadLocalBall(file){
+ if(!file)return;const url=URL.createObjectURL(file);status.textContent='IMPORTING GLB…';
+ loader.load(url,gltf=>{replaceBall(gltf.scene,'LOCAL MODEL');URL.revokeObjectURL(url)},undefined,err=>{console.error(err);status.textContent='GLB IMPORT FAILED';URL.revokeObjectURL(url)});
+}
+const starterBall=new THREE.Mesh(new THREE.SphereGeometry(1,96,64),material);ballRoot.add(starterBall);applyPaintMaterial(ballRoot);
 const shadow=new THREE.Mesh(new THREE.CircleGeometry(1.02,64),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.24,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=-1.12;shadow.scale.set(1.1,.34,1);scene.add(shadow);
 function refresh(){texture.needsUpdate=true}
 function drawBrush(uv,colour,radius){const x=uv.x*size,y=(1-uv.y)*size;g.fillStyle=colour;g.beginPath();g.arc(x,y,radius,0,Math.PI*2);g.fill();refresh()}
@@ -58,7 +101,7 @@ function saveDownload(blob,name){const url=URL.createObjectURL(blob),a=document.
 function addText(text,colour,sizePx){if(!text.trim())return;snapshot();g.save();g.fillStyle=colour;g.textAlign='center';g.textBaseline='middle';g.font='900 '+sizePx+'px Inter,Arial,sans-serif';g.shadowColor='#0004';g.shadowBlur=5;g.fillText(text,size/2,size*.5, size*.86);g.restore();refresh()}
 function addBadge(){snapshot();g.save();g.translate(size/2,size/2);g.fillStyle='#a3e635';g.beginPath();g.arc(0,0,180,0,Math.PI*2);g.fill();g.fillStyle='#0b1117';g.font='900 190px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('P11',0,8);g.restore();refresh()}
 function exportPNG(){textureCanvas.toBlob(b=>b&&saveDownload(b,'pitch11-ball-texture.png'),'image/png')}
-function profile(){return {format:'PITCH11-BALL-1',name:'PITCH 11 Custom Ball',texture: textureCanvas.toDataURL('image/png'),roughness:Number($('roughness').value)/100,metalness:Number($('metalness').value)/100,createdAt:new Date().toISOString(),model:'uv-sphere-prototype'}}
+function profile(){return {format:'PITCH11-BALL-1',name:'PITCH 11 Custom Ball',texture:textureCanvas.toDataURL('image/png'),roughness:Number($('roughness').value)/100,metalness:Number($('metalness').value)/100,createdAt:new Date().toISOString(),model:'loaded-uv-ball'}}
 function saveLocal(){try{localStorage.setItem('p11-ball-studio-profile',JSON.stringify(profile()));status.textContent='DESIGN SAVED LOCALLY'}catch(e){status.textContent='STORAGE FULL · EXPORT PNG INSTEAD'}}
 $('palette').innerHTML=['#f4f3ed','#111820','#a3e635','#d7ad63','#e63946','#1769aa','#f5a623','#7c3aed','#ffffff','#00a6a6','#394b59','#d1d5db','#ff6b35','#8b5e3c'].map((c,i)=>'<button class="swatch '+(!i?'active':'')+'" data-colour="'+c+'" style="background:'+c+'"></button>').join('');
 $('palette').addEventListener('click',e=>{const b=e.target.closest('[data-colour]');if(!b)return;$('baseColour').value=b.dataset.colour;$('palette').querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===b));base(b.dataset.colour)});
@@ -76,7 +119,7 @@ $('undo').addEventListener('click',()=>{const im=undoStack.pop();if(im){g.putIma
 $('save').addEventListener('click',saveLocal);$('exportPng').addEventListener('click',exportPNG);
 $('exportJson').addEventListener('click',()=>saveDownload(new Blob([JSON.stringify(profile())],{type:'application/json'}),'pitch11-ball-profile.json'));
 $('importJson').addEventListener('click',()=>$('jsonFile').click());
-$('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);if(p.format!=='PITCH11-BALL-1'||typeof p.texture!=='string')throw Error('Invalid PITCH 11 ball profile');const img=new Image();img.onload=()=>{snapshot();g.clearRect(0,0,size,size);g.drawImage(img,0,0,size,size);$('roughness').value=Math.round((p.roughness??.58)*100);$('metalness').value=Math.round((p.metalness??.02)*100);material.roughness=Number($('roughness').value)/100;material.metalness=Number($('metalness').value)/100;refresh();status.textContent='PROFILE IMPORTED'};img.src=p.texture}catch(err){status.textContent='IMPORT FAILED · INVALID PROFILE'}};reader.readAsText(f)});
+$('jsonFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);if(p.format!=='PITCH11-BALL-1'||typeof p.texture!=='string')throw Error('Invalid PITCH 11 ball profile');const img=new Image();img.onload=()=>{snapshot();g.clearRect(0,0,size,size);g.drawImage(img,0,0,size,size);$('roughness').value=Math.round((p.roughness??.58)*100);$('metalness').value=Math.round((p.metalness??.02)*100);paintMaterials.forEach(m=>{m.roughness=Number($('roughness').value)/100;m.metalness=Number($('metalness').value)/100});refresh();status.textContent='PROFILE IMPORTED'};img.src=p.texture}catch(err){status.textContent='IMPORT FAILED · INVALID PROFILE'}};reader.readAsText(f)});
 $('resetView').addEventListener('click',()=>{camera.position.set(0,0,3.25);controls.target.set(0,0,0);controls.update()});
 $('togglePanel').addEventListener('click',()=>$('panel').classList.toggle('collapsed'));
 base();
