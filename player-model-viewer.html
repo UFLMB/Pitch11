@@ -253,7 +253,7 @@ async function loadModel(url,label,revokeAfter=false){
  try{
   const gltf=await loader.loadAsync(url);
   if(activeRoot)scene.remove(activeRoot);
-  activeRoot=gltf.scene;activeRoot.rotation.y=Math.PI;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
+  activeRoot=gltf.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
   mixer=new THREE.AnimationMixer(activeRoot);clips=[...(gltf.animations||[])];clipSources=[];
   modelInfo.textContent=label+' · '+clips.length+' embedded clip(s)';
   refreshAnimationList('idle');setStatus('MODEL LOADED');
