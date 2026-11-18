@@ -82,7 +82,7 @@ function buildPlan(brief,type='kit'){
   const questions=[];
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
   if(!PATTERNS.some(([,re])=>re.test(s))&&!/minimal|clean|plain|solid|simple|letisztult|egyszínű/i.test(s))questions.push(hu?'A mintát a stílusleírás alapján választottam.':'Pattern selected from the overall style description.');
-  const confidence=clamp(.48+Math.min(cs.length,3)*.09+(PATTERNS.some(([,re])=>re.test(s))?.15:0)+(style!=='pro'?.08:0),.4,.96);
+  const confidence=clamp(.48+Math.min(cs.length,3)*.09+(PATTERNS.some(([,re])=>re.test(s))?0.15:0)+(style!=='pro'?.08:0),.4,.96);
   return {
     designName:name.slice(0,64),summary:hu?'A kérésből szín-, minta-, stílus- és anyagprofilt állítottam össze.':'Built an editable colour, pattern, style and material profile from your brief.',
     garment,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
