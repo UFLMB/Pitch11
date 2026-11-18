@@ -131,7 +131,7 @@ function addStyles() {
   document.head.appendChild(style);
 }
 
-export function mountP11AIDesigner({ type = 'kit', onApply } = {}) {
+export function mountPitchy({ type = 'kit', onApply } = {}) {
   addStyles();
   const host = document.querySelector('#panelContent') || document.querySelector('#panel');
   if (!host || typeof onApply !== 'function') return null;
