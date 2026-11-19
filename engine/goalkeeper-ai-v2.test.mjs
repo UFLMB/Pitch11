@@ -47,3 +47,27 @@ test("ball crossing below the ground is not a goal-mouth threat",()=>{
  const r=evaluateGoalkeeperThreat({ball:{x:0,y:.3,z:10,vx:0,vy:-8,vz:-10},keeper:{x:0}});
  assert.equal(r.reason,"outside-goal-mouth");
 });
+
+test("uses accelerated goal-plane crossing instead of assuming constant depth velocity",()=>{
+ const linear=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-8});
+ const accelerated=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-8,az:-4});
+ assert.ok(accelerated.time < linear.time);
+});
+test("applies lateral acceleration to the predicted crossing point",()=>{
+ const c=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-10,ax:2});
+ assert.ok(c.x>0);
+});
+test("occlusion delays the keeper reaction and can turn a marginal save into a miss",()=>{
+ const ball=ballTo(2.1,1.1,.42,24);
+ const attributes={reflexes:88,positioning:50,diving:78,reach:78};
+ const clear=evaluateGoalkeeperThreat({ball,keeper:{x:0,visibility:1,occlusion:0},attributes});
+ const screened=evaluateGoalkeeperThreat({ball,keeper:{x:0,visibility:0.1,occlusion:1},attributes});
+ assert.ok(screened.reactionTime>clear.reactionTime);
+ assert.ok(screened.availableReactionTime<clear.availableReactionTime);
+});
+test("keeper is not moved toward the future shot endpoint by positioning rating",()=>{
+ const ball=ballTo(2.5,1.1,.8,18);
+ const low=evaluateGoalkeeperThreat({ball,keeper:{x:0},attributes:{positioning:1,reflexes:80,diving:80,reach:80}});
+ const high=evaluateGoalkeeperThreat({ball,keeper:{x:0},attributes:{positioning:99,reflexes:80,diving:80,reach:80}});
+ assert.equal(low.lateralDistance,high.lateralDistance);
+});
