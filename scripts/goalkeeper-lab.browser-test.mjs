@@ -100,8 +100,8 @@ try {
   const cornerCases = [
     ["left-low", "left", "low", "keeperDiveLowLeft", "goalkeeper body block (2).fbx"],
     ["right-low", "right", "low", "keeperDiveLowRight", "goalkeeper body block (3).fbx"],
-    ["left-high", "left", "high", "keeperFingertip", "goalkeeper miss.fbx"],
-    ["right-high", "right", "high", "keeperFingertip", "goalkeeper miss.fbx"]
+    ["left-high", "left", "high", "keeperFingertip", "goalkeeper diving save (2).fbx"],
+    ["right-high", "right", "high", "keeperFingertip", "goalkeeper diving save.fbx"]
   ];
   const desktopCornerResults = [];
   for (const test of cornerCases) {
@@ -110,10 +110,10 @@ try {
   }
   const desktopTimingResults = [];
   for (const test of [
-    ["left-high", "left", "high", "keeperFingertip", "goalkeeper miss.fbx", 1.5],
-    ["right-high", "right", "high", "keeperFingertip", "goalkeeper miss.fbx", 1.5],
-    ["left-high", "left", "high", "keeperFingertip", "goalkeeper miss.fbx", 2.0],
-    ["right-high", "right", "high", "keeperFingertip", "goalkeeper miss.fbx", 2.0]
+    ["left-high", "left", "high", "keeperFingertip", "goalkeeper diving save (2).fbx", 1.5],
+    ["right-high", "right", "high", "keeperFingertip", "goalkeeper diving save.fbx", 1.5],
+    ["left-high", "left", "high", "keeperFingertip", "goalkeeper diving save (2).fbx", 2.0],
+    ["right-high", "right", "high", "keeperFingertip", "goalkeeper diving save.fbx", 2.0]
   ]) {
     try { desktopTimingResults.push(await verifyDirectionalShot(desktop, "desktop-slow-flight-" + test[0] + "-" + test[5], ...test)); }
     catch (error) { testFailures.push("desktop slow-flight " + test[0] + " " + test[5] + "s: " + error.message); console.log("CONTINUING AFTER DESKTOP SLOW-FLIGHT FAILURE: " + test[0] + " " + test[5] + "s"); }
@@ -138,8 +138,8 @@ try {
   }
   const mobileTimingResults = [];
   for (const test of [
-    ["left-high", "left", "high", "keeperFingertip", "goalkeeper miss.fbx", 1.5],
-    ["right-high", "right", "high", "keeperFingertip", "goalkeeper miss.fbx", 1.5]
+    ["left-high", "left", "high", "keeperFingertip", "goalkeeper diving save (2).fbx", 1.5],
+    ["right-high", "right", "high", "keeperFingertip", "goalkeeper diving save.fbx", 1.5]
   ]) {
     try { mobileTimingResults.push(await verifyDirectionalShot(mobile, "mobile-slow-flight-" + test[0], ...test)); }
     catch (error) { testFailures.push("mobile slow-flight " + test[0] + " " + test[5] + "s: " + error.message); console.log("CONTINUING AFTER MOBILE SLOW-FLIGHT FAILURE: " + test[0] + " " + test[5] + "s"); }
