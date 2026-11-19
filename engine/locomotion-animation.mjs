@@ -3,7 +3,10 @@ export function flattenHorizontalRootMotion(clip) {
   let adjustedTracks = 0;
   for (const track of clip.tracks) {
     if (!/\.position$/i.test(String(track?.name || ""))) continue;
-    const target = track.name.slice(0, track.name.lastIndexOf(".")).replace(/[^a-z0-9]/gi, "").toLowerCase();
+    const target = track.name.slice(0, track.name.lastIndexOf("."))
+      .replace(/^mixamorig\d*/i, "")
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
     if (target !== "hips" && target !== "mixamorighips" && target !== "root" && target !== "mixamorigroot") continue;
     const values = track.values;
     const valueSize = typeof track.getValueSize === "function" ? track.getValueSize() : 3;
