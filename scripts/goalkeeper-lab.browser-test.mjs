@@ -85,14 +85,9 @@ try {
     const diagnostics = await page.locator("#readout").innerText();
     assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
     assert.match(diagnostics, /Rig colliders: 15/, label + " rig collider count mismatch for " + shot);
-    if (/OUT OF REACH/.test(diagnostics)) {
-      assert.match(diagnostics, /GOAL · NO ANIMATED RIG CONTACT/, label + " unreachable shot should remain a legitimate goal for " + shot);
-      assert.doesNotMatch(diagnostics, /Trace: [^\\n]*keeperDive/, label + " unreachable shot incorrectly triggered a dive for " + shot);
-    } else {
-      assert.match(diagnostics, /REACHABLE/, label + " shot expected to be reachable for " + shot);
-      assert.ok(diagnostics.includes(expectedState + "[" + expectedFile.replace(/\\.fbx$/i, "") + "]"), label + " did not play the expected FBX file for " + shot);
-      assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable shot had no rig contact for " + shot);
-    }
+    assert.match(diagnostics, /REACHABLE/, label + " controlled calibration shot must be physically reachable for " + shot);
+    assert.ok(diagnostics.includes(expectedState + "[" + expectedFile.replace(/\\.fbx$/i, "") + "]"), label + " did not play the expected FBX file for " + shot);
+    assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable calibration shot had no rig contact for " + shot);
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + ".png", fullPage: true });
     console.log(label + " " + shot + ": " + diagnostics.replace(/\\n/g, " | "));
     return diagnostics;
