@@ -374,7 +374,7 @@ export class MatchPlayerRenderer {
     const bones = new Map();
     model.traverse(node => {
       if (!node.isBone || !node.name) return;
-      const key = node.name.replace(/^mixamorig\d*:/i, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      const key = node.name.replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "").replace(/^mixamorig\d*:/i, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
     const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", state: "" };
