@@ -32,7 +32,11 @@ h1{font-size:17px;margin:0 0 5px}.desc{font-size:10px;line-height:1.5;color:var(
 import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
-import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
+import { evaluateGoalkeeperThreat } from "./engine/goalkeeper-ai-v2.mjs";
+import { createGoalkeeperShot, advanceGoalkeeperBall, toGoalkeeperBallState, resolveGoalkeeperBallContact } from "./engine/goalkeeper-v2-adapter.mjs";
+import { GoalkeeperAnimationLifecycle } from "./engine/goalkeeper-animation-lifecycle.mjs";
+import { resolveMixamoClipCandidates } from "./engine/mixamo-animation-catalog.mjs";
+import { findSweptBallContact } from "./engine/goalkeeper-contact-geometry.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
@@ -73,100 +77,123 @@ const net=new THREE.LineSegments(netGeometry,netMat);goal.add(net);
 // The source Mixamo FBX is ~52 MB. Give mobile a bounded chance to load it,
  // then fall back to the lightweight GLB instead of leaving the lab on a spinner.
 const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:60000,castShadows:true});
-const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:700,x:585,y:700,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
-let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false;
+const keeperAnimationLifecycle=new GoalkeeperAnimationLifecycle({clipLoadTimeoutMs:6000,recenterTolerance:.08});
+let keeperLifecycleGeneration=0,keeperLifecycleExpectedState="",keeperLifecycleActionRef=null;
+const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:732,x:585,y:732,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
+let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,sequenceRunId=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false,lastContactColliders=[],lastContactLabel="—",animationTrace=[],lastTracedState="",minContactGap=Infinity,minContactCollider="—",minContactSample=null,contactGapByCollider={};
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
-const targets={"left-low":{x:-2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:2.8,y:.35,z:34},"left-high":{x:-2.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:2.8,y:2.05,z:34}};
-function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=700;keeper.vx=keeper.vy=0}
+const goalLineZ=34,ballGravity=9.81;
+const keeperAttributes={reflexes:76,diving:78,handling:72,reach:76,keeperHeight:1.9};
+const targets={"left-low":{x:2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:-2.5,y:.35,z:34},"left-high":{x:1.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:-1.8,y:2.05,z:34}};
+const keeperLeftWorldXDirection=(-Math.sign(Math.sin(keeper.face))||1);
+function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=732;keeper.vx=keeper.vy=0}
 function setPhase(next,duration=0){phase=next;phaseTimer=duration}
-function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.72,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration,goalWidth:7.32,goalHeight:2.44,keeperHeight:1.9});aiReactionTimer=aiDecision.reactionTime;if(aiMode)shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase();}
-function triggerAction(action){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride=action;shotResult=action==="keeper-catch"?"CATCH ANIMATION":"PARRY ANIMATION";setPhase("action",1.05)}
-function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":"high";keeper.diveClipState=kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight");keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
-function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
-function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
-function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;const side=targetSide(shot.kind),height=shot.to.y;const canReach=side==="center"||Math.abs(shot.to.x)<3.2;const saved=!!(aiDecision&&aiDecision.reachable&&aiDecisionFired&&shot.elapsed>=aiDecision.reactionTime);if(saved){saveCount++;shotResult=(aiMode?"AI SAVE · ":"SAVE · ")+side.toUpperCase()}else{goalCount++;keeper.dive=0;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+"OUT OF REACH";setPhase("miss",.5)}}
-function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));if(t>=1){resolveShot();shot=null;ball.visible=false}}
+function beginKeeperLifecycle(action,expectedState,options={}){const state=keeperAnimationLifecycle.begin({action,clip:expectedState,...options});keeperLifecycleGeneration=state.generation;keeperLifecycleExpectedState=expectedState;keeperLifecycleActionRef=null;return state}
+function beginKeeperRecovery(action,expectedState){const state=keeperAnimationLifecycle.beginRecovery({action,clip:expectedState});keeperLifecycleGeneration=state.generation;keeperLifecycleExpectedState=expectedState;keeperLifecycleActionRef=null;return state}
+function syncKeeperLifecycle(dt){
+ const state=keeperAnimationLifecycle.snapshot();
+ if(state.phase!=="loading"&&state.phase!=="playing")return;
+ const entry=keeperRenderer.players.get(0);
+ if(entry?.mixer&&!entry.keeperLifecycleFinishedHandler){
+  entry.keeperLifecycleFinishedHandler=event=>{if(event.action===keeperLifecycleActionRef&&entry.state===keeperLifecycleExpectedState)keeperAnimationLifecycle.clipFinished(keeperLifecycleGeneration)};
+  entry.mixer.addEventListener("finished",entry.keeperLifecycleFinishedHandler);
+ }
+ if(state.phase==="loading"){
+  const action=entry?.state===keeperLifecycleExpectedState?entry.activeAction:null;
+  const clip=action?.getClip?.();
+  if(action&&clip){
+   keeperLifecycleActionRef=action;
+   keeperAnimationLifecycle.clipLoaded(keeperLifecycleGeneration,clip.duration*1000);
+   return;
+  }
+  const candidates=resolveMixamoClipCandidates(keeperLifecycleExpectedState,0);
+  const failed=new Set(keeperRenderer.failedClipNames.map(item=>item.file));
+  if(candidates.length&&candidates.every(file=>failed.has(file)))keeperAnimationLifecycle.clipLoadFailed(keeperLifecycleGeneration,"all-animation-candidates-failed");
+  else keeperAnimationLifecycle.tick(dt*1000);
+ }else if(state.action!=="reposition"){
+  const action=entry?.activeAction;
+  const clip=action?.getClip?.();
+  if(action&&action===keeperLifecycleActionRef&&entry.state===keeperLifecycleExpectedState&&clip&&action.time>=clip.duration-.025)keeperAnimationLifecycle.clipFinished(keeperLifecycleGeneration);
+ }
+}
+function fireShot(kind){if(!keeperRenderer.ready||phase!=="idle"||shot||!keeperAnimationLifecycle.canStartNext)return;lastContactLabel="—";lastContactColliders=[];animationTrace=[];lastTracedState="";minContactGap=Infinity;minContactCollider="—";minContactSample=null;contactGapByCollider={};const target=targets[kind];if(!target)return;const from={x:target.x*.55,y:1.1,z:18};const flightTime=1.05;const trajectory=createGoalkeeperShot({from,target,flightTime,gravity:ballGravity});shot={...trajectory,kind,from,to:target,stage:"flight",contactAtElapsed:null,contactDecision:null,contactResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Live ball trajectory · v2 threat analysis";setPhase("shot");keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperThreat({ball:toGoalkeeperBallState(shot,goalLineZ),keeper:{x:(keeper.x-585)*.1,vx:keeper.vx*.1,leftWorldXDirection:keeperLeftWorldXDirection,visibility:1,occlusion:0},attributes:keeperAttributes});aiReactionTimer=Number.isFinite(aiDecision.reactionTime)?aiDecision.reactionTime:.22;shot.reactionTime=aiReactionTimer;if(aiMode)shotResult="V2 READ · "+(aiDecision.side||"—").toUpperCase()+" · "+(aiDecision.technique||aiDecision.outcome).toUpperCase();}
+function triggerAction(action){if(!keeperRenderer.ready||!keeperAnimationLifecycle.canStartNext)return;lastContactColliders=[];keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride=action;const expected=action==="keeper-catch"?"keeperCatch":action==="keeper-fingertip"?"keeperFingertip":"keeperParry";beginKeeperLifecycle("save",expected,{hasEmbeddedRecovery:true});shotResult=expected.toUpperCase()+" ANIMATION";setPhase("action")}
+function triggerSave(side,kind="high",expectedState=null){if(!keeperRenderer.ready||!keeperAnimationLifecycle.canStartNext)return;lastContactColliders=[];keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":"high";keeper.diveClipState=expectedState||(kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight"));beginKeeperLifecycle("save",keeper.diveClipState,{hasEmbeddedRecovery:true,requiresRecenter:kind!=="low",keeperDown:true});keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const worldSideSign=keeperLeftWorldXDirection*(side==="left"?1:side==="right"?-1:0);const crossingX=shot?.contactDecision?.crossing?.x??shot?.to?.x??worldSideSign*2;const diveLead=kind==="low"?(side==="right"?.75:1.05):.18;const keeperAimX=THREE.MathUtils.clamp(crossingX-worldSideSign*diveLead,-2.35,2.35);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.54;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="high"?"HIGH ":"MID ")+side.toUpperCase()+" DIVE";setPhase("diving")}
+function resetKeeper(){sequenceRunId++;sequenceIndex=-1;keeperAnimationLifecycle.reset();keeperLifecycleGeneration=keeperAnimationLifecycle.snapshot().generation;keeperLifecycleExpectedState="";keeperLifecycleActionRef=null;shot=null;ball.visible=false;lastContactColliders=[];lastContactLabel="—";aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
+function resolveShot(){if(!shot||shot.stage!=="flight")return;goalCount++;shotResult="GOAL · NO ANIMATED RIG CONTACT";shot=null;ball.visible=false;if(!["diving","action","recover","return"].includes(phase)){keeper.dive=0;setPhase("miss",.5)}}
+function updateKeeperDecision(dt){if(!shot||shot.stage!=="flight"||aiDecisionFired)return;aiReactionTimer-=dt;if(aiReactionTimer>0)return;const liveDecision=evaluateGoalkeeperThreat({ball:toGoalkeeperBallState(shot,goalLineZ),keeper:{x:(keeper.x-585)*.1,vx:keeper.vx*.1,leftWorldXDirection:keeperLeftWorldXDirection,visibility:1,occlusion:0},attributes:keeperAttributes,environment:{reactionTime:0}});aiDecision=Object.freeze({...liveDecision,reactionTime:shot.reactionTime});aiDecisionFired=true;if(!liveDecision.reachable||!liveDecision.crossing){shotResult="KEEPER CANNOT REACH · GOAL LIKELY";return}shot={...shot,contactDecision:liveDecision,contactAtElapsed:null};if(liveDecision.technique==="catch")triggerAction("keeper-catch");else if(liveDecision.technique==="fingertip")triggerAction("keeper-fingertip");else if(liveDecision.side==="center")triggerAction("keeper-parry");else triggerSave(liveDecision.side,liveDecision.heightBand,liveDecision.animationState)}
+function pointSegmentDistance(point,start,end){const dx=end.x-start.x,dy=end.y-start.y,dz=end.z-start.z;const lengthSq=dx*dx+dy*dy+dz*dz;const t=lengthSq>1e-12?THREE.MathUtils.clamp(((point.x-start.x)*dx+(point.y-start.y)*dy+(point.z-start.z)*dz)/lengthSq,0,1):0;const x=start.x+dx*t,y=start.y+dy*t,z=start.z+dz*t;return Math.hypot(point.x-x,point.y-y,point.z-z)}
+function applyGoalkeeperContact(hit,previousBall,previousVelocity){if(!shot?.contactDecision||shot.contactResolved||!hit)return false;const t=THREE.MathUtils.clamp(hit.time??1,0,1);const lerp=(a,b)=>a+(b-a)*t;const contactPosition=hit.position||shot.position;const contactVelocity=previousVelocity?{x:lerp(previousVelocity.x,shot.velocity.x),y:lerp(previousVelocity.y,shot.velocity.y),z:lerp(previousVelocity.z,shot.velocity.z)}:shot.velocity;const decision=shot.contactDecision;const contactBall={position:contactPosition,velocity:contactVelocity};const contact=resolveGoalkeeperBallContact({decision,ball:contactBall,goalLineZ,handling:keeperAttributes.handling});if(!contact.contact)return false;shot={...shot,position:contactPosition,velocity:contactVelocity,contactResolved:true};lastContactLabel=hit.part.toUpperCase()+" · "+hit.side.toUpperCase()+" · "+hit.colliderId;if(contact.secured){saveCount++;shotResult="CLEAN CATCH · RIG CONTACT";ball.position.set(contactPosition.x,contactPosition.y,contactPosition.z);ball.visible=true;shot=null;return true}saveCount++;shotResult=(contact.technique==="fingertip"?"FINGERTIP SAVE":"PARRY")+" · RIG CONTACT · LIVE REBOUND";shot={...shot,position:contact.worldPosition,velocity:contact.worldVelocity,acceleration:{x:0,y:0,z:0},elapsed:0,stage:"rebound",contactAtElapsed:null,contactDecision:null};ball.position.set(shot.position.x,shot.position.y,shot.position.z);ball.visible=true;return true}
+function animateShot(dt){if(!shot)return;shot=advanceGoalkeeperBall(shot,dt,{gravity:ballGravity});ball.position.set(shot.position.x,shot.position.y,shot.position.z);if(shot.stage==="rebound"&&(shot.elapsed>1.6||shot.position.y<0||shot.position.z<25)){shot=null;ball.visible=false}}
 function updateKeeper(dt){
+ const lifecycle=keeperAnimationLifecycle.snapshot();
  if(phase==="action"){
-  phaseTimer-=dt;
-  if(phaseTimer<=0){keeper.animationOverride="";setPhase("idle")}
+  if(lifecycle.phase==="complete"||lifecycle.phase==="failed"){keeper.animationOverride="";setPhase("idle")}
  }else if(phase==="diving"){
-  phaseTimer-=dt;
-  keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
-  const diveT=THREE.MathUtils.clamp((keeper.diveElapsed||0)/Math.max(.01,keeper.diveDuration||.52),0,1);
-  const diveEase=diveT*diveT*(3-2*diveT);
-  const divePrevious=keeper.x;
-  keeper.x=keeper.px=THREE.MathUtils.lerp(keeper.diveStartX??keeper.x,keeper.diveTargetX??keeper.x,diveEase);
-  keeper.vx=dt>0?(keeper.x-divePrevious)/dt:0;keeper.vy=0;
-  if(phaseTimer<=0){
-   // Goalkeeper save FBXs already contain their own landing/get-up motion.
-   // Do not interrupt them with standing up.fbx: wait for the selected
-   // one-shot save clip to reach its final frame.
-   const entry=keeperRenderer.players.get(0);
-   const action=entry?.activeAction;
-   const clip=action?.getClip?.();
-   const expected=keeper.diveClipState||"";
-   const clipIsActive=!!(entry&&entry.state===expected&&clip&&action.time>=clip.duration-.04);
-   if(!clipIsActive){phaseTimer=.05;return}
-   keeper.dive=0;
-   keeper.diveRecover=0;
-   if(keeper.diveHeight==="high"){
-    // The high diving-save clips stand the keeper up, but can leave him
-    // displaced. Reposition only after the authored animation has finished.
-    keeper.animationOverride="keeper-move";
-    setPhase("return",.9);
-   }else{
-    // Low body-block clips already recover toward their starting position.
-    keeper.animationOverride="";
-    setPhase("idle");
-   }
+  // Do not move the logical keeper while the matching FBX clip is still loading.
+  // Starting root translation and the animation on different clocks creates a false contact pose.
+  if(lifecycle.phase==="playing"){
+   keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
+   const diveT=THREE.MathUtils.clamp((keeper.diveElapsed||0)/Math.max(.01,keeper.diveDuration||.52),0,1);
+   const diveEase=diveT*diveT*(3-2*diveT);
+   const divePrevious=keeper.x;
+   keeper.x=keeper.px=THREE.MathUtils.lerp(keeper.diveStartX??keeper.x,keeper.diveTargetX??keeper.x,diveEase);
+   keeper.vx=dt>0?(keeper.x-divePrevious)/dt:0;keeper.vy=0;
+  }
+  if(lifecycle.phase==="needs-reposition"){
+   const move=beginKeeperRecovery("reposition","keeperMove");
+   keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride="keeper-move";setPhase("return");
+  }else if(lifecycle.phase==="complete"||lifecycle.phase==="failed"){
+   keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride="";setPhase("idle");
   }
  }else if(phase==="recover"){
-  phaseTimer-=dt;
-  keeper.diveRecover=Math.max(0,phaseTimer);
-  if(phaseTimer<=0){
-   keeper.diveRecover=0;
-   keeper.animationOverride="keeper-move";
-   setPhase("return",.85);
+  if(lifecycle.phase==="complete"||lifecycle.phase==="failed"){
+   keeper.diveRecover=0;keeper.animationOverride="";keeper.down=false;setPhase("idle");
   }
  }else if(phase==="return"){
-  phaseTimer-=dt;
   const previousX=keeper.x;
   const nextX=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
   keeper.x=keeper.px=nextX;
   keeper.vx=dt>0?(nextX-previousX)/dt:0;
   keeper.vy=0;
-  if(phaseTimer<=0||Math.abs(keeper.x-585)<.035){
-   keeper.x=keeper.px=585;
-   keeper.vx=keeper.vy=0;
-   keeper.animationOverride="";
-   setPhase("idle");
+  const centered=Math.abs(keeper.x-585)<=keeperAnimationLifecycle.recenterTolerance*10;
+  if(centered&&keeperAnimationLifecycle.snapshot().phase==="playing")keeperAnimationLifecycle.completeReposition(keeperLifecycleGeneration);
+  if(centered&&["complete","failed"].includes(keeperAnimationLifecycle.snapshot().phase)){
+   keeper.x=keeper.px=585;keeper.vx=keeper.vy=0;keeper.animationOverride="";setPhase("idle");
   }
  }else if(phase==="miss"){
   phaseTimer-=dt;
   if(phaseTimer<=0){
-   const recoveryClip=keeperRenderer.clipCache.get("standing up.fbx");
-   const recoveryDuration=recoveryClip?THREE.MathUtils.clamp(recoveryClip.duration,.55,2.5):.95;
-   keeper.diveRecover=recoveryDuration;
-   setPhase("recover",recoveryDuration);
+   if(keeper.down){
+    beginKeeperLifecycle("getUp","getUp",{hasEmbeddedRecovery:false,keeperDown:false});
+    keeper.animationOverride="get-up";setPhase("recover");
+   }else{
+    // An upright keeper does not play a redundant standing-up animation.
+    keeper.animationOverride="";setPhase("idle");
+   }
   }
  }
 }
 function updateReadout(){
- const aiLine=aiMode?'<br>AI: '+(aiDecision?aiDecision.side.toUpperCase()+' / '+aiDecision.heightBand.toUpperCase()+' / '+aiDecision.action.toUpperCase()+' · '+Math.round(aiDecision.reactionTime*1000)+' ms · '+(aiDecision.reachable?'REACHABLE':'OUT OF REACH'):'ACTIVE · WAITING'):'<br>AI: OFF';
- const rigLine=keeperRenderer.modelSource==='mixamo-fbx'?'<br>GK RIG: MIXAMO · ACTION CLIPS LOAD ON DEMAND':'<br>GK ANIMATION: BLOCKED · MIXAMO FBX UNAVAILABLE';
+ const aiLine=aiMode?'<br>AI v2: '+(aiDecision?(aiDecision.side||"—").toUpperCase()+' / '+(aiDecision.heightBand||"—").toUpperCase()+' / '+(aiDecision.technique||aiDecision.outcome||"—").toUpperCase()+' · '+Math.round((aiDecision.reactionTime||0)*1000)+' ms · '+(aiDecision.reachable?'REACHABLE':'OUT OF REACH'):'ACTIVE · WAITING'):'<br>AI v2: OFF';
+ const rigLine=keeperRenderer.modelSource==='mixamo-fbx'?'<br>GK RIG: MIXAMO · CORE SAVE CLIPS PRELOADED':'<br>GK ANIMATION: BLOCKED · MIXAMO FBX UNAVAILABLE';
  const parts=keeperRenderer.modelDiagnostics||{};
  const partLine='<br>Meshes: '+(parts.meshCount||0)+' · Skinned: '+(parts.skinnedMeshCount||0)+'<br>Parts: '+((parts.kitParts||[]).join(', ')||'not detected')+'<br>Materials: '+((parts.materialNames||[]).join(', ')||'none')+'<br>Loaded clips: '+(keeperRenderer.loadedClipNames||[]).join(', ');
  const failures=(keeperRenderer.failedClipNames||[]);
- const failureLine=failures.length?'<br>Clip errors: '+failures.map(x=>x.file).join(', '):'';
- readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+failureLine;
+ const failureLine=failures.length?'<br>Clip errors: '+failures.map(x=>x.file+': '+x.error).join(' | '):'';
+ const rigContact=keeperRenderer.getGoalkeeperContactRigStatus(0);
+ const keeperEntry=keeperRenderer.players.get(0);
+ const clipDuration=keeperEntry?.activeAction?.getClip?.().duration||0;const clipTime=keeperEntry?.activeAction?.time||0;const animationLine='<br>GK State: '+(keeperEntry?.state||'—')+' · Override: '+(keeper.animationOverride||'idle')+' · Lifecycle: '+keeperAnimationLifecycle.snapshot().phase+' · Active FBX: '+(keeperEntry?.activeClipName||'—')+' · Clip: '+clipTime.toFixed(2)+'/'+clipDuration.toFixed(2)+'s · Min gap: '+(Number.isFinite(minContactGap)?minContactGap.toFixed(2)+'m':'—')+' ('+minContactCollider+') · Trace: '+(animationTrace.join(' → ')||'—')+'<br>AI lateral: '+(aiDecision&&Number.isFinite(aiDecision.lateralDistance)&&Number.isFinite(aiDecision.lateralEnvelope)?aiDecision.lateralDistance.toFixed(2)+' / '+aiDecision.lateralEnvelope.toFixed(2)+'m':'—')+' · Closest sample: '+(minContactSample?'ball '+minContactSample.ball.x.toFixed(2)+','+minContactSample.ball.y.toFixed(2)+','+minContactSample.ball.z.toFixed(2)+' · bone '+minContactSample.collider.id+' '+((minContactSample.collider.start.x+minContactSample.collider.end.x)*.5).toFixed(2)+','+((minContactSample.collider.start.y+minContactSample.collider.end.y)*.5).toFixed(2)+','+((minContactSample.collider.start.z+minContactSample.collider.end.z)*.5).toFixed(2)+' r'+minContactSample.collider.radius.toFixed(2)+' · root '+minContactSample.root.x.toFixed(2)+','+minContactSample.root.y.toFixed(2)+','+minContactSample.root.z.toFixed(2)+' · clip '+minContactSample.clipTime.toFixed(2)+'s':'—');
+ const contactTrace=Object.entries(contactGapByCollider).sort((a,b)=>a[1].gap-b[1].gap).slice(0,15).map(([id,sample])=>id+" "+sample.gap.toFixed(2)+"m @"+sample.clipTime.toFixed(2)+"s").join(" · ");
+ const contactLine='<br>Rig colliders: '+rigContact.colliderCount+' · Contact: '+lastContactLabel+(rigContact.missing.length?' · Missing: '+rigContact.missing.join(', '):'');
+ readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+animationLine+'<br>Collider trace (min gap · clip time): '+(contactTrace||"—")+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+failureLine+contactLine;
 }
 const clock=new THREE.Clock();let last=0;
-function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);if(aiMode&&shot&&!aiDecisionFired){aiReactionTimer-=dt;if(aiReactionTimer<=0){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="AI DECISION · CANNOT REACH"}}updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);if(!aiMode&&shot&&!aiDecisionFired&&shot.elapsed>=aiDecision?.reactionTime){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="KEEPER · OUT OF REACH"} }renderer.render(scene,camera);updateReadout()}
+function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){const previousBall=shot?.stage==="flight"?{...shot.position}:null;const previousVelocity=shot?.stage==="flight"?{...shot.velocity}:null;updateKeeperDecision(dt);animateShot(dt);updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);if(shot?.stage==="flight"){const traceEntry=keeperRenderer.players.get(0);if(traceEntry?.state&&traceEntry.state!==lastTracedState){lastTracedState=traceEntry.state;animationTrace.push(traceEntry.state+"["+(traceEntry.activeClipName||"unknown")+"]@"+shot.elapsed.toFixed(2));}const entry=keeperRenderer.players.get(0);const saveState=entry?.state||"";const activeSave=saveState.startsWith("keeperDive")||["keeperCatch","keeperParry","keeperFingertip"].includes(saveState);const colliders=activeSave?keeperRenderer.getGoalkeeperContactColliders(0):[];if(shot?.stage==="flight"&&colliders.length){for(const collider of colliders){const gap=pointSegmentDistance(shot.position,collider.start,collider.end)-collider.radius-.11;const clipTime=keeperRenderer.players.get(0)?.activeAction?.time??0;const previous=contactGapByCollider[collider.id];if(!previous||gap<previous.gap)contactGapByCollider[collider.id]={gap,clipTime,ball:{...shot.position}};if(gap<minContactGap){minContactGap=gap;minContactCollider=collider.id;const rootX=keeperRenderer.players.get(0)?.group.position.x??0;minContactSample={ball:{...shot.position},root:{x:rootX,y:keeperRenderer.players.get(0)?.group.position.y??0,z:keeperRenderer.players.get(0)?.group.position.z??0},collider:{start:{...collider.start},end:{...collider.end},radius:collider.radius,id:collider.id},clipTime}}}}if(previousBall&&activeSave&&shot.contactDecision&&!shot.contactResolved&&colliders.length){const hit=findSweptBallContact({previousBall,currentBall:shot.position,previousColliders:lastContactColliders.length?lastContactColliders:colliders,currentColliders:colliders,ballRadius:.11,samples:32});if(hit)applyGoalkeeperContact(hit,previousBall,previousVelocity)}lastContactColliders=colliders;if(shot?.stage==="flight"&&shot.position.z>=goalLineZ)resolveShot()}syncKeeperLifecycle(dt)}renderer.render(scene,camera);updateReadout()}
 // Start rendering immediately; keep the scene and diagnostics live while assets load.
 frame();
-keeperRenderer.load().then(()=>{if(keeperRenderer.ready){if(keeperRenderer.modelSource==="mixamo-fbx"){status.textContent="3D KEEPER · MIXAMO RIG";shotResult="Model ready · goalkeeper action clips will load on demand"}else{status.textContent="FALLBACK MODEL · GK ANIMS BLOCKED";shotResult="Animation test blocked: upload input/player-model-candidate/character.fbx (same Mixamo rig as the keeper clips)"}setPhase("idle");ball.visible=false}else{status.textContent="MODEL ERROR";shotResult=keeperRenderer.error||"Player model could not be loaded";setPhase("asset-error");updateReadout()}}).catch(e=>{status.textContent="MODEL ERROR";shotResult=e?.message||String(e);setPhase("asset-error");updateReadout()});
-function runSequence(){if(sequenceIndex>=0)return;sequenceIndex=0;const list=["left-low","right-low","center-high","left-high","right-high"];const next=()=>{if(sequenceIndex>=list.length){sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE";return}fireShot(list[sequenceIndex++]);sequenceTimer=2.45};next();const tick=()=>{if(sequenceIndex<0)return;sequenceTimer-=.05;if(sequenceTimer<=0){if(sequenceIndex<list.length)next();else{sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE"}}else setTimeout(tick,50)};setTimeout(tick,50)}
+keeperRenderer.load().then(async()=>{if(keeperRenderer.ready){if(keeperRenderer.modelSource==="mixamo-fbx"){status.textContent="LOADING GK SAVE ANIMS…";shotResult="Preloading core goalkeeper save animations";const coreStates=["keeperParry","keeperDiveLowLeft","keeperDiveLowRight","keeperDiveLeft","keeperDiveRight","keeperCatch","keeperFingertip"];const results=await Promise.allSettled(coreStates.map(state=>keeperRenderer.ensureMixamoState(state,0)));const ready=results.filter(result=>result.status==="fulfilled"&&result.value).length;const failed=coreStates.filter((state,index)=>results[index].status!=="fulfilled"||!results[index].value);if(ready!==coreStates.length){status.textContent="GK ANIMATION ERROR";shotResult="Core save animations unavailable · "+ready+"/"+coreStates.length+" · "+failed.join(", ");setPhase("asset-error");updateReadout();return}status.textContent="3D KEEPER · MIXAMO RIG";shotResult="Core goalkeeper save animations ready · "+ready+"/"+coreStates.length}else{status.textContent="FALLBACK MODEL · GK ANIMS BLOCKED";shotResult="Animation test blocked: upload input/player-model-candidate/character.fbx (same Mixamo rig as the keeper clips)";setPhase("asset-error");updateReadout();return}setPhase("idle");ball.visible=false}else{status.textContent="MODEL ERROR";shotResult=keeperRenderer.error||"Player model could not be loaded";setPhase("asset-error");updateReadout()}}).catch(e=>{status.textContent="MODEL ERROR";shotResult=e?.message||String(e);setPhase("asset-error");updateReadout()});
+function runSequence(){if(sequenceIndex>=0)return;const runId=++sequenceRunId;sequenceIndex=0;const list=["left-low","right-low","center-high","left-high","right-high"];const waitForReady=()=>{if(runId!==sequenceRunId)return;if(sequenceIndex>=list.length){sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE";return}if(phase!=="idle"||shot||!keeperAnimationLifecycle.canStartNext){setTimeout(waitForReady,50);return}const kind=list[sequenceIndex++];fireShot(kind);const waitForCompletion=()=>{if(runId!==sequenceRunId)return;if(phase!=="idle"||shot||!keeperAnimationLifecycle.canStartNext){setTimeout(waitForCompletion,50);return}setTimeout(waitForReady,50)};setTimeout(waitForCompletion,50)};waitForReady()}
 document.querySelector("#load-keeper-anims").addEventListener("click",async()=>{const button=document.querySelector("#load-keeper-anims");if(!keeperRenderer.ready)return;button.disabled=true;button.textContent="LOADING GK ANIMS…";shotResult="Loading goalkeeper save, catch, parry and recovery clips";const results=await keeperRenderer.preloadGoalkeeperTestClips();const ok=results.filter(x=>x.ok).length;const failed=results.filter(x=>!x.ok);shotResult="GK CLIPS · "+ok+"/"+results.length+" LOADED"+(failed.length?" · FAILED: "+failed.map(x=>x.state).join(", "):"");button.disabled=false;button.textContent="RELOAD GK ANIMS";updateReadout()});
 document.querySelector("#ai-mode").addEventListener("click",()=>{aiMode=!aiMode;document.querySelector("#ai-mode").textContent="AI MODE: "+(aiMode?"ON":"OFF");document.querySelector("#ai-mode").classList.toggle("active",aiMode);resetKeeper()});
 document.querySelector("#ai-sequence").addEventListener("click",()=>{aiMode=true;document.querySelector("#ai-mode").textContent="AI MODE: ON";document.querySelector("#ai-mode").classList.add("active");resetKeeper();runSequence()});

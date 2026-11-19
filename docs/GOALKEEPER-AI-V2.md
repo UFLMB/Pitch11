@@ -17,8 +17,13 @@ Reflexes, positioning, diving, handling, and reach scale capabilities within bou
 
 Possible decisions: catch, parry, fingertip, or miss. A miss means the ball is outside the modelled physical/reaction envelope; it is not forcibly converted into a save.
 
+## Goalkeeper Lab integration
+The Goalkeeper Lab now creates ballistic shots from world-space start/target coordinates, converts the live ball state into this evaluator's goal-line coordinate frame, waits through the keeper's reaction interval, then re-evaluates the current ball state with the consumed reaction delay. The resulting reachability/technique decision selects the matching catch, parry, fingertip, or directional dive animation. The predicted crossing is used for the AI's reach estimate only; it is no longer treated as proof of physical contact. No future target is supplied to the evaluator.
+
+The contact adapter converts the actual ball state at the rig collision into the contact module's coordinates. Catches secure the ball; parries and fingertip saves return a live rebound into the field. If the ball crosses the goal plane without intersecting an animated keeper collider, it counts as a goal. Shot sequencing waits for both the animation lifecycle and any live rebound to finish.
+
 ## Known limitations
-This is a deterministic first-stage physics model, not a complete controller. Full time-varying aerodynamic drag/Magnus integration, deflections, detailed contact geometry, rebound impulses, goalkeeper anticipation/positioning controller, animation root motion, and lifecycle integration remain to be implemented and tested.
+This remains a deterministic first-stage model, not a complete rigid-body/controller stack. Ball flight currently uses constant gravity and straight-line horizontal motion; aerodynamic drag, Magnus/spin, and variable surface effects are not modelled. The Goalkeeper Lab now samples rig-bound hand, arm, pelvis, and chest capsules from the live Three.js skeleton and checks the ball's swept path against their animated world-space positions. Contact is therefore tied to the rendered animation pose rather than a predicted goal-plane timestamp. The colliders are conservative capsule approximations, not a full skinned-mesh collision solve; fingertip-level precision, contact impulse from surface orientation, and exact animation authoring alignment still need visual calibration. The Lab's baseline goalkeeper attributes are fixed test values. Root-motion correction is not assumed.
 
 ## Integration safety
-The v2 evaluator is isolated and is not wired into the live 11v11 match in this change. Existing match and Goalkeeper Lab behavior remain unchanged until controller, animation lifecycle, and coordinate mapping are verified together. Passing unit tests are not visual/gameplay validation.
+The v2 evaluator/contact/lifecycle pipeline is integrated into Goalkeeper Lab only. The main 11v11 match remains on its existing goalkeeper path. Passing unit tests and CI syntax checks are not visual/gameplay validation.

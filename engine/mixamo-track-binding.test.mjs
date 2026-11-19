@@ -24,6 +24,22 @@ test("supports case, separators and numbered Mixamo prefixes without changing bo
   assert.deepEqual(result.tracks.map(item => item.name), ["mixamorig1Hips.position", "mixamorig1Spine.quaternion"]);
 });
 
+test("strips Assimp FBX transform suffixes from animated Mixamo bone targets", () => {
+  const result = normalizeMixamoTrackTargets(
+    ["mixamorig5LeftForeArm", "mixamorig5RightForeArm"],
+    [
+      track("mixamorig5:LeftForeArm_$AssimpFbx$_Translation.quaternion"),
+      track("mixamorig5:RightForeArm_$AssimpFbx$_Translation.quaternion")
+    ]
+  );
+  assert.deepEqual(result.unresolved, []);
+  assert.deepEqual(result.ambiguous, []);
+  assert.deepEqual(result.tracks.map(item => item.name), [
+    "mixamorig5LeftForeArm.quaternion",
+    "mixamorig5RightForeArm.quaternion"
+  ]);
+});
+
 test("rejects missing or ambiguous bone targets instead of silently retargeting", () => {
   const result = normalizeMixamoTrackTargets(
     ["mixamorigHips", "mixamorigLeftArm", "mixamorig:LeftArm"],

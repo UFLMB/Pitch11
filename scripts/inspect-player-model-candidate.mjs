@@ -129,14 +129,20 @@ try {
         if (name) targetNames.add(decodeXml(name));
       }
     }
-    const modelNames = new Set([...boneNames, ...nodeNames].map(name =>
-      String(name).replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
-        .replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "")
-        .replace(/^mixamorig\d*/i, "").toLowerCase()
-    ));
     const canonical = name => String(name || "").replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
       .replace(/^mixamorig:/i, "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "")
       .replace(/^mixamorig\d*/i, "").toLowerCase();
+    const modelNames = new Set([...boneNames, ...nodeNames].map(canonical));
+    const contactBoneNames = new Set(boneNames.map(canonical));
+    const requiredContactBones = ["leftforearm", "lefthand", "rightforearm", "righthand", "hips", "spine2", "neck"];
+    const matchedContactBones = requiredContactBones.filter(name => contactBoneNames.has(name));
+    const missingContactBones = requiredContactBones.filter(name => !contactBoneNames.has(name));
+    report.contactRigCoverage = {
+      requiredBones: requiredContactBones.length,
+      matchedBones: matchedContactBones.length,
+      missingBones: missingContactBones,
+      coveragePercent: Number((matchedContactBones.length / requiredContactBones.length * 100).toFixed(1))
+    };
     const matched = [...targetNames].filter(name => modelNames.has(canonical(name)));
     const unmatched = [...targetNames].filter(name => !modelNames.has(canonical(name)));
     report.animationRigCoverage = {
@@ -155,6 +161,8 @@ try {
 await writeFile(reportPath, JSON.stringify(report, null, 2) + "\n");
 console.log(JSON.stringify(report, null, 2));
 if (!report.available || report.status !== "fbx-loaded-and-inspected" ||
-    !report.animationRigCoverage || report.animationRigCoverage.coveragePercent < 95) {
-  console.warn("Goalkeeper character candidate is not yet verified for direct Mixamo animation playback.");
+    !report.animationRigCoverage || report.animationRigCoverage.coveragePercent < 95 ||
+    !report.contactRigCoverage || report.contactRigCoverage.missingBones.length) {
+  console.error("Goalkeeper character candidate is not verified for direct Mixamo animation and rig-contact playback.");
+  process.exitCode = 1;
 }

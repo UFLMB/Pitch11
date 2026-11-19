@@ -71,3 +71,14 @@ test("keeper is not moved toward the future shot endpoint by positioning rating"
  const high=evaluateGoalkeeperThreat({ball,keeper:{x:0},attributes:{positioning:99,reflexes:80,diving:80,reach:80}});
  assert.equal(low.lateralDistance,high.lateralDistance);
 });
+
+test("maps world lateral direction to the keeper's own left and right",()=>{
+ const make=(x,leftWorldXDirection)=>evaluateGoalkeeperThreat({
+  ball:ballTo(x,.42,.8,16),keeper:{x:0,leftWorldXDirection},
+  attributes:{reflexes:85,diving:85,reach:80}
+ });
+ assert.equal(make(2.4,1).side,"left");
+ assert.equal(make(-2.4,1).side,"right");
+ assert.equal(make(-2.4,-1).side,"left");
+ assert.equal(make(2.4,-1).side,"right");
+});
