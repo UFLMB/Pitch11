@@ -63,7 +63,7 @@ try {
   await desktop.locator("#ai-sequence").click();
   await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 150000 });
   const desktopSequenceReadout = await desktop.locator("#readout").innerText();
-  assert.match(desktopSequenceReadout, /Rig colliders: 9/);
+  assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
   await desktop.locator('[data-shot="center-low"]').click();
@@ -79,7 +79,7 @@ try {
     throw error;
   }
   const desktopReadout = await desktop.locator("#readout").innerText();
-  assert.match(desktopReadout, /Rig colliders: 9/);
+  assert.match(desktopReadout, /Rig colliders: 15/);
   assert.doesNotMatch(desktopReadout, /Contact: —/, "Center-low AI shot must reach an animated goalkeeper collider");
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact.png", fullPage: true });
 
@@ -92,7 +92,7 @@ try {
   const mobile = await openLab(mobileContext, "mobile");
   await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png", fullPage: true });
   const mobileReadout = await mobile.locator("#readout").innerText();
-  assert.match(mobileReadout, /Rig colliders: 9/);
+  assert.match(mobileReadout, /Rig colliders: 15/);
   await mobile.locator("#ai-mode").click();
   await mobile.locator('[data-shot="center-low"]').click();
   try {
