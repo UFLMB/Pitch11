@@ -48,7 +48,12 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (player.dive > 0) {
     if (!player.gk) action = "fall";
     else {
-      const side = resolveKeeperDiveSide(player.diveAng, player.face);
+      // The decision layer's requested keeper-local side is authoritative.
+      // Re-deriving it from a world angle can flip the selected clip after
+      // facing interpolation; only legacy callers without diveSide use the angle.
+      const side = player.diveSide === "left" || player.diveSide === "right"
+        ? player.diveSide
+        : resolveKeeperDiveSide(player.diveAng, player.face);
       action = player.diveHeight === "low" ? `keeper-dive-low-${side}` : `keeper-dive-${side}`;
     }
   }
