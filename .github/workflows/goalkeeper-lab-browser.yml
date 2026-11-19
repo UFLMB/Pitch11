@@ -19,7 +19,7 @@ permissions:
 jobs:
   browser-regression:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +41,7 @@ jobs:
           cat /tmp/pitch11-http.log
           exit 1
       - name: Run desktop and mobile Goalkeeper Lab browser regression
-        run: node scripts/goalkeeper-lab.browser-test.mjs
+        run: timeout --signal=TERM --kill-after=10s 360s node scripts/goalkeeper-lab.browser-test.mjs
       - name: Upload browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
