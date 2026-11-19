@@ -34,3 +34,16 @@ test("numbered variants are distributed deterministically between players", () =
   assert.notDeepEqual(first, second);
   assert.deepEqual(first, resolveMixamoClipCandidates("dribble", 0));
 });
+
+
+test("keeps left and right keeper dive clip candidates stable across player IDs", () => {
+  const left0 = resolveMixamoClipCandidates("keeperDiveLeft", 0);
+  const left1 = resolveMixamoClipCandidates("keeperDiveLeft", 1);
+  const right0 = resolveMixamoClipCandidates("keeperDiveRight", 0);
+  const right1 = resolveMixamoClipCandidates("keeperDiveRight", 1);
+  assert.deepEqual(left1, left0);
+  assert.deepEqual(right1, right0);
+  assert.equal(left0[0], "goalkeeper diving save.fbx");
+  assert.equal(right0[0], "goalkeeper diving save (2).fbx");
+  assert.notEqual(left0[0], right0[0]);
+});
