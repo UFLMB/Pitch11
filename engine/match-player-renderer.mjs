@@ -294,10 +294,16 @@ export class MatchPlayerRenderer {
   async preloadGoalkeeperTestClips() {
     const tests = [
       ["keeperSet", 0],
+      ["keeperPenaltyReady", 0],
+      ["keeperMove", 0],
       ["keeperDiveLeft", 0],
       ["keeperDiveRight", 1],
       ["keeperCatch", 0],
       ["keeperParry", 0],
+      ["keeperFingertip", 0],
+      ["keeperScoop", 0],
+      ["keeperPass", 0],
+      ["keeperDropKick", 0],
       ["getUp", 0]
     ];
     const results = await Promise.allSettled(tests.map(([state, playerId]) => this.ensureMixamoState(state, playerId)));
