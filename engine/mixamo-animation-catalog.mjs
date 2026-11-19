@@ -88,8 +88,9 @@ const STATE_FILES = Object.freeze({
   keeperDiveLowRight: ["goalkeeper body block (3).fbx"],
   keeperParry: ["goalkeeper body block.fbx", "goalkeeper body block (2).fbx", "goalkeeper body block (3).fbx"],
   keeperScoop: ["goalkeeper scoop.fbx"],
-  keeperFingertip: ["goalkeeper miss.fbx"],
-  keeperMiss: ["goalkeeper miss.fbx"],
+  // High saves use the existing directional dive clips; the unverified "miss" clip is not a save animation.
+  keeperFingertip: ["goalkeeper diving save.fbx", "goalkeeper diving save (2).fbx"],
+  keeperMiss: ["goalkeeper diving save.fbx", "goalkeeper diving save (2).fbx"],
   keeperPass: ["goalkeeper pass.fbx"],
   keeperDropKick: ["goalkeeper drop kick.fbx"],
   keeperThrow: ["goalkeeper overhand throw.fbx"],
