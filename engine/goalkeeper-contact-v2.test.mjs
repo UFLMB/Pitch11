@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { resolveGoalkeeperContact } from "./goalkeeper-contact-v2.mjs";
+const incoming={position:{x:0,y:1,z:.4},velocity:{x:.4,y:-.2,z:-18}};
+test("clean catch secures and stops the ball",()=>{const r=resolveGoalkeeperContact({decision:{technique:"catch",reachable:true},ball:incoming,handling:90});assert.equal(r.secured,true);assert.equal(r.ballState,"held");assert.deepEqual(r.velocity,{x:0,y:0,z:0});});
+test("miss leaves ball unchanged",()=>{const r=resolveGoalkeeperContact({decision:{technique:"miss",reachable:false},ball:incoming});assert.equal(r.contact,false);assert.deepEqual(r.velocity,incoming.velocity);assert.deepEqual(r.position,incoming.position);});
+test("parry redirects ball back into field",()=>{const r=resolveGoalkeeperContact({decision:{technique:"parry",reachable:true},ball:incoming});assert.equal(r.contact,true);assert.ok(r.velocity.z>0);});
+test("fingertip creates a distinct upward deflection",()=>{const a=resolveGoalkeeperContact({decision:{technique:"parry",reachable:true},ball:incoming});const b=resolveGoalkeeperContact({decision:{technique:"fingertip",reachable:true},ball:incoming,contactOffset:{x:.5,y:.3,z:0}});assert.ok(b.velocity.y>a.velocity.y);assert.notDeepEqual(a.velocity,b.velocity);});
+test("reversed surface normal is corrected",()=>{const r=resolveGoalkeeperContact({decision:{technique:"parry",reachable:true},ball:incoming,normal:{x:0,y:0,z:-1}});assert.ok(r.velocity.z>0);});
+test("unsupported technique and non-finite input are rejected",()=>{assert.throws(()=>resolveGoalkeeperContact({decision:{technique:"teleport",reachable:true},ball:incoming}),RangeError);assert.throws(()=>resolveGoalkeeperContact({decision:{technique:"parry",reachable:true},ball:{velocity:{x:NaN,y:0,z:-2}}}),TypeError);});

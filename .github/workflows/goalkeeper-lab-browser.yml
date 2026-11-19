@@ -1,0 +1,52 @@
+name: Goalkeeper Lab browser regression
+
+on:
+  pull_request:
+    branches: [main, rebuild/goalkeeper-ai-v2-animation]
+    paths:
+      - "goalkeeper-lab.html"
+      - "engine/goalkeeper-*.mjs"
+      - "engine/match-player-renderer.mjs"
+      - "input/player-model-candidate/**"
+      - "input/player-package/**"
+      - "scripts/goalkeeper-lab.browser-test.mjs"
+      - ".github/workflows/goalkeeper-lab-browser.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/pitch11-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/goalkeeper-lab.html > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pitch11-http.log
+          exit 1
+      - name: Run desktop and mobile Goalkeeper Lab browser regression
+        run: node scripts/goalkeeper-lab.browser-test.mjs
+      - name: Upload browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goalkeeper-lab-browser-screenshots
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
