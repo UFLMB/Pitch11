@@ -128,12 +128,16 @@ function updateKeeper(dt){
  if(phase==="action"){
   if(lifecycle.phase==="complete"||lifecycle.phase==="failed"){keeper.animationOverride="";setPhase("idle")}
  }else if(phase==="diving"){
-  keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
-  const diveT=THREE.MathUtils.clamp((keeper.diveElapsed||0)/Math.max(.01,keeper.diveDuration||.52),0,1);
-  const diveEase=diveT*diveT*(3-2*diveT);
-  const divePrevious=keeper.x;
-  keeper.x=keeper.px=THREE.MathUtils.lerp(keeper.diveStartX??keeper.x,keeper.diveTargetX??keeper.x,diveEase);
-  keeper.vx=dt>0?(keeper.x-divePrevious)/dt:0;keeper.vy=0;
+  // Do not move the logical keeper while the matching FBX clip is still loading.
+  // Starting root translation and the animation on different clocks creates a false contact pose.
+  if(lifecycle.phase==="playing"){
+   keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
+   const diveT=THREE.MathUtils.clamp((keeper.diveElapsed||0)/Math.max(.01,keeper.diveDuration||.52),0,1);
+   const diveEase=diveT*diveT*(3-2*diveT);
+   const divePrevious=keeper.x;
+   keeper.x=keeper.px=THREE.MathUtils.lerp(keeper.diveStartX??keeper.x,keeper.diveTargetX??keeper.x,diveEase);
+   keeper.vx=dt>0?(keeper.x-divePrevious)/dt:0;keeper.vy=0;
+  }
   if(lifecycle.phase==="needs-reposition"){
    const move=beginKeeperRecovery("reposition","keeperMove");
    keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride="keeper-move";setPhase("return");
