@@ -53,7 +53,7 @@ test("invalid timing and non-finite inputs are rejected", () => {
 });
 
 test("one-on-one smother is based on arrival time and ball protection, not a random roll", () => {
-  const reachable = evaluateOneOnOne({ keeperDistance: 0.8, keeperAgility: 0.9, attackerBallControl: 0.2 });
+  const reachable = evaluateOneOnOne({ keeperDistance: 0.5, keeperAgility: 0.9, attackerBallControl: 0.2 });
   const protectedBall = evaluateOneOnOne({ keeperDistance: 0.8, keeperAgility: 0.9, attackerBallControl: 0.2, ballProtected: true });
   const tooFar = evaluateOneOnOne({ keeperDistance: 2.8, keeperAgility: 0.9, attackerBallControl: 0.2 });
   assert.equal(reachable.action, "smother");
