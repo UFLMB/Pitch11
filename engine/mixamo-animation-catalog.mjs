@@ -94,6 +94,10 @@ const STATE_FILES = Object.freeze({
 
 export function resolveMixamoClipCandidates(state, playerId = 0) {
   const files = STATE_FILES[state] || STATE_FILES.idle;
+  // Directional keeper saves are a matched left/right pair. Never rotate
+  // their candidate order by player ID: doing so can silently swap the
+  // intended mirrored clip for different keepers.
+  if (state === "keeperDiveLeft" || state === "keeperDiveRight") return [...files];
   if (files.length < 2) return [...files];
   const offset = Math.abs(Number(playerId) || 0) % files.length;
   return [...files.slice(offset), ...files.slice(0, offset)];
