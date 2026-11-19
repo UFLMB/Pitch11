@@ -20,6 +20,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <div id="p11-version" aria-label="Game version">v0.1.2</div>
+<script src="engine/goalkeeper-physics.js"></script>
 <script src="engine/law-compliance.js">
 </script>
 <script>
@@ -849,27 +850,34 @@ function aiGK(p){
     if(p.dive===0){p.vx=p.vy=0;p.diveTx=p.diveTy=null;}
     return;
   }
-  if(!o&&b.last&&b.last.team!==p.team&&-d*b.vx>140){       // incoming: predict where it crosses the goal line
-    const D=gx-b.x,k=b.z>2?KA:KG,r=D*k/b.vx;
-    if(r>0&&r<0.97){
-      const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D,zp=b.z+b.vz*tt-0.5*BALL_GRAV*tt*tt;
-      if(Math.abs(yp-CY)<GOALH+BR+5&&tt<1&&zp>=-8&&zp<GOALZ+BR+8){
-        if(p.seenShot!==b.shotId){                         // handling stat: better keepers react faster and misjudge less
-          p.seenShot=b.shotId;p.react=(b.pen?rnd(0,0.08):rnd(GK_REACT[0],GK_REACT[1]))*(1.5-st.def)*(p.team?DIF[G.diff].gk:1);
-          p.err=rnd(-GK_ERR,GK_ERR)*(b.pen?1.6:1)*(1.6-st.def)*(p.team?DIF[G.diff].gk:1);
-        }
-        if(p.react>0)return;                               // reaction delay: keeper is frozen
-        if(p.divedShot!==b.shotId){
-          p.divedShot=b.shotId;
-          const tx=gx+d*4,ty=clamp(yp+p.err,CY-GOALH+BR,CY+GOALH-BR);
-          const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy),tm=clamp(tt+0.15,0.3,0.7);
-          const maxSpeed=GK_DIVE*(0.85+0.3*st.pace)*(GOALH/36.6);
-          const speed=dist>2?Math.min(maxSpeed,dist/tm):0;
-          p.dive=tm;p.diveTx=tx;p.diveTy=ty;
-          p.vx=dist>2?dx/dist*speed:0;p.vy=dist>2?dy/dist*speed:0;
-          p.diveAng=dist>2?Math.atan2(dy,dx):0;
-          return;
-        }
+  if(!o&&b.last&&b.last.team!==p.team&&-d*b.vx>140){
+    const physics=window.P11GoalkeeperPhysics;
+    const predicted=physics&&physics.predictBallAtGoalPlane({
+      x:b.x/10,y:(b.y-CY)/10,z:b.z/10,vx:b.vx/10,vy:b.vy/10,vz:b.vz/10,
+      goalX:gx/10,drag:b.z>20?KA:KG,gravity:BALL_GRAV/10
+    });
+    if(predicted&&predicted.time<1.35&&predicted.height>=-0.12&&predicted.height<=GOALZ/10+0.12&&Math.abs(predicted.lateral)<=GOALH/10+0.12){
+      const decision=physics.evaluateKeeperInterception({
+        targetLateral:predicted.lateral,targetHeight:predicted.height,timeToGoal:predicted.time,
+        keeperLateral:(p.y-CY)/10,keeperDepth:p.x/10,goalDepth:gx/10,
+        goalHalfWidth:GOALH/10,goalHeight:GOALZ/10,keeperHeight:1.9,
+        incomingSpeed:Math.hypot(b.vx,b.vy,b.vz)/10,
+        stats:{reflex:st.def,handling:st.def,agility:st.pace,reach:st.phys}
+      });
+      if(p.seenShot!==b.shotId){
+        p.seenShot=b.shotId;p.react=decision.reactionTime;p.keeperDecision=decision;
+        p.err=0;
+      }
+      if(p.react>0)return;
+      if(p.divedShot!==b.shotId&&decision.reachable){
+        p.divedShot=b.shotId;p.keeperDecision=decision;
+        const tx=gx+d*4,ty=clamp(CY+predicted.lateral*10,CY-GOALH+BR,CY+GOALH-BR);
+        const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy);
+        const maxSpeed=(40+st.pace*18);
+        const speed=dist>2?Math.min(maxSpeed,dist/Math.max(.12,predicted.time)):0;
+        p.dive=clamp(predicted.time+0.12,0.22,0.82);p.diveTx=tx;p.diveTy=ty;
+        p.vx=dist>2?dx/dist*speed:0;p.vy=dist>2?dy/dist*speed:0;
+        p.diveAng=dist>2?Math.atan2(dy,dx):0;
       }
     }
   }
@@ -5255,7 +5263,7 @@ aiGK=function(p){
     }
   }
 };
-/* Goalkeeper post-dive recovery: keep the saved position while the keeper gets back to their feet. */
+/* Preserve each goalkeeper save's native recovery; never force a second get-up. */
 const _aiGKPostDiveRecovery=aiGK;
 aiGK=function(p){
   if(!p)return;
@@ -5265,13 +5273,7 @@ aiGK=function(p){
     p.vx=p.vy=0;
     return;
   }
-  const wasDiving=p.dive>0;
   _aiGKPostDiveRecovery(p);
-  if(wasDiving&&p.dive<=0){
-    p.diveRecover=0.68;
-    p.ix=p.iy=0;
-    p.vx=p.vy=0;
-  }
 };
 /* ===================== BOOT ===================== */
 
