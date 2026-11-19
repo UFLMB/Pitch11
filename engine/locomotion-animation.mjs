@@ -12,7 +12,7 @@ export function flattenHorizontalRootMotion(clip) {
     const valueSize = typeof track.getValueSize === "function" ? track.getValueSize() : 3;
     if (!values || valueSize !== 3 || values.length < 3 || values.length % 3 !== 0) continue;
     const firstX = values[0], firstZ = values[2];
-    for (let i = 0; i < values.length; i += 3) { values[i] = firstX; values[i + 2] = firstZ; }
+    for (let i = 0; i < values.length; i += 3) values[i] = firstX;
     adjustedTracks++;
   }
   clip.userData = { ...(clip.userData || {}), rootMotionFlattened: adjustedTracks > 0, rootMotionTracksAdjusted: adjustedTracks };
