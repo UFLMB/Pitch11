@@ -1,0 +1,44 @@
+name: Goalkeeper high-dive timing probe
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "goalkeeper-lab.html"
+      - "engine/goalkeeper-*.mjs"
+      - "engine/match-player-renderer.mjs"
+      - "input/player-model-candidate/**"
+      - "input/player-package/**"
+      - "scripts/goalkeeper-high-dive-timing-test.mjs"
+      - ".github/workflows/goalkeeper-high-dive-timing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  timing-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/pitch11-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/goalkeeper-lab.html > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pitch11-http.log
+          exit 1
+      - name: Run six bounded high-dive timing probes
+        run: timeout --signal=TERM --kill-after=15s 300s node scripts/goalkeeper-high-dive-timing-test.mjs
