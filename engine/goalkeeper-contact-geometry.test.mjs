@@ -6,17 +6,17 @@ const p = (x, y, z) => ({ x, y, z });
 
 test("builds hand, arm and torso colliders from Mixamo rig bones", () => {
   const colliders = buildGoalkeeperContactColliders({
-    "mixamorig5:LeftArm": p(-0.25, 1.4, 0),
-    "mixamorig5:LeftForeArm": p(-0.45, 1.15, 0),
-    "mixamorig5:LeftHand": p(-0.55, 0.95, 0),
-    "mixamorig5:RightArm": p(0.25, 1.4, 0),
-    "mixamorig5:RightForeArm": p(0.45, 1.15, 0),
-    "mixamorig5:RightHand": p(0.55, 0.95, 0),
-    "mixamorig5:Hips": p(0, 0.9, 0),
-    "mixamorig5:Spine": p(0, 1.1, 0),
-    "mixamorig5:Spine1": p(0, 1.3, 0),
-    "mixamorig5:Spine2": p(0, 1.5, 0),
-    "mixamorig5:Neck": p(0, 1.65, 0)
+    "mixamorig5:LeftArm_$AssimpFbx$_Translation": p(-0.25, 1.4, 0),
+    "mixamorig5:LeftForeArm_$AssimpFbx$_Translation": p(-0.45, 1.15, 0),
+    "mixamorig5:LeftHand_$AssimpFbx$_Translation": p(-0.55, 0.95, 0),
+    "mixamorig5:RightArm_$AssimpFbx$_Translation": p(0.25, 1.4, 0),
+    "mixamorig5:RightForeArm_$AssimpFbx$_Translation": p(0.45, 1.15, 0),
+    "mixamorig5:RightHand_$AssimpFbx$_Translation": p(0.55, 0.95, 0),
+    "mixamorig5:Hips_$AssimpFbx$_Translation": p(0, 0.9, 0),
+    "mixamorig5:Spine_$AssimpFbx$_Translation": p(0, 1.1, 0),
+    "mixamorig5:Spine1_$AssimpFbx$_Translation": p(0, 1.3, 0),
+    "mixamorig5:Spine2_$AssimpFbx$_Translation": p(0, 1.5, 0),
+    "mixamorig5:Neck_$AssimpFbx$_Translation": p(0, 1.65, 0)
   });
   assert.deepEqual(colliders.map(item => item.id), [
     "left-upper-arm", "left-forearm", "left-hand",
