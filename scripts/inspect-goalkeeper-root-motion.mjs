@@ -2,6 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import * as THREE from "../vendor/three/build/three.module.js";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
+import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
+import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
+import { validateDirectMixamoClip } from "../engine/match-player-renderer.mjs";
 
 const files = [
   "goalkeeper diving save.fbx",
@@ -22,8 +26,55 @@ const normalize = value => String(value || "")
   .replace(/[^a-z0-9]/gi, "")
   .replace(/^mixamorig\d*/i, "")
   .toLowerCase();
-const loader = new FBXLoader();
-const report = [];
+
+const fbxLoader = new FBXLoader();
+
+function toArrayBuffer(bytes) {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+}
+
+function inspectModel(root) {
+  let skinnedMeshes = 0;
+  const boneNames = new Set();
+  root.traverse(node => {
+    if (node.isSkinnedMesh) skinnedMeshes++;
+    if (node.isBone && node.name) boneNames.add(normalize(node.name));
+  });
+  return { skinnedMeshes, boneCount: boneNames.size, boneNames: [...boneNames].sort() };
+}
+
+async function loadRuntimeCharacterTemplate() {
+  const candidatePath = path.resolve("input/player-model-candidate/character.fbx");
+  if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).size > 1024) {
+    try {
+      const bytes = fs.readFileSync(candidatePath);
+      const candidate = fbxLoader.parse(toArrayBuffer(bytes), path.dirname(candidatePath) + path.sep);
+      candidate.updateMatrixWorld(true);
+      const stats = inspectModel(candidate);
+      if (stats.skinnedMeshes && stats.boneCount) {
+        return { root: candidate, source: "input/player-model-candidate/character.fbx", stats };
+      }
+    } catch (error) {
+      console.warn("Character FBX candidate could not be loaded; matching runtime GLB fallback:", error.message);
+    }
+  }
+
+  const fallbackPath = path.resolve("assets/players/player.glb");
+  if (!fs.existsSync(fallbackPath)) throw new Error("No runtime character model is available");
+  await MeshoptDecoder.ready;
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  const bytes = fs.readFileSync(fallbackPath);
+  const gltf = await new Promise((resolve, reject) => {
+    loader.parse(toArrayBuffer(bytes), path.dirname(fallbackPath) + path.sep, resolve, reject);
+  });
+  const root = gltf.scene;
+  root.updateMatrixWorld(true);
+  const stats = inspectModel(root);
+  if (!stats.skinnedMeshes || !stats.boneCount) {
+    throw new Error("Runtime GLB fallback has no usable skinned Mixamo skeleton");
+  }
+  return { root, source: "assets/players/player.glb (runtime fallback)", stats };
+}
 
 function quaternionSummary(track) {
   const frames = [];
@@ -49,27 +100,51 @@ function quaternionSummary(track) {
   };
 }
 
+const runtimeTemplate = await loadRuntimeCharacterTemplate();
+const report = [];
+
 for (const file of files) {
   const fullPath = path.resolve("input/player-package", file);
   if (!fs.existsSync(fullPath)) throw new Error("Missing animation asset: " + fullPath);
   const bytes = fs.readFileSync(fullPath);
-  const root = loader.parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), path.dirname(fullPath) + path.sep);
-  const clip = root.animations?.[0];
-  if (!clip) throw new Error(file + " has no animation clip");
+  const sourceRoot = fbxLoader.parse(toArrayBuffer(bytes), path.dirname(fullPath) + path.sep);
+  const sourceClip = sourceRoot.animations?.[0];
+  if (!sourceClip) throw new Error(file + " has no animation clip");
 
+  // Match the production renderer: bind the source FBX tracks to the actual
+  // runtime character skeleton, rather than measuring the animation-only FBX.
+  const binding = validateDirectMixamoClip(runtimeTemplate.root, sourceClip);
+  const clip = binding.clip;
+  const model = cloneSkeleton(runtimeTemplate.root);
+  model.updateMatrixWorld(true);
+
+  // This is the exact scale/ground-anchor procedure used by MatchPlayerRenderer.createPlayer().
+  const initialBounds = new THREE.Box3().setFromObject(model);
+  const sourceHeight = initialBounds.max.y - initialBounds.min.y;
+  if (!Number.isFinite(sourceHeight) || sourceHeight < 0.5) {
+    throw new Error("Runtime character bounds are invalid: " + runtimeTemplate.source);
+  }
+  const gameScale = 1.8 / sourceHeight;
+  model.scale.setScalar(gameScale);
+  model.position.y = 0;
+  model.updateMatrixWorld(true);
+  const scaledBounds = new THREE.Box3().setFromObject(model);
+  const gameGroundOffset = -scaledBounds.min.y;
+  model.position.y += gameGroundOffset;
+  model.updateMatrixWorld(true);
+
+  const group = new THREE.Group();
+  group.add(model);
   const bones = new Map();
-  root.traverse(node => {
+  model.traverse(node => {
     if (node.isBone && node.name) {
       const key = normalize(node.name);
       if (!bones.has(key)) bones.set(key, node);
     }
   });
+
   const quaternionTracks = clip.tracks.filter(track => /\.quaternion$/i.test(track.name));
   const positionTracks = clip.tracks.filter(track => /\.position$/i.test(track.name));
-  const initialBounds = new THREE.Box3().setFromObject(root);
-  const sourceHeight = initialBounds.max.y - initialBounds.min.y;
-  const gameScale = sourceHeight > 0 ? 1.8 / sourceHeight : 1;
-  const gameGroundOffset = -initialBounds.min.y * gameScale;
   const positionTrackDetails = positionTracks.map(track => {
     const stride = track.getValueSize();
     const frames = [];
@@ -77,9 +152,8 @@ for (const file of files) {
       frames.push(Array.from(track.values.slice(i, i + stride)).map(v => Number(v.toFixed(5))));
     }
     const sample = fraction => {
-      const time = clip.duration * fraction;
       const values = new Float32Array(stride);
-      track.createInterpolant(values).evaluate(time);
+      track.createInterpolant(values).evaluate(clip.duration * fraction);
       return Array.from(values).map(v => Number(v.toFixed(5)));
     };
     const componentMin = Array.from({ length: stride }, (_, axis) => Number(Math.min(...frames.map(v => v[axis])).toFixed(5)));
@@ -100,10 +174,11 @@ for (const file of files) {
     };
   });
   const selectedTracks = quaternionTracks
-    .filter(track => relevantBones.includes(normalize(track.name.slice(0, track.name.lastIndexOf(".")))))
+    .filter(track => relevantBones.includes(normalize(track.name.slice(0, track.name.lastIndexOf("."))))
+    )
     .map(quaternionSummary);
 
-  const mixer = new THREE.AnimationMixer(root);
+  const mixer = new THREE.AnimationMixer(model);
   const action = mixer.clipAction(clip);
   action.reset().setLoop(THREE.LoopOnce, 1);
   action.clampWhenFinished = true;
@@ -111,29 +186,20 @@ for (const file of files) {
   const sampledPoses = [];
   for (const fraction of sampleFractions) {
     mixer.setTime(clip.duration * fraction);
-    root.updateMatrixWorld(true);
+    group.updateMatrixWorld(true);
     const pose = {};
     for (const name of relevantBones) {
       const bone = bones.get(name);
       if (!bone) continue;
       const localPosition = bone.position.clone();
-      const position = bone.getWorldPosition(new THREE.Vector3());
-      const gameScaled = {
-        x: position.x * gameScale,
-        y: position.y * gameScale + gameGroundOffset,
-        z: position.z * gameScale
-      };
+      const modelWorld = bone.getWorldPosition(new THREE.Vector3());
+      const gameWorld = modelWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
       const quaternion = bone.getWorldQuaternion(new THREE.Quaternion()).normalize();
       const euler = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
       pose[name] = {
         localPosition: [localPosition.x, localPosition.y, localPosition.z].map(v => Number(v.toFixed(4))),
-        worldPosition: [position.x, position.y, position.z].map(v => Number(v.toFixed(4))),
-        gameScaledAnchoredPosition: [gameScaled.x, gameScaled.y, gameScaled.z].map(v => Number(v.toFixed(4))),
-        gameScaledAtYaw90: [
-          gameScaled.z,
-          gameScaled.y,
-          -gameScaled.x
-        ].map(v => Number(v.toFixed(4))),
+        scaledAnchoredModelWorldPosition: [modelWorld.x, modelWorld.y, modelWorld.z].map(v => Number(v.toFixed(4))),
+        gameWorldPositionAtYaw90: [gameWorld.x, gameWorld.y, gameWorld.z].map(v => Number(v.toFixed(4))),
         worldEulerYXZDeg: [euler.x, euler.y, euler.z].map(v => Number(THREE.MathUtils.radToDeg(v).toFixed(2)))
       };
     }
@@ -146,11 +212,14 @@ for (const file of files) {
     trackCount: clip.tracks.length,
     quaternionTrackCount: quaternionTracks.length,
     positionTrackCount: positionTracks.length,
-    sourceBounds: {
+    binding: { trackCount: binding.trackCount, uniqueTargets: binding.uniqueTargets },
+    runtimeModel: runtimeTemplate.source,
+    runtimeModelBounds: {
       min: initialBounds.min.toArray().map(v => Number(v.toFixed(4))),
       max: initialBounds.max.toArray().map(v => Number(v.toFixed(4))),
       height: Number(sourceHeight.toFixed(4)),
       gameScaleTo1_8m: Number(gameScale.toFixed(6)),
+      scaledBoundsMinYBeforeGroundAnchor: Number(scaledBounds.min.y.toFixed(6)),
       groundAnchorOffset: Number(gameGroundOffset.toFixed(6))
     },
     positionTrackDetails,
@@ -160,9 +229,11 @@ for (const file of files) {
     sampledPoses
   });
 }
+
 console.log(JSON.stringify({
-  result: "BONE_ROTATION_AND_WORLD_POSE_INSPECTION_COMPLETE",
+  result: "RUNTIME_CHARACTER_BONE_ROTATION_AND_GAME_SPACE_POSE_INSPECTION_COMPLETE",
   sampleFractions,
-  coordinateNote: "Positions and quaternions are FBX scene world-space values before the game's player group yaw/translation is applied.",
+  runtimeModel: { source: runtimeTemplate.source, ...runtimeTemplate.stats },
+  coordinateNote: "The animation is bound to the same skinned runtime character used by MatchPlayerRenderer. Positions include the runtime model scale and ground anchor; gameWorldPositionAtYaw90 additionally applies the renderer's +90-degree player-group yaw.",
   clips: report
 }, null, 2));
