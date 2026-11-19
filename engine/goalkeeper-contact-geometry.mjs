@@ -7,8 +7,10 @@ const finiteVector = (value, name) => {
 
 const mixamoName = value => String(value || "")
   .replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
-  .replace(/^mixamorig\d*:/i, "")
+  .replace(/^mixamorig:/i, "")
+  .replace(/[\s_]/g, "")
   .replace(/[^a-z0-9]/gi, "")
+  .replace(/^mixamorig\d*/i, "")
   .toLowerCase();
 
 function distancePointToSegment(point, start, end) {
