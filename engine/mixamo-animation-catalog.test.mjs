@@ -20,7 +20,7 @@ test("football action and goalkeeper states map to actual files in the package",
   for (const state of [
     "receive", "dribble", "pass", "shot", "header", "throwIn", "tackle", "fall", "fallenIdle", "getUp",
     "keeperSet", "keeperPenaltyReady", "keeperMove", "keeperDirect", "keeperCatch", "keeperDiveLeft", "keeperDiveRight", "keeperFingertip",
-    "keeperParry", "keeperScoop", "keeperMiss", "keeperPass", "keeperDropKick", "keeperThrow", "keeperPlace"
+    "keeperDiveLowLeft", "keeperDiveLowRight", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass", "keeperDropKick", "keeperThrow", "keeperPlace"
   ]) {
     const candidates = resolveMixamoClipCandidates(state, 3);
     assert.ok(candidates.length > 0, state);
@@ -43,12 +43,17 @@ test("keeps left and right keeper dive clip candidates stable across player IDs"
   const right1 = resolveMixamoClipCandidates("keeperDiveRight", 1);
   assert.deepEqual(left1, left0);
   assert.deepEqual(right1, right0);
-  assert.equal(left0[0], "goalkeeper diving save.fbx");
-  assert.equal(right0[0], "goalkeeper diving save (2).fbx");
+  assert.equal(left0[0], "goalkeeper diving save (2).fbx");
+  assert.equal(right0[0], "goalkeeper diving save.fbx");
   assert.notEqual(left0[0], right0[0]);
 });
 
 test("maps the user-confirmed goalkeeper fingertip and penalty-ready clips", () => {
   assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip"), ["goalkeeper miss.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperPenaltyReady"), ["transition.fbx"]);
+});
+
+test("maps low left and right saves to their dedicated body-block clips", () => {
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), ["goalkeeper body block (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), ["goalkeeper body block (3).fbx"]);
 });
