@@ -36,6 +36,29 @@ globalThis.self = globalThis;
 globalThis.innerWidth = 1;
 globalThis.innerHeight = 1;
 globalThis.createImageBitmap ||= async () => ({ width: 1, height: 1, close() {} });
+globalThis.document ||= {
+  createElementNS: (_namespace, name) => ({
+    nodeName: name,
+    style: {},
+    width: 1,
+    height: 1,
+    addEventListener() {},
+    removeEventListener() {},
+    setAttribute() {},
+    set src(value) { this._src = value; },
+    get src() { return this._src || ""; }
+  }),
+  createElement: name => ({
+    nodeName: name,
+    style: {},
+    width: 1,
+    height: 1,
+    getContext: () => null,
+    addEventListener() {},
+    removeEventListener() {},
+    setAttribute() {}
+  })
+};
 
 function toArrayBuffer(bytes) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
