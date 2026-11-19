@@ -12,10 +12,12 @@ const files = [
   "goalkeeper diving save.fbx",
   "goalkeeper diving save (2).fbx",
   "goalkeeper miss.fbx",
+  "goalkeeper catch (3).fbx",
+  "goalkeeper catch (4).fbx",
   "goalkeeper body block (2).fbx",
   "goalkeeper body block (3).fbx"
 ];
-const sampleFractions = Array.from({ length: 11 }, (_, index) => index / 10);
+const sampleFractions = Array.from({ length: 21 }, (_, index) => index / 20);
 const relevantBones = [
   "hips", "spine", "spine1", "spine2", "neck",
   "leftarm", "leftforearm", "lefthand", "rightarm", "rightforearm", "righthand",
@@ -254,9 +256,22 @@ for (const file of files) {
     sampledPoses.push({ fraction, time: Number((clip.duration * fraction).toFixed(4)), bones: pose });
   }
 
+  const handReachEnvelope = ["lefthand", "righthand"].map(name => {
+    const samples = sampledPoses.map(pose => ({
+      time: pose.time,
+      ...(pose.bones[name]?.keeperWorldPositionAtRuntimeYaw
+        ? { position: pose.bones[name].keeperWorldPositionAtRuntimeYaw }
+        : {})
+    })).filter(sample => sample.position);
+    const highest = samples.reduce((best, sample) => !best || sample.position[1] > best.position[1] ? sample : best, null);
+    const lowest = samples.reduce((best, sample) => !best || sample.position[1] < best.position[1] ? sample : best, null);
+    return { bone: name, highest, lowest };
+  });
+
   report.push({
     file,
     duration: Number(clip.duration.toFixed(4)),
+    handReachEnvelope,
     trackCount: clip.tracks.length,
     quaternionTrackCount: quaternionTracks.length,
     positionTrackCount: positionTracks.length,
