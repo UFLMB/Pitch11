@@ -884,11 +884,12 @@ function aiGK(p){
   if(rs&&rs.kind==='pen'&&rs.team!==p.team){goTo(p,gx+d*4,CY,false);return;}   // penalty: keeper stays on the line
   if(o&&o.team!==p.team&&!rs&&Math.abs(o.x-gx)<200&&Math.abs(o.y-CY)<175){     // one-on-one: close the angle, then smother
     const dd=Math.hypot(o.x-p.x,o.y-p.y);
-    if(dd<22&&p.tcd<=0&&b.protect<=0){
-      p.tcd=0.8;
-      if(Math.random()<0.35+0.4*st.def){take(p,true);o.stun=0.4;p.freeze=0.5;}
-      else{b.owner=null;b.last=p;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;}
-      return;
+    const duel=window.P11GoalkeeperPhysics.evaluateOneOnOne({
+      keeperDistance:dd/10,keeperAgility:st.pace,attackerBallControl:o.st.drib,
+      ballProtected:b.protect>0,cooldown:p.tcd
+    });
+    if(duel.canSmother){
+      p.tcd=0.8;take(p,true);o.stun=0.4;p.freeze=0.5;return;
     }
     const od=Math.hypot(o.x-gx,o.y-CY)||1,R=clamp(od*0.4,12,60);
     if(dd<75)goTo(p,o.x+o.vx*0.25,o.y+o.vy*0.25,true);
