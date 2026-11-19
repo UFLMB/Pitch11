@@ -22,11 +22,21 @@ const failures = [];
 async function openLab(context, label) {
   const page = await context.newPage();
   page.on("pageerror", error => failures.push(label + " pageerror: " + error.message));
+  page.on("console", message => { if (message.type() === "error") failures.push(label + " console: " + message.text()); });
+  page.on("requestfailed", request => failures.push(label + " request failed: " + request.url() + " · " + (request.failure()?.errorText || "unknown")));
   await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 30000 });
-  await page.waitForFunction(() => {
-    const status = document.querySelector("#status")?.textContent || "";
-    return /^(?:3D KEEPER|FALLBACK MODEL|MODEL ERROR)/.test(status.trim());
-  }, undefined, { timeout: 90000 });
+  try {
+    await page.waitForFunction(() => {
+      const status = document.querySelector("#status")?.textContent || "";
+      return /^(?:3D KEEPER|FALLBACK MODEL|MODEL ERROR)/.test(status.trim());
+    }, undefined, { timeout: 90000 });
+  } catch (error) {
+    const status = await page.locator("#status").innerText().catch(() => "status unavailable");
+    const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
+    console.log(JSON.stringify({ label, status, diagnostics, pageErrors: failures }, null, 2));
+    await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-load-failure.png", fullPage: true }).catch(() => {});
+    throw error;
+  }
   const status = await page.locator("#status").innerText();
   assert.match(status, /^3D KEEPER/i, label + " did not load the Mixamo goalkeeper model: " + status);
   try {
