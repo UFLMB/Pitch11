@@ -25,14 +25,14 @@ async function openLab(context, label) {
   await page.waitForFunction(() => {
     const status = document.querySelector("#status")?.textContent || "";
     return /^(?:3D KEEPER|FALLBACK MODEL|MODEL ERROR)/.test(status.trim());
-  }, { timeout: 90000 });
+  }, undefined, { timeout: 90000 });
   const status = await page.locator("#status").innerText();
   assert.match(status, /^3D KEEPER/i, label + " did not load the Mixamo goalkeeper model: " + status);
   try {
     await page.waitForFunction(() => {
       const text = document.querySelector("#readout")?.innerText || "";
       return /Rig colliders: [1-9]/.test(text);
-    }, { timeout: 15000 });
+    }, undefined, { timeout: 15000 });
   } catch (error) {
     const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
     console.log(JSON.stringify({ label, status, diagnostics }, null, 2));
@@ -50,7 +50,7 @@ try {
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-ready.png", fullPage: true });
 
   await desktop.locator("#ai-sequence").click();
-  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), { timeout: 150000 });
+  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 150000 });
   const desktopReadout = await desktop.locator("#readout").innerText();
   assert.match(desktopReadout, /Rig colliders: 9/);
   assert.doesNotMatch(desktopReadout, /Contact: —/, "The five-shot AI sequence must produce at least one real animated-rig contact");
