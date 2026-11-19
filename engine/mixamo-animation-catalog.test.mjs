@@ -19,7 +19,7 @@ test("core locomotion resolves to the direct Mixamo source clips", () => {
 test("football action and goalkeeper states map to actual files in the package", () => {
   for (const state of [
     "receive", "dribble", "pass", "shot", "header", "throwIn", "tackle", "fall", "fallenIdle", "getUp",
-    "keeperSet", "keeperMove", "keeperDirect", "keeperCatch", "keeperDiveLeft", "keeperDiveRight",
+    "keeperSet", "keeperPenaltyReady", "keeperMove", "keeperDirect", "keeperCatch", "keeperDiveLeft", "keeperDiveRight", "keeperFingertip",
     "keeperParry", "keeperScoop", "keeperMiss", "keeperPass", "keeperDropKick", "keeperThrow", "keeperPlace"
   ]) {
     const candidates = resolveMixamoClipCandidates(state, 3);
@@ -46,4 +46,9 @@ test("keeps left and right keeper dive clip candidates stable across player IDs"
   assert.equal(left0[0], "goalkeeper diving save.fbx");
   assert.equal(right0[0], "goalkeeper diving save (2).fbx");
   assert.notEqual(left0[0], right0[0]);
+});
+
+test("maps the user-confirmed goalkeeper fingertip and penalty-ready clips", () => {
+  assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip"), ["goalkeeper miss.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperPenaltyReady"), ["transition.fbx"]);
 });
