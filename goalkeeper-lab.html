@@ -84,7 +84,7 @@ let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,s
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
 const goalLineZ=34,ballGravity=9.81;
 const keeperAttributes={reflexes:76,diving:78,handling:72,reach:76,keeperHeight:1.9};
-const targets={"left-low":{x:2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:-2.8,y:.35,z:34},"left-high":{x:2.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:-2.8,y:2.05,z:34}};
+const targets={"left-low":{x:2.8,y:.35,z:34},"center-low":{x:0,y:.35,z:34},"right-low":{x:-2.8,y:.35,z:34},"left-high":{x:1.8,y:2.05,z:34},"center-high":{x:0,y:2.05,z:34},"right-high":{x:-1.8,y:2.05,z:34}};
 const keeperLeftWorldXDirection=(-Math.sign(Math.sin(keeper.face))||1);
 function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=732;keeper.vx=keeper.vy=0}
 function setPhase(next,duration=0){phase=next;phaseTimer=duration}
