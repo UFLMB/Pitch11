@@ -52,6 +52,7 @@ test("maps the user-confirmed goalkeeper fingertip and penalty-ready clips", () 
   assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip", 0, "left"), ["goalkeeper diving save (2).fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip", 0, "right"), ["goalkeeper diving save.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperMiss", 0, "left"), ["goalkeeper diving save (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperMiss", 0, "right"), ["goalkeeper diving save.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperPenaltyReady"), ["transition.fbx"]);
 });
 
