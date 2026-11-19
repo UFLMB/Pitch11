@@ -16,11 +16,19 @@ test("builds hand, arm and torso colliders from Mixamo rig bones", () => {
     "mixamorig5:Spine_$AssimpFbx$_Translation": p(0, 1.1, 0),
     "mixamorig5:Spine1_$AssimpFbx$_Translation": p(0, 1.3, 0),
     "mixamorig5:Spine2_$AssimpFbx$_Translation": p(0, 1.5, 0),
-    "mixamorig5:Neck_$AssimpFbx$_Translation": p(0, 1.65, 0)
+    "mixamorig5:Neck_$AssimpFbx$_Translation": p(0, 1.65, 0),
+    "mixamorig5:LeftUpLeg_$AssimpFbx$_Translation": p(-0.12, 0.82, 0),
+    "mixamorig5:LeftLeg_$AssimpFbx$_Translation": p(-0.12, 0.42, 0),
+    "mixamorig5:LeftFoot_$AssimpFbx$_Translation": p(-0.12, 0.08, 0.1),
+    "mixamorig5:RightUpLeg_$AssimpFbx$_Translation": p(0.12, 0.82, 0),
+    "mixamorig5:RightLeg_$AssimpFbx$_Translation": p(0.12, 0.42, 0),
+    "mixamorig5:RightFoot_$AssimpFbx$_Translation": p(0.12, 0.08, 0.1)
   });
   assert.deepEqual(colliders.map(item => item.id), [
     "left-upper-arm", "left-forearm", "left-hand",
     "right-upper-arm", "right-forearm", "right-hand",
+    "left-upper-leg", "left-lower-leg", "left-foot",
+    "right-upper-leg", "right-lower-leg", "right-foot",
     "pelvis-core", "chest-core", "upper-chest"
   ]);
   assert.equal(colliders.find(item => item.id === "left-hand").radius, 0.145);
@@ -38,6 +46,19 @@ test("detects a swept ball crossing a stationary hand collider between frames", 
   assert.ok(hit);
   assert.equal(hit.colliderId, "right-hand");
   assert.ok(hit.time > 0 && hit.time < 1);
+});
+
+test("detects a low shot against a goalkeeper lower-leg collider", () => {
+  const collider = { id: "right-lower-leg", part: "leg", side: "right", start: p(0.12, 0.42, 0), end: p(0.12, 0.08, 0.1), radius: 0.105 };
+  const hit = findSweptBallContact({
+    previousBall: p(0.12, 0.3, -0.5),
+    currentBall: p(0.12, 0.3, 0.5),
+    previousColliders: [collider],
+    currentColliders: [collider],
+    ballRadius: 0.11
+  });
+  assert.ok(hit);
+  assert.equal(hit.colliderId, "right-lower-leg");
 });
 
 test("interpolates a moving arm collider between animation frames", () => {
