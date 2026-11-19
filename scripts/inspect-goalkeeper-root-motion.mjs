@@ -5,10 +5,49 @@ import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 
 const files = [
   "goalkeeper diving save.fbx",
-  "goalkeeper diving save (2).fbx"
+  "goalkeeper diving save (2).fbx",
+  "goalkeeper body block (2).fbx",
+  "goalkeeper body block (3).fbx"
 ];
+const sampleFractions = [0, 0.25, 0.5, 0.75, 1];
+const relevantBones = [
+  "hips", "spine", "spine1", "spine2", "neck",
+  "leftarm", "leftforearm", "lefthand", "rightarm", "rightforearm", "righthand",
+  "leftupleg", "leftleg", "leftfoot", "rightupleg", "rightleg", "rightfoot"
+];
+const normalize = value => String(value || "")
+  .replace(/_\\$AssimpFbx\\$_(Translation|Rotation|Scaling)$/i, "")
+  .replace(/^mixamorig:/i, "")
+  .replace(/[\\s_]/g, "")
+  .replace(/[^a-z0-9]/gi, "")
+  .replace(/^mixamorig\\d*/i, "")
+  .toLowerCase();
 const loader = new FBXLoader();
 const report = [];
+
+function quaternionSummary(track) {
+  const frames = [];
+  for (let i = 0; i < track.values.length; i += 4) {
+    frames.push(new THREE.Quaternion(
+      track.values[i], track.values[i + 1], track.values[i + 2], track.values[i + 3]
+    ).normalize());
+  }
+  const first = frames[0], last = frames.at(-1);
+  const maxFromStartDeg = Math.max(...frames.map(q => THREE.MathUtils.radToDeg(first.angleTo(q))));
+  const euler = q => {
+    const e = new THREE.Euler().setFromQuaternion(q, "YXZ");
+    return [e.x, e.y, e.z].map(v => Number(THREE.MathUtils.radToDeg(v).toFixed(2)));
+  };
+  return {
+    track: track.name,
+    keyframes: frames.length,
+    firstEulerYXZDeg: euler(first),
+    middleEulerYXZDeg: euler(frames[Math.floor(frames.length / 2)]),
+    lastEulerYXZDeg: euler(last),
+    firstToLastAngleDeg: Number(THREE.MathUtils.radToDeg(first.angleTo(last)).toFixed(2)),
+    maxAngularExcursionDeg: Number(maxFromStartDeg.toFixed(2))
+  };
+}
 
 for (const file of files) {
   const fullPath = path.resolve("input/player-package", file);
@@ -17,28 +56,59 @@ for (const file of files) {
   const root = loader.parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), path.dirname(fullPath) + path.sep);
   const clip = root.animations?.[0];
   if (!clip) throw new Error(file + " has no animation clip");
-  const tracks = clip.tracks.filter(track => /\\.position$/i.test(track.name));
-  const rootTracks = tracks.filter(track => {
-    const target = track.name.slice(0, track.name.lastIndexOf(".")).replace(/[^a-z0-9]/gi, "").toLowerCase();
-    return /^(mixamorig)?(hips|root)$/.test(target);
+
+  const bones = new Map();
+  root.traverse(node => {
+    if (node.isBone && node.name) {
+      const key = normalize(node.name);
+      if (!bones.has(key)) bones.set(key, node);
+    }
   });
-  const summarize = track => {
-    const size = track.getValueSize();
-    const values = track.values;
-    const frames = [];
-    for (let i = 0; i < values.length; i += size) frames.push([values[i], values[i + 1], values[i + 2]]);
-    const first = frames[0], last = frames[frames.length - 1];
-    const mins = [0, 1, 2].map(axis => Math.min(...frames.map(v => v[axis])));
-    const maxs = [0, 1, 2].map(axis => Math.max(...frames.map(v => v[axis])));
-    return { track: track.name, frames: frames.length, first, last, delta: last.map((v, i) => v - first[i]), min: mins, max: maxs, range: maxs.map((v, i) => v - mins[i]) };
-  };
+  const quaternionTracks = clip.tracks.filter(track => /\\.quaternion$/i.test(track.name));
+  const positionTracks = clip.tracks.filter(track => /\\.position$/i.test(track.name));
+  const selectedTracks = quaternionTracks
+    .filter(track => relevantBones.includes(normalize(track.name.slice(0, track.name.lastIndexOf(".")))))
+    .map(quaternionSummary);
+
+  const mixer = new THREE.AnimationMixer(root);
+  const action = mixer.clipAction(clip);
+  action.reset().setLoop(THREE.LoopOnce, 1);
+  action.clampWhenFinished = true;
+  action.play();
+  const sampledPoses = [];
+  for (const fraction of sampleFractions) {
+    mixer.setTime(clip.duration * fraction);
+    root.updateMatrixWorld(true);
+    const pose = {};
+    for (const name of relevantBones) {
+      const bone = bones.get(name);
+      if (!bone) continue;
+      const position = bone.getWorldPosition(new THREE.Vector3());
+      const quaternion = bone.getWorldQuaternion(new THREE.Quaternion()).normalize();
+      const euler = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
+      pose[name] = {
+        worldPosition: [position.x, position.y, position.z].map(v => Number(v.toFixed(4))),
+        worldEulerYXZDeg: [euler.x, euler.y, euler.z].map(v => Number(THREE.MathUtils.radToDeg(v).toFixed(2)))
+      };
+    }
+    sampledPoses.push({ fraction, time: Number((clip.duration * fraction).toFixed(4)), bones: pose });
+  }
+
   report.push({
     file,
-    duration: clip.duration,
+    duration: Number(clip.duration.toFixed(4)),
     trackCount: clip.tracks.length,
-    positionTrackCount: tracks.length,
-    rootTracks: rootTracks.map(summarize),
-    otherLargestPositionTracks: tracks.filter(t => !rootTracks.includes(t)).map(summarize).sort((a, b) => Math.max(...b.range) - Math.max(...a.range)).slice(0, 5)
+    quaternionTrackCount: quaternionTracks.length,
+    positionTrackCount: positionTracks.length,
+    matchedSkeletonBones: relevantBones.filter(name => bones.has(name)),
+    missingSkeletonBones: relevantBones.filter(name => !bones.has(name)),
+    quaternionTracks: selectedTracks,
+    sampledPoses
   });
 }
-console.log(JSON.stringify(report, null, 2));
+console.log(JSON.stringify({
+  result: "BONE_ROTATION_AND_WORLD_POSE_INSPECTION_COMPLETE",
+  sampleFractions,
+  coordinateNote: "Positions and quaternions are FBX scene world-space values before the game's player group yaw/translation is applied.",
+  clips: report
+}, null, 2));
