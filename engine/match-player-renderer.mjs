@@ -431,6 +431,11 @@ export class MatchPlayerRenderer {
       if (clip && entry.activeClipName !== clip.name) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
+        // Explicit browser-test override for fingertip timing calibration; absent in production.
+        const diagnosticTimeScale = Number(globalThis.__GK_TEST_ANIMATION_TIME_SCALE);
+        if (animationState === "keeperFingertip" && Number.isFinite(diagnosticTimeScale) && diagnosticTimeScale > 0) {
+          nextAction.timeScale = diagnosticTimeScale;
+        }
         if (isOneShotAnimationState(animationState)) {
           nextAction.setLoop(THREE.LoopOnce, 1);
           nextAction.clampWhenFinished = true;
