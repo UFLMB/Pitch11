@@ -51,3 +51,12 @@ test("invalid timing and non-finite inputs are rejected", () => {
   assert.throws(() => evaluateKeeperInterception({ targetLateral: 0, targetHeight: 1, timeToGoal: 0 }), RangeError);
   assert.throws(() => predictBallAtGoalPlane({ x: NaN, y: 0, z: 0, vx: 1, vy: 0, vz: 0, goalX: 2 }), TypeError);
 });
+
+test("one-on-one smother is based on arrival time and ball protection, not a random roll", () => {
+  const reachable = evaluateOneOnOne({ keeperDistance: 0.8, keeperAgility: 0.9, attackerBallControl: 0.2 });
+  const protectedBall = evaluateOneOnOne({ keeperDistance: 0.8, keeperAgility: 0.9, attackerBallControl: 0.2, ballProtected: true });
+  const tooFar = evaluateOneOnOne({ keeperDistance: 2.8, keeperAgility: 0.9, attackerBallControl: 0.2 });
+  assert.equal(reachable.action, "smother");
+  assert.equal(protectedBall.action, "contain");
+  assert.equal(tooFar.action, "contain");
+});
