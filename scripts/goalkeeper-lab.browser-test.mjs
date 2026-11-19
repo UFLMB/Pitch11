@@ -19,6 +19,7 @@ const browser = await chromium.launch({
 });
 
 const failures = [];
+const testFailures = [];
 async function openLab(context, label) {
   const page = await context.newPage();
   page.on("pageerror", error => failures.push(label + " pageerror: " + error.message));
@@ -84,6 +85,7 @@ try {
     }
     const diagnostics = await page.locator("#readout").innerText();
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + "-attempt.png", fullPage: true });
+    console.log(label + " " + shot + " diagnostics: " + diagnostics.replace(/\\n/g, " | "));
     assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
     assert.match(diagnostics, /Rig colliders: 15/, label + " rig collider count mismatch for " + shot);
     assert.match(diagnostics, /REACHABLE/, label + " controlled calibration shot must be physically reachable for " + shot);
@@ -101,7 +103,10 @@ try {
     ["right-high", "right", "high", "keeperDiveRight", "goalkeeper diving save.fbx"]
   ];
   const desktopCornerResults = [];
-  for (const test of cornerCases) desktopCornerResults.push(await verifyDirectionalShot(desktop, "desktop", ...test));
+  for (const test of cornerCases) {
+    try { desktopCornerResults.push(await verifyDirectionalShot(desktop, "desktop", ...test)); }
+    catch (error) { testFailures.push("desktop " + test[0] + ": " + error.message); console.log("CONTINUING AFTER DESKTOP CASE FAILURE: " + test[0]); }
+  }
   const desktopReadout = desktopCornerResults.join("\n");
 
   const mobileContext = await browser.newContext({
@@ -116,10 +121,14 @@ try {
   assert.match(mobileReadout, /Rig colliders: 15/);
   await mobile.locator("#ai-mode").click();
   const mobileCornerResults = [];
-  for (const test of cornerCases) mobileCornerResults.push(await verifyDirectionalShot(mobile, "mobile", ...test));
+  for (const test of cornerCases) {
+    try { mobileCornerResults.push(await verifyDirectionalShot(mobile, "mobile", ...test)); }
+    catch (error) { testFailures.push("mobile " + test[0] + ": " + error.message); console.log("CONTINUING AFTER MOBILE CASE FAILURE: " + test[0]); }
+  }
   const mobileContactReadout = mobileCornerResults.join("\\n");
 
   assert.deepEqual(failures, [], "Browser runtime errors");
+  assert.deepEqual(testFailures, [], "Goalkeeper directional contact regressions");
   console.log(JSON.stringify({
     result: "PASS",
     desktop: { status: await desktop.locator("#status").innerText(), sequence: desktopSequenceReadout, contact: desktopReadout },
