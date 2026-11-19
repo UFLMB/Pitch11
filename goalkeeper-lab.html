@@ -182,7 +182,7 @@ function updateReadout(){
  const failureLine=failures.length?'<br>Clip errors: '+failures.map(x=>x.file+': '+x.error).join(' | '):'';
  const rigContact=keeperRenderer.getGoalkeeperContactRigStatus(0);
  const keeperEntry=keeperRenderer.players.get(0);
- const clipDuration=keeperEntry?.activeAction?.getClip?.().duration||0;const clipTime=keeperEntry?.activeAction?.time||0;const animationLine='<br>GK State: '+(keeperEntry?.state||'—')+' · Override: '+(keeper.animationOverride||'idle')+' · Lifecycle: '+keeperAnimationLifecycle.snapshot().phase+' · Clip: '+clipTime.toFixed(2)+'/'+clipDuration.toFixed(2)+'s · Min gap: '+(Number.isFinite(minContactGap)?minContactGap.toFixed(2)+'m':'—')+' · Trace: '+(animationTrace.join(' → ')||'—');
+ const clipDuration=keeperEntry?.activeAction?.getClip?.().duration||0;const clipTime=keeperEntry?.activeAction?.time||0;const animationLine='<br>GK State: '+(keeperEntry?.state||'—')+' · Override: '+(keeper.animationOverride||'idle')+' · Lifecycle: '+keeperAnimationLifecycle.snapshot().phase+' · Clip: '+clipTime.toFixed(2)+'/'+clipDuration.toFixed(2)+'s · Min gap: '+(Number.isFinite(minContactGap)?minContactGap.toFixed(2)+'m':'—')+' ('+minContactCollider+') · Trace: '+(animationTrace.join(' → ')||'—');
  const contactLine='<br>Rig colliders: '+rigContact.colliderCount+' · Contact: '+lastContactLabel+(rigContact.missing.length?' · Missing: '+rigContact.missing.join(', '):'');
  readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+animationLine+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+failureLine+contactLine;
 }
