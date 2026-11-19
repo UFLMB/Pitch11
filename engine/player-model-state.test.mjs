@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide } from "./player-model-state.mjs";
+import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide, resolveKeeperDiveAngle } from "./player-model-state.mjs";
 import { resolvePlayerAnimationState } from "./player-animation-map.mjs";
 
 const player = (overrides = {}) => ({
@@ -70,4 +70,14 @@ test("maps stationary possession and throw-in restarts to dedicated Mixamo actio
   assert.equal(mapLegacyPlayerState(keeper, 1, 1, null, keeper).action, "keeper-catch");
   const thrower = player();
   assert.equal(mapLegacyPlayerState(thrower, 0, 1, null, null, { kind: "throw", p: thrower }).action, "throw-in");
+});
+
+
+test("converts keeper-local dive sides into world angles for either facing direction", () => {
+  for (const facing of [0, Math.PI / 2, Math.PI, -Math.PI / 2]) {
+    const leftAngle = resolveKeeperDiveAngle("left", facing);
+    const rightAngle = resolveKeeperDiveAngle("right", facing);
+    assert.equal(resolveKeeperDiveSide(leftAngle, facing), "left");
+    assert.equal(resolveKeeperDiveSide(rightAngle, facing), "right");
+  }
 });
