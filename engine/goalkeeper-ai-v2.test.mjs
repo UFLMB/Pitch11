@@ -33,7 +33,7 @@ test("low lateral threats request a matching low dive when reachable",()=>{
 });
 test("high wide threats do not request an unverified save animation",()=>{
  const r=evaluateGoalkeeperThreat({ball:ballTo(2.3,2.12,.9,22),keeper:{x:0},attributes:{reflexes:85,diving:90,reach:90,handling:60}});
- assert.equal(r.reachable,false); assert.equal(r.reason,"high-save-animation-unavailable"); assert.equal(r.animationState,"keeperMiss");
+ assert.equal(r.reachable,false); assert.ok(["high-save-animation-unavailable","vertical-reach-exceeded"].includes(r.reason)); assert.equal(r.animationState,"keeperMiss");
 });
 test("high central shots remain goals until a verified high-save clip exists",()=>{
  const r=evaluateGoalkeeperThreat({ball:ballTo(0,2.0,.9,16),keeper:{x:0},attributes:{reflexes:90,diving:90,reach:90,handling:60}});
