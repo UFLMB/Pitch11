@@ -20,6 +20,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <div id="p11-version" aria-label="Game version">v0.1.2</div>
+<script src="engine/goalkeeper-physics.js"></script>
 <script src="engine/law-compliance.js">
 </script>
 <script>
@@ -42,7 +43,6 @@ let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,W
 let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
 const BALL_GRAV=98.1,KG=0.12,KA=0.08,ROLL_DECEL=42,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // 1 unit = 10 cm; rolling resistance is 2.4 m/s²
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
-const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
 // 4-3-3: [depth 0..1 from own goal, width 0..1]; index 0 = GK
 const FORM=[[.03,.5],[.2,.1],[.18,.37],[.18,.63],[.2,.9],[.4,.25],[.36,.5],[.4,.75],[.62,.14],[.66,.5],[.62,.86]];
 const KIT=[{name:'BLU',shirt:'#1f6fff',shorts:'#ffffff',gk:'#f2c200'},{name:'RED',shirt:'#e5342b',shorts:'#1b1b1b',gk:'#27c46b'}];
@@ -849,38 +849,46 @@ function aiGK(p){
     if(p.dive===0){p.vx=p.vy=0;p.diveTx=p.diveTy=null;}
     return;
   }
-  if(!o&&b.last&&b.last.team!==p.team&&-d*b.vx>140){       // incoming: predict where it crosses the goal line
-    const D=gx-b.x,k=b.z>2?KA:KG,r=D*k/b.vx;
-    if(r>0&&r<0.97){
-      const tt=-Math.log(1-r)/k,yp=b.y+b.vy/b.vx*D,zp=b.z+b.vz*tt-0.5*BALL_GRAV*tt*tt;
-      if(Math.abs(yp-CY)<GOALH+BR+5&&tt<1&&zp>=-8&&zp<GOALZ+BR+8){
-        if(p.seenShot!==b.shotId){                         // handling stat: better keepers react faster and misjudge less
-          p.seenShot=b.shotId;p.react=(b.pen?rnd(0,0.08):rnd(GK_REACT[0],GK_REACT[1]))*(1.5-st.def)*(p.team?DIF[G.diff].gk:1);
-          p.err=rnd(-GK_ERR,GK_ERR)*(b.pen?1.6:1)*(1.6-st.def)*(p.team?DIF[G.diff].gk:1);
-        }
-        if(p.react>0)return;                               // reaction delay: keeper is frozen
-        if(p.divedShot!==b.shotId){
-          p.divedShot=b.shotId;
-          const tx=gx+d*4,ty=clamp(yp+p.err,CY-GOALH+BR,CY+GOALH-BR);
-          const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy),tm=clamp(tt+0.15,0.3,0.7);
-          const maxSpeed=GK_DIVE*(0.85+0.3*st.pace)*(GOALH/36.6);
-          const speed=dist>2?Math.min(maxSpeed,dist/tm):0;
-          p.dive=tm;p.diveTx=tx;p.diveTy=ty;
-          p.vx=dist>2?dx/dist*speed:0;p.vy=dist>2?dy/dist*speed:0;
-          p.diveAng=dist>2?Math.atan2(dy,dx):0;
-          return;
-        }
+  if(!o&&b.last&&b.last.team!==p.team&&-d*b.vx>140){
+    const physics=window.P11GoalkeeperPhysics;
+    const predicted=physics&&physics.predictBallAtGoalPlane({
+      x:b.x/10,y:(b.y-CY)/10,z:b.z/10,vx:b.vx/10,vy:b.vy/10,vz:b.vz/10,
+      goalX:gx/10,drag:b.z>20?KA:KG,gravity:BALL_GRAV/10
+    });
+    if(predicted&&predicted.time<1.35&&predicted.height>=-0.12&&predicted.height<=GOALZ/10+0.12&&Math.abs(predicted.lateral)<=GOALH/10+0.12){
+      const decision=physics.evaluateKeeperInterception({
+        targetLateral:predicted.lateral,targetHeight:predicted.height,timeToGoal:predicted.time,
+        keeperLateral:(p.y-CY)/10,keeperDepth:p.x/10,goalDepth:gx/10,
+        goalHalfWidth:GOALH/10,goalHeight:GOALZ/10,keeperHeight:1.9,
+        incomingSpeed:Math.hypot(b.vx,b.vy,b.vz)/10,
+        stats:{reflex:st.def,handling:st.def,agility:st.pace,reach:st.phys}
+      });
+      if(p.seenShot!==b.shotId){
+        p.seenShot=b.shotId;p.react=decision.reactionTime;p.keeperDecision=decision;
+        p.err=0;
+      }
+      if(p.react>0)return;
+      if(p.divedShot!==b.shotId&&decision.reachable){
+        p.divedShot=b.shotId;p.keeperDecision=decision;
+        const tx=gx+d*4,ty=clamp(CY+predicted.lateral*10,CY-GOALH+BR,CY+GOALH-BR);
+        const dx=tx-p.x,dy=ty-p.y,dist=Math.hypot(dx,dy);
+        const maxSpeed=(40+st.pace*18);
+        const speed=dist>2?Math.min(maxSpeed,dist/Math.max(.12,predicted.time)):0;
+        p.dive=clamp(predicted.time+0.12,0.22,0.82);p.diveTx=tx;p.diveTy=ty;
+        p.vx=dist>2?dx/dist*speed:0;p.vy=dist>2?dy/dist*speed:0;
+        p.diveAng=dist>2?Math.atan2(dy,dx):0;
       }
     }
   }
   if(rs&&rs.kind==='pen'&&rs.team!==p.team){goTo(p,gx+d*4,CY,false);return;}   // penalty: keeper stays on the line
   if(o&&o.team!==p.team&&!rs&&Math.abs(o.x-gx)<200&&Math.abs(o.y-CY)<175){     // one-on-one: close the angle, then smother
     const dd=Math.hypot(o.x-p.x,o.y-p.y);
-    if(dd<22&&p.tcd<=0&&b.protect<=0){
-      p.tcd=0.8;
-      if(Math.random()<0.35+0.4*st.def){take(p,true);o.stun=0.4;p.freeze=0.5;}
-      else{b.owner=null;b.last=p;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;}
-      return;
+    const duel=window.P11GoalkeeperPhysics.evaluateOneOnOne({
+      keeperDistance:dd/10,keeperAgility:st.pace,attackerBallControl:o.st.drib,
+      ballProtected:b.protect>0,cooldown:p.tcd
+    });
+    if(duel.canSmother){
+      p.tcd=0.8;take(p,true);o.stun=0.4;p.freeze=0.5;return;
     }
     const od=Math.hypot(o.x-gx,o.y-CY)||1,R=clamp(od*0.4,12,60);
     if(dd<75)goTo(p,o.x+o.vx*0.25,o.y+o.vy*0.25,true);
@@ -5238,24 +5246,8 @@ attack22=function(p,o,c){
   if(tx*d>off-8&&ball.x*d<=off)go22(p,(off-8)*d,ty,true);
   else go22(p,tx,ty,Math.hypot(tx-p.x,ty-p.y)>65);
 };
-/* Goalkeeper AI 2.1: avoid an animated dive when the keeper is already at the
-   predicted save point or cannot physically cover the required distance in time. */
-const _aiGK21=aiGK;
-aiGK=function(p){
-  const oldDive=p.dive,oldShot=p.divedShot;
-  _aiGK21(p);
-  if(oldDive<=0&&p.dive>0&&p.divedShot!==oldShot){
-    const d=dirOf(p.team),gx=ownGX(p),D=gx-ball.x,k=ball.z>2?KA:KG,r=D*k/ball.vx;
-    if(D/ball.vx>0&&r>0&&r<0.95){
-      const tt=-Math.log(1-r)/k,yp=ball.y+ball.vy/ball.vx*D;
-      const tx=gx+d*4,ty=clamp(yp+p.err,CY-GOALH+BR,CY+GOALH-BR);
-      const dist=Math.hypot(tx-p.x,ty-p.y),travel=p.dive*Math.hypot(p.vx,p.vy);
-      if(dist<6){p.dive=0;p.vx=p.vy=0;}
-      else if(dist>travel+4){p.dive=0;p.vx=p.vy=0;goTo(p,tx,ty,false);}
-    }
-  }
-};
-/* Goalkeeper post-dive recovery: keep the saved position while the keeper gets back to their feet. */
+/* Replaced by the shared trajectory and reach-envelope model in goalkeeper-physics.js. */
+/* Preserve each goalkeeper save's native recovery; never force a second get-up. */
 const _aiGKPostDiveRecovery=aiGK;
 aiGK=function(p){
   if(!p)return;
@@ -5265,13 +5257,7 @@ aiGK=function(p){
     p.vx=p.vy=0;
     return;
   }
-  const wasDiving=p.dive>0;
   _aiGKPostDiveRecovery(p);
-  if(wasDiving&&p.dive<=0){
-    p.diveRecover=0.68;
-    p.ix=p.iy=0;
-    p.vx=p.vy=0;
-  }
 };
 /* ===================== BOOT ===================== */
 
