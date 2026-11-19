@@ -1,0 +1,14 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { GoalkeeperAnimationLifecycle, GOALKEEPER_ONE_SHOT_STATES } from "./goalkeeper-animation-lifecycle.mjs";
+function play(l,opts,duration=100){const s=l.begin(opts);assert.equal(l.clipLoaded(s.generation,duration),true);return s.generation;}
+test("save clip with embedded recovery completes without a second get-up",()=>{const l=new GoalkeeperAnimationLifecycle();const g=play(l,{action:"save",clip:"body-block",hasEmbeddedRecovery:true,keeperDown:true});l.tick(100);assert.equal(l.snapshot().phase,"complete");});
+test("diving-safe finishes its own get-up then requests reposition only",()=>{const l=new GoalkeeperAnimationLifecycle();const g=play(l,{action:"save",clip:"diving-safe",hasEmbeddedRecovery:true,requiresRecenter:true,keeperDown:true});l.tick(100);assert.equal(l.snapshot().phase,"needs-reposition");assert.throws(()=>l.beginRecovery({clip:"standing-up",action:"getUp"}),/repositioning/);const r=l.beginRecovery({clip:"keeper-move",action:"reposition"});assert.equal(r.phase,"loading");});
+test("miss does not force get-up when keeper stayed upright",()=>{const l=new GoalkeeperAnimationLifecycle();play(l,{action:"miss",clip:"miss",keeperDown:false});l.tick(100);assert.equal(l.snapshot().phase,"complete");});
+test("miss requests get-up only when keeper is down",()=>{const l=new GoalkeeperAnimationLifecycle();play(l,{action:"miss",clip:"miss",keeperDown:true});l.tick(100);assert.equal(l.snapshot().phase,"needs-get-up");});
+test("clip loading timeout fails instead of waiting forever",()=>{const l=new GoalkeeperAnimationLifecycle({clipLoadTimeoutMs:250});l.begin({action:"save",clip:"missing"});l.tick(250);assert.equal(l.snapshot().phase,"failed");assert.equal(l.snapshot().reason,"clip-load-timeout");});
+test("late events from a reset generation are ignored",()=>{const l=new GoalkeeperAnimationLifecycle();const s=l.begin({action:"save",clip:"old"});l.reset();assert.equal(l.clipLoaded(s.generation,100),false);assert.equal(l.snapshot().phase,"idle");});
+test("active animation cannot be interrupted by a second shot",()=>{const l=new GoalkeeperAnimationLifecycle();play(l,{action:"save",clip:"save"});assert.throws(()=>l.begin({action:"save",clip:"second"}),/cannot interrupt/);});
+test("queued shot starts only after current action completes",()=>{const l=new GoalkeeperAnimationLifecycle();play(l,{action:"save",clip:"first"});l.enqueue({action:"save",clip:"second"});assert.equal(l.beginNext(),null);l.tick(100);const s=l.beginNext();assert.equal(s.clip,"second");});
+test("fingertip is registered as a one-shot state",()=>{assert.ok(GOALKEEPER_ONE_SHOT_STATES.includes("keeperFingertip"));});
+test("invalid clip duration is rejected and transitions to failed",()=>{const l=new GoalkeeperAnimationLifecycle();const s=l.begin({action:"save",clip:"bad"});assert.equal(l.clipLoaded(s.generation,0),false);assert.equal(l.snapshot().phase,"failed");});
