@@ -12,6 +12,7 @@ const browser = await chromium.launch({
     "--use-gl=angle",
     "--use-angle=swiftshader",
     "--enable-webgl",
+    "--enable-unsafe-swiftshader",
     "--ignore-gpu-blocklist",
     "--disable-dev-shm-usage"
   ]
@@ -35,7 +36,7 @@ async function openLab(context, label) {
     }, undefined, { timeout: 15000 });
   } catch (error) {
     const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
-    console.log(JSON.stringify({ label, status, diagnostics }, null, 2));
+    console.log(JSON.stringify({ label, status, diagnostics, pageErrors: failures }, null, 2));
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-diagnostic.png", fullPage: true }).catch(() => {});
     throw error;
   }
