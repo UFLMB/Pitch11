@@ -19,6 +19,19 @@ export function resolveKeeperDiveSide(diveAng, facing) {
   return lateral < 0 ? "left" : "right";
 }
 
+/**
+ * Convert a keeper-local lateral dive into the legacy pitch/world angle.
+ * "Left" and "right" are from the goalkeeper's own point of view, not the
+ * camera or the attacking team's point of view.
+ */
+export function resolveKeeperDiveAngle(side, facing) {
+  const yaw = Number.isFinite(facing) ? facing : 0;
+  const lateralSign = String(side || "").toLowerCase() === "left" ? -1 : 1;
+  const worldX = Math.sin(yaw) * lateralSign;
+  const worldY = -Math.cos(yaw) * lateralSign;
+  return Math.atan2(worldY, worldX);
+}
+
 export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = null, ballOwner = null, restart = null) {
   if (!player) return null;
   const team = Number.isInteger(player.team) ? player.team : 0;
