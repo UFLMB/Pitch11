@@ -10,6 +10,7 @@ on:
       - "input/player-model-candidate/**"
       - "input/player-package/**"
       - "scripts/goalkeeper-high-dive-timing-test.mjs"
+      - "scripts/inspect-goalkeeper-root-motion.mjs"
       - ".github/workflows/goalkeeper-high-dive-timing.yml"
   workflow_dispatch:
 
@@ -27,6 +28,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Inspect high-dive FBX root motion
+        run: node scripts/inspect-goalkeeper-root-motion.mjs
       - name: Install Playwright
         run: |
           npm install --no-save playwright
