@@ -93,18 +93,26 @@ try {
   await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png", fullPage: true });
   const mobileReadout = await mobile.locator("#readout").innerText();
   assert.match(mobileReadout, /Rig colliders: 9/);
+  await mobile.locator("#ai-mode").click();
   await mobile.locator('[data-shot="center-low"]').click();
-  await mobile.waitForFunction(() => {
-    const text = document.querySelector("#readout")?.innerText || "";
-    return /Contact: (?!—)/.test(text);
-  }, undefined, { timeout: 45000 });
+  try {
+    await mobile.waitForFunction(() => {
+      const text = document.querySelector("#readout")?.innerText || "";
+      return /Contact: (?!—)/.test(text);
+    }, undefined, { timeout: 45000 });
+  } catch (error) {
+    const diagnostics = await mobile.locator("#readout").innerText().catch(() => "readout unavailable");
+    console.log(JSON.stringify({ label: "mobile-center-low", diagnostics, pageErrors: failures }, null, 2));
+    await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact-failure.png", fullPage: true }).catch(() => {});
+    throw error;
+  }
   const mobileContactReadout = await mobile.locator("#readout").innerText();
   await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact.png", fullPage: true });
 
   assert.deepEqual(failures, [], "Browser runtime errors");
   console.log(JSON.stringify({
     result: "PASS",
-    desktop: { status: await desktop.locator("#status").innerText(), sequence: desktopReadout },
+    desktop: { status: await desktop.locator("#status").innerText(), sequence: desktopSequenceReadout, contact: desktopReadout },
     mobile: { status: await mobile.locator("#status").innerText(), diagnostics: mobileContactReadout },
     screenshots: [
       artifacts + "/goalkeeper-lab-desktop-ready.png",
