@@ -118,6 +118,25 @@ try {
     try { desktopTimingResults.push(await verifyDirectionalShot(desktop, "desktop-slow-flight-" + test[0] + "-" + test[5], ...test)); }
     catch (error) { testFailures.push("desktop slow-flight " + test[0] + " " + test[5] + "s: " + error.message); console.log("CONTINUING AFTER DESKTOP SLOW-FLIGHT FAILURE: " + test[0] + " " + test[5] + "s"); }
   }
+  const fingertipTimingSweep = [];
+  for (const timeScale of [0.5, 0.65, 0.8, 1.0, 1.2, 1.4]) {
+    await desktop.locator('[data-action="reset"]').click();
+    await desktop.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 15000 });
+    await desktop.evaluate(value => {
+      window.__GK_TEST_FLIGHT_TIME = 1.5;
+      window.__GK_TEST_ANIMATION_TIME_SCALE = value;
+    }, timeScale);
+    await desktop.locator('[data-shot="left-high"]').click();
+    await desktop.waitForFunction(() => {
+      const text = document.querySelector("#readout")?.innerText || "";
+      return /Contact: (?!—)/.test(text) || /GOAL · NO ANIMATED RIG CONTACT/.test(text);
+    }, undefined, { timeout: 60000 });
+    const diagnostics = await desktop.locator("#readout").innerText();
+    fingertipTimingSweep.push({ timeScale, diagnostics });
+    console.log("FINGERTIP TIME-SCALE PROBE " + timeScale + ": " + diagnostics.replace(/\n/g, " | "));
+    await desktop.screenshot({ path: artifacts + "/goalkeeper-fingertip-timescale-" + String(timeScale).replace(".", "_") + ".png", fullPage: true });
+  }
+  await desktop.evaluate(() => { delete window.__GK_TEST_ANIMATION_TIME_SCALE; });
   const desktopReadout = desktopCornerResults.concat(desktopTimingResults).join("\n");
 
   const mobileContext = await browser.newContext({
