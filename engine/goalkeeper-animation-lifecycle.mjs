@@ -33,6 +33,7 @@ export class GoalkeeperAnimationLifecycle {
     this.state.phase="complete";return true;
   }
   beginRecovery({clip,action="getUp"}={}){if(!["needs-get-up","needs-reposition"].includes(this.state.phase))throw new Error("recovery is not pending");if(this.state.phase==="needs-reposition"&&action!=="reposition")throw new Error("this save requires repositioning, not a second get-up");if(this.state.phase==="needs-get-up"&&action!=="getUp")throw new Error("get-up is required");return this.begin({action,clip,hasEmbeddedRecovery:false,keeperDown:false});}
+  completeReposition(generation){if(!this.#current(generation)||this.state.phase!=="playing"||this.state.action!=="reposition")return false;this.state.phase="complete";return true;}
   #current(generation){return Number.isInteger(generation)&&generation===this.state.generation;}
   #fail(reason){this.state.phase="failed";this.state.reason=reason;this.state.clipLoaded=false;this.state.clipDurationMs=null;}
   clipLoadFailed(generation,reason="clip-load-failed"){if(!this.#current(generation)||this.state.phase!=="loading")return false;this.#fail(String(reason));return true;}
