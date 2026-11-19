@@ -101,9 +101,12 @@ export function evaluateGoalkeeperThreat({ball,keeper={},attributes={},environme
   const standingReach = p.keeperHeight*0.66+p.armReach*(0.72+reach/360);
   const verticalEnvelope = canPrepareDive ? Math.max(standingReach,p.keeperHeight*0.48+p.armReach+Math.max(0,jumpHeight)) : standingReach;
   const verticalReachable = crossing.y<=verticalEnvelope;
-  const enoughReaction = available>0;
-  const reachable = enoughReaction && lateralReachable && verticalReachable;
   const heightBand = crossing.y<=0.72?"low":crossing.y>=1.72?"high":"mid";
+  const enoughReaction = available>0;
+  // No current goalkeeper clip has a verified high-ball contact pose.
+  // Do not animate a speculative save: high shots remain goals until a
+  // suitable high-save animation is supplied and validated against the rig.
+  const reachable = enoughReaction && lateralReachable && verticalReachable && heightBand!=="high";
   const edgeLoad = Math.abs(deltaX)/Math.max(0.01,lateralEnvelope);
   const centralBodyCorridor = Math.abs(deltaX)<=0.42 && crossing.y<=p.cleanCatchHeight;
   const catchableSpeed = crossing.speed<=p.catchSpeedLimit*(0.82+handling/280);
@@ -119,7 +122,7 @@ export function evaluateGoalkeeperThreat({ball,keeper={},attributes={},environme
     : "keeperMiss";
   return Object.freeze({
     threat:true,
-    reason:reachable?"within-physical-envelope":!enoughReaction?"reaction-window-expired":!lateralReachable?"lateral-reach-exceeded":"vertical-reach-exceeded",
+    reason:reachable?"within-physical-envelope":!enoughReaction?"reaction-window-expired":!lateralReachable?"lateral-reach-exceeded":!verticalReachable?"vertical-reach-exceeded":heightBand==="high"?"high-save-animation-unavailable":"vertical-reach-exceeded",
     reachable,outcome:technique==="miss"?"goal-likely":technique,technique,animationState,side,heightBand,
     reactionTime,availableReactionTime:available,lateralDistance:Math.abs(deltaX),lateralEnvelope,verticalReach:verticalEnvelope,crossing
   });
