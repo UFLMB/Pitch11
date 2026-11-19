@@ -66,7 +66,7 @@ try {
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
-  await desktop.locator('[data-shot="left-low"]').click();
+  await desktop.locator('[data-shot="center-high"]').click();
   try {
     await desktop.waitForFunction(() => {
       const text = document.querySelector("#readout")?.innerText || "";
@@ -74,7 +74,7 @@ try {
     }, undefined, { timeout: 45000 });
   } catch (error) {
     const diagnostics = await desktop.locator("#readout").innerText().catch(() => "readout unavailable");
-    console.log(JSON.stringify({ label: "desktop-left-low", diagnostics, pageErrors: failures }, null, 2));
+    console.log(JSON.stringify({ label: "desktop-center-high", diagnostics, pageErrors: failures }, null, 2));
     await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact-failure.png", fullPage: true }).catch(() => {});
     throw error;
   }
@@ -94,7 +94,7 @@ try {
   const mobileReadout = await mobile.locator("#readout").innerText();
   assert.match(mobileReadout, /Rig colliders: 15/);
   await mobile.locator("#ai-mode").click();
-  await mobile.locator('[data-shot="left-low"]').click();
+  await mobile.locator('[data-shot="center-high"]').click();
   try {
     await mobile.waitForFunction(() => {
       const text = document.querySelector("#readout")?.innerText || "";
@@ -102,7 +102,7 @@ try {
     }, undefined, { timeout: 45000 });
   } catch (error) {
     const diagnostics = await mobile.locator("#readout").innerText().catch(() => "readout unavailable");
-    console.log(JSON.stringify({ label: "mobile-left-low", diagnostics, pageErrors: failures }, null, 2));
+    console.log(JSON.stringify({ label: "mobile-center-high", diagnostics, pageErrors: failures }, null, 2));
     await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact-failure.png", fullPage: true }).catch(() => {});
     throw error;
   }
