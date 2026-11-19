@@ -3792,7 +3792,7 @@ class BinaryParser {
 		// like (name, 0) set or (name2, [0, 1, 2]) set of {name: 0, name2: [0, 1, 2]}
 		node.singleProperty = ( numProperties === 1 && reader.getOffset() === endOffset ) ? true : false;
 
-		while ( endOffset > reader.getOffset() ) {
+		while ( endOffset > reader.getOffset() && ! this.endOfContent( reader ) ) {
 
 			const subNode = this.parseNode( reader, version );
 
