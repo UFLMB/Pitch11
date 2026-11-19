@@ -1,6 +1,6 @@
 # PITCH 11 — Player animation coverage audit
 
-**Date:** 2026-11-18  
+**Date:** 2026-11-19  
 **Branch reviewed:** `main`  
 **Scope:** current `input/player-package/` Mixamo FBX inventory, current match-render path, and animation requirements for replacing placeholder/legacy player presentation with fully animated 3D players.
 
@@ -9,8 +9,8 @@
 - **54/54 FBX files are present** in `input/player-package/`.
 - The isolated Mixamo direct-binding audit previously reported **54 PASS / 0 FAIL** against the uploaded `character.fbx`.
 - The passing audit proves that the clips can bind to that character skeleton in the diagnostic player. It does **not** prove that every football gameplay action has a dedicated clip, or that the clips are already wired into the live match state machine.
-- The current match players are still drawn by the procedural Canvas 2D player renderer (`drawPlayer3`; the legacy `drawPlayer` functions are disabled). Despite its name, `drawPlayer3` is not a skinned 3D character renderer. The Mixamo audit page remains a separate diagnostic; the FBX clips are not yet integrated into the live match.
-- The existing set is a strong first animation pack, but **not yet complete for a full UFL/EA FC-style 11v11 animation system**.
+- The current match players are still drawn by the procedural Canvas 2D player renderer (`drawPlayer3`); it is not a skinned 3D character renderer. The Mixamo audit page remains a separate diagnostic; the FBX clips are not yet integrated into the live match.
+- The keeper clip classifications below include the user's direct descriptions of the actual FBX motion. These are more reliable than interpreting filenames alone.
 
 ## Current clip inventory
 
@@ -29,7 +29,7 @@ All entries below are present in the repository. Numbered variants are separate 
 | `jog backward diagonal (2).fbx` | Backward diagonal variant |
 | `jog strafe left.fbx`, `jog strafe right.fbx` | Lateral movement |
 
-**Gap:** no clearly identified walk cycle, sprint cycle, run-start/run-stop, turn-in-place, sharp pivot, or dedicated ball-carrying locomotion cycle.
+**Gap:** no clearly identified dedicated walk cycle, sprint cycle, run-start/run-stop, turn-in-place, sharp pivot, or dedicated ball-carrying locomotion cycle.
 
 ### Outfield ball actions — 16 files
 
@@ -56,30 +56,38 @@ All entries below are present in the repository. Numbered variants are separate 
 | `soccer trip.fbx` | Trip / loss of balance |
 | `fallen idle.fbx` | Downed idle |
 | `standing up.fbx` | Get-up recovery |
-| `transition.fbx` | General transition; exact gameplay use needs visual classification |
+| `transition.fbx` | Return to a set/ready stance from a relaxed standing pose; exact transition timing still needs visual confirmation |
 
 **Gap:** no clearly identified jockey / defensive side-shuffle, standing block, shoulder challenge, push-off, stumble recovery, or separate left/right fall and get-up variants.
 
 ### Goalkeeper — 22 files
 
-| Source clip(s) | Coverage |
+| Source clip | Confirmed / inferred motion |
 |---|---|
-| `goalkeeper idle.fbx`, `goalkeeper idle (2).fbx` | Keeper idle variants |
-| `goalkeeper sidestep.fbx`, `goalkeeper sidestep (2).fbx` | Lateral positioning |
-| `goalkeeper directing.fbx`, `goalkeeper directing (2).fbx` | Organising / directing |
-| `goalkeeper catch.fbx`, `goalkeeper catch (2).fbx`, `goalkeeper catch (3).fbx`, `goalkeeper catch (4).fbx` | Catch variants |
-| `goalkeeper scoop.fbx` | Low collection |
-| `goalkeeper body block.fbx`, `goalkeeper body block (2).fbx`, `goalkeeper body block (3).fbx` | Body-block variants |
-| `goalkeeper diving save.fbx`, `goalkeeper diving save (2).fbx` | Diving-save variants |
-| `goalkeeper miss.fbx` | Miss / failed save reaction |
-| `goalkeeper pass.fbx` | Distribution pass |
-| `goalkeeper drop kick.fbx` | Drop-kick distribution |
-| `goalkeeper overhand throw.fbx` | Overarm distribution |
-| `goalkeeper placing ball.fbx`, `goalkeeper placing ball (2).fbx` | Ball placement / restart |
+| `goalkeeper idle.fbx`, `goalkeeper idle (2).fbx` | Keeper idle variants (filename-based classification) |
+| `goalkeeper sidestep.fbx`, `goalkeeper sidestep (2).fbx` | Lateral positioning (filename-based classification) |
+| `goalkeeper directing.fbx`, `goalkeeper directing (2).fbx` | Organising / directing (filename-based classification) |
+| `goalkeeper body block (2).fbx` | Low dive to the left, catching the ball |
+| `goalkeeper body block (3).fbx` | Low dive to the right, catching the ball |
+| `goalkeeper body block.fbx` | Diving/blocking save without catching the ball |
+| `goalkeeper catch (2).fbx` | Straightforward standing catch |
+| `goalkeeper catch (3).fbx` | Jumping catch |
+| `goalkeeper catch (4).fbx` | Jumping catch, reaching slightly to the left |
+| `goalkeeper catch.fbx` | Save/catch with the ball secured against the stomach |
+| `goalkeeper diving save.fbx`, `goalkeeper diving save (2).fbx` | High dives to the left and right from a central starting position; exact file-to-side ordering should be confirmed in playback before hard-coding |
+| `goalkeeper scoop.fbx` | Low collection (filename-based classification) |
+| `goalkeeper miss.fbx` | Miss / failed save reaction (filename-based classification) |
+| `goalkeeper pass.fbx` | Distribution pass (filename-based classification) |
+| `goalkeeper drop kick.fbx` | Drop-kick distribution (filename-based classification) |
+| `goalkeeper overhand throw.fbx` | Overarm distribution (filename-based classification) |
+| `goalkeeper placing ball.fbx`, `goalkeeper placing ball (2).fbx` | Ball placement / restart (filename-based classification) |
+| `standing up.fbx` | Get-up from the ground, turning/reaching slightly to the left |
+| `fallen idle.fbx` | Remaining down on the ground |
+| `transition.fbx` | Upright set/ready posture: feet apart and torso leaning slightly forward; likely a return from relaxed stance to goalkeeper ready position |
 
-**Gap:** no clearly identified high claim / jumping catch, punch clearance, one-handed fingertip save, post-save recovery/get-up, goalkeeper sprint/run, or dedicated penalty-ready stance. Confirm whether the current catch and dive variants cover these before sourcing more clips.
+**Still not identified from the 22 keeper clips:** a clearly distinct one-handed fingertip deflection, punch clearance with the fist, dedicated leg save, goalkeeper sprint/run, or a separate penalty-ready stance. These are candidate coverage gaps, not proof that no existing clip can serve the situation. The non-catching body block may already cover some close-range reflex saves, and the stomach-secure catch may cover a smother/secure-catch situation.
 
-> Inventory note: the 54-file total is the repository's actual file count. This document groups clips by gameplay role; a source file may support more than one gameplay situation.
+> Inventory note: the 54-file total is the repository's actual file count. This document groups clips by gameplay role; a source file may support more than one gameplay situation. Keeper motion descriptions marked as confirmed come from the user's direct playback observations; entries marked filename-based have not been visually verified in this audit.
 
 ## Required coverage before calling the animation set complete
 
@@ -106,18 +114,10 @@ All entries below are present in the repository. Numbered variants are separate 
 5. Root motion must be handled deliberately: gameplay position/velocity remains authoritative unless a specific action is explicitly designed to own root motion.
 6. Validate foot contact, facing direction, clip duration, ball-contact frame, left/right mirroring and end pose in the live match camera.
 7. Keep the diagnostic audit isolated. Do not replace the live player model, alter match physics, or change the production renderer as part of this inventory task.
-8. Before sourcing more assets, visually classify the existing numbered variants. Several may already cover more than their filenames suggest.
+8. Before sourcing more assets, visually classify the remaining numbered variants. Several may already cover more than their filenames suggest.
 
 ## Bottom line
 
-The current pack is sufficient to prototype a convincing animated footballer and a useful first goalkeeper. It is **not yet a complete animation library** for all 11v11 match situations. The highest-value missing additions are:
+The current pack is sufficient to prototype a convincing animated footballer and a useful first goalkeeper. It is **not yet a complete animation library** for all 11v11 match situations. For the goalkeeper specifically, the user-confirmed inventory already covers low catches to both sides, a non-catching block, ordinary and jumping catches, a left-reaching jumping catch, stomach-secured catch, high dives to both sides, low scoop, downed idle and get-up/ready transitions. The highest-priority keeper candidates still to verify are fingertip deflection, punch clearance, leg save and sprint/run; do not source replacements until the current clips have been previewed and tested.
 
-1. walk + sprint + start/stop/pivot locomotion;
-2. dedicated dribbling locomotion with the ball;
-3. short/long/driven pass and cross;
-4. shot variants and volley;
-5. jockey / block / contact recovery;
-6. celebration and team reactions;
-7. goalkeeper punch, high claim and recovery.
-
-This is a coverage assessment, not an instruction to integrate or replace production assets yet. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD. The next engineering phase must replace the procedural Canvas player-body renderer with the skinned Mixamo character renderer, while retaining the existing match simulation, player coordinates, ball physics, camera and HUD.
+The live match players are still rendered procedurally in Canvas 2D. Full in-match use of the uploaded skinned FBX character and clips remains a separate integration phase.
