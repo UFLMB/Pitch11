@@ -13,7 +13,10 @@ export class GoalkeeperAnimationLifecycle {
   enqueue(action){if(!action||typeof action!=="object")throw new TypeError("action must be an object");this.queue.push(Object.freeze({...action}));return this.queue.length;}
   beginNext(){if(this.state.phase!=="idle"&&!TERMINAL.has(this.state.phase))return null;const next=this.queue.shift();if(!next)return null;return this.begin(next);}
   begin({action="save",clip,hasEmbeddedRecovery=true,requiresRecenter=false,keeperDown=false}={}){
-    if(this.state.phase!=="idle"&&!TERMINAL.has(this.state.phase))throw new Error("cannot interrupt active goalkeeper animation");
+    const recoveryPending=this.state.phase==="needs-get-up"||this.state.phase==="needs-reposition";
+    if(this.state.phase!=="idle"&&!TERMINAL.has(this.state.phase)&&!recoveryPending)throw new Error("cannot interrupt active goalkeeper animation");
+    if(this.state.phase==="needs-get-up"&&action!=="getUp")throw new Error("get-up is required before another action");
+    if(this.state.phase==="needs-reposition"&&action!=="reposition")throw new Error("repositioning is required before another action");
     if(typeof clip!=="string"||!clip.trim())throw new TypeError("clip is required");
     if(!["save","miss","getUp","reposition"].includes(action))throw new RangeError("unsupported goalkeeper action");
     this.generation++;this.state={phase:"loading",generation:this.generation,action,clip,elapsedMs:0,clipDurationMs:null,loadElapsedMs:0,clipLoaded:false,hasEmbeddedRecovery:!!hasEmbeddedRecovery,requiresRecenter:!!requiresRecenter,keeperDown:!!keeperDown,reason:null};
