@@ -1,5 +1,11 @@
 function canonicalBoneName(name) {
-  return String(name || "").replace(/[\s_]/g, "").replace(/[^a-z0-9]/gi, "").replace(/^mixamorig\d*/i, "").toLowerCase();
+  return String(name || "")
+    .replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
+    .replace(/^mixamorig:/i, "")
+    .replace(/[\s_]/g, "")
+    .replace(/[^a-z0-9]/gi, "")
+    .replace(/^mixamorig\d*/i, "")
+    .toLowerCase();
 }
 
 export function normalizeMixamoTrackTargets(boneNames, sourceTracks) {
