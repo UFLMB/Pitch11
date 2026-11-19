@@ -31,6 +31,7 @@ h1{font-size:17px;margin:0 0 5px}.desc{font-size:10px;line-height:1.5;color:var(
 <script type="module">
 import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
+import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
@@ -80,12 +81,55 @@ function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=7
 function setPhase(next,duration=0){phase=next;phaseTimer=duration}
 function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.58,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;if(aiMode){aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration});aiReactionTimer=aiDecision.reactionTime;shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase()}}
 function triggerAction(action){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride=action;shotResult=action==="keeper-catch"?"CATCH ANIMATION":"PARRY ANIMATION";setPhase("action",1.05)}
-function triggerSave(side,kind="dive"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=side==="left"?Math.PI:0;keeper.down=false;keeper.ak=0;const offset=side==="left"?-1.25:side==="right"?1.25:0;keeper.x=keeper.px=585+offset*10;keeper.vx=keeper.vy=0;shotResult=kind==="catch"?"CATCH ATTEMPT":kind==="parry"?"PARRY ATTEMPT":side.toUpperCase()+" DIVE";setPhase("diving",.78)}
+function triggerSave(side,kind="dive"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeperRenderer.ensureMixamoState("getUp",0);keeper.down=false;keeper.ak=0;const offset=side==="left"?-1.25:side==="right"?1.25:0;keeper.x=keeper.px=585+offset*10;keeper.vx=keeper.vy=0;shotResult=kind==="catch"?"CATCH ATTEMPT":kind==="parry"?"PARRY ATTEMPT":side.toUpperCase()+" DIVE";setPhase("diving",.78)}
 function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
 function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
 function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;const side=targetSide(shot.kind),height=shot.to.y;const canReach=side==="center"||Math.abs(shot.to.x)<3.2;const low=height<.9;const saved=aiMode?!!(aiDecision&&aiDecision.reachable&&aiDecisionFired):(canReach?(low||Math.random()>.18):Math.random()>(height>1.7?.42:.12));if(saved){saveCount++;shotResult=(aiMode?"AI SAVE · ":"SAVE · ")+side.toUpperCase();if(!aiMode)triggerSave(side==="center"?(Math.random()>.5?"left":"right"):side)}else{goalCount++;keeper.dive=0;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+"OUT OF REACH";setPhase("miss",.5)}}
 function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));if(t>=1){resolveShot();shot=null;ball.visible=false}}
-function updateKeeper(dt){if(phase==="action"){phaseTimer-=dt;if(phaseTimer<=0){keeper.animationOverride="";setPhase("idle")}}else if(phase==="diving"){phaseTimer-=dt;if(phaseTimer<=0){keeper.dive=0;keeper.diveRecover=.72;setPhase("recover",.72)}}else if(phase==="recover"){phaseTimer-=dt;keeper.diveRecover=Math.max(0,phaseTimer);if(phaseTimer<=0){keeper.diveRecover=0;setPhase("return",.55)}}else if(phase==="return"){phaseTimer-=dt;const x=THREE.MathUtils.damp(keeper.x,585,.65,dt);keeper.x=keeper.px=x;if(phaseTimer<=0){setKeeperPosition(0);setPhase("idle")}}else if(phase==="miss"){phaseTimer-=dt;if(phaseTimer<=0){keeper.diveRecover=.5;setPhase("recover",.5)}}}
+function updateKeeper(dt){
+ if(phase==="action"){
+  phaseTimer-=dt;
+  if(phaseTimer<=0){keeper.animationOverride="";setPhase("idle")}
+ }else if(phase==="diving"){
+  phaseTimer-=dt;
+  if(phaseTimer<=0){
+   keeper.dive=0;
+   const recoveryClip=keeperRenderer.clipCache.get("standing up.fbx");
+   const recoveryDuration=recoveryClip?THREE.MathUtils.clamp(recoveryClip.duration,.55,2.5):.95;
+   keeper.diveRecover=recoveryDuration;
+   setPhase("recover",recoveryDuration);
+  }
+ }else if(phase==="recover"){
+  phaseTimer-=dt;
+  keeper.diveRecover=Math.max(0,phaseTimer);
+  if(phaseTimer<=0){
+   keeper.diveRecover=0;
+   keeper.animationOverride="keeper-move";
+   setPhase("return",.85);
+  }
+ }else if(phase==="return"){
+  phaseTimer-=dt;
+  const previousX=keeper.x;
+  const nextX=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
+  keeper.x=keeper.px=nextX;
+  keeper.vx=dt>0?(nextX-previousX)/dt:0;
+  keeper.vy=0;
+  if(phaseTimer<=0||Math.abs(keeper.x-585)<.035){
+   keeper.x=keeper.px=585;
+   keeper.vx=keeper.vy=0;
+   keeper.animationOverride="";
+   setPhase("idle");
+  }
+ }else if(phase==="miss"){
+  phaseTimer-=dt;
+  if(phaseTimer<=0){
+   const recoveryClip=keeperRenderer.clipCache.get("standing up.fbx");
+   const recoveryDuration=recoveryClip?THREE.MathUtils.clamp(recoveryClip.duration,.55,2.5):.95;
+   keeper.diveRecover=recoveryDuration;
+   setPhase("recover",recoveryDuration);
+  }
+ }
+}
 function updateReadout(){
  const aiLine=aiMode?'<br>AI: '+(aiDecision?aiDecision.side.toUpperCase()+' / '+aiDecision.action.toUpperCase()+' · '+Math.round(aiDecision.reactionTime*1000)+' ms · '+(aiDecision.reachable?'REACHABLE':'OUT OF REACH'):'ACTIVE · WAITING'):'<br>AI: OFF';
  const rigLine=keeperRenderer.modelSource==='mixamo-fbx'?'<br>GK RIG: MIXAMO · ACTION CLIPS LOAD ON DEMAND':'<br>GK ANIMATION: BLOCKED · MIXAMO FBX UNAVAILABLE';
