@@ -421,7 +421,7 @@ export class MatchPlayerRenderer {
       const animationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
       let clip = null;
       if (this.modelSource === "mixamo-fbx") {
-        const candidates = resolveMixamoClipCandidates(animationState, state.id);
+        const candidates = resolveMixamoClipCandidates(animationState, state.id, state.diveSide);
         clip = candidates.map(file => this.clipCache.get(file)).find(Boolean) || null;
         if (!clip) this.ensureMixamoState(animationState, state.id);
       } else {
