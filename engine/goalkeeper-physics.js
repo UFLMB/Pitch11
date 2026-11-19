@@ -74,7 +74,7 @@
       heightBand === "low" ? (side === "left" ? "keeperDiveLowLeft" : "keeperDiveLowRight") :
       (side === "left" ? "keeperDiveLeft" : "keeperDiveRight");
     return Object.freeze({
-      reachable, insideMouth, side, heightBand, saveType, animationState,
+      reachable, insideMouth, side, heightBand, saveType, action: saveType, animationState,
       reactionTime, availableTime, movementDistance, diveExtension,
       horizontalReach, verticalReach, requiredDistance, reachMargin,
       timeToGoal, targetLateral, targetHeight
