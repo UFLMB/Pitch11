@@ -56,7 +56,7 @@ All entries below are present in the repository. Numbered variants are separate 
 | `soccer trip.fbx` | Trip / loss of balance |
 | `fallen idle.fbx` | Downed idle |
 | `standing up.fbx` | Get-up recovery |
-| `transition.fbx` | Return to a set/ready stance from a relaxed standing pose; exact transition timing still needs visual confirmation |
+| `transition.fbx` | Likely penalty-ready goalkeeper stance (user's playback-based identification; confirm exact use in gameplay) |
 
 **Gap:** no clearly identified jockey / defensive side-shuffle, standing block, shoulder challenge, push-off, stumble recovery, or separate left/right fall and get-up variants.
 
@@ -76,18 +76,18 @@ All entries below are present in the repository. Numbered variants are separate 
 | `goalkeeper catch.fbx` | Save/catch with the ball secured against the stomach |
 | `goalkeeper diving save.fbx`, `goalkeeper diving save (2).fbx` | High dives to the left and right from a central starting position; exact file-to-side ordering should be confirmed in playback before hard-coding |
 | `goalkeeper scoop.fbx` | Low collection (filename-based classification) |
-| `goalkeeper miss.fbx` | Miss / failed save reaction (filename-based classification) |
+| `goalkeeper miss.fbx` | **Fingertip Save** — fingertip deflection (confirmed by user during playback) |
 | `goalkeeper pass.fbx` | Distribution pass (filename-based classification) |
 | `goalkeeper drop kick.fbx` | Drop-kick distribution (filename-based classification) |
 | `goalkeeper overhand throw.fbx` | Overarm distribution (filename-based classification) |
 | `goalkeeper placing ball.fbx`, `goalkeeper placing ball (2).fbx` | Ball placement / restart (filename-based classification) |
 | `standing up.fbx` | Get-up from the ground, turning/reaching slightly to the left |
 | `fallen idle.fbx` | Remaining down on the ground |
-| `transition.fbx` | Upright set/ready posture: feet apart and torso leaning slightly forward; likely a return from relaxed stance to goalkeeper ready position |
+| `transition.fbx` | **Likely Penalty Ready** — goalkeeper penalty-ready stance (user's playback-based identification; gameplay use still to be validated) |
 
-**Still not identified from the 22 keeper clips:** a clearly distinct one-handed fingertip deflection, punch clearance with the fist, dedicated leg save, goalkeeper sprint/run, or a separate penalty-ready stance. These are candidate coverage gaps, not proof that no existing clip can serve the situation. The non-catching body block may already cover some close-range reflex saves, and the stomach-secure catch may cover a smother/secure-catch situation.
+**Still not identified from the 22 keeper clips:** punch clearance with the fist, a dedicated leg save, and goalkeeper sprint/run. The fingertip deflection is covered by `goalkeeper miss.fbx`; `transition.fbx` is likely the penalty-ready stance, based on the user's playback identification. These are candidate coverage gaps, not proof that no existing clip can serve the situation. The non-catching body block may already cover some close-range reflex saves, and the stomach-secure catch may cover a smother/secure-catch situation.
 
-> Inventory note: the 54-file total is the repository's actual file count. This document groups clips by gameplay role; a source file may support more than one gameplay situation. Keeper motion descriptions marked as confirmed come from the user's direct playback observations; entries marked filename-based have not been visually verified in this audit.
+> Inventory note: the 54-file total is the repository's actual file count. This document groups clips by gameplay role; a source file may support more than one gameplay situation. Keeper motion descriptions marked as confirmed come from the user's direct playback observations; the penalty-ready classification for `transition.fbx` is currently considered likely, pending gameplay validation; entries marked filename-based have not been visually verified in this audit.
 
 ## Required coverage before calling the animation set complete
 
@@ -118,6 +118,6 @@ All entries below are present in the repository. Numbered variants are separate 
 
 ## Bottom line
 
-The current pack is sufficient to prototype a convincing animated footballer and a useful first goalkeeper. It is **not yet a complete animation library** for all 11v11 match situations. For the goalkeeper specifically, the user-confirmed inventory already covers low catches to both sides, a non-catching block, ordinary and jumping catches, a left-reaching jumping catch, stomach-secured catch, high dives to both sides, low scoop, downed idle and get-up/ready transitions. The highest-priority keeper candidates still to verify are fingertip deflection, punch clearance, leg save and sprint/run; do not source replacements until the current clips have been previewed and tested.
+The current pack is sufficient to prototype a convincing animated footballer and a useful first goalkeeper. It is **not yet a complete animation library** for all 11v11 match situations. For the goalkeeper specifically, the user-confirmed inventory already covers low catches to both sides, a non-catching block, ordinary and jumping catches, a left-reaching jumping catch, stomach-secured catch, high dives to both sides, low scoop, downed idle and get-up/ready transitions. The highest-priority keeper candidates still to verify are punch clearance, leg save and sprint/run. Fingertip deflection is covered by `goalkeeper miss.fbx`; `transition.fbx` is likely the penalty-ready stance. Do not source replacements until the current clips have been previewed and tested.
 
 The live match players are still rendered procedurally in Canvas 2D. Full in-match use of the uploaded skinned FBX character and clips remains a separate integration phase.
