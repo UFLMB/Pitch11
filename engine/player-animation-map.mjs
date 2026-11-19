@@ -12,6 +12,8 @@ const CLIP_ALIASES = Object.freeze({
   keeperDirect: ["gkdirect", "keeperdirecting"],
   keeperScoop: ["gkscoop", "keeperscoop"],
   keeperMiss: ["gkmiss", "keepermiss"],
+  keeperFingertip: ["gkfingertip", "fingertipsave", "keeperfingertip"],
+  keeperPenaltyReady: ["gkpenaltyready", "penaltyready", "keeperpenaltyready"],
   keeperPass: ["gkpass", "keeperpass"],
   keeperDropKick: ["gkdropkick", "keeperdropkick"],
   keeperThrow: ["gkthrow", "keeperthrow"],
@@ -44,6 +46,8 @@ const FALLBACKS = Object.freeze({
   getUp: ["idle"],
   celebrate: ["idle"],
   keeperSet: ["idle"],
+  keeperPenaltyReady: ["keeperSet", "idle"],
+  keeperFingertip: ["keeperParry", "keeperSet", "idle"],
   keeperDiveLeft: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveRight: ["keeperParry", "fall", "keeperSet", "idle"],
   receive: ["pass", "idle"],
@@ -76,7 +80,8 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (player?.role === "GK" && action.includes("pass")) return "keeperPass";
   if (player?.role === "GK" && action === "kick") return "keeperDropKick";
   if (action.includes("keeperscoop")) return "keeperScoop";
-  if (action.includes("keepermiss")) return "keeperMiss";
+  if (action.includes("keeperfingertip") || action.includes("keepermiss")) return "keeperFingertip";
+  if (action.includes("keeperpenaltyready") || action.includes("penaltyready")) return "keeperPenaltyReady";
   if (action.includes("keeperthrow")) return "keeperThrow";
   if (action.includes("keeperdropkick")) return "keeperDropKick";
   if (action.includes("keeperplace")) return "keeperPlace";
@@ -100,7 +105,12 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (action.includes("tackle")) return "tackle";
   if (action === "kick") return "shot";
   if (action === "restart") return "pass";
-  if (player?.role === "GK") return speed < .2 ? "keeperSet" : "keeperMove";
+  if (player?.role === "GK") {
+    if (!Number.isFinite(speed) || speed < .2) return "keeperSet";
+    if (speed < 2.1) return "keeperMove";
+    // Reuse the same tested Mixamo jog/run clips as outfield players.
+    return speed < 5.2 ? "run" : "sprint";
+  }
   if (!Number.isFinite(speed) || speed < .2) return "idle";
   if (speed < 2.1) return "walk";
   if (speed < 5.2) return "run";
