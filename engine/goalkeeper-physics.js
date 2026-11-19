@@ -81,5 +81,23 @@
     });
   }
 
-  return Object.freeze({ predictBallAtGoalPlane, evaluateKeeperInterception });
+  function evaluateOneOnOne({ keeperDistance, keeperAgility = 0.55, attackerBallControl = 0.55, ballProtected = false, cooldown = 0 } = {}) {
+    for (const [k, v] of Object.entries({ keeperDistance, keeperAgility, attackerBallControl, cooldown })) finite(v, k);
+    if (keeperDistance < 0 || cooldown < 0) throw new RangeError("invalid one-on-one state");
+    const agility = clamp(keeperAgility, 0, 1);
+    const control = clamp(attackerBallControl, 0, 1);
+    const keeperSpeed = 4.0 + agility * 1.8;
+    const keeperReaction = 0.12 + (1 - agility) * 0.12;
+    const attackerControlWindow = ballProtected ? 0 : 0.2 + control * 0.16;
+    const keeperTimeToContact = keeperDistance / keeperSpeed + keeperReaction;
+    const canSmother = cooldown <= 0 && !ballProtected && keeperDistance <= 2.15 &&
+      keeperTimeToContact <= attackerControlWindow;
+    return Object.freeze({
+      action: canSmother ? "smother" : "contain",
+      keeperTimeToContact, attackerControlWindow, keeperSpeed,
+      canSmother
+    });
+  }
+
+  return Object.freeze({ predictBallAtGoalPlane, evaluateKeeperInterception, evaluateOneOnOne });
 });
