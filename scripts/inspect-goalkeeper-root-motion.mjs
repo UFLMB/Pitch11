@@ -29,6 +29,14 @@ const normalize = value => String(value || "")
 
 const fbxLoader = new FBXLoader();
 
+// The diagnostic runs in Node, while FBX/GLTF loaders normally expect browser image APIs.
+// Textures are irrelevant to bone transforms and model bounds, so provide a tiny image stub.
+globalThis.window = globalThis;
+globalThis.self = globalThis;
+globalThis.innerWidth = 1;
+globalThis.innerHeight = 1;
+globalThis.createImageBitmap ||= async () => ({ width: 1, height: 1, close() {} });
+
 function toArrayBuffer(bytes) {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
 }
@@ -48,7 +56,14 @@ async function loadRuntimeCharacterTemplate() {
   if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).size > 1024) {
     try {
       const bytes = fs.readFileSync(candidatePath);
-      const candidate = fbxLoader.parse(toArrayBuffer(bytes), path.dirname(candidatePath) + path.sep);
+      const originalTextureLoad = THREE.TextureLoader.prototype.load;
+      THREE.TextureLoader.prototype.load = function () { return new THREE.Texture(); };
+      let candidate;
+      try {
+        candidate = fbxLoader.parse(toArrayBuffer(bytes), path.dirname(candidatePath) + path.sep);
+      } finally {
+        THREE.TextureLoader.prototype.load = originalTextureLoad;
+      }
       candidate.updateMatrixWorld(true);
       const stats = inspectModel(candidate);
       if (stats.skinnedMeshes && stats.boneCount) {
