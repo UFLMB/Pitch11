@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide, resolveKeeperDiveAngle } from "./player-model-state.mjs";
 import { resolvePlayerAnimationState } from "./player-animation-map.mjs";
+import { resolveMixamoClipCandidates } from "./mixamo-animation-catalog.mjs";
 
 const player = (overrides = {}) => ({
   team: 0, role: 4, pos: "DEF", gk: false, px: 60, py: 60, x: 160, y: 260,
@@ -84,4 +85,11 @@ test("converts keeper-local dive sides into world angles for either facing direc
     assert.equal(resolveKeeperDiveSide(leftAngle, facing), "left");
     assert.equal(resolveKeeperDiveSide(rightAngle, facing), "right");
   }
+});
+
+test("uses distinct confirmed FBX clips for all four directional and height-specific saves", () => {
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), ["goalkeeper diving save (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), ["goalkeeper diving save.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), ["goalkeeper body block (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), ["goalkeeper body block (3).fbx"]);
 });
