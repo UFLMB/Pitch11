@@ -4023,7 +4023,7 @@ class BinaryParser {
 				break; // cannot happen but is required by the DeepScan
 
 			default:
-				throw new Error( 'THREE.FBXLoader: Unknown property type ' + type );
+				throw new Error( 'THREE.FBXLoader: Unknown property type ' + JSON.stringify(type) + ' at byte ' + reader.getOffset() + ' / ' + reader.size() );
 
 		}
 
