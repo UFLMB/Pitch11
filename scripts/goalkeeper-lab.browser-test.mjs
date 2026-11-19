@@ -62,7 +62,7 @@ try {
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-ready.png", fullPage: true });
 
   await desktop.locator("#ai-sequence").click();
-  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 60000 });
+  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 30000 });
   const desktopSequenceReadout = await desktop.locator("#readout").innerText();
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
@@ -77,7 +77,7 @@ try {
         const text = document.querySelector("#readout")?.innerText || "";
         return /AI v2: (?:LEFT|RIGHT|CENTER) \/ (?:LOW|MID|HIGH) \/ /.test(text) &&
           (/Contact: (?!—)/.test(text) || /GOAL · NO ANIMATED RIG CONTACT/.test(text));
-      }, undefined, { timeout: 60000 });
+      }, undefined, { timeout: 15000 });
     } catch (error) {
       const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
       console.log(JSON.stringify({ label, shot, diagnostics, pageErrors: failures }, null, 2));
