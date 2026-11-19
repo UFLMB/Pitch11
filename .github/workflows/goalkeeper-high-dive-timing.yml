@@ -42,3 +42,11 @@ jobs:
           exit 1
       - name: Run six bounded high-dive timing probes
         run: timeout --signal=TERM --kill-after=15s 300s node scripts/goalkeeper-high-dive-timing-test.mjs
+      - name: Upload timing measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goalkeeper-high-dive-timing-${{ github.run_id }}
+          path: artifacts/goalkeeper-high-dive-timing.json
+          if-no-files-found: warn
+          retention-days: 7
