@@ -93,8 +93,12 @@ function updateKeeper(dt){
  }else if(phase==="diving"){
   phaseTimer-=dt;
   if(phaseTimer<=0){
-   keeper.dive=0;
    const recoveryClip=keeperRenderer.clipCache.get("standing up.fbx");
+   const recoveryFailed=keeperRenderer.failedClips.has("standing up.fbx");
+   // Keep the landed pose until the actual get-up clip is ready; don't
+   // start a guessed-duration recovery that could cut the animation short.
+   if(!recoveryClip&&!recoveryFailed){phaseTimer=.05;return}
+   keeper.dive=0;
    const recoveryDuration=recoveryClip?THREE.MathUtils.clamp(recoveryClip.duration,.55,2.5):.95;
    keeper.diveRecover=recoveryDuration;
    setPhase("recover",recoveryDuration);
