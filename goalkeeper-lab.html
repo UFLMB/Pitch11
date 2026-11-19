@@ -80,7 +80,7 @@ const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:60
 const keeperAnimationLifecycle=new GoalkeeperAnimationLifecycle({clipLoadTimeoutMs:6000,recenterTolerance:.08});
 let keeperLifecycleGeneration=0,keeperLifecycleExpectedState="",keeperLifecycleActionRef=null;
 const keeper={gk:true,team:0,pos:"GK",num:1,px:585,py:732,x:585,y:732,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
-let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,sequenceRunId=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false,lastContactColliders=[],lastContactLabel="—",animationTrace=[],lastTracedState="",minContactGap=Infinity,minContactCollider="—";
+let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,sequenceRunId=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false,lastContactColliders=[],lastContactLabel="—",animationTrace=[],lastTracedState="",minContactGap=Infinity,minContactCollider="—",minContactSample=null;
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
 const goalLineZ=34,ballGravity=9.81;
 const keeperAttributes={reflexes:76,diving:78,handling:72,reach:76,keeperHeight:1.9};
