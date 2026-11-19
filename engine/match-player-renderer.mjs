@@ -8,6 +8,7 @@ import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animatio
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { flattenHorizontalRootMotion, getLocomotionTimeScale } from "./locomotion-animation.mjs";
+import { buildGoalkeeperContactColliders } from "./goalkeeper-contact-geometry.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
@@ -370,7 +371,13 @@ export class MatchPlayerRenderer {
     group.add(ring);
 
     const mixer = new THREE.AnimationMixer(model);
-    const entry = { group, mixer, ring, activeAction: null, activeClipName: "", state: "" };
+    const bones = new Map();
+    model.traverse(node => {
+      if (!node.isBone || !node.name) return;
+      const key = node.name.replace(/^mixamorig\\d*:/i, "").replace(/[^a-z0-9]/gi, "").toLowerCase();
+      if (!bones.has(key)) bones.set(key, node);
+    });
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", state: "" };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -439,6 +446,28 @@ export class MatchPlayerRenderer {
       if (updateAnimations) mixer.update(animationDelta);
     }
     return true;
+  }
+
+  getGoalkeeperContactColliders(playerId = 0) {
+    const entry = this.players.get(playerId);
+    if (!entry?.bones?.size) return [];
+    entry.group.updateMatrixWorld(true);
+    const positions = {};
+    for (const [name, bone] of entry.bones) {
+      if (!/^(leftarm|leftshoulder|leftforearm|lefthand|rightarm|rightshoulder|rightforearm|righthand|hips|spine|spine1|spine2|neck)$/.test(name)) continue;
+      const world = bone.getWorldPosition(new THREE.Vector3());
+      positions[name] = { x: world.x, y: world.y, z: world.z };
+    }
+    return buildGoalkeeperContactColliders(positions);
+  }
+
+  getGoalkeeperContactRigStatus(playerId = 0) {
+    const entry = this.players.get(playerId);
+    if (!entry?.bones?.size) return { available: false, colliderCount: 0, missing: ["Mixamo skeleton"] };
+    const required = ["leftforearm", "lefthand", "rightforearm", "righthand", "hips", "spine2"];
+    const missing = required.filter(name => !entry.bones.has(name));
+    const colliders = this.getGoalkeeperContactColliders(playerId);
+    return { available: colliders.length > 0, colliderCount: colliders.length, missing };
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
