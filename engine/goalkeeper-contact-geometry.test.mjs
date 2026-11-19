@@ -61,6 +61,14 @@ test("detects a low shot against a goalkeeper lower-leg collider", () => {
   assert.equal(hit.colliderId, "right-lower-leg");
 });
 
+test("interpolates the exact ball center at first swept contact", () => {
+  const collider = { id: "center-hand", part: "hand", side: "center", start: p(0, 0, 0), end: p(0, 0, 0), radius: 0.1 };
+  const hit = findSweptBallContact({ previousBall: p(-1, 0, 0), currentBall: p(1, 0, 0), previousColliders: [collider], currentColliders: [collider], ballRadius: 0.1, samples: 20 });
+  assert.ok(hit);
+  assert.ok(hit.time > 0 && hit.time < 0.5);
+  assert.ok(Math.abs(hit.position.x) < 0.11);
+});
+
 test("interpolates a moving arm collider between animation frames", () => {
   const previous = { id: "left-forearm", part: "arm", side: "left", start: p(-1, 1, 0), end: p(-1, 1.4, 0), radius: 0.09 };
   const current = { ...previous, start: p(1, 1, 0), end: p(1, 1.4, 0) };
