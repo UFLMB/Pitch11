@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
-const { predictBallAtGoalPlane, evaluateKeeperInterception } = require("./goalkeeper-physics.js");
+const { predictBallAtGoalPlane, evaluateKeeperInterception, evaluateOneOnOne } = require("./goalkeeper-physics.js");
 
 test("predicts the ball at the goal plane with drag and gravity", () => {
   const hit = predictBallAtGoalPlane({ x: 0, y: 0, z: 0.3, vx: 20, vy: 3, vz: 2, goalX: 8, drag: 0.08 });
