@@ -78,6 +78,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
     x: (px + (x - px) * blend - 585) * 0.1,
     z: (py + (y - py) * blend - 400) * 0.1,
     facing: Number.isFinite(player.face) ? player.face : 0,
+    diveSide: player.diveSide === "left" || player.diveSide === "right" ? player.diveSide : null,
     speed,
     action,
     selected: player === selectedPlayer,
