@@ -67,9 +67,10 @@ try {
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
-  async function verifyDirectionalShot(page, label, shot, expectedSide, expectedHeight, expectedState, expectedFile) {
+  async function verifyDirectionalShot(page, label, shot, expectedSide, expectedHeight, expectedState, expectedFile, flightTime = 1.05) {
     await page.locator('[data-action="reset"]').click();
     await page.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 15000 });
+    await page.evaluate(value => { window.__GK_TEST_FLIGHT_TIME = value; }, flightTime);
     await page.locator('[data-shot="' + shot + '"]').click();
     try {
       await page.waitForFunction(() => {
@@ -107,7 +108,17 @@ try {
     try { desktopCornerResults.push(await verifyDirectionalShot(desktop, "desktop", ...test)); }
     catch (error) { testFailures.push("desktop " + test[0] + ": " + error.message); console.log("CONTINUING AFTER DESKTOP CASE FAILURE: " + test[0]); }
   }
-  const desktopReadout = desktopCornerResults.join("\n");
+  const desktopTimingResults = [];
+  for (const test of [
+    ["left-high", "left", "high", "keeperDiveLeft", "goalkeeper diving save (2).fbx", 1.5],
+    ["right-high", "right", "high", "keeperDiveRight", "goalkeeper diving save.fbx", 1.5],
+    ["left-high", "left", "high", "keeperDiveLeft", "goalkeeper diving save (2).fbx", 2.0],
+    ["right-high", "right", "high", "keeperDiveRight", "goalkeeper diving save.fbx", 2.0]
+  ]) {
+    try { desktopTimingResults.push(await verifyDirectionalShot(desktop, "desktop-slow-flight-" + test[0] + "-" + test[5], ...test)); }
+    catch (error) { testFailures.push("desktop slow-flight " + test[0] + " " + test[5] + "s: " + error.message); console.log("CONTINUING AFTER DESKTOP SLOW-FLIGHT FAILURE: " + test[0] + " " + test[5] + "s"); }
+  }
+  const desktopReadout = desktopCornerResults.concat(desktopTimingResults).join("\n");
 
   const mobileContext = await browser.newContext({
     viewport: { width: 384, height: 850 },
@@ -125,7 +136,15 @@ try {
     try { mobileCornerResults.push(await verifyDirectionalShot(mobile, "mobile", ...test)); }
     catch (error) { testFailures.push("mobile " + test[0] + ": " + error.message); console.log("CONTINUING AFTER MOBILE CASE FAILURE: " + test[0]); }
   }
-  const mobileContactReadout = mobileCornerResults.join("\\n");
+  const mobileTimingResults = [];
+  for (const test of [
+    ["left-high", "left", "high", "keeperDiveLeft", "goalkeeper diving save (2).fbx", 1.5],
+    ["right-high", "right", "high", "keeperDiveRight", "goalkeeper diving save.fbx", 1.5]
+  ]) {
+    try { mobileTimingResults.push(await verifyDirectionalShot(mobile, "mobile-slow-flight-" + test[0], ...test)); }
+    catch (error) { testFailures.push("mobile slow-flight " + test[0] + " " + test[5] + "s: " + error.message); console.log("CONTINUING AFTER MOBILE SLOW-FLIGHT FAILURE: " + test[0] + " " + test[5] + "s"); }
+  }
+  const mobileContactReadout = mobileCornerResults.concat(mobileTimingResults).join("\\n");
 
   assert.deepEqual(failures, [], "Browser runtime errors");
   assert.deepEqual(testFailures, [], "Goalkeeper directional contact regressions");
