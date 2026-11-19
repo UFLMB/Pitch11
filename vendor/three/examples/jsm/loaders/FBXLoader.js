@@ -3779,6 +3779,9 @@ class BinaryParser {
 
 		for ( let i = 0; i < numProperties; i ++ ) {
 
+			// FBX 7.5 exporters may place alignment padding immediately before the footer.
+			// Do not interpret footer bytes as a node property when a node header overruns content.
+			if ( this.endOfContent( reader ) ) return null;
 			propertyList.push( this.parseProperty( reader ) );
 
 		}
