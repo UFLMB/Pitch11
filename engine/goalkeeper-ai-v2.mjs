@@ -11,7 +11,7 @@ export const GOALKEEPER_DEFAULTS = Object.freeze({
   reactionTime: 0.22, perceptionPenalty: 0,
   lateralAcceleration: 7.5, lateralTopSpeed: 5.8,
   divePreparation: 0.12, diveSpeed: 4.2,
-  bodyLateralReach: 0.42, armReach: 0.78, keeperHeight: 1.9,
+  bodyLateralReach: 0.42, armReach: 0.78, keeperHeight: 1.8,
   jumpImpulse: 3.15, catchSpeedLimit: 8.5, cleanCatchHeight: 1.55
 });
 function validate(input, defaults) {
