@@ -28,15 +28,32 @@ function validate(input, defaults) {
 export function predictGoalPlaneCrossing(ball, { gravity = GOALKEEPER_DEFAULTS.gravity } = {}) {
   const b = {
     x: finite(ball?.x, "ball.x"), y: finite(ball?.y, "ball.y"), z: finite(ball?.z, "ball.z"),
-    vx: finite(ball?.vx, "ball.vx"), vy: finite(ball?.vy, "ball.vy"), vz: finite(ball?.vz, "ball.vz")
+    vx: finite(ball?.vx, "ball.vx"), vy: finite(ball?.vy, "ball.vy"), vz: finite(ball?.vz, "ball.vz"),
+    ax: finite(ball?.ax ?? 0, "ball.ax"), ay: finite(ball?.ay ?? 0, "ball.ay"),
+    az: finite(ball?.az ?? 0, "ball.az")
   };
   finite(gravity, "gravity");
-  if (b.z < 0 || b.vz >= -0.01) return null;
-  const time = -b.z / b.vz;
-  if (!(time > 0) || !Number.isFinite(time)) return null;
-  const x = b.x + b.vx * time;
-  const y = b.y + b.vy * time - 0.5 * gravity * time * time;
-  return Object.freeze({ time, x, y, speed: Math.hypot(b.vx,b.vy,b.vz), vx:b.vx, vy:b.vy, vz:b.vz });
+  if (b.z < 0 || (b.vz >= -0.01 && b.az >= 0)) return null;
+  // Solve z + vz*t + 0.5*az*t² = 0 and choose the first positive crossing.
+  const a = 0.5 * b.az;
+  const roots = [];
+  if (Math.abs(a) < 1e-9) {
+    if (b.vz < -0.01) roots.push(-b.z / b.vz);
+  } else {
+    const discriminant = b.vz * b.vz - 4 * a * b.z;
+    if (discriminant >= 0) {
+      const root = Math.sqrt(discriminant);
+      roots.push((-b.vz - root) / (2 * a), (-b.vz + root) / (2 * a));
+    }
+  }
+  const time = roots.filter(t => t > 1e-6 && Number.isFinite(t)).sort((x, y) => x - y)[0];
+  if (time == null) return null;
+  const x = b.x + b.vx * time + 0.5 * b.ax * time * time;
+  const y = b.y + b.vy * time + 0.5 * (b.ay - gravity) * time * time;
+  const vx = b.vx + b.ax * time;
+  const vy = b.vy + (b.ay - gravity) * time;
+  const vz = b.vz + b.az * time;
+  return Object.freeze({ time, x, y, speed: Math.hypot(vx, vy, vz), vx, vy, vz });
 }
 function displacementTowardTarget({time,direction,initialVelocity,acceleration,topSpeed}) {
   const v0 = Math.max(0, initialVelocity * direction);
@@ -62,11 +79,13 @@ export function evaluateGoalkeeperThreat({ball,keeper={},attributes={},environme
   const reach = clamp(finite(attributes.reach ?? 50,"attributes.reach"),1,99);
   const insideMouth = Math.abs(crossing.x)<=p.goalWidth/2 && crossing.y>=0 && crossing.y<=p.goalHeight;
   if (!insideMouth) return Object.freeze({threat:false,reason:"outside-goal-mouth",reachable:false,outcome:"no-save",crossing});
-  const reactionTime = p.reactionTime*(1.35-reflex/100)+p.perceptionPenalty;
-  const positioningOffset = (1-positioning/100)*0.34;
-  const targetX = crossing.x;
-  const adjustedKeeperX = keeperX + clamp(targetX-keeperX,-positioningOffset,positioningOffset);
-  const deltaX = targetX-adjustedKeeperX;
+  const visibility = clamp(finite(keeper.visibility ?? 1,"keeper.visibility"),0,1);
+  const occlusion = clamp(finite(keeper.occlusion ?? 0,"keeper.occlusion"),0,1);
+  // Positioning is represented by the keeper's actual pre-shot x coordinate.
+  // Never move the keeper toward the future crossing point after the shot is read.
+  const reactionTime = p.reactionTime*(1.35-reflex/100)+p.perceptionPenalty
+    +(1-visibility)*0.28+occlusion*0.42;
+  const deltaX = crossing.x-keeperX;
   const direction = Math.sign(deltaX);
   const available = crossing.time-reactionTime;
   const canPrepareDive = available>p.divePreparation;
