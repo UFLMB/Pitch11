@@ -464,7 +464,7 @@ export class MatchPlayerRenderer {
   getGoalkeeperContactRigStatus(playerId = 0) {
     const entry = this.players.get(playerId);
     if (!entry?.bones?.size) return { available: false, colliderCount: 0, missing: ["Mixamo skeleton"] };
-    const required = ["leftforearm", "lefthand", "rightforearm", "righthand", "hips", "spine2"];
+    const required = ["leftforearm", "lefthand", "rightforearm", "righthand", "leftupleg", "leftleg", "leftfoot", "rightupleg", "rightleg", "rightfoot", "hips", "spine2"];
     const missing = required.filter(name => !entry.bones.has(name));
     const colliders = this.getGoalkeeperContactColliders(playerId);
     return { available: colliders.length > 0, colliderCount: colliders.length, missing };
