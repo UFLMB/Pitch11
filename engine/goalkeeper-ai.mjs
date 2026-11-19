@@ -29,10 +29,11 @@ export function evaluateGoalkeeperShot({
   const lateralReach=armReach+lateralSpeed*available;
   const verticalReach=keeperHeight*.82+(.52+available*.9)*(side==="center"?.72:1);
   const reachable=inGoalMouth&&available>=0&&requiredTravelTime<=available&&targetY<=verticalReach;
-  const action=side==="center"?(targetY<=1.35?"catch":"parry"):"dive";
+  const heightBand=targetY<=.9?"low":"high";
+  const action=side==="center"?(heightBand==="low"?"catch":"parry"):(heightBand==="low"?"lowDive":"dive");
   const confidence=reachable?clamp(1-(requiredTravelTime/Math.max(.001,available))*.35-(targetY/Math.max(.1,verticalReach))*.2,0,1):0;
   return Object.freeze({
-    side,action,reactionTime,divePreparation,available,requiredTravelTime,
+    side,action,heightBand,reactionTime,divePreparation,available,requiredTravelTime,
     lateralReach,verticalReach,reachable,inGoalMouth,confidence,
     goalWidth,goalHeight,keeperHeight
   });

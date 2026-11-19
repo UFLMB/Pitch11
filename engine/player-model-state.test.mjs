@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mapLegacyPlayerState, mapLegacyPlayers, resolveKeeperDiveSide, resolveKeeperDiveAngle } from "./player-model-state.mjs";
 import { resolvePlayerAnimationState } from "./player-animation-map.mjs";
+import { resolveMixamoClipCandidates } from "./mixamo-animation-catalog.mjs";
 
 const player = (overrides = {}) => ({
   team: 0, role: 4, pos: "DEF", gk: false, px: 60, py: 60, x: 160, y: 260,
@@ -44,6 +45,10 @@ test("resolves keeper dive clips in local left/right space for both goal directi
 test("maps goalkeeper dive direction relative to the keeper's facing", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-right");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-left" }), "keeperDiveLowLeft");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-right" }), "keeperDiveLowRight");
 });
 
 test("preserves selection, team, goalkeeper role and player appearance variants", () => {
@@ -80,4 +85,11 @@ test("converts keeper-local dive sides into world angles for either facing direc
     assert.equal(resolveKeeperDiveSide(leftAngle, facing), "left");
     assert.equal(resolveKeeperDiveSide(rightAngle, facing), "right");
   }
+});
+
+test("uses distinct confirmed FBX clips for all four directional and height-specific saves", () => {
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), ["goalkeeper diving save (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), ["goalkeeper diving save.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), ["goalkeeper body block (2).fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), ["goalkeeper body block (3).fbx"]);
 });

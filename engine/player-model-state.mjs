@@ -45,9 +45,13 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
 
   let action = "idle";
   if (typeof player.animationOverride === "string" && player.animationOverride) action = player.animationOverride;
-  else if (player.dive > 0) action = player.gk
-    ? (resolveKeeperDiveSide(player.diveAng, player.face) === "left" ? "keeper-dive-left" : "keeper-dive-right")
-    : "fall";
+  else if (player.dive > 0) {
+    if (!player.gk) action = "fall";
+    else {
+      const side = resolveKeeperDiveSide(player.diveAng, player.face);
+      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` : `keeper-dive-${side}`;
+    }
+  }
   else if (player.gk && player.diveRecover > 0) action = "get-up";
   else if (player.sd) action = "slide-tackle";
   else if (player.down) action = "fallen-idle";
