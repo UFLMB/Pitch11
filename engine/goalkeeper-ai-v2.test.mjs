@@ -33,7 +33,7 @@ test("low lateral threats request a matching low dive when reachable",()=>{
 });
 test("high wide threats are never treated as clean catches",()=>{
  const r=evaluateGoalkeeperThreat({ball:ballTo(2.3,2.12,.9,22),keeper:{x:0},attributes:{reflexes:85,diving:90,reach:90,handling:60}});
- assert.ok(["keeperFingertip","keeperDiveRight","keeperMiss"].includes(r.animationState)); assert.notEqual(r.technique,"catch");
+ assert.ok(["keeperDiveRight","keeperMiss"].includes(r.animationState)); assert.notEqual(r.technique,"catch");
 });
 test("attributes are bounded and cannot grant unlimited reach",()=>{
  const r=evaluateGoalkeeperThreat({ball:ballTo(3.5,2.3,.2,30),keeper:{x:0},attributes:{reflexes:999,diving:999,reach:999,positioning:999}});
