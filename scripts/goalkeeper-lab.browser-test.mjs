@@ -44,6 +44,7 @@ try {
   await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), { timeout: 150000 });
   const desktopReadout = await desktop.locator("#readout").innerText();
   assert.match(desktopReadout, /Rig colliders: 9/);
+  assert.doesNotMatch(desktopReadout, /Contact: —/, "The five-shot AI sequence must produce at least one real animated-rig contact");
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
   const mobileContext = await browser.newContext({
