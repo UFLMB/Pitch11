@@ -97,7 +97,10 @@ const STATE_FILES = Object.freeze({
   keeperPlace: ["goalkeeper placing ball.fbx", "goalkeeper placing ball (2).fbx"]
 });
 
-export function resolveMixamoClipCandidates(state, playerId = 0) {
+export function resolveMixamoClipCandidates(state, playerId = 0, diveSide = null) {
+  if (state === "keeperFingertip" || state === "keeperMiss") {
+    return [diveSide === "left" ? "goalkeeper diving save (2).fbx" : "goalkeeper diving save.fbx"];
+  }
   const files = STATE_FILES[state] || STATE_FILES.idle;
   // Directional keeper saves are a matched left/right pair. Never rotate
   // their candidate order by player ID: doing so can silently swap the
