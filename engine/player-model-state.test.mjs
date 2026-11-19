@@ -42,6 +42,12 @@ test("resolves keeper dive clips in local left/right space for both goal directi
   assert.equal(resolveKeeperDiveSide(downfield, Math.PI), "left");
 });
 
+test("uses the explicitly requested keeper-local side instead of re-deriving it from the angle", () => {
+  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "right" }), 0).action, "keeper-dive-right");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left" }), 0).action, "keeper-dive-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "low" }), 0).action, "keeper-dive-low-left");
+});
+
 test("maps goalkeeper dive direction relative to the keeper's facing", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");

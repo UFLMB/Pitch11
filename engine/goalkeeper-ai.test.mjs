@@ -11,6 +11,10 @@ test("keeper evaluates both sides using the actual 7.32 m goal mouth",()=>{
 test("keeper selects low and high save bands from the target Y coordinate",()=>{
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).heightBand,"low");
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).action,"lowDive");
+  assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).animationState,"keeperDiveLowLeft");
+  assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:.35}).animationState,"keeperDiveLowRight");
+  assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:2.05}).animationState,"keeperDiveLeft");
+  assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:2.05}).animationState,"keeperDiveRight");
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:2.05}).heightBand,"high");
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:2.05}).action,"dive");
   assert.equal(evaluateGoalkeeperShot({targetX:0,targetY:.35}).action,"catch");
