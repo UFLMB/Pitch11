@@ -16,11 +16,11 @@ const relevantBones = [
   "leftupleg", "leftleg", "leftfoot", "rightupleg", "rightleg", "rightfoot"
 ];
 const normalize = value => String(value || "")
-  .replace(/_\\$AssimpFbx\\$_(Translation|Rotation|Scaling)$/i, "")
+  .replace(/_\$AssimpFbx\$_(Translation|Rotation|Scaling)$/i, "")
   .replace(/^mixamorig:/i, "")
-  .replace(/[\\s_]/g, "")
+  .replace(/[\s_]/g, "")
   .replace(/[^a-z0-9]/gi, "")
-  .replace(/^mixamorig\\d*/i, "")
+  .replace(/^mixamorig\d*/i, "")
   .toLowerCase();
 const loader = new FBXLoader();
 const report = [];
@@ -64,8 +64,8 @@ for (const file of files) {
       if (!bones.has(key)) bones.set(key, node);
     }
   });
-  const quaternionTracks = clip.tracks.filter(track => /\\.quaternion$/i.test(track.name));
-  const positionTracks = clip.tracks.filter(track => /\\.position$/i.test(track.name));
+  const quaternionTracks = clip.tracks.filter(track => /\.quaternion$/i.test(track.name));
+  const positionTracks = clip.tracks.filter(track => /\.position$/i.test(track.name));
   const selectedTracks = quaternionTracks
     .filter(track => relevantBones.includes(normalize(track.name.slice(0, track.name.lastIndexOf(".")))))
     .map(quaternionSummary);
