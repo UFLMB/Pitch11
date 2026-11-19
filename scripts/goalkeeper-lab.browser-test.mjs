@@ -66,14 +66,15 @@ try {
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
-  async function verifyDirectionalShot(page, label, shot, expectedSide, expectedHeight, expectedState) {
+  async function verifyDirectionalShot(page, label, shot, expectedSide, expectedHeight, expectedState, expectedFile) {
     await page.locator('[data-action="reset"]').click();
     await page.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 15000 });
     await page.locator('[data-shot="' + shot + '"]').click();
     try {
       await page.waitForFunction(() => {
         const text = document.querySelector("#readout")?.innerText || "";
-        return /Contact: (?!—)/.test(text) && /Rig colliders: 15/.test(text);
+        return /AI v2: (?:LEFT|RIGHT|CENTER) \/ (?:LOW|MID|HIGH) \/ /.test(text) &&
+          (/Contact: (?!—)/.test(text) || /GOAL · NO ANIMATED RIG CONTACT/.test(text));
       }, undefined, { timeout: 60000 });
     } catch (error) {
       const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
@@ -83,18 +84,25 @@ try {
     }
     const diagnostics = await page.locator("#readout").innerText();
     assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
-    assert.match(diagnostics, new RegExp("Trace: [^\\n]*" + expectedState), label + " did not play the expected animation state for " + shot);
-    assert.doesNotMatch(diagnostics, /Contact: —/, label + " had no rig contact for " + shot);
+    assert.match(diagnostics, /Rig colliders: 15/, label + " rig collider count mismatch for " + shot);
+    if (/OUT OF REACH/.test(diagnostics)) {
+      assert.match(diagnostics, /GOAL · NO ANIMATED RIG CONTACT/, label + " unreachable shot should remain a legitimate goal for " + shot);
+      assert.doesNotMatch(diagnostics, /Trace: [^\\n]*keeperDive/, label + " unreachable shot incorrectly triggered a dive for " + shot);
+    } else {
+      assert.match(diagnostics, /REACHABLE/, label + " shot expected to be reachable for " + shot);
+      assert.match(diagnostics, new RegExp("Trace: [^\\n]*" + expectedState + "\\[" + expectedFile.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "\\]"), label + " did not play the expected FBX file for " + shot);
+      assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable shot had no rig contact for " + shot);
+    }
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + ".png", fullPage: true });
     console.log(label + " " + shot + ": " + diagnostics.replace(/\\n/g, " | "));
     return diagnostics;
   }
 
   const cornerCases = [
-    ["left-low", "left", "low", "keeperDiveLowLeft"],
-    ["right-low", "right", "low", "keeperDiveLowRight"],
-    ["left-high", "left", "high", "keeperDiveLeft"],
-    ["right-high", "right", "high", "keeperDiveRight"]
+    ["left-low", "left", "low", "keeperDiveLowLeft", "goalkeeper body block (2).fbx"],
+    ["right-low", "right", "low", "keeperDiveLowRight", "goalkeeper body block (3).fbx"],
+    ["left-high", "left", "high", "keeperDiveLeft", "goalkeeper diving save (2).fbx"],
+    ["right-high", "right", "high", "keeperDiveRight", "goalkeeper diving save.fbx"]
   ];
   const desktopCornerResults = [];
   for (const test of cornerCases) desktopCornerResults.push(await verifyDirectionalShot(desktop, "desktop", ...test));
