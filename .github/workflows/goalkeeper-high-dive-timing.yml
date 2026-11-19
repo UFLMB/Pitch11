@@ -30,7 +30,7 @@ jobs:
           node-version: 22
       - name: Install Three.js package resolver for vendored FBXLoader
         run: npm install --no-save three@0.185.0
-      - name: Inspect high-dive FBX root motion
+      - name: Inspect high-dive and low-dive bone rotations and world poses
         run: node scripts/inspect-goalkeeper-root-motion.mjs
       - name: Install Playwright
         run: |
