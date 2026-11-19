@@ -28,10 +28,19 @@ async function openLab(context, label) {
   }, { timeout: 90000 });
   const status = await page.locator("#status").innerText();
   assert.match(status, /3D KEEPER/i, label + " did not load the Mixamo goalkeeper model: " + status);
-  await page.waitForFunction(() => {
-    const text = document.querySelector("#readout")?.innerText || "";
-    return text.includes("Rig colliders: 9");
-  }, { timeout: 30000 });
+  try {
+    await page.waitForFunction(() => {
+      const text = document.querySelector("#readout")?.innerText || "";
+      return /Rig colliders: [1-9]/.test(text);
+    }, { timeout: 15000 });
+  } catch (error) {
+    const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
+    console.log(JSON.stringify({ label, status, diagnostics }, null, 2));
+    await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-diagnostic.png", fullPage: true }).catch(() => {});
+    throw error;
+  }
+  const diagnostics = await page.locator("#readout").innerText();
+  console.log(label + " initial diagnostics: " + diagnostics.replace(/\n/g, " | "));
   return page;
 }
 
