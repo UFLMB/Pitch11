@@ -82,8 +82,10 @@ const STATE_FILES = Object.freeze({
   keeperMove: ["goalkeeper sidestep.fbx", "goalkeeper sidestep (2).fbx"],
   keeperDirect: ["goalkeeper directing.fbx", "goalkeeper directing (2).fbx"],
   keeperCatch: ["goalkeeper catch.fbx", "goalkeeper catch (2).fbx", "goalkeeper catch (3).fbx", "goalkeeper catch (4).fbx"],
-  keeperDiveLeft: ["goalkeeper diving save.fbx", "goalkeeper diving save (2).fbx"],
-  keeperDiveRight: ["goalkeeper diving save (2).fbx", "goalkeeper diving save.fbx"],
+  keeperDiveLeft: ["goalkeeper diving save (2).fbx"],
+  keeperDiveRight: ["goalkeeper diving save.fbx"],
+  keeperDiveLowLeft: ["goalkeeper body block (2).fbx"],
+  keeperDiveLowRight: ["goalkeeper body block (3).fbx"],
   keeperParry: ["goalkeeper body block.fbx", "goalkeeper body block (2).fbx", "goalkeeper body block (3).fbx"],
   keeperScoop: ["goalkeeper scoop.fbx"],
   keeperFingertip: ["goalkeeper miss.fbx"],
@@ -99,7 +101,7 @@ export function resolveMixamoClipCandidates(state, playerId = 0) {
   // Directional keeper saves are a matched left/right pair. Never rotate
   // their candidate order by player ID: doing so can silently swap the
   // intended mirrored clip for different keepers.
-  if (state === "keeperDiveLeft" || state === "keeperDiveRight") return [...files];
+  if (["keeperDiveLeft", "keeperDiveRight", "keeperDiveLowLeft", "keeperDiveLowRight"].includes(state)) return [...files];
   if (files.length < 2) return [...files];
   const offset = Math.abs(Number(playerId) || 0) % files.length;
   return [...files.slice(offset), ...files.slice(0, offset)];
