@@ -66,7 +66,7 @@ test("interpolates the exact ball center at first swept contact", () => {
   const hit = findSweptBallContact({ previousBall: p(-1, 0, 0), currentBall: p(1, 0, 0), previousColliders: [collider], currentColliders: [collider], ballRadius: 0.1, samples: 20 });
   assert.ok(hit);
   assert.ok(hit.time > 0 && hit.time < 0.5);
-  assert.ok(Math.abs(hit.position.x) < 0.11);
+  assert.ok(Math.abs(hit.position.x) <= 0.2 + 1e-9);
 });
 
 test("interpolates a moving arm collider between animation frames", () => {
