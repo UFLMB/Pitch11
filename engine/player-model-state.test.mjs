@@ -24,6 +24,10 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-right");
   assert.equal(mapLegacyPlayerState(player({ gk: true, animationOverride: "keeper-catch" }), 0).action, "keeper-catch");
   assert.equal(mapLegacyPlayerState(player({ gk: true, animationOverride: "keeper-parry" }), 0).action, "keeper-parry");
+  const leftFingertip = mapLegacyPlayerState(player({ gk: true, animationOverride: "keeper-fingertip", diveSide: "left" }), 0);
+  const rightFingertip = mapLegacyPlayerState(player({ gk: true, animationOverride: "keeper-fingertip", diveSide: "right" }), 0);
+  assert.equal(leftFingertip.diveSide, "left");
+  assert.equal(rightFingertip.diveSide, "right");
   const recoveringKeeper = mapLegacyPlayerState(player({ gk: true, dive: 0, diveRecover: .4 }), 0);
   assert.equal(recoveringKeeper.action, "get-up");
   assert.equal(resolvePlayerAnimationState(recoveringKeeper, recoveringKeeper.speed), "getUp");
