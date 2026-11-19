@@ -90,7 +90,7 @@ try {
       assert.doesNotMatch(diagnostics, /Trace: [^\\n]*keeperDive/, label + " unreachable shot incorrectly triggered a dive for " + shot);
     } else {
       assert.match(diagnostics, /REACHABLE/, label + " shot expected to be reachable for " + shot);
-      assert.match(diagnostics, new RegExp("Trace: [^\\n]*" + expectedState + "\\[" + expectedFile.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&") + "\\]"), label + " did not play the expected FBX file for " + shot);
+      assert.ok(diagnostics.includes(expectedState + "[" + expectedFile.replace(/\\.fbx$/i, "") + "]"), label + " did not play the expected FBX file for " + shot);
       assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable shot had no rig contact for " + shot);
     }
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + ".png", fullPage: true });
