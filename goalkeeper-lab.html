@@ -81,8 +81,8 @@ function setKeeperPosition(x=0){keeper.x=keeper.px=585+x*10;keeper.y=keeper.py=7
 function setPhase(next,duration=0){phase=next;phaseTimer=duration}
 function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.72,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration,goalWidth:7.32,goalHeight:2.44,keeperHeight:1.9});aiReactionTimer=aiDecision.reactionTime;if(aiMode)shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase();}
 function triggerAction(action){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride=action;shotResult=action==="keeper-catch"?"CATCH ANIMATION":"PARRY ANIMATION";setPhase("action",1.05)}
-function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":"high";keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeperRenderer.ensureMixamoState("getUp",0);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
-function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
+function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":"high";keeper.diveClipState=kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight");keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeperRenderer.ensureMixamoState("getUp",0);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
+function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
 function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
 function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;const side=targetSide(shot.kind),height=shot.to.y;const canReach=side==="center"||Math.abs(shot.to.x)<3.2;const saved=!!(aiDecision&&aiDecision.reachable&&aiDecisionFired&&shot.elapsed>=aiDecision.reactionTime);if(saved){saveCount++;shotResult=(aiMode?"AI SAVE · ":"SAVE · ")+side.toUpperCase()}else{goalCount++;keeper.dive=0;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+"OUT OF REACH";setPhase("miss",.5)}}
 function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));if(t>=1){resolveShot();shot=null;ball.visible=false}}
@@ -99,15 +99,27 @@ function updateKeeper(dt){
   keeper.x=keeper.px=THREE.MathUtils.lerp(keeper.diveStartX??keeper.x,keeper.diveTargetX??keeper.x,diveEase);
   keeper.vx=dt>0?(keeper.x-divePrevious)/dt:0;keeper.vy=0;
   if(phaseTimer<=0){
-   const recoveryClip=keeperRenderer.clipCache.get("standing up.fbx");
-   const recoveryFailed=keeperRenderer.failedClips.has("standing up.fbx");
-   // Keep the landed pose until the actual get-up clip is ready; don't
-   // start a guessed-duration recovery that could cut the animation short.
-   if(!recoveryClip&&!recoveryFailed){phaseTimer=.05;return}
+   // Goalkeeper save FBXs already contain their own landing/get-up motion.
+   // Do not interrupt them with standing up.fbx: wait for the selected
+   // one-shot save clip to reach its final frame.
+   const entry=keeperRenderer.players.get(0);
+   const action=entry?.activeAction;
+   const clip=action?.getClip?.();
+   const expected=keeper.diveClipState||"";
+   const clipIsActive=!!(entry&&entry.state===expected&&clip&&action.time>=clip.duration-.04);
+   if(!clipIsActive){phaseTimer=.05;return}
    keeper.dive=0;
-   const recoveryDuration=recoveryClip?THREE.MathUtils.clamp(recoveryClip.duration,.55,2.5):.95;
-   keeper.diveRecover=recoveryDuration;
-   setPhase("recover",recoveryDuration);
+   keeper.diveRecover=0;
+   if(keeper.diveHeight==="high"){
+    // The high diving-save clips stand the keeper up, but can leave him
+    // displaced. Reposition only after the authored animation has finished.
+    keeper.animationOverride="keeper-move";
+    setPhase("return",.9);
+   }else{
+    // Low body-block clips already recover toward their starting position.
+    keeper.animationOverride="";
+    setPhase("idle");
+   }
   }
  }else if(phase==="recover"){
   phaseTimer-=dt;
