@@ -104,6 +104,7 @@ try {
   }
 
   const cornerCases = [
+    ["center-low", "center", "low", "keeperParry", "goalkeeper body block.fbx"],
     ["left-low", "left", "low", "keeperDiveLowLeft", "goalkeeper body block (2).fbx"],
     ["right-low", "right", "low", "keeperDiveLowRight", "goalkeeper body block (3).fbx"],
     ["left-high", "left", "high", "keeperMiss", "goalkeeper idle.fbx"],
