@@ -37,7 +37,9 @@ async function runViewport(label, viewport, isMobile, cases) {
     const contact = /Contact: (?!—)/.test(readout);
     const closest = readout.match(/Min gap: ([^<\n]+)/)?.[1] || "unavailable";
     const active = readout.match(/Active FBX: ([^·\n]+)/)?.[1]?.trim() || "unavailable";
-    results.push({ viewport: label, shot, side, flightTime: seconds, contact, closest, active, readout });
+    const shotElapsed = Number(readout.match(/shot ([\d.]+)s/)?.[1] || NaN);
+    const clipTime = Number(readout.match(/Clip: ([\d.]+)\//)?.[1] || NaN);
+    results.push({ viewport: label, shot, side, flightTime: seconds, contact, closest, active, shotElapsed, clipTime, readout });
     console.log(JSON.stringify(results[results.length - 1]));
   }
   await context.close();
