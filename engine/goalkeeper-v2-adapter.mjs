@@ -56,6 +56,6 @@ export function resolveGoalkeeperBallContact({decision,ball,goalLineZ=34,normal=
  return Object.freeze({
   ...result,
   worldPosition:Object.freeze({x:result.position.x,y:result.position.y,z:goalLineZ-result.position.z}),
-  worldVelocity:Object.freeze({x:result.velocity.x,y:result.velocity.y,z:-result.velocity.z})
+  worldVelocity:Object.freeze({x:result.velocity.x,y:result.velocity.y,z:result.velocity.z===0?0:-result.velocity.z})
  });
 }
