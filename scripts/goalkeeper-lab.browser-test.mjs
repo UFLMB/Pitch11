@@ -83,6 +83,7 @@ try {
       throw error;
     }
     const diagnostics = await page.locator("#readout").innerText();
+    await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + "-attempt.png", fullPage: true });
     assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
     assert.match(diagnostics, /Rig colliders: 15/, label + " rig collider count mismatch for " + shot);
     assert.match(diagnostics, /REACHABLE/, label + " controlled calibration shot must be physically reachable for " + shot);
