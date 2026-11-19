@@ -5246,23 +5246,7 @@ attack22=function(p,o,c){
   if(tx*d>off-8&&ball.x*d<=off)go22(p,(off-8)*d,ty,true);
   else go22(p,tx,ty,Math.hypot(tx-p.x,ty-p.y)>65);
 };
-/* Goalkeeper AI 2.1: avoid an animated dive when the keeper is already at the
-   predicted save point or cannot physically cover the required distance in time. */
-const _aiGK21=aiGK;
-aiGK=function(p){
-  const oldDive=p.dive,oldShot=p.divedShot;
-  _aiGK21(p);
-  if(oldDive<=0&&p.dive>0&&p.divedShot!==oldShot){
-    const d=dirOf(p.team),gx=ownGX(p),D=gx-ball.x,k=ball.z>2?KA:KG,r=D*k/ball.vx;
-    if(D/ball.vx>0&&r>0&&r<0.95){
-      const tt=-Math.log(1-r)/k,yp=ball.y+ball.vy/ball.vx*D;
-      const tx=gx+d*4,ty=clamp(yp+p.err,CY-GOALH+BR,CY+GOALH-BR);
-      const dist=Math.hypot(tx-p.x,ty-p.y),travel=p.dive*Math.hypot(p.vx,p.vy);
-      if(dist<6){p.dive=0;p.vx=p.vy=0;}
-      else if(dist>travel+4){p.dive=0;p.vx=p.vy=0;goTo(p,tx,ty,false);}
-    }
-  }
-};
+/* Replaced by the shared trajectory and reach-envelope model in goalkeeper-physics.js. */
 /* Preserve each goalkeeper save's native recovery; never force a second get-up. */
 const _aiGKPostDiveRecovery=aiGK;
 aiGK=function(p){
