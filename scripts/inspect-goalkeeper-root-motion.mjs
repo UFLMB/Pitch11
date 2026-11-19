@@ -66,6 +66,39 @@ for (const file of files) {
   });
   const quaternionTracks = clip.tracks.filter(track => /\.quaternion$/i.test(track.name));
   const positionTracks = clip.tracks.filter(track => /\.position$/i.test(track.name));
+  const initialBounds = new THREE.Box3().setFromObject(root);
+  const sourceHeight = initialBounds.max.y - initialBounds.min.y;
+  const gameScale = sourceHeight > 0 ? 1.8 / sourceHeight : 1;
+  const gameGroundOffset = -initialBounds.min.y * gameScale;
+  const positionTrackDetails = positionTracks.map(track => {
+    const stride = track.getValueSize();
+    const frames = [];
+    for (let i = 0; i < track.values.length; i += stride) {
+      frames.push(Array.from(track.values.slice(i, i + stride)).map(v => Number(v.toFixed(5))));
+    }
+    const sample = fraction => {
+      const time = clip.duration * fraction;
+      const values = new Float32Array(stride);
+      track.createInterpolant(values).evaluate(time);
+      return Array.from(values).map(v => Number(v.toFixed(5)));
+    };
+    const componentMin = Array.from({ length: stride }, (_, axis) => Number(Math.min(...frames.map(v => v[axis])).toFixed(5)));
+    const componentMax = Array.from({ length: stride }, (_, axis) => Number(Math.max(...frames.map(v => v[axis])).toFixed(5)));
+    return {
+      track: track.name,
+      target: track.name.slice(0, track.name.lastIndexOf(".")),
+      normalizedTarget: normalize(track.name.slice(0, track.name.lastIndexOf("."))),
+      keyframes: frames.length,
+      first: frames[0],
+      quarter: sample(0.25),
+      middle: sample(0.5),
+      threeQuarter: sample(0.75),
+      last: frames.at(-1),
+      componentMin,
+      componentMax,
+      firstToLastDelta: frames[0].map((v, axis) => Number((frames.at(-1)[axis] - v).toFixed(5)))
+    };
+  });
   const selectedTracks = quaternionTracks
     .filter(track => relevantBones.includes(normalize(track.name.slice(0, track.name.lastIndexOf(".")))))
     .map(quaternionSummary);
@@ -83,11 +116,24 @@ for (const file of files) {
     for (const name of relevantBones) {
       const bone = bones.get(name);
       if (!bone) continue;
+      const localPosition = bone.position.clone();
       const position = bone.getWorldPosition(new THREE.Vector3());
+      const gameScaled = {
+        x: position.x * gameScale,
+        y: position.y * gameScale + gameGroundOffset,
+        z: position.z * gameScale
+      };
       const quaternion = bone.getWorldQuaternion(new THREE.Quaternion()).normalize();
       const euler = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
       pose[name] = {
+        localPosition: [localPosition.x, localPosition.y, localPosition.z].map(v => Number(v.toFixed(4))),
         worldPosition: [position.x, position.y, position.z].map(v => Number(v.toFixed(4))),
+        gameScaledAnchoredPosition: [gameScaled.x, gameScaled.y, gameScaled.z].map(v => Number(v.toFixed(4))),
+        gameScaledAtYaw90: [
+          gameScaled.z,
+          gameScaled.y,
+          -gameScaled.x
+        ].map(v => Number(v.toFixed(4))),
         worldEulerYXZDeg: [euler.x, euler.y, euler.z].map(v => Number(THREE.MathUtils.radToDeg(v).toFixed(2)))
       };
     }
@@ -100,6 +146,14 @@ for (const file of files) {
     trackCount: clip.tracks.length,
     quaternionTrackCount: quaternionTracks.length,
     positionTrackCount: positionTracks.length,
+    sourceBounds: {
+      min: initialBounds.min.toArray().map(v => Number(v.toFixed(4))),
+      max: initialBounds.max.toArray().map(v => Number(v.toFixed(4))),
+      height: Number(sourceHeight.toFixed(4)),
+      gameScaleTo1_8m: Number(gameScale.toFixed(6)),
+      groundAnchorOffset: Number(gameGroundOffset.toFixed(6))
+    },
+    positionTrackDetails,
     matchedSkeletonBones: relevantBones.filter(name => bones.has(name)),
     missingSkeletonBones: relevantBones.filter(name => !bones.has(name)),
     quaternionTracks: selectedTracks,
