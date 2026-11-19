@@ -66,22 +66,39 @@ try {
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
 
-  await desktop.locator('[data-shot="center-high"]').click();
-  try {
-    await desktop.waitForFunction(() => {
-      const text = document.querySelector("#readout")?.innerText || "";
-      return /Contact: (?!—)/.test(text);
-    }, undefined, { timeout: 45000 });
-  } catch (error) {
-    const diagnostics = await desktop.locator("#readout").innerText().catch(() => "readout unavailable");
-    console.log(JSON.stringify({ label: "desktop-center-high", diagnostics, pageErrors: failures }, null, 2));
-    await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact-failure.png", fullPage: true }).catch(() => {});
-    throw error;
+  async function verifyDirectionalShot(page, label, shot, expectedSide, expectedHeight, expectedState) {
+    await page.locator('[data-action="reset"]').click();
+    await page.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 15000 });
+    await page.locator('[data-shot="' + shot + '"]').click();
+    try {
+      await page.waitForFunction(() => {
+        const text = document.querySelector("#readout")?.innerText || "";
+        return /Contact: (?!—)/.test(text) && /Rig colliders: 15/.test(text);
+      }, undefined, { timeout: 60000 });
+    } catch (error) {
+      const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
+      console.log(JSON.stringify({ label, shot, diagnostics, pageErrors: failures }, null, 2));
+      await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + "-failure.png", fullPage: true }).catch(() => {});
+      throw error;
+    }
+    const diagnostics = await page.locator("#readout").innerText();
+    assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
+    assert.match(diagnostics, new RegExp("Trace: [^\\n]*" + expectedState), label + " did not play the expected animation state for " + shot);
+    assert.doesNotMatch(diagnostics, /Contact: —/, label + " had no rig contact for " + shot);
+    await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + ".png", fullPage: true });
+    console.log(label + " " + shot + ": " + diagnostics.replace(/\\n/g, " | "));
+    return diagnostics;
   }
-  const desktopReadout = await desktop.locator("#readout").innerText();
-  assert.match(desktopReadout, /Rig colliders: 15/);
-  assert.doesNotMatch(desktopReadout, /Contact: —/, "Center-low AI shot must reach an animated goalkeeper collider");
-  await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact.png", fullPage: true });
+
+  const cornerCases = [
+    ["left-low", "left", "low", "keeperDiveLowLeft"],
+    ["right-low", "right", "low", "keeperDiveLowRight"],
+    ["left-high", "left", "high", "keeperDiveLeft"],
+    ["right-high", "right", "high", "keeperDiveRight"]
+  ];
+  const desktopCornerResults = [];
+  for (const test of cornerCases) desktopCornerResults.push(await verifyDirectionalShot(desktop, "desktop", ...test));
+  const desktopReadout = desktopCornerResults.join("\\n");
 
   const mobileContext = await browser.newContext({
     viewport: { width: 384, height: 850 },
@@ -94,20 +111,9 @@ try {
   const mobileReadout = await mobile.locator("#readout").innerText();
   assert.match(mobileReadout, /Rig colliders: 15/);
   await mobile.locator("#ai-mode").click();
-  await mobile.locator('[data-shot="center-high"]').click();
-  try {
-    await mobile.waitForFunction(() => {
-      const text = document.querySelector("#readout")?.innerText || "";
-      return /Contact: (?!—)/.test(text);
-    }, undefined, { timeout: 45000 });
-  } catch (error) {
-    const diagnostics = await mobile.locator("#readout").innerText().catch(() => "readout unavailable");
-    console.log(JSON.stringify({ label: "mobile-center-high", diagnostics, pageErrors: failures }, null, 2));
-    await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact-failure.png", fullPage: true }).catch(() => {});
-    throw error;
-  }
-  const mobileContactReadout = await mobile.locator("#readout").innerText();
-  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact.png", fullPage: true });
+  const mobileCornerResults = [];
+  for (const test of cornerCases) mobileCornerResults.push(await verifyDirectionalShot(mobile, "mobile", ...test));
+  const mobileContactReadout = mobileCornerResults.join("\\n");
 
   assert.deepEqual(failures, [], "Browser runtime errors");
   console.log(JSON.stringify({
