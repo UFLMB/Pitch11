@@ -273,6 +273,10 @@ export class MatchPlayerRenderer {
       // while retaining vertical pelvis motion for natural gait bounce.
       if (/^(jog forward|jog backward|jog strafe left|jog strafe right)\.fbx$/i.test(file)) {
         flattenHorizontalRootMotion(clip);
+      } else if (/^goalkeeper diving save(?: \(2\))?\.fbx$/i.test(file)) {
+        // The keeper controller owns lateral world translation. Keep the dive vertical pelvis arc,
+        // but prevent the FBX Hips track from translating the skinned rig a second time in local X/Z.
+        flattenHorizontalRootMotion(clip);
       }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
       this.clipCache.set(file, clip);
