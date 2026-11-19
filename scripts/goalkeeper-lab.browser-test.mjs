@@ -89,10 +89,15 @@ try {
     console.log(label + " " + shot + " diagnostics: " + diagnostics.replace(/\\n/g, " | "));
     assert.match(diagnostics, new RegExp("AI v2: " + expectedSide.toUpperCase() + " / " + expectedHeight.toUpperCase() + " /"), label + " AI decision side/height mismatch for " + shot);
     assert.match(diagnostics, /Rig colliders: 15/, label + " rig collider count mismatch for " + shot);
-    assert.match(diagnostics, /REACHABLE/, label + " controlled calibration shot must be physically reachable for " + shot);
-    assert.ok(diagnostics.includes("Active FBX: " + expectedFile.replace(/\.fbx$/i, "")), label + " did not play the expected FBX file for " + shot + "; diagnostics: " + diagnostics);
-    if (expectedState !== "keeperParry") assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable low-dive calibration shot had no rig contact for " + shot);
-    else assert.match(diagnostics, /Active FBX: goalkeeper body block/, label + " high/mid threat did not use the safe body-block fallback for " + shot);
+    if (expectedState === "keeperMiss") {
+      assert.match(diagnostics, /OUT OF REACH/, label + " unsupported high shot must not trigger a save animation for " + shot);
+      assert.match(diagnostics, /GOAL · NO ANIMATED RIG CONTACT/, label + " unsupported high shot should remain a goal for " + shot);
+      assert.doesNotMatch(diagnostics, /Active FBX: goalkeeper (?:diving save|body block)/, label + " played an unsupported save clip for " + shot);
+    } else {
+      assert.match(diagnostics, /REACHABLE/, label + " controlled low calibration shot must be reachable for " + shot);
+      assert.ok(diagnostics.includes("Active FBX: " + expectedFile.replace(/\.fbx$/i, "")), label + " did not play the expected FBX file for " + shot + "; diagnostics: " + diagnostics);
+      assert.doesNotMatch(diagnostics, /Contact: —/, label + " reachable low-dive calibration shot had no rig contact for " + shot);
+    }
     await page.screenshot({ path: artifacts + "/goalkeeper-lab-" + label + "-" + shot + ".png", fullPage: true });
     console.log(label + " " + shot + ": " + diagnostics.replace(/\n/g, " | "));
     return diagnostics;
@@ -101,8 +106,8 @@ try {
   const cornerCases = [
     ["left-low", "left", "low", "keeperDiveLowLeft", "goalkeeper body block (2).fbx"],
     ["right-low", "right", "low", "keeperDiveLowRight", "goalkeeper body block (3).fbx"],
-    ["left-high", "left", "high", "keeperParry", "goalkeeper body block.fbx"],
-    ["right-high", "right", "high", "keeperParry", "goalkeeper body block.fbx"]
+    ["left-high", "left", "high", "keeperMiss", "goalkeeper idle.fbx"],
+    ["right-high", "right", "high", "keeperMiss", "goalkeeper idle.fbx"]
   ];
   const desktopCornerResults = [];
   for (const test of cornerCases) {
