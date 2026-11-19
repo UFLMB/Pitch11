@@ -110,13 +110,11 @@ export function evaluateGoalkeeperThreat({ball,keeper={},attributes={},environme
   let technique = "miss";
   if (reachable) {
     if (centralBodyCorridor && catchableSpeed && heightBand!=="high") technique="catch";
-    else if (edgeLoad>0.82 || (heightBand==="high" && crossing.y>p.cleanCatchHeight)) technique="fingertip";
     else technique="parry";
   }
   const leftWorldXDirection = Math.sign(finite(keeper.leftWorldXDirection ?? -1,"keeper.leftWorldXDirection")) || -1;
   const side = Math.abs(deltaX)<0.18?"center":deltaX*leftWorldXDirection>0?"left":"right";
   const animationState = technique==="catch"?"keeperCatch"
-    : technique==="fingertip"?"keeperFingertip"
     : technique==="parry"?(heightBand==="low" ? `keeperDiveLow${side==="left"?"Left":"Right"}` : `keeperDive${side==="left"?"Left":"Right"}`)
     : "keeperMiss";
   return Object.freeze({
