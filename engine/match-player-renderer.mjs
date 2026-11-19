@@ -307,8 +307,6 @@ export class MatchPlayerRenderer {
       ["keeperDiveLowRight", 0],
       ["keeperCatch", 0],
       ["keeperParry", 0],
-      ["keeperFingertip", 0, "left"],
-      ["keeperFingertip", 0, "right"],
       ["keeperScoop", 0],
       ["keeperPass", 0],
       ["keeperDropKick", 0],
