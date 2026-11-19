@@ -307,26 +307,28 @@ export class MatchPlayerRenderer {
       ["keeperDiveLowRight", 0],
       ["keeperCatch", 0],
       ["keeperParry", 0],
-      ["keeperFingertip", 0],
+      ["keeperFingertip", 0, "left"],
+      ["keeperFingertip", 0, "right"],
       ["keeperScoop", 0],
       ["keeperPass", 0],
       ["keeperDropKick", 0],
       ["getUp", 0]
     ];
-    const results = await Promise.allSettled(tests.map(([state, playerId]) => this.ensureMixamoState(state, playerId)));
+    const results = await Promise.allSettled(tests.map(([state, playerId, diveSide]) => this.ensureMixamoState(state, playerId, diveSide)));
     return results.map((result, index) => ({
       state: tests[index][0],
+      diveSide: tests[index][2] || null,
       ok: result.status === "fulfilled" && !!result.value,
       clip: result.status === "fulfilled" && result.value ? result.value.name : "",
       error: result.status === "rejected" ? result.reason?.message || String(result.reason) : ""
     }));
   }
 
-  ensureMixamoState(state, playerId) {
-    const key = `${state}:${playerId}`;
+  ensureMixamoState(state, playerId, diveSide = null) {
+    const key = `${state}:${playerId}:${diveSide || "default"}`;
     if (this.pendingStates.has(key)) return this.pendingStates.get(key);
     const promise = (async () => {
-      const candidates = resolveMixamoClipCandidates(state, playerId);
+      const candidates = resolveMixamoClipCandidates(state, playerId, diveSide);
       for (const file of candidates) {
         if (this.clipCache.has(file)) return this.clipCache.get(file);
         if (this.failedClips.has(file)) continue;
@@ -423,7 +425,7 @@ export class MatchPlayerRenderer {
       if (this.modelSource === "mixamo-fbx") {
         const candidates = resolveMixamoClipCandidates(animationState, state.id, state.diveSide);
         clip = candidates.map(file => this.clipCache.get(file)).find(Boolean) || null;
-        if (!clip) this.ensureMixamoState(animationState, state.id);
+        if (!clip) this.ensureMixamoState(animationState, state.id, state.diveSide);
       } else {
         clip = resolvePlayerClip(this.animations, animationState);
       }
