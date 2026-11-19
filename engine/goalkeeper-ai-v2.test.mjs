@@ -49,7 +49,7 @@ test("ball crossing below the ground is not a goal-mouth threat",()=>{
 });
 
 test("uses accelerated goal-plane crossing instead of assuming constant depth velocity",()=>{
- const linear=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-10});
+ const linear=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-8});
  const accelerated=predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:-8,az:-4});
  assert.ok(accelerated.time < linear.time);
 });
