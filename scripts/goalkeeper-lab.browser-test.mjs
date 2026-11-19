@@ -62,10 +62,26 @@ try {
 
   await desktop.locator("#ai-sequence").click();
   await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 150000 });
+  const desktopSequenceReadout = await desktop.locator("#readout").innerText();
+  assert.match(desktopSequenceReadout, /Rig colliders: 9/);
+  await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
+
+  await desktop.locator('[data-shot="center-low"]').click();
+  try {
+    await desktop.waitForFunction(() => {
+      const text = document.querySelector("#readout")?.innerText || "";
+      return /Contact: (?!—)/.test(text);
+    }, undefined, { timeout: 45000 });
+  } catch (error) {
+    const diagnostics = await desktop.locator("#readout").innerText().catch(() => "readout unavailable");
+    console.log(JSON.stringify({ label: "desktop-center-low", diagnostics, pageErrors: failures }, null, 2));
+    await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact-failure.png", fullPage: true }).catch(() => {});
+    throw error;
+  }
   const desktopReadout = await desktop.locator("#readout").innerText();
   assert.match(desktopReadout, /Rig colliders: 9/);
-  assert.doesNotMatch(desktopReadout, /Contact: —/, "The five-shot AI sequence must produce at least one real animated-rig contact");
-  await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
+  assert.doesNotMatch(desktopReadout, /Contact: —/, "Center-low AI shot must reach an animated goalkeeper collider");
+  await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-contact.png", fullPage: true });
 
   const mobileContext = await browser.newContext({
     viewport: { width: 384, height: 850 },
@@ -74,15 +90,23 @@ try {
     hasTouch: true
   });
   const mobile = await openLab(mobileContext, "mobile");
-  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png", fullPage: true });
+  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png",
+      artifacts + "/goalkeeper-lab-mobile-contact.png", fullPage: true });
   const mobileReadout = await mobile.locator("#readout").innerText();
   assert.match(mobileReadout, /Rig colliders: 9/);
+  await mobile.locator('[data-shot="center-low"]').click();
+  await mobile.waitForFunction(() => {
+    const text = document.querySelector("#readout")?.innerText || "";
+    return /Contact: (?!—)/.test(text);
+  }, undefined, { timeout: 45000 });
+  const mobileContactReadout = await mobile.locator("#readout").innerText();
+  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-contact.png", fullPage: true });
 
   assert.deepEqual(failures, [], "Browser runtime errors");
   console.log(JSON.stringify({
     result: "PASS",
     desktop: { status: await desktop.locator("#status").innerText(), sequence: desktopReadout },
-    mobile: { status: await mobile.locator("#status").innerText(), diagnostics: mobileReadout },
+    mobile: { status: await mobile.locator("#status").innerText(), diagnostics: mobileContactReadout },
     screenshots: [
       artifacts + "/goalkeeper-lab-desktop-ready.png",
       artifacts + "/goalkeeper-lab-desktop-sequence.png",
