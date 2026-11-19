@@ -26,8 +26,8 @@ test("builds hand, arm and torso colliders from Mixamo rig bones", () => {
   });
   assert.deepEqual(colliders.map(item => item.id), [
     "left-upper-arm", "left-forearm", "left-hand",
-    "right-upper-arm", "right-forearm", "right-hand",
     "left-upper-leg", "left-lower-leg", "left-foot",
+    "right-upper-arm", "right-forearm", "right-hand",
     "right-upper-leg", "right-lower-leg", "right-foot",
     "pelvis-core", "chest-core", "upper-chest"
   ]);
