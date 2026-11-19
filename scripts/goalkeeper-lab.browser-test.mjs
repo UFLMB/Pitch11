@@ -30,7 +30,7 @@ async function openLab(context, label) {
     await page.waitForFunction(() => {
       const status = document.querySelector("#status")?.textContent || "";
       return /^(?:3D KEEPER|FALLBACK MODEL|MODEL ERROR)/.test(status.trim());
-    }, undefined, { timeout: 90000 });
+    }, undefined, { timeout: 45000 });
   } catch (error) {
     const status = await page.locator("#status").innerText().catch(() => "status unavailable");
     const diagnostics = await page.locator("#readout").innerText().catch(() => "readout unavailable");
@@ -62,7 +62,7 @@ try {
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-ready.png", fullPage: true });
 
   await desktop.locator("#ai-sequence").click();
-  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 150000 });
+  await desktop.waitForFunction(() => (document.querySelector("#readout")?.innerText || "").includes("5-SHOT TEST COMPLETE"), undefined, { timeout: 60000 });
   const desktopSequenceReadout = await desktop.locator("#readout").innerText();
   assert.match(desktopSequenceReadout, /Rig colliders: 15/);
   await desktop.screenshot({ path: artifacts + "/goalkeeper-lab-desktop-sequence.png", fullPage: true });
