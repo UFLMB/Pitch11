@@ -6,7 +6,7 @@ const finiteVector = (value, name) => {
 };
 
 const mixamoName = value => String(value || "")
-  .replace(/^mixamorig\\d*:/i, "")
+  .replace(/^mixamorig\d*:/i, "")
   .replace(/[^a-z0-9]/gi, "")
   .toLowerCase();
 
