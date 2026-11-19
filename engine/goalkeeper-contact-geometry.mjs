@@ -44,9 +44,15 @@ export function buildGoalkeeperContactColliders(bonePositions) {
     const shoulder = get(cap + "Arm", cap + "Shoulder");
     const elbow = get(cap + "ForeArm");
     const hand = get(cap + "Hand");
+    const upperLeg = get(cap + "UpLeg", cap + "Thigh");
+    const lowerLeg = get(cap + "Leg", cap + "Calf");
+    const foot = get(cap + "Foot");
     add(side + "-upper-arm", "arm", side, shoulder, elbow, 0.105);
     add(side + "-forearm", "arm", side, elbow, hand, 0.09);
     add(side + "-hand", "hand", side, hand, hand, 0.145);
+    add(side + "-upper-leg", "leg", side, upperLeg, lowerLeg, 0.125);
+    add(side + "-lower-leg", "leg", side, lowerLeg, foot, 0.105);
+    add(side + "-foot", "foot", side, foot, foot, 0.125);
   }
 
   const hips = get("Hips");
