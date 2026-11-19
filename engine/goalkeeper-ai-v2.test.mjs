@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateGoalkeeperThreat, predictGoalPlaneCrossing } from "./goalkeeper-ai-v2.mjs";
-const ballTo=(x,y,time,speed=18)=>({x:0,y,z:speed*time,vx:x/time,vy:0,vz:-speed});
+const ballTo=(x,y,time,speed=18)=>({x:0,y:y+0.5*9.81*time*time,z:speed*time,vx:x/time,vy:0,vz:-speed});
 test("predicts goal-line crossing from live ball position and velocity",()=>{
  const c=predictGoalPlaneCrossing({x:0,y:1,z:9,vx:1,vy:0,vz:-18});
  assert.ok(Math.abs(c.time-.5)<1e-9); assert.ok(Math.abs(c.x-.5)<1e-9); assert.ok(c.y<1);
@@ -11,7 +11,7 @@ test("no crossing is returned when the ball is not moving toward goal",()=>{
  assert.equal(predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:0}),null);
 });
 test("close central moderate-speed shot can be caught",()=>{
- const r=evaluateGoalkeeperThreat({ball:{x:0,y:1.1,z:4,vx:0,vy:0,vz:-12},keeper:{x:0,vx:0},attributes:{reflexes:80,positioning:80,handling:85,reach:75,diving:75}});
+ const r=evaluateGoalkeeperThreat({ball:{x:0,y:1.1+0.5*9.81*(4/12)**2,z:4,vx:0,vy:0,vz:-12},keeper:{x:0,vx:0},attributes:{reflexes:80,positioning:80,handling:85,reach:75,diving:75}});
  assert.equal(r.reachable,true); assert.equal(r.technique,"catch");
 });
 test("fast corner shot can beat a high-rated keeper",()=>{
