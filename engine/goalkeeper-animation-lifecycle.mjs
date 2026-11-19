@@ -40,5 +40,5 @@ export class GoalkeeperAnimationLifecycle {
   get canStartNext(){return this.state.phase==="idle"||TERMINAL.has(this.state.phase);}
 }
 
-// States that must play once. In particular, fingertip is not a looping pose.
-export const GOALKEEPER_ONE_SHOT_STATES=Object.freeze(["keeperDiveLeft","keeperDiveRight","keeperDiveLowLeft","keeperDiveLowRight","keeperCatch","keeperParry","keeperScoop","keeperMiss","keeperFingertip","keeperDropKick","keeperThrow","keeperPlace"]);
+// States that must play once.
+export const GOALKEEPER_ONE_SHOT_STATES=Object.freeze(["keeperDiveLeft","keeperDiveRight","keeperDiveLowLeft","keeperDiveLowRight","keeperCatch","keeperParry","keeperScoop","keeperMiss","keeperDropKick","keeperThrow","keeperPlace"]);
