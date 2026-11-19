@@ -2,7 +2,7 @@ name: Goalkeeper Lab browser regression
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, rebuild/goalkeeper-ai-v2-animation]
     paths:
       - "goalkeeper-lab.html"
       - "engine/goalkeeper-*.mjs"
