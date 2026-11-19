@@ -24,10 +24,10 @@ async function openLab(context, label) {
   await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForFunction(() => {
     const status = document.querySelector("#status")?.textContent || "";
-    return /3D KEEPER|FALLBACK MODEL|MODEL ERROR/.test(status);
+    return /^(?:3D KEEPER|FALLBACK MODEL|MODEL ERROR)/.test(status.trim());
   }, { timeout: 90000 });
   const status = await page.locator("#status").innerText();
-  assert.match(status, /3D KEEPER/i, label + " did not load the Mixamo goalkeeper model: " + status);
+  assert.match(status, /^3D KEEPER/i, label + " did not load the Mixamo goalkeeper model: " + status);
   try {
     await page.waitForFunction(() => {
       const text = document.querySelector("#readout")?.innerText || "";
