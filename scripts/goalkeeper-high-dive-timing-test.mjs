@@ -17,21 +17,21 @@ async function runViewport(label, viewport, isMobile, cases) {
   page.on("console", message => { if (message.type() === "error") runtimeErrors.push(label + " console: " + message.text()); });
   page.on("requestfailed", request => runtimeErrors.push(label + " request failed: " + request.url()));
   await page.goto(baseURL, { waitUntil: "domcontentloaded", timeout: 20000 });
-  await page.waitForFunction(() => /^3D KEEPER/i.test(document.querySelector("#status")?.textContent?.trim() || ""), { timeout: 45000 });
-  await page.waitForFunction(() => /Rig colliders: 15/.test(document.querySelector("#readout")?.innerText || ""), { timeout: 15000 });
+  await page.waitForFunction(() => /^3D KEEPER/i.test(document.querySelector("#status")?.textContent?.trim() || ""), undefined, { timeout: 45000 });
+  await page.waitForFunction(() => /Rig colliders: 15/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 15000 });
   await page.locator("#ai-mode").click();
 
   for (const test of cases) {
     const [shot, side, seconds] = test;
     await page.locator('[data-action="reset"]').click();
-    await page.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), { timeout: 12000 });
+    await page.waitForFunction(() => /^Phase: IDLE/m.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 12000 });
     await page.evaluate(value => { window.__GK_TEST_FLIGHT_TIME = value; }, seconds);
     await page.locator('[data-shot="' + shot + '"]').click();
     await page.waitForFunction(() => {
       const text = document.querySelector("#readout")?.innerText || "";
       return /AI v2: (?:LEFT|RIGHT|CENTER) \/ (?:LOW|MID|HIGH) \/ /.test(text) &&
         (/Contact: (?!—)/.test(text) || /GOAL · NO ANIMATED RIG CONTACT|KEEPER CANNOT REACH/.test(text));
-    }, { timeout: 18000 });
+    }, undefined, { timeout: 18000 });
     const readout = await page.locator("#readout").innerText();
     const contact = /Contact: (?!—)/.test(readout);
     const closest = readout.match(/Min gap: ([^<\n]+)/)?.[1] || "unavailable";
