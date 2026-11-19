@@ -43,7 +43,6 @@ let PW=1050,PH=680,PX0=60,PY0=60,PX1=PX0+PW,PY1=PY0+PH,CX=PX0+PW/2,CY=PY0+PH/2,W
 let GOALH=36.6,GOALD=22,GOALZ=24,BR=4,BVR=1.1,BALL_SCALE=1,PLAYER_SCALE=1;
 const BALL_GRAV=98.1,KG=0.12,KA=0.08,ROLL_DECEL=42,FG=Math.exp(-KG*DT),FA=Math.exp(-KA*DT); // 1 unit = 10 cm; rolling resistance is 2.4 m/s²
 const RUN=72,SPRINT=1.38;                               // player speeds (units/s)
-const GK_REACT=[0.22,0.5],GK_ERR=36,GK_DIVE=120;       // goalkeeper tuning: reaction s, aim error, dive speed
 // 4-3-3: [depth 0..1 from own goal, width 0..1]; index 0 = GK
 const FORM=[[.03,.5],[.2,.1],[.18,.37],[.18,.63],[.2,.9],[.4,.25],[.36,.5],[.4,.75],[.62,.14],[.66,.5],[.62,.86]];
 const KIT=[{name:'BLU',shirt:'#1f6fff',shorts:'#ffffff',gk:'#f2c200'},{name:'RED',shirt:'#e5342b',shorts:'#1b1b1b',gk:'#27c46b'}];
