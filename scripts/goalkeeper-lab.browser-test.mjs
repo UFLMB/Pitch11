@@ -90,8 +90,7 @@ try {
     hasTouch: true
   });
   const mobile = await openLab(mobileContext, "mobile");
-  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png",
-      artifacts + "/goalkeeper-lab-mobile-contact.png", fullPage: true });
+  await mobile.screenshot({ path: artifacts + "/goalkeeper-lab-mobile-ready.png", fullPage: true });
   const mobileReadout = await mobile.locator("#readout").innerText();
   assert.match(mobileReadout, /Rig colliders: 9/);
   await mobile.locator('[data-shot="center-low"]').click();
