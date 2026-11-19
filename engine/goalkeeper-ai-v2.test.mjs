@@ -11,7 +11,7 @@ test("no crossing is returned when the ball is not moving toward goal",()=>{
  assert.equal(predictGoalPlaneCrossing({x:0,y:1,z:8,vx:0,vy:0,vz:0}),null);
 });
 test("close central moderate-speed shot can be caught",()=>{
- const r=evaluateGoalkeeperThreat({ball:{x:0,y:1.1+0.5*9.81*(4/12)**2,z:4,vx:0,vy:0,vz:-12},keeper:{x:0,vx:0},attributes:{reflexes:80,positioning:80,handling:85,reach:75,diving:75}});
+ const r=evaluateGoalkeeperThreat({ball:{x:0,y:1.1+0.5*9.81*(4/8)**2,z:4,vx:0,vy:0,vz:-8},keeper:{x:0,vx:0},attributes:{reflexes:80,positioning:80,handling:85,reach:75,diving:75}});
  assert.equal(r.reachable,true); assert.equal(r.technique,"catch");
 });
 test("fast corner shot can beat a high-rated keeper",()=>{
@@ -19,7 +19,7 @@ test("fast corner shot can beat a high-rated keeper",()=>{
  assert.equal(r.reachable,false); assert.equal(r.outcome,"goal-likely");
 });
 test("very short reaction window beats the keeper",()=>{
- const r=evaluateGoalkeeperThreat({ball:ballTo(.2,1,.12,24),keeper:{x:0},attributes:{reflexes:99}});
+ const r=evaluateGoalkeeperThreat({ball:ballTo(.2,1,.04,24),keeper:{x:0},attributes:{reflexes:99}});
  assert.equal(r.reason,"reaction-window-expired");
 });
 test("outside-mouth shots are not classified as saves",()=>{
