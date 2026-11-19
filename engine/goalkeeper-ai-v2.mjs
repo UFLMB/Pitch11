@@ -73,7 +73,6 @@ export function evaluateGoalkeeperThreat({ball,keeper={},attributes={},environme
   const keeperX = finite(keeper.x ?? 0,"keeper.x");
   const keeperVelocityX = finite(keeper.vx ?? 0,"keeper.vx");
   const reflex = clamp(finite(attributes.reflexes ?? 50,"attributes.reflexes"),1,99);
-  const positioning = clamp(finite(attributes.positioning ?? 50,"attributes.positioning"),1,99);
   const diving = clamp(finite(attributes.diving ?? 50,"attributes.diving"),1,99);
   const handling = clamp(finite(attributes.handling ?? 50,"attributes.handling"),1,99);
   const reach = clamp(finite(attributes.reach ?? 50,"attributes.reach"),1,99);
