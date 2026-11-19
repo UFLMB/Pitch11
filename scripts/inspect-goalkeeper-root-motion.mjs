@@ -6,6 +6,7 @@ import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { validateDirectMixamoClip } from "../engine/match-player-renderer.mjs";
+import { flattenHorizontalRootMotion } from "../engine/locomotion-animation.mjs";
 
 const files = [
   "goalkeeper diving save.fbx",
@@ -153,6 +154,7 @@ for (const file of files) {
   // runtime character skeleton, rather than measuring the animation-only FBX.
   const binding = validateDirectMixamoClip(runtimeTemplate.root, sourceClip);
   const clip = binding.clip;
+  flattenHorizontalRootMotion(clip);
   const model = cloneSkeleton(runtimeTemplate.root);
   model.updateMatrixWorld(true);
 
@@ -232,12 +234,19 @@ for (const file of files) {
       const localPosition = bone.position.clone();
       const modelWorld = bone.getWorldPosition(new THREE.Vector3());
       const gameWorld = modelWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+      const keeperYaw = Math.PI; // MatchPlayerRenderer: -keeper.face + PI/2, with keeper.face = -PI/2.
+      const keeperRootX = file === "goalkeeper diving save.fbx" ? -1.62 : 1.62;
+      const keeperRootZ = 33.2;
+      const keeperWorld = modelWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), keeperYaw);
+      keeperWorld.x += keeperRootX;
+      keeperWorld.z += keeperRootZ;
       const quaternion = bone.getWorldQuaternion(new THREE.Quaternion()).normalize();
       const euler = new THREE.Euler().setFromQuaternion(quaternion, "YXZ");
       pose[name] = {
         localPosition: [localPosition.x, localPosition.y, localPosition.z].map(v => Number(v.toFixed(4))),
         scaledAnchoredModelWorldPosition: [modelWorld.x, modelWorld.y, modelWorld.z].map(v => Number(v.toFixed(4))),
         gameWorldPositionAtYaw90: [gameWorld.x, gameWorld.y, gameWorld.z].map(v => Number(v.toFixed(4))),
+        keeperWorldPositionAtRuntimeYaw: [keeperWorld.x, keeperWorld.y, keeperWorld.z].map(v => Number(v.toFixed(4))),
         worldEulerYXZDeg: [euler.x, euler.y, euler.z].map(v => Number(THREE.MathUtils.radToDeg(v).toFixed(2)))
       };
     }
@@ -261,6 +270,7 @@ for (const file of files) {
       groundAnchorOffset: Number(gameGroundOffset.toFixed(6))
     },
     positionTrackDetails,
+    productionRootMotion: clip.userData,
     matchedSkeletonBones: relevantBones.filter(name => bones.has(name)),
     missingSkeletonBones: relevantBones.filter(name => !bones.has(name)),
     quaternionTracks: selectedTracks,
