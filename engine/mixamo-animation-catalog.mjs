@@ -88,8 +88,6 @@ const STATE_FILES = Object.freeze({
   keeperDiveLowRight: ["goalkeeper body block (3).fbx"],
   keeperParry: ["goalkeeper body block.fbx", "goalkeeper body block (2).fbx", "goalkeeper body block (3).fbx"],
   keeperScoop: ["goalkeeper scoop.fbx"],
-  // High saves use the existing directional dive clips; the unverified "miss" clip is not a save animation.
-  keeperFingertip: ["goalkeeper diving save.fbx", "goalkeeper diving save (2).fbx"],
   keeperMiss: ["goalkeeper diving save.fbx", "goalkeeper diving save (2).fbx"],
   keeperPass: ["goalkeeper pass.fbx"],
   keeperDropKick: ["goalkeeper drop kick.fbx"],
@@ -98,7 +96,7 @@ const STATE_FILES = Object.freeze({
 });
 
 export function resolveMixamoClipCandidates(state, playerId = 0, diveSide = null) {
-  if (state === "keeperFingertip" || state === "keeperMiss") {
+  if (state === "keeperMiss") {
     return [diveSide === "left" ? "goalkeeper diving save (2).fbx" : "goalkeeper diving save.fbx"];
   }
   const files = STATE_FILES[state] || STATE_FILES.idle;
