@@ -11,10 +11,11 @@ import { flattenHorizontalRootMotion } from "../engine/locomotion-animation.mjs"
 const files = [
   "goalkeeper diving save.fbx",
   "goalkeeper diving save (2).fbx",
+  "goalkeeper miss.fbx",
   "goalkeeper body block (2).fbx",
   "goalkeeper body block (3).fbx"
 ];
-const sampleFractions = [0, 0.25, 0.5, 0.75, 1];
+const sampleFractions = Array.from({ length: 11 }, (_, index) => index / 10);
 const relevantBones = [
   "hips", "spine", "spine1", "spine2", "neck",
   "leftarm", "leftforearm", "lefthand", "rightarm", "rightforearm", "righthand",
@@ -235,7 +236,7 @@ for (const file of files) {
       const modelWorld = bone.getWorldPosition(new THREE.Vector3());
       const gameWorld = modelWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
       const keeperYaw = Math.PI; // MatchPlayerRenderer: -keeper.face + PI/2, with keeper.face = -PI/2.
-      const keeperRootX = file === "goalkeeper diving save.fbx" ? -1.62 : 1.62;
+      const keeperRootX = file === "goalkeeper diving save.fbx" ? -1.62 : file === "goalkeeper diving save (2).fbx" ? 1.62 : 0;
       const keeperRootZ = 33.2;
       const keeperWorld = modelWorld.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), keeperYaw);
       keeperWorld.x += keeperRootX;
