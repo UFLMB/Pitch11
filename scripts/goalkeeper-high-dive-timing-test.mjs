@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import { chromium } from "playwright";
 
 const baseURL = process.env.GK_LAB_URL || "http://127.0.0.1:4173/goalkeeper-lab.html";
@@ -52,7 +53,10 @@ try {
   ]);
   assert.deepEqual(runtimeErrors, [], "Browser runtime errors");
   assert.equal(results.length, 6, "All six timing probes must complete");
-  console.log(JSON.stringify({ result: "DIAGNOSTIC_COMPLETE", contactCount: results.filter(x => x.contact).length, probes: results }, null, 2));
+  const report = { result: "DIAGNOSTIC_COMPLETE", contactCount: results.filter(x => x.contact).length, probes: results };
+  fs.mkdirSync("artifacts", { recursive: true });
+  fs.writeFileSync("artifacts/goalkeeper-high-dive-timing.json", JSON.stringify(report, null, 2));
+  console.log(JSON.stringify(report, null, 2));
 } finally {
   await browser.close();
 }
