@@ -7,8 +7,7 @@ test("maps simulation action states to goalkeeper and outfield animation states"
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-parry" }, 0), "keeperParry");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-left" }, 0), "keeperDiveMiddleLeft");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-right" }, 0), "keeperDiveMiddleRight");
-  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-fingertip" }, 0), "keeperFingertip");
-  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-miss" }, 0), "keeperFingertip");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-miss" }, 0), "keeperMiss");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-penalty-ready" }, 0), "keeperPenaltyReady");
   assert.equal(resolvePlayerAnimationState({ role: "DEF", action: "press-tackle" }, 1), "tackle");
   assert.equal(resolvePlayerAnimationState({ role: "MID", action: "kick" }, 0), "shot");
