@@ -46,8 +46,7 @@ import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
-import { clampRootMotionDeltaToTarget } from "./engine/locomotion-animation.mjs";
-import { createGoalkeeperAnimationController, getGoalkeeperReturnStep, isGoalkeeperSaveClipComplete, selectGoalkeeperReturnClip, shouldPreserveGoalkeeperAnimationAfterShot, transitionGoalkeeperPhase } from "./engine/goalkeeper-animation-controller.mjs";
+import { createGoalkeeperAnimationController, isGoalkeeperSaveClipComplete, shouldPreserveGoalkeeperAnimationAfterShot, transitionGoalkeeperPhase } from "./engine/goalkeeper-animation-controller.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
@@ -124,43 +123,14 @@ function detectKeeperBallContact(){
 }
 function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.bone.toUpperCase();shot=null;ball.visible=false;if(!shouldPreserveGoalkeeperAnimationAfterShot(phase)){keeper.dive=0;setPhase("idle")}return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
 function beginKeeperReturn(){
- const files=["goalkeeper sidestep.fbx","goalkeeper sidestep (2).fbx"];
- const target={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
- const best=selectGoalkeeperReturnClip(files.map(file=>({file,displacement:keeperRenderer.getRootMotionWorldDisplacement(file,0)})).filter(item=>item.displacement),target);
+ // Recovery has exactly one owner: the simulation position controller.
+ // Do not combine extracted sidestep root motion with engine interpolation.
  keeper.dive=0;keeper.diveRecover=0;keeper.vx=keeper.vy=0;
- keeper.animationOverride="keeper-move";
- keeper.manualClipFile=best?.file||"";
- keeper.returnFallback=!best;
- keeper.returnMotionTime=0;
- if(best)keeper.manualClipToken=(keeper.manualClipToken||0)+1;
+ keeper.animationOverride="keeper-set";
+ keeper.manualClipFile="";
+ keeper.returnFallback=false;
  setPhase("return");
- shotResult=best?"RETURN · ROOT-MOTION · "+best.file:"RETURN · NO VALID SIDESTEP ROOT TRACK";
-}
-function applyKeeperRootMotion(dt){
- if(phase!=="return"||keeper.returnFallback)return;
- const entry=keeperRenderer.players.get(0);
- const delta=keeperRenderer.consumeRootMotionDelta(dt,0);
- if(!entry)return;
- const remaining={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
- const distance=Math.hypot(remaining.x,remaining.z);
- const recoveryStep=getGoalkeeperReturnStep({distance,rootMotionAvailable:!keeper.returnFallback,rootMotionMagnitude:Math.hypot(delta.x,delta.z)});
- if(recoveryStep==="complete"){
-  keeper.x=keeper.px=585;keeper.y=keeper.py=730;keeper.vx=keeper.vy=0;
-  keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle");return;
- }
- if(recoveryStep==="settle"){
-  const nextX=THREE.MathUtils.damp(keeper.x,585,12,dt);
-  const nextY=THREE.MathUtils.damp(keeper.y,730,12,dt);
-  keeper.x=keeper.px=nextX;keeper.y=keeper.py=nextY;
-  return;
- }
- if(recoveryStep==="wait"||Math.hypot(delta.x,delta.z)<1e-9)return;
- const step=clampRootMotionDeltaToTarget(delta,remaining);
- if(Math.hypot(step.x,step.z)<1e-6)return;
- keeper.x=keeper.px=keeper.x+step.x*10;
- keeper.y=keeper.py=keeper.y+step.z*10;
- keeper.vx=keeper.vy=0;
- entry.group.position.set(keeper.x,keeperRenderer.groundHeight,keeper.y);
+ shotResult="RETURN · SINGLE POSITION CONTROLLER";
 }
 function updateKeeper(dt){
  if(phase==="action"){
@@ -209,19 +179,16 @@ function updateKeeper(dt){
    beginKeeperReturn();
   }
  }else if(phase==="return"){
-  // If an imported sidestep has no usable horizontal root track, retain a
-  // smooth engine fallback rather than leaving the keeper stranded.
-  if(keeper.returnFallback){
-   keeper.x=keeper.px=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
-   keeper.y=keeper.py=THREE.MathUtils.damp(keeper.y,730,5.5,dt);
-   if(Math.hypot((585-keeper.x)*.1,(730-keeper.y)*.1)<.018){
-    keeper.x=keeper.px=585;keeper.y=keeper.py=730;keeper.vx=keeper.vy=0;
-    keeper.animationOverride="";setPhase("idle");
-   }
+  // Critically damp the single authoritative world position. The keeper-set
+  // pose remains active while the simulation moves the group back to home.
+  keeper.x=keeper.px=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
+  keeper.y=keeper.py=THREE.MathUtils.damp(keeper.y,730,5.5,dt);
+  keeper.vx=keeper.vy=0;
+  if(Math.hypot((585-keeper.x)*.1,(730-keeper.y)*.1)<.018){
+   keeper.x=keeper.px=585;keeper.y=keeper.py=730;
+   keeper.animationOverride="";keeper.manualClipFile="";
+   setPhase("idle");
   }
-  // Otherwise the renderer supplies one root-motion delta per animation
-  // update. Position changes are applied after mixer.update(), never in
-  // parallel with a second engine-driven return interpolation.
  }else if(phase==="miss"){
   phaseTimer-=dt;
   if(phaseTimer<=0){
@@ -243,7 +210,7 @@ function updateReadout(){
  readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+failureLine;
 }
 const clock=new THREE.Clock();let last=0;
-function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);if(aiMode&&shot&&!aiDecisionFired){aiReactionTimer-=dt;if(aiReactionTimer<=0){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="AI DECISION · CANNOT REACH"}}updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);applyKeeperRootMotion(dt);
+function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);if(aiMode&&shot&&!aiDecisionFired){aiReactionTimer-=dt;if(aiReactionTimer<=0){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="AI DECISION · CANNOT REACH"}}updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);
  if(!aiMode&&shot&&!aiDecisionFired&&shot.elapsed>=aiDecision?.reactionTime){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="KEEPER · OUT OF REACH"} }renderer.render(scene,camera);updateReadout()}
 // Start rendering immediately; keep the scene and diagnostics live while assets load.
 frame();
