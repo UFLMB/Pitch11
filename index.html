@@ -630,7 +630,7 @@ function gkReact(p){                                       // save only a genuin
   if(sp>340&&q>0.5&&Math.random()<0.35*(2-p.st.def))return;
   b.x=cx;b.y=cy;
   const hold=sp<(175-q*52)*hd||(sp<(335-q*95)*hd&&Math.random()<0.36*hd);
-  if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p,true);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
+  if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p,true);p.dive=0;p.diveAnimation=false;p.diveAnimationFinished=false;p.diveHeight="";p.vx=p.vy=0;p.freeze=0.2;}
   else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;applyOffsideTouch(p,previousLast,true,true);}
   else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);
     b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;applyOffsideTouch(p,previousLast,true,true);}
@@ -916,7 +916,7 @@ function setupKickoff(team){
     let along=f[0]*PW*0.9;
     if(!p.gk)along=Math.min(along,PW/2-(p.team===team?22:110));
     p.x=p.px=d>0?PX0+along:PX1-along;p.y=p.py=PY0+(d>0?f[1]:1-f[1])*PH;
-    p.vx=p.vy=p.ix=p.iy=p.turn=0;p.face=d>0?0:Math.PI;p.stun=p.kcd=p.tcd=p.dive=p.freeze=p.react=0;p.diveRecover=0;p.sp=false;p.force=false;p.down=false;p.skill=p.jump=0;p.mk=null;p.rt=0;p.stam=Math.min(1,p.stam+0.3);
+    p.vx=p.vy=p.ix=p.iy=p.turn=0;p.face=d>0?0:Math.PI;p.stun=p.kcd=p.tcd=p.dive=p.freeze=p.react=0;p.diveRecover=0;p.diveAnimation=false;p.diveAnimationFinished=false;p.diveHeight="";p.sp=false;p.force=false;p.down=false;p.skill=p.jump=0;p.mk=null;p.rt=0;p.stam=Math.min(1,p.stam+0.3);
   }
   const tk=firstIn(team),d=dirOf(team);
   tk.x=tk.px=CX-d*10;tk.y=tk.py=CY;tk.freeze=0.4;
@@ -5252,6 +5252,14 @@ aiGK=function(p){
       const dist=Math.hypot(tx-p.x,ty-p.y),travel=p.dive*Math.hypot(p.vx,p.vy);
       if(dist<6){p.dive=0;p.vx=p.vy=0;}
       else if(dist>travel+4){p.dive=0;p.vx=p.vy=0;goTo(p,tx,ty,false);}
+      // Keep the legacy AI's dive/reach decisions. This metadata only chooses
+      // the matching reviewed FBX and lets its full recovery animation finish.
+      if(p.dive>0){
+        const goalLineHeight=ball.z+ball.vz*tt-0.5*BALL_GRAV*tt*tt;
+        p.diveHeight=goalLineHeight<=8?"low":goalLineHeight<=16?"middle":"high";
+        p.diveAnimation=true;
+        p.diveAnimationFinished=false;
+      }
     }
   }
 };
