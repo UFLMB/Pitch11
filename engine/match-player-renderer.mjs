@@ -1,8 +1,6 @@
 import * as THREE from "../vendor/three/build/three.module.js";
-import { GLTFLoader } from "../vendor/three/examples/jsm/loaders/GLTFLoader.js";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
-import { MeshoptDecoder } from "../vendor/three/examples/jsm/libs/meshopt_decoder.module.js";
 import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
@@ -126,7 +124,6 @@ export class MatchPlayerRenderer {
   constructor(scene, {
     mobile = false,
     modelUrl = new URL("../input/player-model-candidate/character.fbx", import.meta.url).href,
-    fallbackModelUrl = new URL("../assets/players/player.glb", import.meta.url).href,
     modelLoadTimeoutMs = 0,
     castShadows = false
   } = {}) {
@@ -134,11 +131,9 @@ export class MatchPlayerRenderer {
     this.mobile = !!mobile;
     this.groundHeight = 0;
     this.modelUrl = modelUrl;
-    this.fallbackModelUrl = fallbackModelUrl;
     this.modelLoadTimeoutMs = Math.max(0, Number(modelLoadTimeoutMs) || 0);
     this.castShadows = !!castShadows;
     this.fbxLoader = new FBXLoader();
-    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.template = null;
     this.animations = [];
     this.players = new Map();
@@ -177,7 +172,7 @@ export class MatchPlayerRenderer {
             fbxRequest,
             new Promise((_, reject) => {
               timeoutId = setTimeout(() => reject(new Error(
-                `Mixamo FBX load timed out after ${this.modelLoadTimeoutMs} ms; using the lightweight GLB fallback`
+                `Mixamo FBX load timed out after ${this.modelLoadTimeoutMs} ms`
               )), this.modelLoadTimeoutMs);
             })
           ]);
@@ -210,49 +205,9 @@ export class MatchPlayerRenderer {
       this.clipCache.clear();
       this.clipPromises.clear();
       this.failedClips.clear();
-    }
-
-    this.status = "loading-fallback-model";
-    try {
-      const gltf = await loadWithTimeout(this.loader.loadAsync(this.fallbackModelUrl), this.modelLoadTimeoutMs, "Fallback player GLB");
-      const template = gltf.scene;
-      template.updateMatrixWorld(true);
-      const stats = inspectSkinnedModel(template);
-      if (!stats.skinnedMeshes) throw new Error("Fallback player.glb contains no skinned mesh");
-      this.template = template;
-      this.modelSource = "legacy-glb-fallback";
-      this.modelTriangleCount = stats.triangleCount;
-      this.modelDiagnostics = inspectModelGeometry(template);
-      this.boneNames = stats.boneNames;
-      this.status = "loading-fallback-animations";
-      const clipFiles = [
-        { name: "Idle", url: new URL("../assets/players/idle.glb", import.meta.url).href },
-        { name: "Walk", url: new URL("../assets/players/walk.glb", import.meta.url).href },
-        { name: "Run", url: new URL("../assets/players/run.glb", import.meta.url).href }
-      ];
-      const clipResults = await Promise.allSettled(clipFiles.map(async source => {
-        const clipAsset = await loadWithTimeout(this.loader.loadAsync(source.url), this.modelLoadTimeoutMs, `${source.name} fallback animation`);
-        const sourceClip = clipAsset.animations?.[0];
-        if (!sourceClip) throw new Error(`${source.name} animation file contains no animation clip`);
-        const clip = sourceClip.clone();
-        clip.name = source.name;
-        return clip;
-      }));
-      this.animations = [];
-      const animationErrors = [];
-      clipResults.forEach((result, index) => {
-        if (result.status === "fulfilled") this.animations.push(result.value);
-        else animationErrors.push(`${clipFiles[index].name}: ${result.reason?.message || String(result.reason)}`);
-      });
-      this.clipCount = this.animations.length;
-      this.error = [this.mixamoError, ...animationErrors].filter(Boolean).join("; ");
-      this.status = "ready";
-    } catch (error) {
-      this.template = null;
-      this.animations = [];
-      this.clipCount = 0;
       this.status = "asset-error";
-      this.error = [this.mixamoError, error?.message || String(error || "Player model unavailable")].filter(Boolean).join("; ");
+      this.error = this.mixamoError;
+      return;
     }
   }
 
