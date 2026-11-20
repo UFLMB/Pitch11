@@ -84,6 +84,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
     number: Number(player.num) || 0,
     stamina: Math.max(0, Math.min(1, Number(player.stam) || 0)),
     winded: !!player.winded,
+    manualClipFile: typeof player.manualClipFile === "string" ? player.manualClipFile : "",
     skinTone: SKIN_TONES[id % SKIN_TONES.length],
     hairTone: HAIR_TONES[(id * 3 + team) % HAIR_TONES.length],
     visible: !player.out
