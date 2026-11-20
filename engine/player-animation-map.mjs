@@ -12,7 +12,6 @@ const CLIP_ALIASES = Object.freeze({
   keeperDirect: ["gkdirect", "keeperdirecting"],
   keeperScoop: ["gkscoop", "keeperscoop"],
   keeperMiss: ["gkmiss", "keepermiss"],
-  keeperFingertip: ["gkfingertip", "fingertipsave", "keeperfingertip"],
   keeperPenaltyReady: ["gkpenaltyready", "penaltyready", "keeperpenaltyready"],
   keeperPass: ["gkpass", "keeperpass"],
   keeperDropKick: ["gkdropkick", "keeperdropkick"],
@@ -51,7 +50,6 @@ const FALLBACKS = Object.freeze({
   celebrate: ["idle"],
   keeperSet: ["idle"],
   keeperPenaltyReady: ["keeperSet", "idle"],
-  keeperFingertip: ["keeperParry", "keeperSet", "idle"],
   keeperDiveLeft: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveRight: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveMiddleLeft: ["keeperDiveLeft", "keeperParry", "fall", "keeperSet", "idle"],
@@ -88,7 +86,7 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (player?.role === "GK" && action.includes("pass")) return "keeperPass";
   if (player?.role === "GK" && action === "kick") return "keeperDropKick";
   if (action.includes("keeperscoop")) return "keeperScoop";
-  if (action.includes("keeperfingertip") || action.includes("keepermiss")) return "keeperFingertip";
+  if (action.includes("keepermiss")) return "keeperMiss";
   if (action.includes("keeperpenaltyready") || action.includes("penaltyready")) return "keeperPenaltyReady";
   if (action.includes("keeperthrow")) return "keeperThrow";
   if (action.includes("keeperdropkick")) return "keeperDropKick";
