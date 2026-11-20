@@ -223,7 +223,9 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     if(d%27<2.8)continue;
     while(seg<lens.length-1&&base+lens[seg]<d)base+=lens[seg++];
     const a=row.p[seg],b=row.p[(seg+1)%row.p.length],t=(d-base)/Math.max(.001,lens[seg]);
-    all.push({x:a[0]+(b[0]-a[0])*t,z:a[1]+(b[1]-a[1])*t,y:row.y,row:ri,section:Math.floor(d/27)});
+    const fanX=a[0]+(b[0]-a[0])*t,fanZ=a[1]+(b[1]-a[1])*t;
+    if(fanZ>40&&fanZ<90&&Math.abs(fanX)<20)continue; // Reserve the central main-stand access block.
+    all.push({x:fanX,z:fanZ,y:row.y,row:ri,section:Math.floor(d/27)});
    }
   }
   const bodyGeo=new THREE.CapsuleGeometry(.16,.22,3,7);
@@ -340,6 +342,13 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   for(const g of securityGuards)g.rotation.y=g.userData.base+Math.sin(t+g.userData.phase)*.09;
  }
  function board(len,x,z,rot){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(len,.95,.3),new THREE.MeshStandardMaterial({color:0x071018,metalness:.55,roughness:.45})));const c=document.createElement('canvas');c.width=1024;c.height=128;const x2=c.getContext('2d'),labels=['PITCH 11 · MATCHDAY','MATCHDAY LIVE','PLAY BEAUTIFUL','ULTIMATE FOOTBALL'],cols=['#b5e65b','#f2c66d','#79d7cf','#f0f2e8'];for(let i=0;i<4;i++){const x0=i*256;x2.fillStyle='#101d25';x2.fillRect(x0,0,256,128);x2.fillStyle=cols[i];x2.fillRect(x0+10,18,3,92);x2.font='900 25px Arial';x2.textAlign='center';x2.fillText(labels[i],x0+132,73);}const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;ledTextures.push(tex);const screen=new THREE.Mesh(new THREE.PlaneGeometry(len-.15,.72),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));screen.position.z=.16;g.add(screen);g.position.set(x,.78,z);g.rotation.y=rot;scene.add(g);}
+  function sidelineBoardWithOpenings(z,openings){
+   const min=-56,max=56,sorted=openings.map(g=>[Math.max(min,g[0]),Math.min(max,g[1])]).sort((a,b)=>a[0]-b[0]),merged=[];
+   for(const gap of sorted){const last=merged[merged.length-1];if(last&&gap[0]<=last[1])last[1]=Math.max(last[1],gap[1]);else merged.push(gap);}
+   let cursor=min;
+   for(const gap of merged){if(gap[0]-cursor>.8)board(gap[0]-cursor,(cursor+gap[0])/2,z,Math.PI);cursor=Math.max(cursor,gap[1]);}
+   if(max-cursor>.8)board(max-cursor,(cursor+max)/2,z,Math.PI);
+  }
  function setGoalDimensions({halfWidth=DEFAULT_GOAL_LAYOUT.halfWidth,height=DEFAULT_GOAL_LAYOUT.height,depth=DEFAULT_GOAL_LAYOUT.depth}={}) {
   if(goalNetMesh){scene.remove(goalNetMesh);goalNetMesh.geometry.dispose();goalNetMesh.material.dispose();}
   const geometry=new THREE.BufferGeometry();
@@ -588,75 +597,84 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  }
 
  function createPlayerEntranceTunnel(){
-  // Main-stand side: the entrance sits centrally behind the two existing dugouts.
-  // The dugouts remain at x +/-12.5 / z 36.5; the tunnel occupies the clear
-  // central service corridor between the pitch and the first spectator rows.
-  const root=new THREE.Group();
-  root.name='P11_PlayerEntranceTunnel';
-  root.position.set(0,pitchSurfaceY,0);
-  const mat=(color,roughness=.72,metalness=.18)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-  const shell=mat(0x171d25,.58,.42),inner=mat(0x252e38,.82,.12),floorMat=mat(0x10151c,.9,.08);
-  const trim=mat(0x7b8792,.34,.72),dark=mat(0x090d12,.48,.25);
-  const led=new THREE.MeshStandardMaterial({color:0xb5f36b,emissive:0x83c93e,emissiveIntensity:1.25,roughness:.32,metalness:.12});
-  const glass=new THREE.MeshStandardMaterial({color:0x263b43,emissive:0x122b2d,emissiveIntensity:.32,roughness:.28,metalness:.3});
-  const addBox=(name,w,h,d,x,y,z,material)=>{
-   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-   mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=false;mesh.receiveShadow=false;root.add(mesh);return mesh;
-  };
-  // Walk-up apron: starts just outside the touchline and leads directly into the tunnel.
-  addBox('Entrance walkway',7.6,.12,4.25,0,.035,36.55,floorMat);
-  addBox('Walkway centre inlay',.12,.018,3.95,0,.105,36.55,trim);
-  // Enclosed player passage, open at both ends.
-  const front=38.75,back=44.95,mid=(front+back)/2,depth=back-front,width=8.6,height=4.25,wall=0.32;
-  addBox('Tunnel floor',width,.16,depth,0,.08,mid,floorMat);
-  addBox('Tunnel left wall',wall,height,depth,-width/2+wall/2,height/2+.12,mid,inner);
-  addBox('Tunnel right wall',wall,height,depth,width/2-wall/2,height/2+.12,mid,inner);
-  addBox('Tunnel roof',width,height*.12,depth,0,height+.02,mid,shell);
-  // Front portal: substantial side piers and a deep header leave a generous player opening.
-  addBox('Portal left pier',.58,height, .55,-4.01,height/2+.12,front, shell);
-  addBox('Portal right pier',.58,height,.55,4.01,height/2+.12,front,shell);
-  addBox('Portal header',8.6,.78,.62,0,height-.28,front,shell);
-  addBox('Portal lower threshold',7.35,.12,.5,0,.12,front,floorMat);
-  // Brushed-metal perimeter details.
-  addBox('Portal left trim',.075,3.55,.66,-3.68,1.92,front-.025,trim);
-  addBox('Portal right trim',.075,3.55,.66,3.68,1.92,front-.025,trim);
-  addBox('Portal top trim',7.42,.075,.66,0,3.72,front-.025,trim);
-  // Side-wall ribs and continuous low-level guidance strips.
-  for(let i=0;i<5;i++){
-   const z=front+.72+i*1.05;
-   addBox('Left wall rib '+i,.12,3.65,.16,-width/2+wall+.08,2.02,z,trim);
-   addBox('Right wall rib '+i,.12,3.65,.16,width/2-wall-.08,2.02,z,trim);
-   addBox('Left LED guide '+i,.055,.075,.72,-width/2+wall+.18,.42,z,led);
-   addBox('Right LED guide '+i,.055,.075,.72,width/2-wall-.18,.42,z,led);
+   // Full pitch-side entrance, enclosed route through the main stand and three-room split.
+   const root=new THREE.Group();root.name='P11_PlayerEntranceTunnel';root.position.set(0,pitchSurfaceY,0);
+   const mat=(color,roughness=.72,metalness=.18)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+   const shell=mat(0x171d25,.58,.42),inner=mat(0x252e38,.82,.12),floorMat=mat(0x10151c,.9,.08),trim=mat(0x7b8792,.34,.72),dark=mat(0x090d12,.48,.25);
+   const blue=mat(0x263e59,.62,.24),red=mat(0x542b32,.62,.24),official=mat(0x65502b,.62,.24);
+   const led=new THREE.MeshStandardMaterial({color:0xb5f36b,emissive:0x83c93e,emissiveIntensity:1.15,roughness:.32,metalness:.12});
+   const addBox=(name,w,h,d,x,y,z,material)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.name=name;m.position.set(x,y,z);m.castShadow=false;m.receiveShadow=false;root.add(m);return m;};
+   const addSign=(name,label,sub,x,z,color,width=5.2)=>{
+    const c=document.createElement('canvas');c.width=1024;c.height=256;const g=c.getContext('2d');
+    if(g){g.fillStyle='#0b1118';g.fillRect(0,0,1024,256);g.fillStyle=color;g.fillRect(44,205,936,7);g.textAlign='center';g.textBaseline='middle';g.font='900 76px Arial';g.fillStyle='#f2f4f5';g.fillText(label,512,96);g.font='600 27px Arial';g.fillStyle='#aab5bf';g.fillText(sub,512,163);}
+    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+    const sign=new THREE.Mesh(new THREE.PlaneGeometry(width,.92),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));sign.name=name;sign.position.set(x,3.35,z);root.add(sign);
+   };
+   const front=34.55,passageEnd=62.2,hallEnd=70.1,roomBack=84.2,width=8.6,height=4.25,wall=.32;
+   addBox('Pitch-side entrance apron',7.8,.12,1.9,0,.035,33.85,floorMat);
+   addBox('Entrance apron centre inlay',.12,.018,1.65,0,.105,33.85,trim);
+   const mid=(front+passageEnd)/2,depth=passageEnd-front;
+   addBox('Players tunnel floor',width,.16,depth,0,.08,mid,floorMat);
+   addBox('Players tunnel left wall',wall,height,depth,-width/2+wall/2,height/2+.12,mid,inner);
+   addBox('Players tunnel right wall',wall,height,depth,width/2-wall/2,height/2+.12,mid,inner);
+   addBox('Players tunnel roof',width,.52,depth,0,height+.02,mid,shell);
+   addBox('Entrance portal left pier',.58,height,.58,-4.01,height/2+.12,front,shell);
+   addBox('Entrance portal right pier',.58,height,.58,4.01,height/2+.12,front,shell);
+   addBox('Entrance portal header',8.6,.78,.64,0,height-.28,front,shell);
+   addBox('Entrance portal threshold',7.35,.12,.5,0,.12,front,floorMat);
+   addBox('Entrance portal left trim',.075,3.55,.68,-3.68,1.92,front-.03,trim);
+   addBox('Entrance portal right trim',.075,3.55,.68,3.68,1.92,front-.03,trim);
+   addBox('Entrance portal top trim',7.42,.075,.68,0,3.72,front-.03,trim);
+   addSign('PITCH 11 entrance sign','PITCH 11','PLAYERS ENTRANCE',0,front-.34,'#a3e635',5.6);
+   for(let i=0;i<13;i++){
+    const z=front+1.15+i*2;
+    addBox('Tunnel left wall rib '+i,.12,3.65,.16,-width/2+wall+.08,2.02,z,trim);
+    addBox('Tunnel right wall rib '+i,.12,3.65,.16,width/2-wall-.08,2.02,z,trim);
+    addBox('Tunnel left LED guide '+i,.055,.075,.9,-width/2+wall+.18,.42,z,led);
+    addBox('Tunnel right LED guide '+i,.055,.075,.9,width/2-wall-.18,.42,z,led);
+    addBox('Tunnel ceiling luminaire '+i,.34,.055,1.05,0,height-.14,z,led);
+   }
+   const hallWidth=40,hallDepth=hallEnd-passageEnd,hallMid=(passageEnd+hallEnd)/2;
+   addBox('Changing room junction floor',hallWidth,.18,hallDepth,0,.09,hallMid,floorMat);
+   addBox('Changing room junction roof',hallWidth,.42,hallDepth,0,height+.02,hallMid,shell);
+   addBox('Changing room junction left wall',.34,height,hallDepth,-hallWidth/2,height/2+.12,hallMid,inner);
+   addBox('Changing room junction right wall',.34,height,hallDepth,hallWidth/2,height/2+.12,hallMid,inner);
+   const rooms=[
+    {id:'home',name:'HOME TEAM',sub:'FIRST TEAM DRESSING ROOM',x:-13.1,w:11.5,color:'#76b9ff',material:blue},
+    {id:'officials',name:'MATCH OFFICIALS',sub:'REFEREES DRESSING ROOM',x:0,w:9.5,color:'#e8c36c',material:official},
+    {id:'away',name:'AWAY TEAM',sub:'VISITING TEAM DRESSING ROOM',x:13.1,w:11.5,color:'#ff8c91',material:red}
+   ];
+   for(const room of rooms){
+    const x=room.x,w=room.w,frontZ=hallEnd,roomDepth=roomBack-frontZ,roomMid=frontZ+roomDepth/2,doorW=3,sideWall=.28,roomHeight=3.85;
+    addBox(room.id+' dressing room floor',w,.16,roomDepth,x,.08,roomMid,floorMat);
+    addBox(room.id+' dressing room roof',w,.34,roomDepth,x,roomHeight+.02,roomMid,shell);
+    addBox(room.id+' dressing room left wall',sideWall,roomHeight,roomDepth,x-w/2+sideWall/2,roomHeight/2+.12,roomMid,inner);
+    addBox(room.id+' dressing room right wall',sideWall,roomHeight,roomDepth,x+w/2-sideWall/2,roomHeight/2+.12,roomMid,inner);
+    const sideSpan=(w-doorW)/2;
+    addBox(room.id+' doorway left wall',sideSpan,roomHeight,.3,x-w/2+sideSpan/2,roomHeight/2+.12,frontZ,room.material);
+    addBox(room.id+' doorway right wall',sideSpan,roomHeight,.3,x+w/2-sideSpan/2,roomHeight/2+.12,frontZ,room.material);
+    addBox(room.id+' doorway header',doorW,.55,.3,x,roomHeight-.15,frontZ,room.material);
+    addBox(room.id+' rear wall',w,roomHeight,.3,x,roomHeight/2+.12,roomBack,room.material);
+    addSign(room.id+' changing room sign',room.name,room.sub,x,frontZ-.08,room.color,Math.min(6.2,w-.8));
+    const count=room.id==='officials'?3:4,lockerW=(w-1.4)/count;
+    for(let i=0;i<count;i++){
+     const lx=x-w/2+.7+lockerW*(i+.5);
+     addBox(room.id+' locker '+i,lockerW-.16,2.15,.48,lx,1.2,roomBack-1.05,room.material);
+     addBox(room.id+' locker door '+i,lockerW-.28,1.86,.035,lx,1.22,roomBack-.79,trim);
+     addBox(room.id+' locker handle '+i,.045,.24,.055,lx+lockerW*.27,1.2,roomBack-.74,dark);
+    }
+    const benchW=Math.max(3.2,w-2.2);
+    addBox(room.id+' changing bench',benchW,.18,.72,x,.62,frontZ+5.2,trim);
+    addBox(room.id+' changing bench base',benchW-.3,.48,.5,x,.32,frontZ+5.2,dark);
+    for(let i=0;i<3;i++){const light=new THREE.PointLight(0xd9f7c2,1.15,8,2);light.position.set(x,3.35,frontZ+2.5+i*3.6);light.castShadow=false;root.add(light);}
+   }
+   addBox('Home route floor marker',3.8,.035,1.25,-13.1,.205,68.9,blue);
+   addBox('Officials route floor marker',3.2,.035,1.25,0,.205,68.9,official);
+   addBox('Away route floor marker',3.8,.035,1.25,13.1,.205,68.9,red);
+   root.userData={kind:'player-entrance',frontZ:front,passageEndZ:passageEnd,hallEndZ:hallEnd,roomBackZ:roomBack,centerX:0,width,height,openPitchEnd:true,threeWayJunction:true,changingRooms:rooms.map(r=>({id:r.id,name:r.name,x:r.x,width:r.w}))};
+   scene.add(root);return root;
   }
-  // Recessed ceiling luminaires and restrained lime edge accents.
-  addBox('Ceiling centre light',.34,.055,5.15,0,height-.14,mid,led);
-  addBox('Left roof accent',.055,.045,depth-.5,-4.02,height-.12,mid,led);
-  addBox('Right roof accent',.055,.045,depth-.5,4.02,height-.12,mid,led);
-  // Backlit PITCH 11 identity panel, facing the pitch.
-  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;
-  const ctx=canvas.getContext('2d');
-  if(ctx){
-   ctx.fillStyle='#0b1118';ctx.fillRect(0,0,1024,256);
-   ctx.fillStyle='#a3e635';ctx.fillRect(48,204,928,7);
-   ctx.font='900 116px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
-   ctx.fillStyle='#f2f4f5';ctx.fillText('PITCH 11',512,112);
-   ctx.font='600 27px Arial,sans-serif';ctx.fillStyle='#9aa6b2';ctx.fillText('PLAYER ENTRANCE',512,174);
-  }
-  const signTexture=new THREE.CanvasTexture(canvas);signTexture.colorSpace=THREE.SRGBColorSpace;
-  const signMat=new THREE.MeshBasicMaterial({map:signTexture,transparent:false,side:THREE.DoubleSide});
-  const sign=new THREE.Mesh(new THREE.PlaneGeometry(5.6,.9),signMat);
-  sign.name='PITCH 11 entrance sign';sign.position.set(0,3.78,front-.325);sign.rotation.y=Math.PI;root.add(sign);
-  // Soft local lighting only; no cast shadows and no changes to stadium floodlights.
-  for(let i=0;i<3;i++){
-   const light=new THREE.PointLight(0xd9f7c2,1.7,7.2,2);
-   light.position.set(0,3.55,front+1.1+i*1.75);light.castShadow=false;root.add(light);
-  }
-  root.userData={kind:'player-entrance',frontZ:front,backZ:back,centerX:0,walkwayStartZ:34.4,walkwayEndZ:front,width,height,openEnds:true,behindDugouts:true};
-  scene.add(root);
-  return root;
- }
- function finishStadiumLoad(gltf){
+function finishStadiumLoad(gltf){
   const stadium=gltf.scene;
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
@@ -667,7 +685,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   if(!environmentMode){previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);}
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
-  board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
+  board(112,0,-36.5,0);sidelineBoardWithOpenings(36.5,[[-17.1,-7.9],[-4.7,4.7],[7.9,17.1]]);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
   if(environmentMode){try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}}else{optionalAssets.playerEntrance='disabled-outside-environment-lab';}
   const details=new GLTFLoader();
