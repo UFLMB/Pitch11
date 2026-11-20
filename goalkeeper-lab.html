@@ -137,7 +137,7 @@ function beginKeeperReturn(){
  shotResult=best?"RETURN · ROOT-MOTION · "+best.file:"RETURN · NO VALID SIDESTEP ROOT TRACK";
 }
 function applyKeeperRootMotion(dt){
- if(phase!=="return")return;
+ if(phase!=="return"||keeper.returnFallback)return;
  const entry=keeperRenderer.players.get(0);
  const delta=entry?.rootMotionDelta;
  if(!delta)return;
@@ -189,9 +189,7 @@ function updateKeeper(dt){
   phaseTimer-=dt;
   keeper.diveRecover=Math.max(0,phaseTimer);
   if(phaseTimer<=0){
-   keeper.diveRecover=0;
-   keeper.animationOverride="keeper-move";
-   setPhase("return",.85);
+   beginKeeperReturn();
   }
  }else if(phase==="return"){
   // If an imported sidestep has no usable horizontal root track, retain a
