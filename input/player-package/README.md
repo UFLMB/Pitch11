@@ -4,7 +4,11 @@ This folder contains the FBX animation sources loaded by engine/match-player-ren
 
 ## Goalkeeper animation replacement
 
-The old generic goalkeeper catch, body-block, diving-save, miss and scoop FBXs have been retired from the active package and replaced by individually named gk_*.fbx sources. engine/mixamo-animation-catalog.mjs is the runtime source of truth.
+- Catch clips distinguish head height, stomach height, jump reach and forward-jump reach.
+- Rolling-ball pickup is registered as goalkeeper scoop.
+- High and middle dives are paired by screen-left/screen-right as seen by a viewer facing the goalkeeper.
+- Exactly two low-shot saves remain: one screen-left and one screen-right. Both are accurately named ball_not_in_hand; duplicate takes with misleading ball_in_hand names and temporary variant_2 copies were removed.
+- The fingertip-save candidate failed the in-goal distal fingertip contact test and was deleted. It is not included in the active runtime package or review assets.
 
 - Catch clips distinguish head height, stomach height, jump reach and forward-jump reach.
 - Rolling-ball pickup is registered as goalkeeper scoop.
