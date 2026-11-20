@@ -54,7 +54,8 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
       const side = player.diveSide === "left" || player.diveSide === "right"
         ? player.diveSide
         : resolveKeeperDiveSide(player.diveAng, player.face);
-      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` : `keeper-dive-${side}`;
+      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` :
+        player.diveHeight === "middle" ? `keeper-dive-middle-${side}` : `keeper-dive-${side}`;
     }
   }
   else if (player.gk && player.diveRecover > 0) action = "get-up";
