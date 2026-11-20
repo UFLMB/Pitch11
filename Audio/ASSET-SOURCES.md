@@ -35,10 +35,10 @@ The game now has an optional CC0 audio-source bridge. It streams the listed MP3 
 - Permission: commercial games, modification and redistribution; direct hotlinking explicitly allowed by the publisher.
 - Attribution: not required by CC0; source register retained for provenance.
 - Review date: 2026-11-20.
-- Download date: not applicable; no binary download succeeded in this environment.
+- Source review date: 2026-11-20. Build-time download date: the timestamp of each successful GitHub Pages build; GitHub Actions logs record the exact file results.
 
 ## Not imported yet
 
-- Main-menu music: no track has been added. The previously discussed OpenGameArt candidate was not locally retrievable and has not been independently validated at the downloadable-file level.
-- Player shoe/grass step: source registered and exposed through the audio bridge, but precise animation-footfall timing is not yet connected.
+- Main-menu music: no track has been added. The previously discussed OpenGameArt candidate was not retrievable in this environment and has not been independently validated at the downloadable-file level.
+- Player shoe/grass step: the asset is downloaded into the deployment artifact and exposed through the audio bridge, but precise animation-footfall timing is not yet connected.
 - Other contact, fall, goalkeeper, commentary and announcement sounds: left untouched until appropriate event hooks and reliable file sources are verified.
