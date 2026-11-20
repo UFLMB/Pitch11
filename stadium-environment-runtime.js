@@ -695,9 +695,9 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const h=3.55,door=2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
     add(id+' floor',w,.18,d,cx,.08,cz,floor);
     add(id+' ceiling',w,.22,d,cx,h+.12,cz,ceiling);
-    add(id+' left wall',side,h,d,cx-w/2+side/2,h/2+.18,cz,paint);
-    add(id+' right wall',side,h,d,cx+w/2-side/2,h/2+.18,cz,paint);
     if(orientation==='front'){
+     add(id+' left wall',side,h,d,cx-w/2+side/2,h/2+.18,cz,paint);
+     add(id+' right wall',side,h,d,cx+w/2-side/2,h/2+.18,cz,paint);
      const span=(w-door)/2;
      add(id+' entrance left return',span,h,.24,cx-w/2+span/2,h/2+.18,frontZ,accentMat);
      add(id+' entrance right return',span,h,.24,cx+w/2-span/2,h/2+.18,frontZ,accentMat);
@@ -705,26 +705,44 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' rear wall',w,h,.24,cx,h/2+.18,backZ,accentMat);
     }else{
      const doorSide=orientation==='side-reverse'?-1:1,doorX=cx+doorSide*w/2,span=(d-door)/2;
+     add(id+' near side wall',w,h,.22,cx,h/2+.18,cz-d/2,paint);
+     add(id+' far side wall',w,h,.22,cx,h/2+.18,cz+d/2,paint);
      add(id+' entrance front return',.24,h,span,doorX,h/2+.18,cz-d/2+span/2,accentMat);
      add(id+' entrance rear return',.24,h,span,doorX,h/2+.18,cz+d/2-span/2,accentMat);
      add(id+' entrance lintel',.26,.38,door,doorX,h-.01,cz,accentMat);
      add(id+' rear wall',.24,h,d,cx-doorSide*w/2,h/2+.18,cz,accentMat);
     }
-    // Locker bank: individual doors, vents, handles and numbered plates.
-    const count=id==='Officials'?4:8,lockerWidth=(w-1.2)/count,lockerZ=backZ-.34;
+    // Locker banks face the room, with individual doors, vents and numbered plates.
+    const count=id==='Officials'?4:8,lockerWidth=(orientation==='front'?w:d)-1.2;
+    const unit=lockerWidth/count;
     for(let i=0;i<count;i++){
-     const lx=cx-w/2+.6+lockerWidth*(i+.5);
-     add(id+' locker carcass '+i,lockerWidth-.07,2.0,.48,lx,1.22,lockerZ,accentMat);
-     add(id+' locker door '+i,lockerWidth-.16,1.78,.035,lx,1.25,lockerZ-.255,steel);
-     add(id+' locker handle '+i,.035,.2,.045,lx+lockerWidth*.28,1.18,lockerZ-.29,black);
-     add(id+' locker number plate '+i,lockerWidth*.38,.1,.025,lx,1.9,lockerZ-.29,white);
-     for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,lockerWidth*.45,.018,.02,lx,1.65+vent*.07,lockerZ-.292,black);
+     if(orientation==='front'){
+      const lx=cx-w/2+.6+unit*(i+.5),lz=backZ-.34;
+      add(id+' locker carcass '+i,unit-.07,2.0,.48,lx,1.22,lz,accentMat);
+      add(id+' locker door '+i,unit-.16,1.78,.035,lx,1.25,lz-.255,steel);
+      add(id+' locker handle '+i,.035,.2,.045,lx+unit*.28,1.18,lz-.29,black);
+      add(id+' locker number plate '+i,unit*.38,.1,.025,lx,1.9,lz-.29,white);
+      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,unit*.45,.018,.02,lx,1.65+vent*.07,lz-.292,black);
+     }else{
+      const doorSide=orientation==='side-reverse'?-1:1,lx=cx-doorSide*(w/2-.34),lz=cz-d/2+.6+unit*(i+.5);
+      add(id+' locker carcass '+i,.48,2.0,unit-.07,lx,1.22,lz,accentMat);
+      add(id+' locker door '+i,.035,1.78,unit-.16,lx-doorSide*.255,1.25,lz,steel);
+      add(id+' locker handle '+i,.045,.2,.035,lx-doorSide*.29,1.18,lz+unit*.28,black);
+      add(id+' locker number plate '+i,.025,.1,unit*.38,lx-doorSide*.29,1.9,lz,white);
+      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,.02,.018,unit*.45,lx-doorSide*.292,1.65+vent*.07,lz,black);
+     }
     }
-    const benchW=Math.min(w-1.4,orientation==='front'?w-1.4:d-1.4);
-    const bx=orientation==='front'?cx:cx-w/2+1.2,bz=orientation==='front'?frontZ+2.0:cz;
-    add(id+' changing bench seat',benchW,.14,.58,bx,.58,bz,accentMat);
-    add(id+' changing bench frame',benchW-.25,.48,.12,bx,.28,bz,steel);
-    for(let i=0;i<4;i++)add(id+' boot shelf '+i,.55,.12,.48,bx-benchW/2+.45+i*(benchW-.9)/3,.16,bz+.55,black);
+    const benchW=Math.min((orientation==='front'?w:d)-1.4,orientation==='front'?w-1.4:d-1.4);
+    const bx=orientation==='front'?cx:cx-(orientation==='side-reverse'?-1:1)*1.8,bz=orientation==='front'?frontZ+2.0:cz;
+    if(orientation==='front'){
+     add(id+' changing bench seat',benchW,.14,.58,bx,.58,bz,accentMat);
+     add(id+' changing bench frame',benchW-.25,.48,.12,bx,.28,bz,steel);
+     for(let i=0;i<4;i++)add(id+' boot shelf '+i,.55,.12,.48,bx-benchW/2+.45+i*(benchW-.9)/3,.16,bz+.55,black);
+    }else{
+     add(id+' changing bench seat',.58,.14,benchW,bx,.58,bz,accentMat);
+     add(id+' changing bench frame',.12,.48,benchW-.25,bx,.28,bz,steel);
+     for(let i=0;i<4;i++)add(id+' boot shelf '+i,.48,.12,.55,bx-(orientation==='side-reverse'?-1:1)*.55,.16,bz-benchW/2+.45+i*(benchW-.9)/3,black);
+    }
     // Kit rail and numbered hooks make the room read as a working team space.
     add(id+' kit rail',Math.min(w-2,7.5),.055,.055,cx,2.35,cz-.7,steel);
     for(let i=0;i<8;i++){
