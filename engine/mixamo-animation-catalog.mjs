@@ -1,6 +1,5 @@
 export const MIXAMO_ANIMATION_FILES = Object.freeze([
   "fallen idle.fbx",
-  "gk_catch-middle-fingertip_save.fbx",
   "gk_catch-middle-head_height.fbx",
   "gk_catch-middle-jump-above_head_height.fbx",
   "gk_catch-middle-rolling_ball_pickup.fbx",
@@ -77,9 +76,9 @@ const STATE_FILES = Object.freeze({
   keeperDiveMiddleRight:["gk_dive-middle_shot-right-ball_in_hand.fbx"],
   keeperDiveLowLeft:["gk_dive-low_shot-left-ball_not_in_hand.fbx","gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx"],
   keeperDiveLowRight:["gk_dive-low_shot-right-ball_not_in_hand.fbx","gk_dive-low_shot-right-ball_not_in_hand-variant_2.fbx"],
-  keeperParry:["gk_catch-middle-fingertip_save.fbx"],
+  keeperParry:["gk_catch-middle-jump-above_head_height.fbx"],
   keeperScoop:["gk_catch-middle-rolling_ball_pickup.fbx"],
-  keeperFingertip:["gk_catch-middle-fingertip_save.fbx"], keeperMiss:["gk_catch-middle-fingertip_save.fbx"],
+  keeperMiss:["gk_catch-middle-jump-above_head_height.fbx"],
   keeperPass:["goalkeeper pass.fbx"], keeperDropKick:["goalkeeper drop kick.fbx"], keeperThrow:["goalkeeper overhand throw.fbx"],
   keeperPlace:["goalkeeper placing ball.fbx","goalkeeper placing ball (2).fbx"]
 });
