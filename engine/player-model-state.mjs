@@ -71,6 +71,21 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (ballOwner === player && speed < 1.8) action = "dribble";
 
   const id = Number.isInteger(index) ? index : team * 11 + (Number(player.role) || 0);
+  // Directional locomotion is selected relative to the player's facing.
+  // Positive local-right is screen-left when viewing the player from the front.
+  // Skill-move bursts deliberately retain the existing locomotion selection.
+  if (action === "idle" && !player.skill && speed >= 0.2) {
+    const vx = Number(player.vx) || 0;
+    const vy = Number(player.vy) || 0;
+    const facing = Number.isFinite(player.face) ? player.face : 0;
+    const forward = vx * Math.cos(facing) + vy * Math.sin(facing);
+    const localRight = vx * Math.sin(facing) - vy * Math.cos(facing);
+    if (forward < -Math.abs(localRight) * 1.2) action = "backward";
+    else if (Math.abs(localRight) > Math.abs(forward) * 1.2) action = localRight > 0 ? "strafe-left" : "strafe-right";
+    else if (forward > 0.35 && Math.abs(localRight) > forward * 0.25) action = localRight > 0 ? "forward-diagonal-left" : "forward-diagonal-right";
+    else if (forward < -0.35 && Math.abs(localRight) > -forward * 0.25) action = localRight > 0 ? "backward-diagonal-left" : "backward-diagonal-right";
+  }
+
   return {
     id,
     team,
