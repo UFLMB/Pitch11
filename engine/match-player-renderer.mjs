@@ -227,7 +227,7 @@ export class MatchPlayerRenderer {
       clip.name = file.replace(/\.fbx$/i, "");
       // The simulation owns world translation; flatten horizontal root drift
       // while retaining vertical pelvis motion for natural gait bounce.
-      if (/^goalkeeper sidestep(?: \\(2\\))?\\.fbx$/i.test(file)) {
+      if (/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(file)) {
         extractHorizontalRootMotion(clip);
       } else if (shouldFlattenHorizontalRootMotion(file)) {
         flattenHorizontalRootMotion(clip);
@@ -429,7 +429,7 @@ export class MatchPlayerRenderer {
           const localDelta = getHorizontalRootMotionDelta(activeClip, previousTime, action.time);
           entry.rootMotionAction = action;
           entry.rootMotionLastTime = action.time;
-          const worldDelta = new THREE.Vector3(localDelta.x * model.scale.x, 0, localDelta.z * model.scale.z).applyQuaternion(group.quaternion);
+          const worldDelta = new THREE.Vector3(localDelta.x * entry.model.scale.x, 0, localDelta.z * entry.model.scale.z).applyQuaternion(group.quaternion);
           entry.rootMotionDelta = { x: worldDelta.x, z: worldDelta.z };
         } else {
           entry.rootMotionAction = null;
@@ -438,6 +438,15 @@ export class MatchPlayerRenderer {
       }
     }
     return true;
+  }
+
+  getRootMotionWorldDisplacement(file, playerId = 0) {
+    const clip = this.clipCache.get(file);
+    const entry = this.players.get(playerId);
+    if (!clip?.userData?.rootMotionExtracted || !entry) return null;
+    const local = getHorizontalRootMotionDisplacement(clip);
+    const world = new THREE.Vector3(local.x * entry.model.scale.x, 0, local.z * entry.model.scale.z).applyQuaternion(entry.group.quaternion);
+    return { x: world.x, z: world.z };
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
