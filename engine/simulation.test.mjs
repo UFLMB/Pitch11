@@ -554,8 +554,9 @@ test("legacy goalkeeper AI keeps its save decision and tags the matching FBX hei
     const keeper = sim.players[0];
     keeper.x = 2; keeper.y = 34;
     sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
-    sim.ball.x = 5; sim.ball.y = 34; sim.ball.z = z;
-    sim.ball.vx = -8; sim.ball.vy = 0; sim.ball.vz = 0;
+    sim.ball.x = 5; sim.ball.y = 34; sim.ball.z = 2.5;
+    const flight = 5 / 8;
+    sim.ball.vx = -8; sim.ball.vy = 0; sim.ball.vz = (z - 2.5 + 4.905 * flight * flight) / flight;
     sim.resolveGoalkeeperSaves();
     return keeper.action;
   };
@@ -571,7 +572,9 @@ test("legacy goalkeeper AI selects low, middle and high directional FBX actions 
     keeper.x = 2; keeper.y = 34;
     sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
     sim.ball.x = 5; sim.ball.y = 34;
-    sim.ball.z = z; sim.ball.vx = -18; sim.ball.vy = -1; sim.ball.vz = 0;
+    sim.ball.z = 2.5;
+    const flight = 5 / 18;
+    sim.ball.vx = -18; sim.ball.vy = -1; sim.ball.vz = (z - 2.5 + 4.905 * flight * flight) / flight;
     sim.resolveGoalkeeperSaves();
     return { action: keeper.action, vx: sim.ball.vx };
   };
