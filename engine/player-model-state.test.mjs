@@ -33,27 +33,27 @@ test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ jump: .2 }), 0).action, "header");
 });
 
-test("resolves keeper dive clips in local left/right space for both goal directions", () => {
+test("resolves keeper dive clips in viewer-facing screen-left/screen-right space", () => {
   const upfield = Math.PI / 2;
   const downfield = -Math.PI / 2;
-  assert.equal(resolveKeeperDiveSide(upfield, 0), "left");
-  assert.equal(resolveKeeperDiveSide(downfield, 0), "right");
-  assert.equal(resolveKeeperDiveSide(upfield, Math.PI), "right");
-  assert.equal(resolveKeeperDiveSide(downfield, Math.PI), "left");
+  assert.equal(resolveKeeperDiveSide(upfield, 0), "right");
+  assert.equal(resolveKeeperDiveSide(downfield, 0), "left");
+  assert.equal(resolveKeeperDiveSide(upfield, Math.PI), "left");
+  assert.equal(resolveKeeperDiveSide(downfield, Math.PI), "right");
 });
 
-test("uses the explicitly requested keeper-local side instead of re-deriving it from the angle", () => {
+test("uses the explicitly requested viewer-facing screen side instead of re-deriving it from the angle", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "right" }), 0).action, "keeper-dive-right");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left" }), 0).action, "keeper-dive-left");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "low" }), 0).action, "keeper-dive-low-left");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "middle" }), 0).action, "keeper-dive-middle-left");
 });
 
-test("maps goalkeeper dive direction relative to the keeper's facing", () => {
-  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-left");
-  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-right");
+test("maps goalkeeper dive direction to the viewer-facing screen side", () => {
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-right");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-left");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-left" }), "keeperDiveLowLeft");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-right" }), "keeperDiveLowRight");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-left" }), "keeperDiveMiddleLeft");
