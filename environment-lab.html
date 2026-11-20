@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#07110c">
+<title>PITCH 11 — Matchday Environment Lab</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}
+#stadium3d{position:fixed;inset:0;z-index:0}
+#stadium3d canvas{display:block;width:100%;height:100%;pointer-events:none}
+#c{position:fixed;inset:0;z-index:1;width:100%;height:100%;opacity:0;pointer-events:auto;touch-action:none}
+.hud{position:fixed;z-index:4;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(12px,2.2vw,28px);gap:12px;pointer-events:none}
+.brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000;pointer-events:none}
+.brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}
+.brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
+.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:75vw}
+button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 10px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.07em;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
+#status{position:fixed;z-index:4;left:50%;bottom:16px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.07em;white-space:nowrap;backdrop-filter:blur(12px);max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:8;color:#d9f3d5;font-size:12px;letter-spacing:.16em;text-align:center;padding:24px}
+#loading small{display:block;margin-top:10px;color:#819884;letter-spacing:.05em;line-height:1.6}
+#drone-hud{position:fixed;z-index:5;left:16px;bottom:16px;display:none;align-items:flex-end;gap:10px}
+#drone-hud.visible{display:flex}
+.drone-pad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:4px}
+.drone-pad button,.drone-alt button{padding:0;width:42px;height:42px;font-size:17px;border-radius:10px;touch-action:none}
+.drone-pad button[data-move="forward"]{grid-column:2;grid-row:1}
+.drone-pad button[data-move="left"]{grid-column:1;grid-row:2}
+.drone-pad button[data-move="back"]{grid-column:2;grid-row:3}
+.drone-pad button[data-move="right"]{grid-column:3;grid-row:2}
+.drone-alt{display:flex;flex-direction:column;gap:5px}
+#drone-help{position:fixed;z-index:5;right:16px;bottom:16px;display:none;max-width:240px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
+#drone-help.visible{display:block}
+@media(max-width:700px){
+ .hud{align-items:flex-start;padding:10px;gap:8px}
+ .controls{max-width:66vw;gap:5px}
+ button{padding:8px 9px;font-size:9px}
+ .brand span{font-size:8px}
+ #drone-hud{left:9px;bottom:48px;gap:6px}
+ .drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}
+ .drone-pad button,.drone-alt button{width:38px;height:38px}
+ #drone-help{right:9px;bottom:48px;max-width:145px;font-size:9px}
+ #status{bottom:8px;font-size:8px}
+}
+</style>
+</head>
+<body>
+<div id="stadium3d" aria-hidden="true"></div>
+<canvas id="c" aria-label="3D stadium developer camera"></canvas>
+<div class="hud">
+ <div class="brand"><strong>PITCH 11</strong><span>MATCHDAY ENVIRONMENT LAB · LIVE GAME BUILD</span></div>
+ <div class="controls">
+  <button class="active" data-view="broadcast">BROADCAST</button>
+  <button data-view="tactical">TACTICAL</button>
+  <button data-view="low">LOW STADIUM</button>
+  <button data-view="drone">DRONE CAM · DEV</button>
+  <button id="tunnel">TUNNEL ENTRY</button>
+  <button id="day" class="active" data-time="0">DAY</button>
+  <button id="sunset" data-time="1">SUNSET</button>
+  <button id="night" data-time="2">NIGHT</button>
+  <button id="back">BACK TO GAME</button>
+ </div>
+</div>
+<div id="drone-hud">
+ <div class="drone-pad">
+  <button data-move="forward" aria-label="Move forward">▲</button>
+  <button data-move="left" aria-label="Move left">◀</button>
+  <button data-move="back" aria-label="Move backward">▼</button>
+  <button data-move="right" aria-label="Move right">▶</button>
+ </div>
+ <div class="drone-alt">
+  <button data-move="up" aria-label="Rise">＋</button>
+  <button data-move="down" aria-label="Descend">−</button>
+ </div>
+</div>
+<div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: directional controls<br>Free flight · no collision limits</div>
+<div id="status">MATCHDAY ENVIRONMENT · LOADING LIVE STADIUM SYSTEM…</div>
+<div id="loading">LOADING LIVE MATCHDAY ENVIRONMENT<small>Using the current PITCH 11 stadium runtime · player models and gameplay disabled</small></div>
+<script type="module">
+import './stadium-environment-runtime.js';
+
+const canvas=document.querySelector('#c');
+const status=document.querySelector('#status');
+const loading=document.querySelector('#loading');
+const mobile=matchMedia('(max-width: 700px)').matches;
+const pixelRatio=mobile?1:Math.min(devicePixelRatio||1,1.25);
+function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio));canvas.height=Math.max(1,Math.round(innerHeight*pixelRatio));}
+sizeOverlay();
+addEventListener('resize',sizeOverlay);
+const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
+let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
+const presets={
+ broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
+ tactical:{position:{x:0,y:250,z:1},target:{x:0,y:0,z:0},fov:43},
+ low:{position:{x:0,y:34,z:150},target:{x:0,y:9,z:0},fov:58}
+};
+function setDroneHud(on){document.querySelector('#drone-hud').classList.toggle('visible',on);document.querySelector('#drone-help').classList.toggle('visible',on);}
+function lookDirection(){const cp=Math.cos(drone.pitch);return{x:Math.sin(drone.yaw)*cp,y:Math.sin(drone.pitch),z:-Math.cos(drone.yaw)*cp};}
+function render(){
+ const api=window.P11Stadium;if(!api?.ready)return;
+ let p,t,fov;
+ if(drone.active){const d=lookDirection();p=drone.position;t={x:p.x+d.x,y:p.y+d.y,z:p.z+d.z};fov=62;}
+ else{const v=presets[activeView]||presets.broadcast;p=v.position;t=v.target;fov=v.fov;}
+ api.renderEnvironment(p,t,fov,timeOfDay);
+}
+function selectView(name){
+ activeView=name;drone.active=name==='drone';setDroneHud(drone.active);
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
+ if(name==='drone'){drone.position={x:0,y:32,z:92};drone.yaw=Math.PI;drone.pitch=-.2;}
+ render();
+}
+function enterTunnel(){
+ activeView='drone';drone.active=true;drone.position={x:0,y:2.1,z:31.5};drone.yaw=Math.PI;drone.pitch=-.025;
+ setDroneHud(true);
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='drone'));
+ render();
+}
+function updateDrone(dt){
+ if(!drone.active)return;
+ const keys=new Set([...drone.keys,...drone.touch]);
+ const forward={x:Math.sin(drone.yaw),z:-Math.cos(drone.yaw)};
+ const right={x:Math.cos(drone.yaw),z:Math.sin(drone.yaw)};
+ const step=drone.speed*dt;
+ if(keys.has('forward')){drone.position.x+=forward.x*step;drone.position.z+=forward.z*step;}
+ if(keys.has('back')){drone.position.x-=forward.x*step;drone.position.z-=forward.z*step;}
+ if(keys.has('left')){drone.position.x-=right.x*step;drone.position.z-=right.z*step;}
+ if(keys.has('right')){drone.position.x+=right.x*step;drone.position.z+=right.z*step;}
+ if(keys.has('up'))drone.position.y+=step;
+ if(keys.has('down'))drone.position.y-=step;
+ drone.position.y=Math.max(.25,drone.position.y);
+}
+function animate(now){
+ requestAnimationFrame(animate);
+ if(!ready||now-lastFrame<16)return;
+ const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+ updateDrone(dt);render();
+}
+function boot(){
+ if(ready)return;ready=true;loading.style.display='none';
+ const d=window.P11Stadium.diagnostics;
+ status.textContent='LIVE STADIUM · '+(d.crowdCount||0)+' CROWD ACTORS · PLAYER / GAMEPLAY SYSTEMS DISABLED';
+ selectView('broadcast');requestAnimationFrame(animate);
+}
+if(window.P11Stadium?.ready)boot();
+else window.addEventListener('p11stadiumready',boot,{once:true});
+window.addEventListener('keydown',e=>{
+ if(!drone.active)return;const k=e.key.toLowerCase();
+ const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
+ if(map[k]){drone.keys.add(map[k]);e.preventDefault();}
+});
+window.addEventListener('keyup',e=>{
+ const k=e.key.toLowerCase(),map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
+ if(map[k])drone.keys.delete(map[k]);
+});
+document.querySelectorAll('.drone-pad button').forEach(button=>{
+ const move=button.dataset.move;
+ const start=e=>{e.preventDefault();drone.touch.add(move);button.setPointerCapture?.(e.pointerId);};
+ const stop=e=>{e.preventDefault();drone.touch.delete(move);};
+ button.addEventListener('pointerdown',start);button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);
+});
+canvas.addEventListener('pointerdown',e=>{if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{
+ if(!drone.active||!drone.drag)return;
+ const dx=e.clientX-drone.lastX,dy=e.clientY-drone.lastY;drone.lastX=e.clientX;drone.lastY=e.clientY;
+ drone.yaw-=dx*.004;drone.pitch=Math.max(-1.48,Math.min(1.35,drone.pitch-dy*.003));render();
+});
+canvas.addEventListener('pointerup',()=>drone.drag=false);
+canvas.addEventListener('pointercancel',()=>drone.drag=false);
+canvas.addEventListener('wheel',e=>{
+ if(!drone.active)return;e.preventDefault();
+ const d=lookDirection(),distance=e.deltaY*.035;
+ drone.position.x+=d.x*distance;drone.position.y+=d.y*distance;drone.position.z+=d.z*distance;
+},{passive:false});
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>selectView(b.dataset.view)));
+document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{
+ timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
+}));
+document.querySelector('#tunnel').addEventListener('click',enterTunnel);
+document.querySelector('#back').addEventListener('click',()=>location.href='./');
+window.addEventListener('error',e=>{
+ if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.message||'Unknown error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
+});
+window.addEventListener('unhandledrejection',e=>{
+ if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.reason?.message||e.reason||'Module error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
+});
+</script>
+</body>
+</html>
