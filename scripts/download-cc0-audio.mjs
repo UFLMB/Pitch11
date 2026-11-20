@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 
@@ -20,10 +21,10 @@ const assets = [
   ["stadium-crowd-04.mp3", "Audio/sounds/stadium/goal-reaction/crowd-whistle-04.mp3"]
 ];
 
-let downloaded = 0;
+const results = [];
 for (const [file, destination] of assets) {
-  let success = false;
-  for (let attempt = 1; attempt <= 3 && !success; attempt++) {
+  let result = null;
+  for (let attempt = 1; attempt <= 3 && !result; attempt++) {
     try {
       const response = await fetch(root + file, {
         signal: AbortSignal.timeout(20000),
@@ -37,13 +38,36 @@ for (const [file, destination] of assets) {
       if (!isMp3) throw new Error("response is not a valid MP3 payload");
       await mkdir(dirname(destination), { recursive: true });
       await writeFile(destination, bytes);
-      downloaded++;
-      success = true;
-      console.log(`Downloaded ${file} -> ${destination} (${bytes.length} bytes)`);
+      result = {
+        file,
+        path: destination,
+        bytes: bytes.length,
+        sha256: createHash("sha256").update(bytes).digest("hex"),
+        license: "CC0-1.0",
+        source: root + file
+      };
+      console.log(`Downloaded and validated ${file} -> ${destination} (${bytes.length} bytes)`);
     } catch (error) {
       console.warn(`Audio download attempt ${attempt}/3 failed for ${file}: ${error.message}`);
     }
   }
-  if (!success) console.warn(`Skipped ${file}; runtime will use its remote fallback or synthesized sound.`);
+  if (result) results.push(result);
+  else console.error(`FAILED: ${file}; this asset will not be present in the Pages artifact.`);
 }
-console.log(`CC0 audio build step: ${downloaded}/${assets.length} files downloaded.`);
+
+const manifest = {
+  generatedAt: new Date().toISOString(),
+  provider: "SFXMint",
+  license: "CC0-1.0",
+  expected: assets.length,
+  downloaded: results.length,
+  complete: results.length === assets.length,
+  assets: results
+};
+await mkdir("Audio", { recursive: true });
+await writeFile("Audio/audio-manifest.json", JSON.stringify(manifest, null, 2) + "\n");
+console.log(`CC0 audio build step: ${results.length}/${assets.length} files downloaded and validated.`);
+
+if (!manifest.complete && process.env.P11_AUDIO_ALLOW_PARTIAL !== "1") {
+  throw new Error(`Refusing to publish incomplete audio: ${results.length}/${assets.length} assets downloaded. Set P11_AUDIO_ALLOW_PARTIAL=1 only for an intentional fallback-only build.`);
+}
