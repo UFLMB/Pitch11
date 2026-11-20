@@ -1,0 +1,55 @@
+name: Goalkeeper fingertip contact validation
+
+on:
+  push:
+    branches: [assets/goalkeeper-animation-review]
+    paths:
+      - "goalkeeper-lab.html"
+      - "engine/goalkeeper-contact-geometry.mjs"
+      - "engine/match-player-renderer.mjs"
+      - "engine/mixamo-animation-catalog.mjs"
+      - "input/player-package/**"
+      - "input/player-model-candidate/**"
+      - "scripts/goalkeeper-fingertip-contact.browser-test.mjs"
+      - ".github/workflows/goalkeeper-fingertip-contact.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fingertip-contact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout with the character FBX
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install chromium
+      - name: Start local static server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/pitch11-http.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/goalkeeper-lab.html > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pitch11-http.log
+          exit 1
+      - name: Test actual fingertip-to-ball contact
+        run: timeout --signal=TERM --kill-after=10s 240s node scripts/goalkeeper-fingertip-contact.browser-test.mjs
+      - name: Upload contact-test screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goalkeeper-fingertip-contact
+          path: artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
