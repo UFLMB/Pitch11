@@ -74,9 +74,9 @@ const STATE_FILES = Object.freeze({
   keeperDiveMiddleRight:["gk_dive-middle_shot-right-ball_in_hand.fbx"],
   keeperDiveLowLeft:["gk_dive-low_shot-left-ball_not_in_hand.fbx"],
   keeperDiveLowRight:["gk_dive-low_shot-right-ball_not_in_hand.fbx"],
-  keeperParry:["gk_catch-middle-jump-above_head_height.fbx"],
+  keeperParry:["goalkeeper idle.fbx"],
   keeperScoop:["gk_catch-middle-rolling_ball_pickup.fbx"],
-  keeperMiss:["gk_catch-middle-jump-above_head_height.fbx"],
+  keeperMiss:["goalkeeper idle.fbx"],
   keeperPass:["goalkeeper pass.fbx"], keeperDropKick:["goalkeeper drop kick.fbx"], keeperThrow:["goalkeeper overhand throw.fbx"],
   keeperPlace:["goalkeeper placing ball.fbx","goalkeeper placing ball (2).fbx"]
 });

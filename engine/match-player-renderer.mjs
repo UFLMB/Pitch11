@@ -341,7 +341,7 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", state: "" };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "" };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -393,7 +393,7 @@ export class MatchPlayerRenderer {
         clip = resolvePlayerClip(this.animations, animationState);
       }
 
-      if (clip && entry.activeClipName !== clip.name) {
+      if (clip && (entry.activeClipName !== clip.name || entry.state !== animationState || (state.manualClipFile && entry.activeManualClipToken !== state.manualClipToken))) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
         if (isOneShotAnimationState(animationState)) {
@@ -407,6 +407,7 @@ export class MatchPlayerRenderer {
         if (entry.activeAction) entry.activeAction.crossFadeTo(nextAction, 0.16, false);
         entry.activeAction = nextAction;
         entry.activeClipName = clip.name;
+        entry.activeManualClipToken = state.manualClipToken;
         entry.state = animationState;
       }
       if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
