@@ -616,8 +616,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=false;mesh.receiveShadow=false;root.add(mesh);return mesh;
   };
   // Walk-up apron: starts just outside the touchline and leads directly into the tunnel.
-  addBox('Entrance walkway',7.6,.12,4.9,0,.035,36.15,floorMat);
-  addBox('Walkway centre inlay',.12,.018,4.45,0,.105,36.15,trim);
+  addBox('Entrance walkway',7.6,.12,4.25,0,.035,36.55,floorMat);
+  addBox('Walkway centre inlay',.12,.018,3.95,0,.105,36.55,trim);
   // Enclosed player passage, open at both ends.
   const front=38.75,back=44.95,mid=(front+back)/2,depth=back-front,width=8.6,height=4.25,wall=0.32;
   addBox('Tunnel floor',width,.16,depth,0,.08,mid,floorMat);
@@ -664,7 +664,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    const light=new THREE.PointLight(0xd9f7c2,1.7,7.2,2);
    light.position.set(0,3.55,front+1.1+i*1.75);light.castShadow=false;root.add(light);
   }
-  root.userData={kind:'player-entrance',frontZ:front,backZ:back,centerX:0,walkwayStartZ:33.7,walkwayEndZ:front,width,height,openEnds:true,behindDugouts:true};
+  root.userData={kind:'player-entrance',frontZ:front,backZ:back,centerX:0,walkwayStartZ:34.4,walkwayEndZ:front,width,height,openEnds:true,behindDugouts:true};
   scene.add(root);
   return root;
  }
