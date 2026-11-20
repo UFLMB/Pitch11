@@ -669,7 +669,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
-  try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}
+  if(environmentMode){try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}}else{optionalAssets.playerEntrance='disabled-outside-environment-lab';}
   const details=new GLTFLoader();
   optionalAssets.dugout='loading';boot.optionalAssets=optionalAssets;
   details.load('./assets/team-dugout.glb',asset=>{
