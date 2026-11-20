@@ -65,3 +65,12 @@ test("treats header and other action clips as one-shot animations", () => {
     assert.equal(isOneShotAnimationState(state), false, `${state} should remain looped`);
   }
 });
+
+
+
+test("maps directional locomotion actions to dedicated animation states", () => {
+  assert.equal(resolvePlayerAnimationState({ action: "forward-diagonal-left" }, 4), "forwardDiagonalLeft");
+  assert.equal(resolvePlayerAnimationState({ action: "forward-diagonal-right" }, 4), "forwardDiagonalRight");
+  assert.equal(resolvePlayerAnimationState({ action: "backward-diagonal-left" }, 4), "backwardDiagonalLeft");
+  assert.equal(resolvePlayerAnimationState({ action: "backward-diagonal-right" }, 4), "backwardDiagonalRight");
+});
