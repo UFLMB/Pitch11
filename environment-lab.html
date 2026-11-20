@@ -137,6 +137,36 @@ function animate(now){
  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
  updateDrone(dt);render();
 }
+function showBootFailure(message){
+ const panel=document.createElement('div');
+ const title=document.createElement('strong');
+ title.textContent='ENVIRONMENT FAILED TO START';
+ title.style.color='#ffb4a8';
+ const detail=document.createElement('small');
+ detail.textContent=message||'The stadium runtime could not finish loading.';
+ const retry=document.createElement('button');
+ retry.textContent='RETRY';
+ retry.addEventListener('click',()=>location.reload());
+ panel.append(title,detail,retry);
+ loading.replaceChildren(panel);
+}
+function syncBootStatus(){
+ if(ready)return;
+ const boot=window.P11StadiumBoot;
+ if(!boot)return;
+ if(boot.state==='error'){
+  showBootFailure(boot.error||'The stadium asset failed to load after 3 attempts.');
+  return;
+ }
+ if(boot.state==='loading'||boot.state==='retrying'){
+  const percent=Math.round(Math.max(0,Math.min(1,Number(boot.progress)||0))*100);
+  const small=loading.querySelector('small');
+  if(small)small.textContent=boot.state==='retrying'
+   ? 'Stadium asset load failed once. Retrying…'
+   : percent>0?'Loading stadium model… '+percent+'%':'Preparing the stadium renderer and loading the stadium model…';
+ }
+}
+setInterval(syncBootStatus,250);
 function boot(){
  if(ready)return;ready=true;loading.style.display='none';
  const d=window.P11Stadium.diagnostics;
@@ -180,10 +210,10 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 window.addEventListener('error',e=>{
- if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.message||'Unknown error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
+ if(!ready)showBootFailure(String(e.message||'Unknown browser error'));
 });
 window.addEventListener('unhandledrejection',e=>{
- if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.reason?.message||e.reason||'Module error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
+ if(!ready)showBootFailure(String(e.reason?.message||e.reason||'Module loading error'));
 });
 </script>
 </body>
