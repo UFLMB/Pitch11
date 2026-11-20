@@ -571,7 +571,7 @@ test("legacy goalkeeper AI selects low, middle and high directional FBX actions 
     keeper.x = 2; keeper.y = 34;
     sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
     sim.ball.x = 5; sim.ball.y = 34;
-    sim.ball.z = z; sim.ball.vx = -18; sim.ball.vy = 0; sim.ball.vz = 0;
+    sim.ball.z = z; sim.ball.vx = -18; sim.ball.vy = -1; sim.ball.vz = 0;
     sim.resolveGoalkeeperSaves();
     return { action: keeper.action, vx: sim.ball.vx };
   };
