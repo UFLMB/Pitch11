@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { clampRootMotionDeltaToTarget, extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { isOneShotAnimationState } from "./player-animation-map.mjs";
 function vectorTrack(name, values) { return { name, values: new Float32Array(values), getValueSize: () => 3 }; }
 test("flattens horizontal Hips translation while preserving vertical pelvis motion", () => {
  const hips=vectorTrack("mixamorigHips.position",[1,0,2,4,.2,6,8,.4,10]); const clip={tracks:[hips]};
@@ -38,17 +39,24 @@ test("samples extracted root motion continuously and across a looping sidestep b
  assert.deepEqual(getHorizontalRootMotionDelta(clip,.25,.75),{x:2,z:0});
 });
 
-test("supports opposite sidestep directions and variable remaining distances without overshooting", () => {
+test("supports opposite sidestep directions and clamps variable target distances", () => {
  const left={tracks:[{...vectorTrack("Hips.position",[0,0,0,-3,0,0]),times:new Float32Array([0,1])}],duration:1};
  const right={tracks:[{...vectorTrack("Hips.position",[0,0,0,3,0,0]),times:new Float32Array([0,1])}],duration:1};
  extractHorizontalRootMotion(left); extractHorizontalRootMotion(right);
  const leftStep=getHorizontalRootMotionDisplacement(left);
  const rightStep=getHorizontalRootMotionDisplacement(right);
  assert.equal(leftStep.x,-3); assert.equal(rightStep.x,3);
- for (const remaining of [0.2,0.8,2.5,5]) {
-  const step=remaining>Math.abs(rightStep.x)?rightStep.x:Math.sign(rightStep.x)*remaining;
-  assert.ok(Math.abs(step)<=remaining+1e-9);
+ assert.deepEqual(clampRootMotionDeltaToTarget(rightStep,{x:5,z:0}),{x:3,z:0});
+ assert.deepEqual(clampRootMotionDeltaToTarget(rightStep,{x:.8,z:0}),{x:.8,z:0});
+ assert.deepEqual(clampRootMotionDeltaToTarget(leftStep,{x:2,z:0}),{x:0,z:0});
+ assert.deepEqual(clampRootMotionDeltaToTarget({x:2,z:2},{x:1,z:1}),{x:1,z:1});
+});
+
+test("keeps all six keeper dives one-shot until their complete save clips finish", () => {
+ for (const state of ["keeperDiveLeft","keeperDiveRight","keeperDiveMiddleLeft","keeperDiveMiddleRight","keeperDiveLowLeft","keeperDiveLowRight"]) {
+  assert.equal(isOneShotAnimationState(state),true);
  }
+ assert.equal(isOneShotAnimationState("keeperMove"),false);
 });
 test("leaves malformed and non-vector root tracks unchanged", () => {
  const malformed={name:"Hips.position",values:new Float32Array([1,2]),getValueSize:()=>1}; const clip={tracks:[malformed]};
