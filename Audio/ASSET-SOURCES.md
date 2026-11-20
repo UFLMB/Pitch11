@@ -1,44 +1,19 @@
-# PITCH 11 CC0 audio source integration
+# PITCH 11 Audio Source Register
 
 Updated: 2026-11-20
 
-## Integration status
+## Retained
 
-The game now has an optional CC0 audio-source bridge. It streams the listed MP3 files directly from SFXMint, whose individual sound pages state CC0 1.0, commercial-game use, modification/redistribution rights, and direct hotlink permission.
+| Asset | Repository path | Status |
+|---|---|---|
+| Main-menu music | `Audio/music/menu/main-theme/hella bumps.mp3` | Retained; do not replace |
 
-**Important:** the interactive workspace could not download MP3 binaries because external DNS/network access failed. The GitHub Actions Pages deployment now downloads and validates the MP3 files into their matching `Audio/` subfolders before publishing the site. The binaries are generated into the deployment artifact rather than committed to the source branch. The build now writes Audio/audio-manifest.json with each validated file's byte count and SHA-256 hash, and refuses to publish unless all 15 assets are present. If a local asset later fails in the browser, the game falls back to the provider's explicitly hotlinkable CC0 stream; existing synthesized Web Audio remains as a secondary layer/fallback.
+## Removed
 
-## Source register
+The previous SFXMint audio set, its direct-stream fallback URLs, and its build-time downloader have been removed. No SFXMint sound is approved for the current game build.
 
-| Game role | Asset | Exact source page | Direct stream | License |
-|---|---|---|---|---|
-| Ball shot / kick | Hard Kick Soccer Ball Kick 05 | https://sfxmint.com/sounds/soccer-ball-kick-05 | https://sfxmint.com/dl/soccer-ball-kick-05.mp3 | CC0 1.0 |
-| Header | Header Soccer Ball Kick 06 | https://sfxmint.com/sounds/soccer-ball-kick-06 | https://sfxmint.com/dl/soccer-ball-kick-06.mp3 | CC0 1.0 |
-| Long pass | Long Pass Soccer Ball Kick 08 | https://sfxmint.com/sounds/soccer-ball-kick-08 | https://sfxmint.com/dl/soccer-ball-kick-08.mp3 | CC0 1.0 |
-| Goal net | Goal Net Soccer Ball Kick 09 | https://sfxmint.com/sounds/soccer-ball-kick-09 | https://sfxmint.com/dl/soccer-ball-kick-09.mp3 | CC0 1.0 |
-| Goal post | Goal Post Soccer Ball Kick 10 | https://sfxmint.com/sounds/soccer-ball-kick-10 | https://sfxmint.com/dl/soccer-ball-kick-10.mp3 | CC0 1.0 |
-| Grass bounce | Grass Bounce Soccer Ball Kick 04 | https://sfxmint.com/sounds/soccer-ball-kick-04 | https://sfxmint.com/dl/soccer-ball-kick-04.mp3 | CC0 1.0 |
-| Dribble | Dribble Soccer Ball Kick 02 | https://sfxmint.com/sounds/soccer-ball-kick-02 | https://sfxmint.com/dl/soccer-ball-kick-02.mp3 | CC0 1.0 |
-| Grass step | Single Step Footsteps Grass 05 | https://sfxmint.com/sounds/footsteps-grass-05 | https://sfxmint.com/dl/footsteps-grass-05.mp3 | CC0 1.0 |
-| Referee whistle | Single Sharp Referee Whistle Blow 11 | https://sfxmint.com/sounds/instrument-whistle-11 | https://sfxmint.com/dl/instrument-whistle-11.mp3 | CC0 1.0 |
-| UI click | UI click 06 | https://sfxmint.com/sounds/ready-click-06 | https://sfxmint.com/dl/ready-click-06.mp3 | CC0 1.0 |
-| Goal crowd | Goal Cheering Stadium Crowd 02 | https://sfxmint.com/sounds/stadium-crowd-02 | https://sfxmint.com/dl/stadium-crowd-02.mp3 | CC0 1.0 |
-| Stadium loop | Murmuring Stadium Crowd 03 | https://sfxmint.com/sounds/stadium-crowd-03 | https://sfxmint.com/dl/stadium-crowd-03.mp3 | CC0 1.0 |
-| Applause | Applauding Stadium Crowd 05 | https://sfxmint.com/sounds/stadium-crowd-05 | https://sfxmint.com/dl/stadium-crowd-05.mp3 | CC0 1.0 |
-| Booing | Booing Stadium Crowd 01 | https://sfxmint.com/sounds/stadium-crowd-01 | https://sfxmint.com/dl/stadium-crowd-01.mp3 | CC0 1.0 |
-| Crowd whistle | Whistling Clapping Stadium Crowd 04 | https://sfxmint.com/sounds/stadium-crowd-04 | https://sfxmint.com/dl/stadium-crowd-04.mp3 | CC0 1.0 |
+## Awaiting import
 
-## Source and rights notes
+The separately selected 15 football recordings and Kenney interface sound pack are not yet present in the repository. Their exact source files and license records must be added before wiring them into gameplay. The ZapSplat crossbar candidate is a separate asset and remains pending license verification.
 
-- Creator/publisher: SFXMint (individual sound pages identify each item; the publisher states its library is dedicated under CC0 1.0).
-- License: CC0 1.0 Universal, as stated on each individual asset page.
-- Permission: commercial games, modification and redistribution; direct hotlinking explicitly allowed by the publisher.
-- Attribution: not required by CC0; source register retained for provenance.
-- Review date: 2026-11-20.
-- Source review date: 2026-11-20. Build-time download date: the timestamp of each successful GitHub Pages build; GitHub Actions logs record the exact file results.
-
-## Not imported yet
-
-- Main-menu music: no track has been added. The previously discussed OpenGameArt candidate was not retrievable in this environment and has not been independently validated at the downloadable-file level.
-- Player shoe/grass step: the asset is exposed through the audio bridge and now plays on a speed-based cadence for the selected player during active play. It is movement-paced rather than synchronized to exact animation foot-contact frames.
-- Ball bounce and goal-frame/post impacts now trigger their matching CC0 samples. Dribble contact audio plays on a movement-based cadence while a non-goalkeeper carrier is moving. Other contact, fall, goalkeeper, commentary and announcement sounds remain unconnected until appropriate event hooks and reliable file sources are verified.
+No unverified sound source should be fetched automatically during deployment.
