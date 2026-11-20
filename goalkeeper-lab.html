@@ -24,6 +24,19 @@ h1{font-size:17px;margin:0 0 5px}.desc{font-size:10px;line-height:1.5;color:var(
 <div class="section"><div class="label">KEEPER ACTION</div><div class="grid">
 <button data-action="dive-left">DIVE LEFT</button><button data-action="dive-right">DIVE RIGHT</button><button data-action="catch">CATCH</button><button data-action="parry">PARRY</button><button data-action="penalty-ready">PENALTY READY</button><button data-action="reset">RESET POSITION</button><button id="load-keeper-anims">LOAD GK ANIMS</button><button data-action="sequence" class="primary">5 SHOT TEST</button>
 </div><div class="grid" style="margin-top:7px"><button id="ai-mode">AI MODE: OFF</button><button id="ai-sequence" class="primary">AI 5-SHOT TEST</button></div></div>
+<div class="section"><div class="label">EXACT ANIMATION PREVIEW</div><p class="desc">Play each retained goalkeeper FBX directly on the production character rig. LEFT/RIGHT are from the front-facing viewer's perspective.</p><div class="grid">
+<button data-clip="gk_catch-middle-head_height.fbx">CATCH · HEAD</button>
+<button data-clip="gk_catch-middle-jump-above_head_height.fbx">CATCH · HIGH</button>
+<button data-clip="gk_catch-middle-rolling_ball_pickup.fbx">CATCH · ROLL</button>
+<button data-clip="gk_catch-middle-stomach_height.fbx">CATCH · BODY</button>
+<button data-clip="gk_catch-middle_2_steps_forward_jump-above_head_height.fbx">CATCH · RUN-UP</button>
+<button data-clip="gk_dive-high_shot-left-ball_in_hand.fbx">HIGH · LEFT</button>
+<button data-clip="gk_dive-high_shot-right-ball_in_hand.fbx">HIGH · RIGHT</button>
+<button data-clip="gk_dive-middle_shot-left-ball_in_hand.fbx">MID · LEFT</button>
+<button data-clip="gk_dive-middle_shot-right-ball_in_hand.fbx">MID · RIGHT</button>
+<button data-clip="gk_dive-low_shot-left-ball_not_in_hand.fbx">LOW · LEFT</button>
+<button data-clip="gk_dive-low_shot-right-ball_not_in_hand.fbx">LOW · RIGHT</button>
+</div></div>
 <div class="section"><div class="label">CAMERA</div><div class="grid"><button data-camera="front" class="active">FRONT</button><button data-camera="side">SIDE</button><button data-camera="rear">REAR</button><button data-camera="reset">RESET VIEW</button></div></div>
 <div class="section"><div class="label">LIVE DIAGNOSTICS</div><div id="readout">Waiting for model and animation assets…</div></div>
 </div></aside>
@@ -82,14 +95,14 @@ function setPhase(next,duration=0){phase=next;phaseTimer=duration}
 function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.72,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration,goalWidth:7.32,goalHeight:2.44,keeperHeight:1.9});aiReactionTimer=aiDecision.reactionTime;if(aiMode)shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase();}
 function triggerAction(action){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.animationOverride=action;shotResult=action==="keeper-catch"?"CATCH ANIMATION":"PARRY ANIMATION";setPhase("action",1.05)}
 function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":kind==="middle"?"middle":"high";keeper.diveClipState=kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):kind==="middle"?(side==="left"?"keeperDiveMiddleLeft":"keeperDiveMiddleRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight");keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="middle"?"MID ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
-function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
+function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.manualClipFile="";keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
 function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
 function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;const side=targetSide(shot.kind),height=shot.to.y;const canReach=side==="center"||Math.abs(shot.to.x)<3.2;const saved=!!(aiDecision&&aiDecision.reachable&&aiDecisionFired&&shot.elapsed>=aiDecision.reactionTime);if(saved){saveCount++;shotResult=(aiMode?"AI SAVE · ":"SAVE · ")+side.toUpperCase()}else{goalCount++;keeper.dive=0;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+"OUT OF REACH";setPhase("miss",.5)}}
 function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));if(t>=1){resolveShot();shot=null;ball.visible=false}}
 function updateKeeper(dt){
  if(phase==="action"){
   phaseTimer-=dt;
-  if(phaseTimer<=0){keeper.animationOverride="";setPhase("idle")}
+  if(phaseTimer<=0){keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle")}
  }else if(phase==="diving"){
   phaseTimer-=dt;
   keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
@@ -169,6 +182,15 @@ function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDel
 frame();
 keeperRenderer.load().then(()=>{if(keeperRenderer.ready&&keeperRenderer.modelSource==="mixamo-fbx"){status.textContent="3D KEEPER · MIXAMO RIG";shotResult="character.fbx ready · goalkeeper action clips load on demand";setPhase("idle");ball.visible=false}else{status.textContent="MODEL ERROR";shotResult=keeperRenderer.error||"character.fbx could not be loaded";setPhase("asset-error");updateReadout()}}).catch(e=>{status.textContent="MODEL ERROR";shotResult=e?.message||String(e);setPhase("asset-error");updateReadout()});
 function runSequence(){if(sequenceIndex>=0)return;sequenceIndex=0;const list=["left-low","right-low","center-high","left-high","right-high"];const next=()=>{if(sequenceIndex>=list.length){sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE";return}fireShot(list[sequenceIndex++]);sequenceTimer=2.45};next();const tick=()=>{if(sequenceIndex<0)return;sequenceTimer-=.05;if(sequenceTimer<=0){if(sequenceIndex<list.length)next();else{sequenceIndex=-1;shotResult="5-SHOT TEST COMPLETE"}}else setTimeout(tick,50)};setTimeout(tick,50)}
+document.querySelectorAll("[data-clip]").forEach(button=>button.addEventListener("click",async()=>{
+ const file=button.dataset.clip;
+ if(!keeperRenderer.ready)return;
+ button.disabled=true;shot=null;ball.visible=false;keeper.dive=0;keeper.diveRecover=0;keeper.diveSide="";keeper.diveHeight="";
+ keeper.animationOverride=file.startsWith("gk_catch")?"keeper-catch":file.includes("middle_shot")?"keeper-dive-middle-left":file.includes("low_shot")?"keeper-dive-low-left":file.includes("high_shot")?"keeper-dive-left":"keeper-catch";
+ keeper.manualClipFile=file;setPhase("action",3.2);shotResult="PREVIEW · "+file;
+ try{await keeperRenderer.loadMixamoClip(file);shotResult="PLAYING · "+file}catch(error){shotResult="CLIP ERROR · "+(error?.message||String(error))}
+ button.disabled=false;updateReadout();
+}));
 document.querySelector("#load-keeper-anims").addEventListener("click",async()=>{const button=document.querySelector("#load-keeper-anims");if(!keeperRenderer.ready)return;button.disabled=true;button.textContent="LOADING GK ANIMS…";shotResult="Loading goalkeeper save, catch, parry and recovery clips";const results=await keeperRenderer.preloadGoalkeeperTestClips();const ok=results.filter(x=>x.ok).length;const failed=results.filter(x=>!x.ok);shotResult="GK CLIPS · "+ok+"/"+results.length+" LOADED"+(failed.length?" · FAILED: "+failed.map(x=>x.state).join(", "):"");button.disabled=false;button.textContent="RELOAD GK ANIMS";updateReadout()});
 document.querySelector("#ai-mode").addEventListener("click",()=>{aiMode=!aiMode;document.querySelector("#ai-mode").textContent="AI MODE: "+(aiMode?"ON":"OFF");document.querySelector("#ai-mode").classList.toggle("active",aiMode);resetKeeper()});
 document.querySelector("#ai-sequence").addEventListener("click",()=>{aiMode=true;document.querySelector("#ai-mode").textContent="AI MODE: ON";document.querySelector("#ai-mode").classList.add("active");resetKeeper();runSequence()});
