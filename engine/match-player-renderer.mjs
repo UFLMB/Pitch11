@@ -247,26 +247,29 @@ export class MatchPlayerRenderer {
   }
 
   async preloadGoalkeeperTestClips() {
-    const tests = [
-      ["keeperSet", 0],
-      ["keeperPenaltyReady", 0],
-      ["keeperMove", 0],
-      ["keeperDiveLeft", 0],
-      ["keeperDiveRight", 0],
-      ["keeperDiveMiddleLeft", 0],
-      ["keeperDiveMiddleRight", 0],
-      ["keeperDiveLowLeft", 0],
-      ["keeperDiveLowRight", 0],
-      ["keeperCatch", 0],
-      ["keeperParry", 0],
-      ["keeperScoop", 0],
-      ["keeperPass", 0],
-      ["keeperDropKick", 0],
-      ["getUp", 0]
+    const files = [
+      "gk_catch-middle-head_height.fbx",
+      "gk_catch-middle-jump-above_head_height.fbx",
+      "gk_catch-middle-rolling_ball_pickup.fbx",
+      "gk_catch-middle-stomach_height.fbx",
+      "gk_catch-middle_2_steps_forward_jump-above_head_height.fbx",
+      "gk_dive-high_shot-left-ball_in_hand.fbx",
+      "gk_dive-high_shot-right-ball_in_hand.fbx",
+      "gk_dive-middle_shot-left-ball_in_hand.fbx",
+      "gk_dive-middle_shot-right-ball_in_hand.fbx",
+      "gk_dive-low_shot-left-ball_not_in_hand.fbx",
+      "gk_dive-low_shot-right-ball_not_in_hand.fbx"
     ];
-    const results = await Promise.allSettled(tests.map(([state, playerId]) => this.ensureMixamoState(state, playerId)));
+    const supportStates = [
+      ["keeperSet", 0], ["keeperPenaltyReady", 0], ["keeperMove", 0],
+      ["keeperPass", 0], ["keeperDropKick", 0], ["getUp", 0]
+    ];
+    const results = await Promise.allSettled([
+      ...files.map(file => this.loadMixamoClip(file)),
+      ...supportStates.map(([state, playerId]) => this.ensureMixamoState(state, playerId))
+    ]);
     return results.map((result, index) => ({
-      state: tests[index][0],
+      state: index < files.length ? files[index] : supportStates[index - files.length][0],
       ok: result.status === "fulfilled" && !!result.value,
       clip: result.status === "fulfilled" && result.value ? result.value.name : "",
       error: result.status === "rejected" ? result.reason?.message || String(result.reason) : ""
