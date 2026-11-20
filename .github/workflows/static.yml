@@ -62,8 +62,10 @@ jobs:
           });
           console.log(`Checked ${inline.length} inline application scripts.`);
           NODE
-      - name: Check CC0 audio bridge module syntax
-        run: node --check engine/audio-assets.mjs
+      - name: Check CC0 audio bridge and downloader syntax
+        run: |
+          node --check engine/audio-assets.mjs
+          node --check scripts/download-cc0-audio.mjs
       - name: Check Player Kit Studio module syntax
         run: |
           node --input-type=module <<'NODE'
@@ -238,6 +240,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Download verified CC0 audio assets for the Pages artifact
+        run: node scripts/download-cc0-audio.mjs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Vendor pinned Three.js runtime for offline same-origin loading
