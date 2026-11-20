@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -22,6 +24,8 @@ jobs:
           sudo apt-get install -y assimp-utils
       - name: Inspect all active FBX animation sources
         run: node scripts/inspect-player-fbx-package.mjs
+      - name: Compare active animation tracks against the character FBX rig
+        run: node scripts/inspect-player-model-candidate.mjs
       - name: Check browser lab module syntax
         run: |
           node --check engine/simulation-lab.mjs
