@@ -1,123 +1,79 @@
-# PITCH 11 — Player animation coverage audit
+# PITCH 11 — Live player animation coverage audit
 
-**Date:** 2026-11-19  
-**Branch reviewed:** `main`  
-**Scope:** current `input/player-package/` Mixamo FBX inventory, current match-render path, and animation requirements for replacing placeholder/legacy player presentation with fully animated 3D players.
+**Updated:** 2026-11-20  
+**Branch baseline:** `main` at `1c27571a4b3a738d52e5bfc01a8d528c071fb378`  
+**Implementation branch:** `feature/complete-outfield-animation-mapping`  
+**Inventory:** 54 FBX files in `input/player-package/`
 
-## Executive result
+## Architecture — production, not diagnostic-only
 
-- **54/54 FBX files are present** in `input/player-package/`.
-- The isolated Mixamo direct-binding audit previously reported **54 PASS / 0 FAIL** against the uploaded `character.fbx`.
-- The passing audit proves that the clips can bind to that character skeleton in the diagnostic player. It does **not** prove that every football gameplay action has a dedicated clip, or that the clips are already wired into the live match state machine.
-- The current match players are still drawn by the procedural Canvas 2D player renderer (`drawPlayer3`); it is not a skinned 3D character renderer. The Mixamo audit page remains a separate diagnostic; the FBX clips are not yet integrated into the live match.
-- The keeper clip classifications below include the user's direct descriptions of the actual FBX motion. These are more reliable than interpreting filenames alone.
+The live match uses the skinned 3D player renderer:
 
-## Current clip inventory
+`index.html` → `stadium-runtime.js` → `MatchPlayerRenderer` → Three.js `FBXLoader`.
 
-All entries below are present in the repository. Numbered variants are separate source files and should be preserved until their differences are reviewed.
+The renderer loads `input/player-model-candidate/character.fbx`, clones its skeleton for each player, and binds source animation tracks directly after validating the bone targets. Seven core clips are preloaded; other clips are loaded lazily when the match state requests them. The standalone Mixamo audit pages are diagnostics, not the production renderer.
 
-### Locomotion and basic movement — 9 files
+The old statement that live players are still exclusively Canvas 2D was incorrect. Canvas 2D retains lightweight selection/stamina overlays and HUD elements; player bodies are rendered by the 3D skinned-model renderer.
 
-| Source clip | Coverage |
+## Outfield inventory and live mapping
+
+| FBX source | Intended state / status |
 |---|---|
-| `offensive idle.fbx` | Standing / attacking idle |
-| `jog forward.fbx` | Forward jog |
-| `jog backward.fbx` | Backward jog |
-| `jog forward diagonal.fbx` | Forward diagonal jog |
-| `jog forward diagonal (2).fbx` | Forward diagonal variant |
-| `jog backward diagonal.fbx` | Backward diagonal jog |
-| `jog backward diagonal (2).fbx` | Backward diagonal variant |
-| `jog strafe left.fbx`, `jog strafe right.fbx` | Lateral movement |
+| `offensive idle.fbx` | Active idle |
+| `jog forward.fbx` | Active forward locomotion; currently reused for walk, run and sprint speed bands |
+| `jog backward.fbx` | Active backward locomotion (direction resolver fixed in this audit) |
+| `jog forward diagonal.fbx` | Active screen-left forward diagonal |
+| `jog forward diagonal (2).fbx` | Active screen-right forward diagonal |
+| `jog backward diagonal.fbx` | Active screen-left backward diagonal |
+| `jog backward diagonal (2).fbx` | Active screen-right backward diagonal |
+| `jog strafe left.fbx` | Active screen-left strafe (direction resolver fixed in this audit) |
+| `jog strafe right.fbx` | Active screen-right strafe (direction resolver fixed in this audit) |
+| `receive soccerball.fbx` | Registered receive state; no reliable one-shot receive event is currently emitted by the legacy match state |
+| `stall soccerball.fbx`, `stall soccerball (2).fbx`, `stall soccerball (3).fbx`, `stall soccerball (4).fbx` | Active close-control/dribble variants |
+| `kneeing soccerball.fbx`, `kneeing soccerball (2).fbx` | Active close-control/dribble variants |
+| `kick soccerball.fbx`, `kick soccerball (2).fbx` | Active general pass/kick variants |
+| `strike foward jog.fbx` | Active ordinary moving shot |
+| `soccer penalty kick.fbx` | Active dedicated penalty-shot state (added in this audit; only selected for a penalty restart) |
+| `kick up soccerball.fbx` | Registered high-kick state; no distinct live simulation event currently selects it |
+| `header soccerball.fbx`, `header soccerball (2).fbx` | Active header variants |
+| `throw in.fbx` | Active throw-in |
+| `soccer tackle.fbx`, `soccer tackle (2).fbx`, `soccer tackle (3).fbx` | Active tackle variants; also used for slide-tackle state because no separate slide FBX exists |
+| `soccer trip.fbx` | Registered fall/trip state |
+| `fallen idle.fbx` | Active downed-idle state |
+| `standing up.fbx` | Active get-up state |
+| `scissor kick.fbx` | Deliberately untouched; not mapped or reassigned so existing skill-move behavior is not changed |
 
-**Gap:** no clearly identified dedicated walk cycle, sprint cycle, run-start/run-stop, turn-in-place, sharp pivot, or dedicated ball-carrying locomotion cycle.
+## Goalkeeper inventory
 
-### Outfield ball actions — 16 files
+The 22 goalkeeper-related files remain on their existing mappings. This audit does not change goalkeeper AI, dive selection, recovery, or goalkeeper animation routing; that subsystem is intentionally parked.
 
-| Source clip(s) | Coverage |
-|---|---|
-| `receive soccerball.fbx` | Receiving / first touch |
-| `stall soccerball.fbx`, `stall soccerball (2).fbx`, `stall soccerball (3).fbx`, `stall soccerball (4).fbx` | Ball control / stall variants |
-| `kick soccerball.fbx`, `kick soccerball (2).fbx` | General kick / strike variants |
-| `kick up soccerball.fbx` | Lifting the ball |
-| `kneeing soccerball.fbx`, `kneeing soccerball (2).fbx` | Knee touch / aerial control |
-| `header soccerball.fbx`, `header soccerball (2).fbx` | Header variants |
-| `soccer penalty kick.fbx` | Penalty-style kick |
-| `scissor kick.fbx` | Acrobatic / scissor kick |
-| `strike foward jog.fbx` | Strike while moving |
-| `throw in.fbx` | Throw-in |
+- Keeper idle, sidestep and directing variants
+- Catch variants (head, stomach, jumping and rolling-ball pickup)
+- High, middle and low dive pairs
+- Keeper pass, drop kick, overhand throw and ball placement
+- `transition.fbx` as the existing penalty-ready state
 
-**Gap:** no clearly identified dedicated short pass, driven pass, long pass, through-ball pass, cross, volley, controlled shot, finesse shot, power shot, or distinct weak-foot action. Some may be approximated with the general kick clips, but that is a gameplay mapping decision—not proof of a dedicated animation.
+The user's viewer-facing left/right convention remains in force: file 1 is screen-left and file 2 is screen-right when viewing the player from the front.
 
-### Defending, falls and recovery — 7 files
+## Fixes in this audit
 
-| Source clip(s) | Coverage |
-|---|---|
-| `soccer tackle.fbx`, `soccer tackle (2).fbx`, `soccer tackle (3).fbx` | Tackle variants |
-| `soccer trip.fbx` | Trip / loss of balance |
-| `fallen idle.fbx` | Downed idle |
-| `standing up.fbx` | Get-up recovery |
-| `transition.fbx` | Likely penalty-ready goalkeeper stance (user's playback-based identification; confirm exact use in gameplay) |
+1. Backward and lateral movement actions now resolve to their dedicated FBX states instead of falling through to generic speed-based forward jogging.
+2. Slide-tackle action now resolves to the available soccer-tackle source clips rather than requesting a nonexistent `slide` catalog state.
+3. Penalty restart shots now select `soccer penalty kick.fbx`; ordinary shots continue to use `strike foward jog.fbx`.
+4. Regression tests cover these mappings and preserve the previously established diagonal screen-side convention.
+5. Skill-move logic and `scissor kick.fbx` remain untouched.
 
-**Gap:** no clearly identified jockey / defensive side-shuffle, standing block, shoulder challenge, push-off, stumble recovery, or separate left/right fall and get-up variants.
+## Honest remaining gaps
 
-### Goalkeeper — 22 files
+- No dedicated walk, sprint, acceleration, deceleration, turn-in-place or pivot FBX is present; the forward jog is time-scaled across speed bands.
+- There is no dedicated celebration clip in the 54-file package. The simulation requests a celebration state, but the package has no genuine celebration motion. Do not disguise idle or another unrelated clip as a celebration.
+- Receive and high-kick clips are in the package and have resolver/catalog support, but the legacy match state does not yet provide a sufficiently explicit, correctly timed gameplay event for them. They should not be triggered by a guessed timer or by treating every possession as a reception.
+- No separate slide-tackle FBX exists; the three soccer-tackle variants are reused for the slide state.
+- `scissor kick.fbx` remains intentionally unused by this pass to avoid changing skill-move behavior.
+- The keeper subsystem remains unchanged by design.
 
-| Source clip | Confirmed / inferred motion |
-|---|---|
-| `goalkeeper idle.fbx`, `goalkeeper idle (2).fbx` | Keeper idle variants (filename-based classification) |
-| `goalkeeper sidestep.fbx`, `goalkeeper sidestep (2).fbx` | Lateral positioning (filename-based classification) |
-| `goalkeeper directing.fbx`, `goalkeeper directing (2).fbx` | Organising / directing (filename-based classification) |
-| `goalkeeper body block (2).fbx` | Low dive to the left, catching the ball |
-| `goalkeeper body block (3).fbx` | Low dive to the right, catching the ball |
-| `goalkeeper body block.fbx` | Diving/blocking save without catching the ball |
-| `goalkeeper catch (2).fbx` | Straightforward standing catch |
-| `goalkeeper catch (3).fbx` | Jumping catch |
-| `goalkeeper catch (4).fbx` | Jumping catch, reaching slightly to the left |
-| `goalkeeper catch.fbx` | Save/catch with the ball secured against the stomach |
-| `goalkeeper diving save.fbx`, `goalkeeper diving save (2).fbx` | High dives to the left and right from a central starting position; exact file-to-side ordering should be confirmed in playback before hard-coding |
-| `goalkeeper scoop.fbx` | Low collection (filename-based classification) |
-| `goalkeeper miss.fbx` | **Fingertip Save** — fingertip deflection (confirmed by user during playback) |
-| `goalkeeper pass.fbx` | Distribution pass (filename-based classification) |
-| `goalkeeper drop kick.fbx` | Drop-kick distribution (filename-based classification) |
-| `goalkeeper overhand throw.fbx` | Overarm distribution (filename-based classification) |
-| `goalkeeper placing ball.fbx`, `goalkeeper placing ball (2).fbx` | Ball placement / restart (filename-based classification) |
-| `standing up.fbx` | Get-up from the ground, turning/reaching slightly to the left |
-| `fallen idle.fbx` | Remaining down on the ground |
-| `transition.fbx` | **Likely Penalty Ready** — goalkeeper penalty-ready stance (user's playback-based identification; gameplay use still to be validated) |
+## Validation boundary
 
-**Still not identified from the 22 keeper clips:** punch clearance with the fist, a dedicated leg save, and goalkeeper sprint/run. The fingertip deflection is covered by `goalkeeper miss.fbx`; `transition.fbx` is likely the penalty-ready stance, based on the user's playback identification. These are candidate coverage gaps, not proof that no existing clip can serve the situation. The non-catching body block may already cover some close-range reflex saves, and the stomach-secure catch may cover a smother/secure-catch situation.
+Automated tests can verify state routing, catalog membership and direct skeleton-track compatibility. They cannot prove that every clip looks correct in the live camera, that foot contacts align perfectly with ball contact, or that all 22 players animate smoothly on the target phone. Those require an in-game visual test.
 
-> Inventory note: the 54-file total is the repository's actual file count. This document groups clips by gameplay role; a source file may support more than one gameplay situation. Keeper motion descriptions marked as confirmed come from the user's direct playback observations; the penalty-ready classification for `transition.fbx` is currently considered likely, pending gameplay validation; entries marked filename-based have not been visually verified in this audit.
-
-## Required coverage before calling the animation set complete
-
-| System | Required states / transitions | Current assessment |
-|---|---|---|
-| Locomotion | idle, walk, jog, sprint, accelerate, decelerate, stop, turn, pivot, lateral shuffle | Partial |
-| Ball carry | close dribble, running dribble, sprint dribble, turn with ball, shield, stop/control | Partial |
-| Passing | short, driven, long, through ball, cross, one-touch pass | Partial; general kicks only |
-| Shooting | normal, power, finesse, first-time, volley, header, weak-foot variants | Partial |
-| Receiving | ground control, cushioned touch, aerial control, awkward reception | Partial |
-| Defending | jockey, contain, tackle, standing block, shoulder challenge, interception | Partial |
-| Contact / falls | stumble, trip, fall, downed idle, get up, collision recovery | Partial |
-| Set pieces | throw-in, penalty, free-kick stance/run-up, corner delivery, wall jump | Partial |
-| Goalkeeper | set stance, shuffle, dive both sides, catch, parry, punch, claim, recover, distribute | Partial |
-| Reactions | goal celebration, disappointment, appeal, referee interaction, teammate interaction | Missing / not identified |
-| Team moments | group celebration, high-five, handshake, huddle, walkout | Missing / not identified |
-
-## Integration and validation requirements
-
-1. Keep the original FBX files unchanged as source assets.
-2. Use the tested Mixamo `character.fbx` rig as the compatibility reference; do not route these clips through the legacy Bip01 rig.
-3. Build a production animation state map from actual gameplay events (movement speed, ball possession, pass/shot type, tackle/fall state, keeper action).
-4. Add blend transitions between idle, locomotion, ball-carrying and action clips; avoid abrupt one-frame cuts.
-5. Root motion must be handled deliberately: gameplay position/velocity remains authoritative unless a specific action is explicitly designed to own root motion.
-6. Validate foot contact, facing direction, clip duration, ball-contact frame, left/right mirroring and end pose in the live match camera.
-7. Keep the diagnostic audit isolated. Do not replace the live player model, alter match physics, or change the production renderer as part of this inventory task.
-8. Before sourcing more assets, visually classify the remaining numbered variants. Several may already cover more than their filenames suggest.
-
-## Bottom line
-
-The current pack is sufficient to prototype a convincing animated footballer and a useful first goalkeeper. It is **not yet a complete animation library** for all 11v11 match situations. For the goalkeeper specifically, the user-confirmed inventory already covers low catches to both sides, a non-catching block, ordinary and jumping catches, a left-reaching jumping catch, stomach-secured catch, high dives to both sides, low scoop, downed idle and get-up/ready transitions. The highest-priority keeper candidates still to verify are punch clearance, leg save and sprint/run. Fingertip deflection is covered by `goalkeeper miss.fbx`; `transition.fbx` is likely the penalty-ready stance. Do not source replacements until the current clips have been previewed and tested.
-
-The live match players are still rendered procedurally in Canvas 2D. Full in-match use of the uploaded skinned FBX character and clips remains a separate integration phase.
+**Conclusion:** the 3D player-animation system is already in the live match. This pass closes concrete outfield routing holes and documents the remaining source-asset/event gaps; it does not claim that all 54 clips are active or that the animation library is complete.
