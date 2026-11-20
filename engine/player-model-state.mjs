@@ -44,20 +44,17 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
 
   let action = "idle";
   if (typeof player.animationOverride === "string" && player.animationOverride) action = player.animationOverride;
-  else if (player.dive > 0) {
-    if (!player.gk) action = "fall";
-    else {
-      // The decision layer's requested viewer-facing screen side is authoritative.
-      // Re-deriving it from a world angle can flip the selected clip after
-      // facing interpolation; only legacy callers without diveSide use the angle.
-      const side = player.diveSide === "left" || player.diveSide === "right"
-        ? player.diveSide
-        : resolveKeeperDiveSide(player.diveAng, player.face);
-      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` :
-        player.diveHeight === "middle" ? `keeper-dive-middle-${side}` : `keeper-dive-${side}`;
-    }
+  else if (player.gk && (player.dive > 0 || player.diveAnimation) && !player.diveAnimationFinished) {
+    // Keep the selected save clip alive after the legacy AI's short physical
+    // dive timer expires. The renderer releases this latch when the FBX ends.
+    const side = player.diveSide === "left" || player.diveSide === "right"
+      ? player.diveSide
+      : resolveKeeperDiveSide(player.diveAng, player.face);
+    action = player.diveHeight === "low" ? `keeper-dive-low-${side}` :
+      player.diveHeight === "middle" ? `keeper-dive-middle-${side}` : `keeper-dive-${side}`;
   }
-  else if (player.gk && player.diveRecover > 0) action = "get-up";
+  else if (player.dive > 0 && !player.gk) action = "fall";
+  else if (player.gk && player.diveRecover > 0 && !player.diveAnimationFinished) action = "get-up";
   else if (player.sd) action = "slide-tackle";
   else if (player.down) action = "fallen-idle";
   else if (player.jump > 0) action = "header";
@@ -86,6 +83,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
     winded: !!player.winded,
     manualClipFile: typeof player.manualClipFile === "string" ? player.manualClipFile : "",
     manualClipToken: Number.isFinite(player.manualClipToken) ? player.manualClipToken : 0,
+    sourcePlayer: player,
     skinTone: SKIN_TONES[id % SKIN_TONES.length],
     hairTone: HAIR_TONES[(id * 3 + team) % HAIR_TONES.length],
     visible: !player.out
