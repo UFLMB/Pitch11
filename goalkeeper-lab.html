@@ -160,7 +160,7 @@ function updateReadout(){
  const partLine='<br>Meshes: '+(parts.meshCount||0)+' · Skinned: '+(parts.skinnedMeshCount||0)+'<br>Parts: '+((parts.kitParts||[]).join(', ')||'not detected')+'<br>Materials: '+((parts.materialNames||[]).join(', ')||'none')+'<br>Loaded clips: '+(keeperRenderer.loadedClipNames||[]).join(', ');
  const failures=(keeperRenderer.failedClipNames||[]);
  const failureLine=failures.length?'<br>Clip errors: '+failures.map(x=>x.file).join(', '):'';
- const contactRig=keeperRenderer.getGoalkeeperContactRigStatus(0);const contactLine='<br>Rig contact: '+(contactRig.available?contactRig.colliderCount+' colliders':'unavailable')+' · Fingertip test: '+fingertipTestResult;
+ const contactRig=keeperRenderer.getGoalkeeperContactRigStatus(0);const contactLine='<br>Rig contact: '+(contactRig.available?contactRig.colliderCount+' colliders':'unavailable')+' · Fingertip colliders: '+contactRig.fingertipColliderCount+' · Fingertip test: '+fingertipTestResult;
  readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+contactLine+failureLine;
 }
 const clock=new THREE.Clock();let last=0;
