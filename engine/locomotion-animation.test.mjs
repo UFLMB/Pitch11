@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clampRootMotionDeltaToTarget, extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 import { isOneShotAnimationState } from "./player-animation-map.mjs";
 function vectorTrack(name, values) { return { name, values: new Float32Array(values), getValueSize: () => 3 }; }
 test("flattens horizontal Hips translation while preserving vertical pelvis motion", () => {
@@ -47,6 +47,28 @@ test("samples extracted root motion continuously and across a looping sidestep b
  assert.deepEqual(getHorizontalRootMotionDelta(clip,0,.25),{x:1,z:0});
  assert.deepEqual(getHorizontalRootMotionDelta(clip,.75,.25),{x:2,z:0});
  assert.deepEqual(getHorizontalRootMotionDelta(clip,.25,.75),{x:2,z:0});
+});
+
+test("distributes a low-frequency root-motion update smoothly over rendered frames", () => {
+ let pendingDelta={x:1,z:-.5};
+ let pendingDuration=.05;
+ let total={x:0,z:0};
+ for (const frameDelta of [1/60,1/60,1/60,1/60]) {
+  const result=consumeRootMotionDelta(pendingDelta,pendingDuration,frameDelta);
+  total.x+=result.delta.x;total.z+=result.delta.z;
+  pendingDelta=result.pendingDelta;pendingDuration=result.pendingDuration;
+ }
+ assert.ok(Math.abs(total.x-1)<1e-9);
+ assert.ok(Math.abs(total.z+.5)<1e-9);
+ assert.equal(pendingDuration,0);
+ assert.deepEqual(pendingDelta,{x:0,z:0});
+});
+
+test("retains unconsumed root motion when a render frame is shorter than the animation tick", () => {
+ const first=consumeRootMotionDelta({x:.6,z:.3},.05,1/60);
+ assert.ok(Math.abs(first.delta.x-.2)<1e-9);
+ assert.ok(Math.abs(first.pendingDelta.x-.4)<1e-9);
+ assert.ok(Math.abs(first.pendingDuration-(.05-1/60))<1e-9);
 });
 
 test("supports opposite sidestep directions and clamps variable target distances", () => {
