@@ -129,6 +129,8 @@ function beginKeeperReturn(){
  keeper.dive=0;keeper.diveRecover=0;keeper.vx=keeper.vy=0;
  keeper.animationOverride="keeper-move";
  keeper.manualClipFile=best?.file||"";
+ keeper.returnFallback=!best;
+ keeper.returnMotionTime=0;
  if(best)keeper.manualClipToken=(keeper.manualClipToken||0)+1;
  setPhase("return");
  shotResult=best?"RETURN · ROOT-MOTION · "+best.file:"RETURN · NO VALID SIDESTEP ROOT TRACK";
@@ -154,7 +156,7 @@ function applyKeeperRootMotion(dt){
  if(stepLength<1e-6)return;
  const projection=(delta.x*remaining.x+delta.z*remaining.z)/distance;
  if(projection<=0)return;
- const scale=Math.min(1,distance/projection);
+ const scale=Math.min(1,distance/projection,distance/stepLength);
  keeper.x=keeper.px=keeper.x+delta.x*scale*10;
  keeper.y=keeper.py=keeper.y+delta.z*scale*10;
  keeper.vx=keeper.vy=0;
@@ -194,9 +196,19 @@ function updateKeeper(dt){
    setPhase("return",.85);
   }
  }else if(phase==="return"){
-  // The renderer supplies one root-motion delta per animation update.
-  // Position changes are applied after mixer.update(), never in parallel
-  // with a second engine-driven return interpolation.
+  // If an imported sidestep has no usable horizontal root track, retain a
+  // smooth engine fallback rather than leaving the keeper stranded.
+  if(keeper.returnFallback){
+   keeper.x=keeper.px=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
+   keeper.y=keeper.py=THREE.MathUtils.damp(keeper.y,730,5.5,dt);
+   if(Math.hypot((585-keeper.x)*.1,(730-keeper.y)*.1)<.018){
+    keeper.x=keeper.px=585;keeper.y=keeper.py=730;keeper.vx=keeper.vy=0;
+    keeper.animationOverride="";setPhase("idle");
+   }
+  }
+  // Otherwise the renderer supplies one root-motion delta per animation
+  // update. Position changes are applied after mixer.update(), never in
+  // parallel with a second engine-driven return interpolation.
  }else if(phase==="miss"){
   phaseTimer-=dt;
   if(phaseTimer<=0){
