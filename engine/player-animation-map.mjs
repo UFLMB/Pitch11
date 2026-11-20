@@ -29,6 +29,8 @@ const CLIP_ALIASES = Object.freeze({
   keeperSet: ["gkset", "keeperset", "goalkeeperset"],
   keeperDiveLeft: ["gkdiveleft", "gkdivleft", "keeperdiveleft"],
   keeperDiveRight: ["gkdiveright", "gkdivright", "keeperdiveright"],
+  keeperDiveMiddleLeft: ["gkdivemiddleleft", "keeperdivemiddleleft"],
+  keeperDiveMiddleRight: ["gkdivemiddleright", "keeperdivemiddleright"],
   keeperDiveLowLeft: ["gkdivelowleft", "keeperdivelowleft"],
   keeperDiveLowRight: ["gkdivelowright", "keeperdivelowright"],
   keeperCatch: ["gkcatch", "keepercatch"],
@@ -52,6 +54,8 @@ const FALLBACKS = Object.freeze({
   keeperFingertip: ["keeperParry", "keeperSet", "idle"],
   keeperDiveLeft: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveRight: ["keeperParry", "fall", "keeperSet", "idle"],
+  keeperDiveMiddleLeft: ["keeperParry", "fall", "keeperSet", "idle"],
+  keeperDiveMiddleRight: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveLowLeft: ["keeperParry", "fall", "keeperSet", "idle"],
   keeperDiveLowRight: ["keeperParry", "fall", "keeperSet", "idle"],
   receive: ["pass", "idle"],
@@ -94,6 +98,8 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (action.includes("keeperparry")) return "keeperParry";
   if (action.includes("keeperdivelowleft")) return "keeperDiveLowLeft";
   if (action.includes("keeperdivelowright")) return "keeperDiveLowRight";
+  if (action.includes("keeperdivemiddleleft")) return "keeperDiveMiddleLeft";
+  if (action.includes("keeperdivemiddleright")) return "keeperDiveMiddleRight";
   if (action.includes("keeperdiveleft")) return "keeperDiveLeft";
   if (action.includes("keeperdiveright")) return "keeperDiveRight";
   if (action.includes("celebrat")) return "celebrate";
@@ -149,7 +155,7 @@ export const PLAYER_ANIMATION_STATES = Object.freeze(Object.keys(CLIP_ALIASES));
 // "jump" remains listed for compatible callers that use the older alias.
 export const ONE_SHOT_ANIMATION_STATES = Object.freeze([
   "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "header", "fall", "getUp", "throwIn",
-  "keeperDiveLeft", "keeperDiveRight", "keeperDiveLowLeft", "keeperDiveLowRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass",
+  "keeperDiveLeft", "keeperDiveRight", "keeperDiveMiddleLeft", "keeperDiveMiddleRight", "keeperDiveLowLeft", "keeperDiveLowRight", "keeperCatch", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass",
   "keeperDropKick", "keeperThrow", "keeperPlace"
 ]);
 const ONE_SHOT_ANIMATION_STATE_SET = new Set(ONE_SHOT_ANIMATION_STATES);
