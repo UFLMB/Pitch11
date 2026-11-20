@@ -18,14 +18,15 @@ try {
   await page.locator("#load-keeper-anims").click();
   await page.waitForFunction(() => (document.querySelector("#load-keeper-anims")?.textContent || "").includes("RELOAD GK ANIMS"), undefined, { timeout: 30000 });
   const targets = [];
-  for (const x of [-2.4, -1.8, -1.2, -0.6, 0, 0.6, 1.2, 1.8, 2.4]) {
-    for (const y of [1.0, 1.3, 1.6, 1.9, 2.2, 2.4]) targets.push({ x, y });
+  for (const x of [-1.8, -0.9, 0, 0.9, 1.8]) {
+    for (const y of [1.3, 1.7, 2.1, 2.4]) targets.push({ x, y });
   }
   let readout = "";
   let contactTarget = null;
   let attempts = 0;
   for (const target of targets) {
     attempts++;
+    console.log("Testing fingertip target", attempts, target);
     await page.evaluate(({ x, y }) => window.__GK_SET_FINGERTIP_TARGET(x, y), target);
     await page.locator('[data-action="fingertip-test"]').click();
     await page.waitForFunction(() => /Fingertip test: RUNNING/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 5000 });
