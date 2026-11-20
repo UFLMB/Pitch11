@@ -23,7 +23,9 @@ try {
   }
   let readout = "";
   let contactTarget = null;
+  let attempts = 0;
   for (const target of targets) {
+    attempts++;
     await page.evaluate(({ x, y }) => window.__GK_SET_FINGERTIP_TARGET(x, y), target);
     await page.locator('[data-action="fingertip-test"]').click();
     await page.waitForFunction(() => /Fingertip test: RUNNING/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 5000 });
@@ -32,12 +34,9 @@ try {
     if (/Fingertip test: PASS/.test(readout)) { contactTarget = target; break; }
   }
   await page.screenshot({ path: artifacts + "/goalkeeper-fingertip-contact.png", fullPage: true });
-  console.log(JSON.stringify({ result: contactTarget ? "PASS" : "FAIL", contactTarget, attempts: targets.length, readout }, null, 2));
+  console.log(JSON.stringify({ result: contactTarget ? "PASS" : "FAIL", contactTarget, attempts, readout }, null, 2));
   assert.ok(contactTarget, "Fingertip animation did not contact any of the tested in-goal ball trajectories");
 
-  await page.screenshot({ path: artifacts + "/goalkeeper-fingertip-contact.png", fullPage: true });
-  console.log(JSON.stringify({ result: /Fingertip test: PASS/.test(readout) ? "PASS" : "FAIL", readout }, null, 2));
-  assert.match(readout, /Fingertip test: PASS/, "Fingertip animation did not make physical contact with the goal-line fingertip ball");
 } finally {
   await browser.close();
 }
