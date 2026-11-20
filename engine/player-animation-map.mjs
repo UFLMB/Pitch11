@@ -107,6 +107,10 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (action.includes("keeperdiveleft")) return "keeperDiveLeft";
   if (action.includes("keeperdiveright")) return "keeperDiveRight";
   if (action.includes("celebrat")) return "celebrate";
+  if (action.includes("forwarddiagonalleft")) return "forwardDiagonalLeft";
+  if (action.includes("forwarddiagonalright")) return "forwardDiagonalRight";
+  if (action.includes("backwarddiagonalleft")) return "backwardDiagonalLeft";
+  if (action.includes("backwarddiagonalright")) return "backwardDiagonalRight";
   if (action.includes("transition")) return "transition";
   if (action.includes("throwin")) return "throwIn";
   if (action.includes("receive")) return "receive";

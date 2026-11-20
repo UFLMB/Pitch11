@@ -108,3 +108,22 @@ test("resolves the replacement FBX clips including exactly two low-shot saves", 
     "gk_dive-low_shot-right-ball_not_in_hand.fbx"
   ]);
 });
+
+
+
+test("selects screen-left and screen-right diagonal clips from the front-facing convention", () => {
+  const state = (vx, vy, extra = {}) => mapLegacyPlayerState(player({ vx, vy, face: 0, ...extra }), 0);
+  assert.equal(state(100, -100).action, "forward-diagonal-left");
+  assert.equal(state(100, 100).action, "forward-diagonal-right");
+  assert.equal(state(-100, -100).action, "backward-diagonal-left");
+  assert.equal(state(-100, 100).action, "backward-diagonal-right");
+  assert.equal(state(-100, 0).action, "backward");
+  assert.equal(state(0, -100).action, "strafe-left");
+  assert.equal(state(0, 100).action, "strafe-right");
+});
+
+test("does not replace skill-move burst animation selection", () => {
+  const state = mapLegacyPlayerState(player({ vx: 100, vy: -100, face: 0, skill: .4 }), 0);
+  assert.equal(state.action, "idle");
+  assert.equal(resolvePlayerAnimationState(state, state.speed), "sprint");
+});
