@@ -79,7 +79,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 <div id="status">MATCHDAY ENVIRONMENT · LOADING LIVE STADIUM SYSTEM…</div>
 <div id="loading">LOADING LIVE MATCHDAY ENVIRONMENT<small>Using the current PITCH 11 stadium runtime · player models and gameplay disabled</small></div>
 <script type="module">
-import './stadium-environment-runtime.js';
+const runtimeImport=import('./stadium-environment-runtime.js');
 
 const canvas=document.querySelector('#c');
 const status=document.querySelector('#status');
@@ -215,6 +215,12 @@ window.addEventListener('error',e=>{
 window.addEventListener('unhandledrejection',e=>{
  if(!ready)showBootFailure(String(e.reason?.message||e.reason||'Module loading error'));
 });
+runtimeImport.catch(error=>{
+ if(!ready)showBootFailure('Stadium runtime module failed to load: '+String(error?.message||error));
+});
+setTimeout(()=>{
+ if(!ready&&!loading.querySelector('button'))showBootFailure('The stadium runtime or GLB request did not finish within 60 seconds. Check the browser network log, then retry.');
+},60000);
 </script>
 </body>
 </html>
