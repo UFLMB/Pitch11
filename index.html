@@ -2383,7 +2383,7 @@ const _goal=goal;goal=function(dr){_goal(dr);const t=S.goalTeam,sc=S.scorer,s=ST
   for(let r=0;r<5;r++)rate(P[(1-t)*11+r],-.15);
   RP.gf=RP.total;RP.did=false;AU.roar(2.2);AU.noise(.3,'highpass',2500,.25);
   cm(pick(['GOAL! ','What a goal! ','It\'s in! '])+(sc?tag(sc):KIT[t].name)+(a&&a.p.team===t&&a.p!==sc&&ST.now-a.at<8?' - set up by #'+a.p.num:''));};
-const _doPass=doPass;doPass=function(p,t,m){_doPass(p,t,m);window.P11AudioAssets?.play('pass',.72);if(S.so)return;ST.pa[p.team]++;ST.pp={p,team:p.team};};
+const _doPass=doPass;doPass=function(p,t,m){_doPass(p,t,m);if(S.so)return;ST.pa[p.team]++;ST.pp={p,team:p.team};};
 const _take=take;take=function(p,byHand=false){const q=ST.pp;
   if(q){ST.pp=null;if(p.team===q.team&&p!==q.p){ST.po[p.team]++;rate(q.p,.03);ST.ast={p:q.p,at:ST.now};}else if(p.team!==q.team)rate(p,.06);}
   _take(p,byHand);};
