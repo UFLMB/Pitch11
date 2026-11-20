@@ -1,190 +1,378 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#07110c">
-<title>PITCH 11 — Matchday Environment Lab</title>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="theme-color" content="#07110c">
+<title>PITCH 11 — Stadium Matchday Graphics 3.0</title>
 <style>
-:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}
-#stadium3d{position:fixed;inset:0;z-index:0}
-#stadium3d canvas{display:block;width:100%;height:100%;pointer-events:none}
-#c{position:fixed;inset:0;z-index:1;width:100%;height:100%;opacity:0;pointer-events:auto;touch-action:none}
-.hud{position:fixed;z-index:4;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(12px,2.2vw,28px);gap:12px;pointer-events:none}
-.brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000;pointer-events:none}
-.brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}
-.brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
-.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:75vw}
-button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 10px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.07em;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;color:#f4f7f4}#stage{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;z-index:3;left:0;right:0;top:0;display:flex;align-items:flex-start;justify-content:space-between;padding:clamp(12px,2.2vw,28px);pointer-events:none;gap:12px}
+.brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000}.brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}.brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
+.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end}
+button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 11px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer;backdrop-filter:blur(12px)}
 button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
-#status{position:fixed;z-index:4;left:50%;bottom:16px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.07em;white-space:nowrap;backdrop-filter:blur(12px);max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
-#loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:8;color:#d9f3d5;font-size:12px;letter-spacing:.16em;text-align:center;padding:24px}
-#loading small{display:block;margin-top:10px;color:#819884;letter-spacing:.05em;line-height:1.6}
-#drone-hud{position:fixed;z-index:5;left:16px;bottom:16px;display:none;align-items:flex-end;gap:10px}
-#drone-hud.visible{display:flex}
-.drone-pad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:4px}
+#status{position:fixed;z-index:3;left:50%;bottom:18px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.08em;white-space:nowrap;backdrop-filter:blur(12px)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:5;color:#d9f3d5;font-size:12px;letter-spacing:.16em}
+#loading small{display:block;margin-top:10px;color:#819884;text-align:center;letter-spacing:.05em}
+#drone-hud{position:fixed;z-index:4;left:16px;bottom:18px;display:none;align-items:flex-end;gap:12px;pointer-events:none}
+#drone-hud.visible{display:flex}.drone-pad{display:grid;grid-template-columns:repeat(3,42px);grid-template-rows:repeat(3,42px);gap:4px;pointer-events:auto}
 .drone-pad button,.drone-alt button{padding:0;width:42px;height:42px;font-size:17px;border-radius:10px;touch-action:none}
-.drone-pad button[data-move="forward"]{grid-column:2;grid-row:1}
-.drone-pad button[data-move="left"]{grid-column:1;grid-row:2}
-.drone-pad button[data-move="back"]{grid-column:2;grid-row:3}
-.drone-pad button[data-move="right"]{grid-column:3;grid-row:2}
-.drone-alt{display:flex;flex-direction:column;gap:5px}
-#drone-help{position:fixed;z-index:5;right:16px;bottom:16px;display:none;max-width:240px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
+.drone-pad button[data-move="forward"]{grid-column:2;grid-row:1}.drone-pad button[data-move="left"]{grid-column:1;grid-row:2}.drone-pad button[data-move="back"]{grid-column:2;grid-row:3}.drone-pad button[data-move="right"]{grid-column:3;grid-row:2}
+.drone-alt{display:flex;flex-direction:column;gap:5px;pointer-events:auto}
+#drone-help{position:fixed;z-index:4;right:16px;bottom:18px;display:none;max-width:230px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.5;pointer-events:none}
 #drone-help.visible{display:block}
-@media(max-width:700px){
- .hud{align-items:flex-start;padding:10px;gap:8px}
- .controls{max-width:66vw;gap:5px}
- button{padding:8px 9px;font-size:9px}
- .brand span{font-size:8px}
- #drone-hud{left:9px;bottom:48px;gap:6px}
- .drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}
- .drone-pad button,.drone-alt button{width:38px;height:38px}
- #drone-help{right:9px;bottom:48px;max-width:145px;font-size:9px}
- #status{bottom:8px;font-size:8px}
-}
-</style>
-</head>
-<body>
-<div id="stadium3d" aria-hidden="true"></div>
-<canvas id="c" aria-label="3D stadium developer camera"></canvas>
-<div class="hud">
- <div class="brand"><strong>PITCH 11</strong><span>MATCHDAY ENVIRONMENT LAB · LIVE GAME BUILD</span></div>
- <div class="controls">
-  <button class="active" data-view="broadcast">BROADCAST</button>
-  <button data-view="tactical">TACTICAL</button>
-  <button data-view="low">LOW STADIUM</button>
-  <button data-view="drone">DRONE CAM · DEV</button>
-  <button id="tunnel">TUNNEL ENTRY</button>
-  <button id="day" class="active" data-time="0">DAY</button>
-  <button id="sunset" data-time="1">SUNSET</button>
-  <button id="night" data-time="2">NIGHT</button>
-  <button id="back">BACK TO GAME</button>
- </div>
-</div>
-<div id="drone-hud">
- <div class="drone-pad">
-  <button data-move="forward" aria-label="Move forward">▲</button>
-  <button data-move="left" aria-label="Move left">◀</button>
-  <button data-move="back" aria-label="Move backward">▼</button>
-  <button data-move="right" aria-label="Move right">▶</button>
- </div>
- <div class="drone-alt">
-  <button data-move="up" aria-label="Rise">＋</button>
-  <button data-move="down" aria-label="Descend">−</button>
- </div>
-</div>
-<div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: directional controls<br>Free flight · no collision limits</div>
-<div id="status">MATCHDAY ENVIRONMENT · LOADING LIVE STADIUM SYSTEM…</div>
-<div id="loading">LOADING LIVE MATCHDAY ENVIRONMENT<small>Using the current PITCH 11 stadium runtime · player models and gameplay disabled</small></div>
+@media(max-width:600px){#drone-hud{left:10px;bottom:12px;gap:7px}.drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}.drone-pad button,.drone-alt button{width:38px;height:38px}#drone-help{right:9px;bottom:12px;max-width:145px;font-size:9px}.controls{max-width:70vw}}
+@media(max-width:600px){.hud{align-items:flex-start}.controls{max-width:58vw}button{padding:9px 10px;font-size:9px}#status{bottom:10px;font-size:9px}}
+</style></head><body>
+<div id="stage"></div><div class="hud"><div class="brand"><strong>PITCH 11</strong><span>GRAPHICS 3.0 · MATCHDAY ATMOSPHERE</span></div>
+<div class="controls"><button class="active" data-view="broadcast">BROADCAST</button><button data-view="tactical">TACTICAL</button><button data-view="low">LOW STADIUM</button><button data-view="drone">DRONE CAM · DEV</button><button id="back">BACK TO GAME</button></div></div>
+<div id="status">MATCHDAY ENVIRONMENT 3.0 · LIVE STADIUM</div>
+<div id="drone-hud"><div class="drone-pad"><button data-move="forward" aria-label="Move forward">▲</button><button data-move="left" aria-label="Move left">◀</button><button data-move="back" aria-label="Move backward">▼</button><button data-move="right" aria-label="Move right">▶</button></div><div class="drone-alt"><button data-move="up" aria-label="Rise">＋</button><button data-move="down" aria-label="Descend">−</button></div></div><div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: use directional controls</div><div id="loading">BUILDING 3D STADIUM<small>Loading WebGL scene…</small></div>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
+<script>
+function show3DError(message){const panel=document.querySelector("#loading");if(!panel)return;panel.style.display="grid";panel.style.padding="28px";panel.style.textAlign="center";panel.style.lineHeight="1.6";panel.innerHTML="<div><strong style=\"color:#ffb4a8\">3D SCENE COULD NOT START</strong><small style=\"display:block;max-width:560px;margin:12px auto;color:#d5dcd5\"></small><button onclick=\"location.reload()\">RETRY</button><small style=\"display:block;margin-top:12px\">If this repeats, check WebGL and the network connection.</small></div>";panel.querySelector("small").textContent=message;}
+window.addEventListener("error",event=>show3DError(event.message||"A script or WebGL error occurred."));
+window.addEventListener("unhandledrejection",event=>show3DError(event.reason?.message||String(event.reason||"A module failed to load.")));
+</script>
 <script type="module">
-import './stadium-runtime.js';
+import * as THREE from './vendor/three/build/three.module.js';
+import { OrbitControls } from './vendor/three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from './vendor/three/examples/jsm/loaders/GLTFLoader.js';
 
-const canvas=document.querySelector('#c');
-const status=document.querySelector('#status');
-const loading=document.querySelector('#loading');
-const mobile=matchMedia('(max-width: 700px)').matches;
-const pixelRatio=mobile?1:Math.min(devicePixelRatio||1,1.25);
-function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio));canvas.height=Math.max(1,Math.round(innerHeight*pixelRatio));}
-sizeOverlay();
-addEventListener('resize',sizeOverlay);
-const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
-let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
-const presets={
- broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
- tactical:{position:{x:0,y:250,z:1},target:{x:0,y:0,z:0},fov:43},
- low:{position:{x:0,y:34,z:150},target:{x:0,y:9,z:0},fov:58}
+const host=document.querySelector('#stage'),loading=document.querySelector('#loading');
+const lowPower=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
+const crowdSpacing=lowPower ? .68 : .52;
+const renderPixelRatio=lowPower ? 1 : 1.25;
+const targetFrameMs=lowPower ? 1000/30 : 1000/60;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x15263a);
+scene.fog=new THREE.Fog(0x15263a,320,720);
+
+const renderer=new THREE.WebGLRenderer({antialias:!lowPower,powerPreference:'high-performance',stencil:false,depth:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,renderPixelRatio));
+renderer.setSize(innerWidth,innerHeight);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.15;
+renderer.shadowMap.enabled=false;
+host.appendChild(renderer.domElement);
+
+const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1200);
+const controls=new OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;
+controls.dampingFactor=.06;
+controls.minDistance=24;
+controls.maxDistance=480;
+controls.maxPolarAngle=Math.PI*.49;
+controls.target.set(0,10,0);
+
+const ambientSky=new THREE.HemisphereLight(0xc8ddff,0x1b251d,1.45);scene.add(ambientSky);
+const sun=new THREE.DirectionalLight(0xffd9ae,1.65);
+sun.position.set(-100,180,110);
+sun.castShadow=false;
+scene.add(sun);
+const fill=new THREE.DirectionalLight(0x8dbbff,.85);
+fill.position.set(120,90,-140);scene.add(fill);
+
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(900,900),new THREE.MeshStandardMaterial({color:0x17231c,roughness:1}));
+floor.rotation.x=-Math.PI/2;floor.position.y=-.08;floor.receiveShadow=true;scene.add(floor);
+
+const views={
+ broadcast:{p:[0,105,220],target:[0,12,0],fov:48},
+ tactical:{p:[0,260,1],target:[0,0,0],fov:43},
+ low:{p:[0,34,150],target:[0,9,0],fov:58}
 };
-function setDroneHud(on){document.querySelector('#drone-hud').classList.toggle('visible',on);document.querySelector('#drone-help').classList.toggle('visible',on);}
-function lookDirection(){const cp=Math.cos(drone.pitch);return{x:Math.sin(drone.yaw)*cp,y:Math.sin(drone.pitch),z:-Math.cos(drone.yaw)*cp};}
-function render(){
- const api=window.P11Stadium;if(!api?.ready)return;
- let p,t,fov;
- if(drone.active){const d=lookDirection();p=drone.position;t={x:p.x+d.x,y:p.y+d.y,z:p.z+d.z};fov=62;}
- else{const v=presets[activeView]||presets.broadcast;p=v.position;t=v.target;fov=v.fov;}
- api.renderEnvironment(p,t,fov,timeOfDay);
+const drone={active:false,yaw:0,pitch:-.35,speed:42,keys:new Set(),move:new Set(),drag:false,lastX:0,lastY:0};
+let stadium=null,stadiumBounds=null;
+
+function showLoadError(message){
+ loading.style.display='grid';
+ loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM MODEL COULD NOT LOAD</strong><small style="display:block;max-width:560px;margin:12px auto;color:#d5dcd5"></small><button id="retry">RETRY</button><small style="display:block;margin-top:12px">The local stadium model could not be loaded; check the packaged asset and retry.</small></div>';
+ loading.querySelector('small').textContent=message;
+ loading.querySelector('#retry').addEventListener('click',()=>location.reload());
 }
-function selectView(name){
- activeView=name;drone.active=name==='drone';setDroneHud(drone.active);
+window.addEventListener('error',e=>showLoadError(e.message||'A script or WebGL error occurred.'));
+window.addEventListener('unhandledrejection',e=>showLoadError(e.reason?.message||String(e.reason||'A module failed to load.')));
+
+function applyView(name){
+ const v=views[name]||views.broadcast;
+ drone.active=name==='drone';
+ document.querySelector('#drone-hud').classList.toggle('visible',drone.active);
+ document.querySelector('#drone-help').classList.toggle('visible',drone.active);
+ controls.enabled=!drone.active&&name==='tactical';
+ if(drone.active){
+  camera.position.set(0,stadiumBounds?stadiumBounds.max.y+75:90,stadiumBounds?stadiumBounds.max.z+80:150);
+  drone.yaw=0;drone.pitch=-.42;camera.fov=62;camera.updateProjectionMatrix();updateDroneLook();
+ }else{
+  camera.position.set(...v.p);camera.fov=v.fov;camera.updateProjectionMatrix();
+  controls.target.set(...v.target);controls.update();
+ }
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
- if(name==='drone'){drone.position={x:0,y:32,z:92};drone.yaw=Math.PI;drone.pitch=-.2;}
- render();
 }
-function enterTunnel(){
- activeView='drone';drone.active=true;drone.position={x:0,y:2.1,z:31.5};drone.yaw=Math.PI;drone.pitch=-.025;
- setDroneHud(true);
- document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='drone'));
- render();
+function updateDroneLook(){
+ const cp=Math.cos(drone.pitch),dir=new THREE.Vector3(Math.sin(drone.yaw)*cp,Math.sin(drone.pitch),-Math.cos(drone.yaw)*cp);
+ camera.lookAt(camera.position.clone().add(dir));
 }
-function updateDrone(dt){
- if(!drone.active)return;
- const keys=new Set([...drone.keys,...drone.touch]);
- const forward={x:Math.sin(drone.yaw),z:-Math.cos(drone.yaw)};
- const right={x:Math.cos(drone.yaw),z:Math.sin(drone.yaw)};
- const step=drone.speed*dt;
- if(keys.has('forward')){drone.position.x+=forward.x*step;drone.position.z+=forward.z*step;}
- if(keys.has('back')){drone.position.x-=forward.x*step;drone.position.z-=forward.z*step;}
- if(keys.has('left')){drone.position.x-=right.x*step;drone.position.z-=right.z*step;}
- if(keys.has('right')){drone.position.x+=right.x*step;drone.position.z+=right.z*step;}
- if(keys.has('up'))drone.position.y+=step;
- if(keys.has('down'))drone.position.y-=step;
- drone.position.y=Math.max(.25,drone.position.y);
+
+
+const matchdayState={ledTextures:[],ledCanvas:null,ledContext:null,lastLedUpdate:0,flags:[]};
+function roundedRectPolyline(hx,hz,r){
+ const points=[];
+ const line=(x1,z1,x2,z2)=>{const n=Math.max(2,Math.ceil(Math.hypot(x2-x1,z2-z1)/1.4));for(let i=0;i<n;i++){const t=i/n;points.push({x:x1+(x2-x1)*t,z:z1+(z2-z1)*t});}};
+ const arc=(cx,cz,rad,a0,a1)=>{const n=Math.max(8,Math.ceil(Math.abs(a1-a0)*rad/1.4));for(let i=0;i<n;i++){const a=a0+(a1-a0)*i/n;points.push({x:cx+Math.cos(a)*rad,z:cz+Math.sin(a)*rad});}};
+ line(-hx+r,-hz,hx-r,-hz);
+ arc(hx-r,-hz+r,r,-Math.PI/2,0);
+ line(hx,-hz+r,hx,hz-r);
+ arc(hx-r,hz-r,r,0,Math.PI/2);
+ line(hx-r,hz,-hx+r,hz);
+ arc(-hx+r,hz-r,r,Math.PI/2,Math.PI);
+ line(-hx,hz-r,-hx,-hz+r);
+ arc(-hx+r,-hz+r,r,Math.PI,Math.PI*1.5);
+ return points;
 }
-function animate(now){
- requestAnimationFrame(animate);
- if(!ready||now-lastFrame<16)return;
- const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
- updateDrone(dt);render();
+function crowdRowSamples(points,spacing){
+ const lengths=[],total={value:0};
+ for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length],len=Math.hypot(b.x-a.x,b.z-a.z);lengths.push(len);total.value+=len;}
+ const count=Math.max(1,Math.floor(total.value/spacing)),samples=[];
+ let seg=0,base=0;
+ for(let i=0;i<count;i++){
+  const d=(i+.5)*total.value/count;
+  while(seg<lengths.length-1&&base+lengths[seg]<d){base+=lengths[seg];seg++;}
+  const a=points[seg],b=points[(seg+1)%points.length],t=(d-base)/Math.max(.0001,lengths[seg]);
+  samples.push({x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t});
+ }
+ return samples;
 }
-function boot(){
- if(ready)return;ready=true;loading.style.display='none';
- const d=window.P11Stadium.diagnostics;
- status.textContent='LIVE STADIUM · '+(d.crowdCount||0)+' CROWD ACTORS · PLAYER / GAMEPLAY SYSTEMS DISABLED';
- selectView('broadcast');requestAnimationFrame(animate);
+function buildCrowd(){
+ const rows=[];
+ for(let r=0;r<24;r++){
+  const offset=6+r*.8,points=roundedRectPolyline(60+offset,40+offset,12+offset*.35);
+  rows.push({points,y:2.15+r*.34});
+ }
+ for(let r=0;r<20;r++){
+  const offset=26+r*.8,points=roundedRectPolyline(60+offset,40+offset,12+offset*.35);
+  rows.push({points,y:18.0+r*.34});
+ }
+ const samples=rows.map(row=>crowdRowSamples(row.points,crowdSpacing));
+ const count=samples.reduce((sum,row)=>sum+row.length,0);
+ const torsoGeo=new THREE.CylinderGeometry(.135,.17,.48,5,1);
+ const headGeo=new THREE.SphereGeometry(.105,5,4);
+ const torsoMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.96,metalness:0});
+ const headMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9,metalness:0});
+ const torsos=new THREE.InstancedMesh(torsoGeo,torsoMat,count);
+ const heads=new THREE.InstancedMesh(headGeo,headMat,count);
+ torsos.name='MATCHDAY CROWD · SEATED SUPPORTERS';
+ heads.name='MATCHDAY CROWD · HEADS';
+ torsos.frustumCulled=false;heads.frustumCulled=false;
+ const bodyPalette=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637];
+ const skinPalette=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
+ const dummy=new THREE.Object3D(),instanceColor=new THREE.Color();
+ let index=0,seed=7411;
+ const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+ rows.forEach((row,rowIndex)=>{
+  for(const p of samples[rowIndex]){
+   const jitter=(rand()-.5)*.11,radial=Math.hypot(p.x,p.z)||1;
+   const x=p.x+p.x/radial*jitter,z=p.z+p.z/radial*jitter;
+   const yaw=Math.atan2(-x,-z)+(rand()-.5)*.32;
+   const scale=.88+rand()*.22;
+   dummy.position.set(x,row.y+.31*scale,z);dummy.rotation.set(0,yaw,0);dummy.scale.set(scale,scale,scale);dummy.updateMatrix();
+   torsos.setMatrixAt(index,dummy.matrix);
+   instanceColor.setHex(bodyPalette[Math.floor(rand()*bodyPalette.length)]);torsos.setColorAt(index,instanceColor);
+   dummy.position.set(x,row.y+.69*scale,z);dummy.rotation.set(0,yaw,0);dummy.scale.setScalar(scale);dummy.updateMatrix();
+   heads.setMatrixAt(index,dummy.matrix);
+   instanceColor.setHex(skinPalette[Math.floor(rand()*skinPalette.length)]);heads.setColorAt(index,instanceColor);
+   index++;
+  }
+ });
+ torsos.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;
+ if(torsos.instanceColor)torsos.instanceColor.needsUpdate=true;
+ if(heads.instanceColor)heads.instanceColor.needsUpdate=true;
+ torsos.computeBoundingSphere();heads.computeBoundingSphere();
+ scene.add(torsos,heads);
+ return count;
 }
-if(window.P11Stadium?.ready)boot();
-else window.addEventListener('p11stadiumready',boot,{once:true});
-window.addEventListener('keydown',e=>{
- if(!drone.active)return;const k=e.key.toLowerCase();
- const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
- if(map[k]){drone.keys.add(map[k]);e.preventDefault();}
+function drawLedTexture(ctx,canvas,phase){
+ const g=ctx.createLinearGradient(0,0,0,canvas.height);g.addColorStop(0,'#14232d');g.addColorStop(.5,'#07131c');g.addColorStop(1,'#203b36');
+ ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+ const labels=['PITCH 11  ·  EVERY CARD. ONE ARENA.','MATCHDAY LIVE','PLAY BEAUTIFUL','ULTIMATE FOOTBALL'];
+ const colors=['#b5e65b','#f2c66d','#79d7cf','#f0f2e8'];
+ const block=canvas.width/4;
+ for(let i=0;i<4;i++){
+  const x=i*block;
+  ctx.fillStyle=colors[i];ctx.globalAlpha=.12;ctx.fillRect(x+4,0,block-8,canvas.height);ctx.globalAlpha=1;
+  ctx.fillStyle=colors[i];ctx.fillRect(x+12,18,4,canvas.height-36);
+  ctx.font='900 29px Arial, sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(labels[i],x+block/2+8,canvas.height/2);
+ }
+ ctx.fillStyle='rgba(255,255,255,.08)';ctx.fillRect(0,0,canvas.width,3);ctx.fillStyle='rgba(190,255,145,.48)';ctx.fillRect((phase*96)%canvas.width,canvas.height-7,180,4);
+}
+function addLedBoard(length,x,z,rotation){
+ const group=new THREE.Group();
+ const base=new THREE.Mesh(new THREE.BoxGeometry(length,1.02,.32),new THREE.MeshStandardMaterial({color:0x071018,roughness:.42,metalness:.55}));
+ group.add(base);
+ const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=128;
+ const ctx=canvas.getContext('2d');drawLedTexture(ctx,canvas,0);
+ const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;texture.wrapS=THREE.RepeatWrapping;texture.repeat.set(length/5.76,1);
+ matchdayState.ledTextures.push({texture,canvas,ctx});
+ const screen=new THREE.Mesh(new THREE.PlaneGeometry(length-.18,.76),new THREE.MeshStandardMaterial({color:0xffffff,map:texture,emissive:0xffffff,emissiveMap:texture,emissiveIntensity:1.2,roughness:.35,metalness:.08,side:THREE.DoubleSide}));
+ screen.position.z=.166;group.add(screen);
+ const glow=new THREE.Mesh(new THREE.BoxGeometry(length,.035,.34),new THREE.MeshBasicMaterial({color:0x8ddf78}));
+ glow.position.y=.53;group.add(glow);
+ group.position.set(x,.83,z);group.rotation.y=rotation;group.name='PITCH 11 · LED PERIMETER BOARD';scene.add(group);
+}
+function addFloodlights(){
+ const positions=[[-91,34,-70],[-30,37,-78],[30,37,-78],[91,34,-70],[-91,34,70],[-30,37,78],[30,37,78],[91,34,70]];
+ positions.forEach((p,i)=>{
+  if(lowPower&&i%2===1){const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,6,4),new THREE.MeshBasicMaterial({color:0xeaf4ff}));lamp.position.set(p[0],p[1],p[2]);scene.add(lamp);return;}
+  const light=new THREE.SpotLight(0xe5f1ff,lowPower?70:105,160,.52,.72,1.5);
+  light.position.set(p[0],p[1],p[2]);light.target.position.set(0,0,0);light.castShadow=false;
+  scene.add(light,light.target);
+  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,8,6),new THREE.MeshBasicMaterial({color:0xeaf4ff}));
+  lamp.position.set(p[0],p[1],p[2]);scene.add(lamp);
+ });
+}
+function addMatchdayFlags(){
+ const colors=[0xa3e635,0xe7e8df,0x1e4358,0xd8ad53,0x9b3844,0x315b48];
+ const positions=[];
+ for(let i=0;i<6;i++){const x=-52+i*20;positions.push([x,-75]);positions.push([x,75]);}
+ for(let i=0;i<4;i++){const z=-30+i*20;positions.push([-94,z]);positions.push([94,z]);}
+ positions.forEach((p,i)=>{
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.025,.03,2.1,6),new THREE.MeshStandardMaterial({color:0x9ca7a8,metalness:.65,roughness:.35}));
+  pole.position.set(p[0],22.4,p[1]);scene.add(pole);
+  const flagGeo=new THREE.PlaneGeometry(1.05,.68,5,3);
+  const pos=flagGeo.attributes.position;
+  for(let j=0;j<pos.count;j++){const x=pos.getX(j),y=pos.getY(j);pos.setZ(j,Math.sin((x+1)*2.4)*.08*(y+.34)/.68);}
+  flagGeo.computeVertexNormals();
+  const flag=new THREE.Mesh(flagGeo,new THREE.MeshStandardMaterial({color:colors[i%colors.length],roughness:.82,side:THREE.DoubleSide}));
+  flag.position.set(p[0]+.53,23.05,p[1]);flag.userData.phase=i*.73;matchdayState.flags.push(flag);scene.add(flag);
+ });
+}
+function addBroadcastCameras(){
+ const positions=[[-42,-43.5],[0,-44],[42,-43.5]];
+ positions.forEach(([x,z])=>{
+  const platform=new THREE.Mesh(new THREE.BoxGeometry(2.8,.22,1.8),new THREE.MeshStandardMaterial({color:0x202a30,metalness:.7,roughness:.55}));
+  platform.position.set(x,.3,z);scene.add(platform);
+  const mast=new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,1.15,8),new THREE.MeshStandardMaterial({color:0x111820,metalness:.8,roughness:.35}));
+  mast.position.set(x,.98,z);scene.add(mast);
+  const cameraBody=new THREE.Mesh(new THREE.BoxGeometry(.78,.38,.42),new THREE.MeshStandardMaterial({color:0x10171c,metalness:.6,roughness:.32}));
+  cameraBody.position.set(x,1.62,z+.08);cameraBody.rotation.x=-.12;scene.add(cameraBody);
+  const lens=new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.28,12),new THREE.MeshStandardMaterial({color:0x182c37,metalness:.7,roughness:.2}));
+  lens.rotation.x=Math.PI/2;lens.position.set(x,1.62,z-.24);scene.add(lens);
+ });
+}
+function loadSidelineAssets(){
+ loader.load('./assets/team-dugout.glb',gltf=>{
+  [[-12.5,36.5],[12.5,36.5]].forEach(([x,z])=>{
+   const dugout=gltf.scene.clone(true);dugout.position.set(x,.04,z);dugout.rotation.y=Math.PI;dugout.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;}});scene.add(dugout);
+  });
+ },undefined,err=>console.warn('Dugout asset unavailable',err));
+ loader.load('./assets/corner-flag.glb',gltf=>{
+  [[-52.5,-34],[-52.5,34],[52.5,-34],[52.5,34]].forEach(([x,z])=>{
+   const flag=gltf.scene.clone(true);flag.position.set(x,.02,z);flag.rotation.y=Math.atan2(-x,-z);scene.add(flag);
+  });
+ },undefined,err=>console.warn('Corner flag asset unavailable',err));
+}
+function buildMatchdayDetails(){
+ const crowdCount=buildCrowd();
+ addLedBoard(118,0,-38.25,0);addLedBoard(118,0,38.25,Math.PI);
+ addLedBoard(78,-58.25,0,Math.PI/2);addLedBoard(78,58.25,0,-Math.PI/2);
+ addFloodlights();addMatchdayFlags();addBroadcastCameras();loadSidelineAssets();
+ document.querySelector('#status').textContent='MATCHDAY LIVE · '+crowdCount.toLocaleString('en-US')+' CROWD INSTANCES · LED RIBBON · FLOODLIGHTS';
+}
+function updateMatchday(now){
+ matchdayState.flags.forEach(flag=>{flag.rotation.y=Math.sin(now*.0017+flag.userData.phase)*.09;});
+ if(now-matchdayState.lastLedUpdate<1200)return;
+ matchdayState.lastLedUpdate=now;
+ matchdayState.ledTextures.forEach(({texture,canvas,ctx},i)=>{drawLedTexture(ctx,canvas,now/1000+i*.4);texture.needsUpdate=true;});
+}
+
+const loader=new GLTFLoader();
+loader.setCrossOrigin('anonymous');
+loader.load(
+ './assets/football-stadium.glb',
+ gltf=>{
+  stadium=gltf.scene;
+  stadium.traverse(obj=>{
+   if(!obj.isMesh)return;
+   obj.castShadow=false;obj.receiveShadow=false;
+   if(obj.material){const mats=Array.isArray(obj.material)?obj.material:[obj.material];for(const m of mats){if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}}
+  });
+  const bounds=new THREE.Box3().setFromObject(stadium);
+  const center=bounds.getCenter(new THREE.Vector3());
+  stadium.position.x-=center.x;
+  stadium.position.z-=center.z;
+  stadium.position.y-=bounds.min.y;
+  scene.add(stadium);
+  stadiumBounds=new THREE.Box3().setFromObject(stadium);
+  buildMatchdayDetails();
+  const size=stadiumBounds.getSize(new THREE.Vector3());
+  const maxDim=Math.max(size.x,size.z);
+  camera.position.set(0,Math.max(75,size.y*2.65),Math.max(185,maxDim*1.12));
+  camera.fov=48;camera.updateProjectionMatrix();
+  controls.target.set(0,size.y*.28,0);controls.update();
+  views.broadcast.p=[0,Math.max(75,size.y*2.65),Math.max(185,maxDim*1.12)];
+  views.broadcast.target=[0,size.y*.28,0];
+  views.tactical.p=[0,maxDim*1.5,.01];views.tactical.target=[0,0,0];
+  views.low.p=[0,Math.max(28,size.y*.85),maxDim*.78];views.low.target=[0,size.y*.22,0];
+  loading.style.display='none';
+  document.querySelector('#status').textContent='MATCHDAY LIVE · REAL-WORLD SCALE · '+Math.round(size.x)+' × '+Math.round(size.z)+' M';
+  applyView('broadcast');
+ },
+ undefined,
+ error=>showLoadError(error?.message||'The stadium model request failed.')
+);
+
+const keyMap={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',q:'down',e:'up'};
+window.addEventListener('keydown',e=>{if(!drone.active)return;const k=e.key.toLowerCase();if(keyMap[k]){drone.keys.add(keyMap[k]);e.preventDefault();}});
+window.addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(keyMap[k])drone.keys.delete(keyMap[k]);});
+document.querySelectorAll('.drone-pad button').forEach(b=>{
+ const move=b.dataset.move;
+ const start=e=>{e.preventDefault();drone.move.add(move);b.setPointerCapture?.(e.pointerId);};
+ const stop=e=>{e.preventDefault();drone.move.delete(move);};
+ b.addEventListener('pointerdown',start);b.addEventListener('pointerup',stop);b.addEventListener('pointercancel',stop);b.addEventListener('lostpointercapture',stop);
 });
-window.addEventListener('keyup',e=>{
- const k=e.key.toLowerCase(),map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
- if(map[k])drone.keys.delete(map[k]);
-});
-document.querySelectorAll('.drone-pad button').forEach(button=>{
- const move=button.dataset.move;
- const start=e=>{e.preventDefault();drone.touch.add(move);button.setPointerCapture?.(e.pointerId);};
- const stop=e=>{e.preventDefault();drone.touch.delete(move);};
- button.addEventListener('pointerdown',start);button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);
-});
-canvas.addEventListener('pointerdown',e=>{if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
-canvas.addEventListener('pointermove',e=>{
+renderer.domElement.addEventListener('pointerdown',e=>{if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId);});
+renderer.domElement.addEventListener('pointermove',e=>{
  if(!drone.active||!drone.drag)return;
  const dx=e.clientX-drone.lastX,dy=e.clientY-drone.lastY;drone.lastX=e.clientX;drone.lastY=e.clientY;
- drone.yaw-=dx*.004;drone.pitch=Math.max(-1.48,Math.min(1.35,drone.pitch-dy*.003));render();
+ drone.yaw-=dx*.004;drone.pitch=Math.max(-1.28,Math.min(-.06,drone.pitch-dy*.003));updateDroneLook();
 });
-canvas.addEventListener('pointerup',()=>drone.drag=false);
-canvas.addEventListener('pointercancel',()=>drone.drag=false);
-canvas.addEventListener('wheel',e=>{
+renderer.domElement.addEventListener('pointerup',()=>drone.drag=false);
+renderer.domElement.addEventListener('pointercancel',()=>drone.drag=false);
+renderer.domElement.addEventListener('wheel',e=>{
  if(!drone.active)return;e.preventDefault();
- const d=lookDirection(),distance=e.deltaY*.035;
- drone.position.x+=d.x*distance;drone.position.y+=d.y*distance;drone.position.z+=d.z*distance;
+ const dir=new THREE.Vector3(Math.sin(drone.yaw)*Math.cos(drone.pitch),Math.sin(drone.pitch),-Math.cos(drone.yaw)*Math.cos(drone.pitch));
+ camera.position.addScaledVector(dir,e.deltaY*.035);
 },{passive:false});
-document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>selectView(b.dataset.view)));
-document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{
- timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
-}));
-document.querySelector('#tunnel').addEventListener('click',enterTunnel);
+function updateDrone(dt){
+ if(!drone.active)return;
+ const active=new Set([...drone.keys,...drone.move]);
+ const forward=new THREE.Vector3(Math.sin(drone.yaw),0,-Math.cos(drone.yaw));
+ const right=new THREE.Vector3(Math.cos(drone.yaw),0,Math.sin(drone.yaw));
+ const step=drone.speed*dt;
+ if(active.has('forward'))camera.position.addScaledVector(forward,step);
+ if(active.has('back'))camera.position.addScaledVector(forward,-step);
+ if(active.has('left'))camera.position.addScaledVector(right,-step);
+ if(active.has('right'))camera.position.addScaledVector(right,step);
+ if(active.has('up'))camera.position.y+=step;
+ if(active.has('down'))camera.position.y-=step;
+ camera.position.y=Math.max(5,camera.position.y);updateDroneLook();
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>applyView(b.dataset.view)));
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
-window.addEventListener('error',e=>{
- if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.message||'Unknown error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
+window.addEventListener('resize',()=>{
+ camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,renderPixelRatio));renderer.setSize(innerWidth,innerHeight);
 });
-window.addEventListener('unhandledrejection',e=>{
- if(!ready){loading.innerHTML='<div><strong style="color:#ffb4a8">ENVIRONMENT FAILED TO START</strong><small>'+String(e.reason?.message||e.reason||'Module error')+'</small><button onclick="location.reload()">RETRY</button></div>';}
-});
-</script>
-</body>
-</html>
+let previous=performance.now(),lastRender=0;
+function animate(now=performance.now()){
+ requestAnimationFrame(animate);
+ if(now-lastRender<targetFrameMs)return;
+ lastRender=now;
+ const dt=Math.min(.05,(now-previous)/1000);previous=now;
+ if(controls.enabled)controls.update();
+ updateDrone(dt);
+ updateMatchday(now);
+ renderer.render(scene,camera);
+}
+animate();
+</script></body></html>
