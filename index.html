@@ -4772,7 +4772,7 @@ const _gl33=goal;goal=function(dr){_gl33(dr);AU.goalFx();buzz(60);};
 const _ttA=tryTackle;tryTackle=function(p,c){const r=_ttA(p,c);if(r||p===ctrl)AU.tackle();return r;};
 const _tkA=take;take=function(p,byHand=false){_tkA(p,byHand);if(p.gk&&S.mode==='play')AU.glove();};
 const _apA=airPlay;airPlay=function(p){_apA(p);if(p.jump>0)AU.head();};
-const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);const v=Math.hypot(vx,vy);if(m==='shot'){AU.tone(95,45,.12,.45);if(v>500)AU.noise(.15,'bandpass',1200,.22);}};
+const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);};
 const _uiT=uiTap;uiTap=function(x,y){AU.click();_uiT(x,y);};
 MS.opt=function(){mt('SOUND & VISUALS');mbk();
   [['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],['SOUND FX','vol',['OFF','LOW','MED','HIGH']],['MUSIC','mus',['OFF','ON']],['CROWD','crowd',['OFF','LOW','FULL']],['SCREEN SHAKE','shk',['OFF','LOW','FULL']],['MINI-MAP','radar',['OFF','SMALL','LARGE']],['GOAL REPLAYS','rep',['OFF','ON']],['COMMENTARY','com',['OFF','ON']],['DOUBLE-TAP SHOT','ftap',['OFF','ON']]]
