@@ -6,7 +6,6 @@ import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animatio
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { flattenHorizontalRootMotion, getLocomotionTimeScale } from "./locomotion-animation.mjs";
-import { buildGoalkeeperContactColliders } from "./goalkeeper-contact-geometry.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
@@ -260,7 +259,6 @@ export class MatchPlayerRenderer {
       ["keeperDiveLowRight", 0],
       ["keeperCatch", 0],
       ["keeperParry", 0],
-      ["keeperFingertip", 0],
       ["keeperScoop", 0],
       ["keeperPass", 0],
       ["keeperDropKick", 0],
@@ -409,28 +407,6 @@ export class MatchPlayerRenderer {
       if (updateAnimations) mixer.update(animationDelta);
     }
     return true;
-  }
-
-  getGoalkeeperContactColliders(playerId = 0) {
-    const entry = this.players.get(playerId);
-    if (!entry?.bones?.size) return [];
-    entry.group.updateMatrixWorld(true);
-    const positions = {};
-    for (const [name, bone] of entry.bones) {
-      if (!/^(leftarm|leftshoulder|leftforearm|lefthand|lefthandindex3|lefthandmiddle3|lefthandring3|lefthandpinky3|lefthandthumb3|rightarm|rightshoulder|rightforearm|righthand|righthandindex3|righthandmiddle3|righthandring3|righthandpinky3|righthandthumb3|leftupleg|leftleg|leftfoot|rightupleg|rightleg|rightfoot|hips|spine|spine1|spine2|neck)$/.test(name)) continue;
-      const world = bone.getWorldPosition(new THREE.Vector3());
-      positions[name] = { x: world.x, y: world.y, z: world.z };
-    }
-    return buildGoalkeeperContactColliders(positions);
-  }
-
-  getGoalkeeperContactRigStatus(playerId = 0) {
-    const entry = this.players.get(playerId);
-    if (!entry?.bones?.size) return { available: false, colliderCount: 0, missing: ["Mixamo skeleton"] };
-    const required = ["leftforearm", "lefthand", "rightforearm", "righthand", "leftupleg", "leftleg", "leftfoot", "rightupleg", "rightleg", "rightfoot", "hips", "spine2"];
-    const missing = required.filter(name => !entry.bones.has(name));
-    const colliders = this.getGoalkeeperContactColliders(playerId);
-    return { available: colliders.length > 0, colliderCount: colliders.length, fingertipColliderCount: colliders.filter(item => item.part === "fingertip").length, missing };
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
