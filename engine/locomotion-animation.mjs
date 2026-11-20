@@ -1,3 +1,7 @@
+export function shouldFlattenHorizontalRootMotion(file) {
+  return /^(jog forward|jog backward|jog strafe left|jog strafe right|goalkeeper sidestep(?: \(2\))?)\.fbx$/i.test(String(file || ""));
+}
+
 export function flattenHorizontalRootMotion(clip) {
   if (!clip || !Array.isArray(clip.tracks)) return clip;
   let adjustedTracks = 0;
