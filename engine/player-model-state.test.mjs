@@ -46,6 +46,7 @@ test("uses the explicitly requested keeper-local side instead of re-deriving it 
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "right" }), 0).action, "keeper-dive-right");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left" }), 0).action, "keeper-dive-left");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "low" }), 0).action, "keeper-dive-low-left");
+  assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "middle" }), 0).action, "keeper-dive-middle-left");
 });
 
 test("maps goalkeeper dive direction relative to the keeper's facing", () => {
@@ -55,6 +56,8 @@ test("maps goalkeeper dive direction relative to the keeper's facing", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2, diveHeight: "low" }), 0).action, "keeper-dive-low-right");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-left" }), "keeperDiveLowLeft");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-low-right" }), "keeperDiveLowRight");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-left" }), "keeperDiveMiddleLeft");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-right" }), "keeperDiveMiddleRight");
 });
 
 test("preserves selection, team, goalkeeper role and player appearance variants", () => {
@@ -94,14 +97,10 @@ test("converts keeper-local dive sides into world angles for either facing direc
 });
 
 test("resolves the replacement FBX clips for all four directional and height-specific saves", () => {
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), [
-    "gk_dive-high_shot-left-ball_in_hand.fbx",
-    "gk_dive-middle_shot-left-ball_in_hand.fbx"
-  ]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), [
-    "gk_dive-high_shot-right-ball_in_hand.fbx",
-    "gk_dive-middle_shot-right-ball_in_hand.fbx"
-  ]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), ["gk_dive-high_shot-left-ball_in_hand.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveMiddleLeft"), ["gk_dive-middle_shot-left-ball_in_hand.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), ["gk_dive-high_shot-right-ball_in_hand.fbx"]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveMiddleRight"), ["gk_dive-middle_shot-right-ball_in_hand.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), [
     "gk_dive-low_shot-left-ball_not_in_hand.fbx",
     "gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx"
