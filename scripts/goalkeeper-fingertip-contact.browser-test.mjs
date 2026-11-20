@@ -14,7 +14,7 @@ try {
   page.on("console", message => { if (message.type() === "error") console.error("CONSOLE ERROR:", message.text()); });
   await page.goto("http://127.0.0.1:4173/goalkeeper-lab.html", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.waitForFunction(() => /^3D KEEPER/.test((document.querySelector("#status")?.textContent || "").trim()), undefined, { timeout: 60000 });
-  await page.waitForFunction(() => /Rig contact: [1-9]/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 20000 });
+  await page.waitForFunction(() => /Fingertip colliders: [1-9]/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 20000 });
   await page.locator('[data-action="fingertip-test"]').click();
   await page.waitForFunction(() => /Fingertip test: (?:PASS|FAIL)/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 20000 });
   const readout = await page.locator("#readout").innerText();
