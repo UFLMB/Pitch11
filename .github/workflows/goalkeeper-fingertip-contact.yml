@@ -34,6 +34,13 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install chromium
+      - name: Vendor pinned Three.js runtime
+        run: |
+          mkdir -p /tmp/p11-three vendor
+          npm pack three@0.170.0 --pack-destination /tmp/p11-three
+          tar -xzf /tmp/p11-three/three-0.170.0.tgz -C vendor
+          mv vendor/package vendor/three
+          test -s vendor/three/build/three.module.js
       - name: Start local static server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/pitch11-http.log 2>&1 &
