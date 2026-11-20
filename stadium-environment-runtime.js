@@ -726,10 +726,10 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      }else{
       const doorSide=orientation==='side-reverse'?-1:1,lx=cx-doorSide*(w/2-.34),lz=cz-d/2+.6+unit*(i+.5);
       add(id+' locker carcass '+i,.48,2.0,unit-.07,lx,1.22,lz,accentMat);
-      add(id+' locker door '+i,.035,1.78,unit-.16,lx-doorSide*.255,1.25,lz,steel);
-      add(id+' locker handle '+i,.045,.2,.035,lx-doorSide*.29,1.18,lz+unit*.28,black);
-      add(id+' locker number plate '+i,.025,.1,unit*.38,lx-doorSide*.29,1.9,lz,white);
-      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,.02,.018,unit*.45,lx-doorSide*.292,1.65+vent*.07,lz,black);
+      add(id+' locker door '+i,.035,1.78,unit-.16,lx+doorSide*.255,1.25,lz,steel);
+      add(id+' locker handle '+i,.045,.2,.035,lx+doorSide*.29,1.18,lz+unit*.28,black);
+      add(id+' locker number plate '+i,.025,.1,unit*.38,lx+doorSide*.29,1.9,lz,white);
+      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,.02,.018,unit*.45,lx+doorSide*.292,1.65+vent*.07,lz,black);
      }
     }
     const benchW=Math.min((orientation==='front'?w:d)-1.4,orientation==='front'?w-1.4:d-1.4);
