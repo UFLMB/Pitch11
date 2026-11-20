@@ -93,9 +93,21 @@ test("converts keeper-local dive sides into world angles for either facing direc
   }
 });
 
-test("uses distinct confirmed FBX clips for all four directional and height-specific saves", () => {
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), ["goalkeeper diving save (2).fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), ["goalkeeper diving save.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), ["goalkeeper body block (2).fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), ["goalkeeper body block (3).fbx"]);
+test("resolves the replacement FBX clips for all four directional and height-specific saves", () => {
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), [
+    "gk_dive-high_shot-left-ball_in_hand.fbx",
+    "gk_dive-middle_shot-left-ball_in_hand.fbx"
+  ]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), [
+    "gk_dive-high_shot-right-ball_in_hand.fbx",
+    "gk_dive-middle_shot-right-ball_in_hand.fbx"
+  ]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), [
+    "gk_dive-low_shot-left-ball_not_in_hand.fbx",
+    "gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx"
+  ]);
+  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), [
+    "gk_dive-low_shot-right-ball_not_in_hand.fbx",
+    "gk_dive-low_shot-right-ball_not_in_hand-variant_2.fbx"
+  ]);
 });
