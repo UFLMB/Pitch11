@@ -17,9 +17,9 @@ There is no substitute player model. If this FBX is missing or cannot be loaded,
 
 ## Animation compatibility
 
-The active package contains 57 FBX sources, including 14 individually named goalkeeper clips. The automated rig audit checks the active animation tracks against this character skeleton. The current audit reports 100% track-target coverage: 105 unique animation targets matched, 0 unmatched.
+The active package contains 56 FBX sources, including 13 active individually named goalkeeper clips. One fingertip-save candidate was rejected after 54 in-goal contact trajectories. The automated rig audit checks the active animation tracks against this character skeleton. The current audit reports 100% track-target coverage: 105 unique animation targets matched, 0 unmatched.
 
-The 14 new goalkeeper clips share one consistent skeleton signature and are registered in `engine/mixamo-animation-catalog.mjs`. Keep that catalog and its tests synchronized with any future filename changes.
+The 13 active new goalkeeper clips share one consistent skeleton signature and are registered in `engine/mixamo-animation-catalog.mjs`. Keep that catalog and its tests synchronized with any future filename changes.
 
 ## Large-file upload
 
