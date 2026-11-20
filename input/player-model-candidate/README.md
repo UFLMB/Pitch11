@@ -1,23 +1,29 @@
-# Mixamo character model upload
+# PITCH 11 — Character FBX
 
-Upload the verified skinned Mixamo character to this folder using the exact filename:
+The game renderer uses only the verified skinned Mixamo character at this exact path:
 
-`character.fbx`
+`input/player-model-candidate/character.fbx`
 
-The production renderer now checks this asset first and binds the 54 FBX animation clips directly to its skeleton. The existing `assets/players/player.glb` remains a temporary fallback until this character file is present and validated.
+There is no substitute player model. If this FBX is missing or cannot be loaded, the renderer reports an asset error and does not silently switch to another model.
 
 ## Required model properties
 
-- FBX Binary
+- Binary FBX
 - Skinned mesh included
 - T-pose or neutral reference pose
-- Same Mixamo bone/node names used by the animation package
+- Same Mixamo bone/node names used by the active animation package
 - Embedded textures preferred
-- Keep the original skeleton and skin weights; do not rename bones or retarget
+- Preserve the original skeleton and skin weights; do not rename bones or retarget
+
+## Animation compatibility
+
+The active package contains 56 FBX sources, including 13 active individually named goalkeeper clips. One fingertip-save candidate was rejected after 54 in-goal contact trajectories. The automated rig audit checks the active animation tracks against this character skeleton. The current audit reports 100% track-target coverage: 105 unique animation targets matched, 0 unmatched.
+
+The 13 active new goalkeeper clips share one consistent skeleton signature and are registered in `engine/mixamo-animation-catalog.mjs`. Keep that catalog and its tests synchronized with any future filename changes.
 
 ## Large-file upload
 
-The verified character is approximately 49.4 MB, so it must be committed with Git LFS. The repository already tracks this exact path in `.gitattributes`, and the GitHub Pages workflow checks out LFS content.
+The character is approximately 49.4 MB and must be committed with Git LFS. The repository already tracks this exact path in `.gitattributes`, and the GitHub Actions validation checks out LFS content.
 
 From a computer with Git and Git LFS installed:
 
@@ -29,9 +35,7 @@ cd Pitch11
 # input/player-model-candidate/character.fbx
 git add .gitattributes input/player-model-candidate/character.fbx
 git commit -m "Add verified Mixamo character FBX"
-git push origin main
+git push origin <your-working-branch>
 ```
 
-Do not upload the file as an ordinary Git blob: GitHub's browser upload limit is 25 MB. Do not split or rename the FBX. The original animation FBX files remain in `input/player-package/` and should not be moved.
-
-Until the model is uploaded, the game continues using the existing fallback model. No production model is removed by this change.
+Do not upload the file as an ordinary Git blob: GitHub's browser upload limit is 25 MB. Do not split or rename the FBX. The animation sources remain in `input/player-package/`.

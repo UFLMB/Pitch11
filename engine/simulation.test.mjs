@@ -468,6 +468,24 @@ test("goalkeeper only triggers a directional dive for a ball on target", () => {
   assert.ok(keeper.actionUntil > sim.time);
 });
 
+test("viewer-facing goalkeeper dive labels stay consistent at both ends of the pitch", () => {
+  const home = new FootballSimulation({ seed: 311 });
+  const homeKeeper = home.players[0];
+  homeKeeper.x = 5; homeKeeper.y = 34;
+  home.ball.owner = -1;
+  Object.assign(home.ball, { x: 10, y: 34, z: 2.5, vx: -15, vy: -2, vz: 2, lastTouchTeam: 1 });
+  home.resolveGoalkeeperSaves();
+  assert.equal(homeKeeper.action, "keeper-dive-left");
+
+  const away = new FootballSimulation({ seed: 312 });
+  const awayKeeper = away.players[11];
+  awayKeeper.x = 100; awayKeeper.y = 34;
+  away.ball.owner = -1;
+  Object.assign(away.ball, { x: 95, y: 34, z: 2.5, vx: 15, vy: -2, vz: 2, lastTouchTeam: 0 });
+  away.resolveGoalkeeperSaves();
+  assert.equal(awayKeeper.action, "keeper-dive-right");
+});
+
 test("goalkeeper save action survives locomotion updates until its animation window expires", () => {
   const sim = new FootballSimulation({ seed: 32 });
   const keeper = sim.players[0];

@@ -8,11 +8,15 @@ test("keeper evaluates both sides using the actual 7.32 m goal mouth",()=>{
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:.35}).goalWidth,7.32);
 });
 
-test("keeper selects low and high save bands from the target Y coordinate",()=>{
+test("keeper selects low, middle and high save bands from the target Y coordinate",()=>{
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).heightBand,"low");
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).action,"lowDive");
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:.35}).animationState,"keeperDiveLowLeft");
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:.35}).animationState,"keeperDiveLowRight");
+  assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:1.25}).animationState,"keeperDiveMiddleLeft");
+  assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:1.25}).animationState,"keeperDiveMiddleRight");
+  assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:1.25}).heightBand,"middle");
+  assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:1.25}).action,"middleDive");
   assert.equal(evaluateGoalkeeperShot({targetX:-2.8,targetY:2.05}).animationState,"keeperDiveLeft");
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:2.05}).animationState,"keeperDiveRight");
   assert.equal(evaluateGoalkeeperShot({targetX:2.8,targetY:2.05}).heightBand,"high");

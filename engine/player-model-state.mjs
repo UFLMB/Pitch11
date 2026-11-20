@@ -2,10 +2,9 @@ const SKIN_TONES = [0xd5a47f, 0xb97f5e, 0x8e5b43, 0xe2bd9b, 0x704936, 0xc99470];
 const HAIR_TONES = [0x171311, 0x302017, 0x4b3324, 0x17191c, 0x6a4b2e];
 
 /**
- * Resolve a goalkeeper dive relative to the keeper's own facing direction.
- * diveAng is stored in legacy pitch/world coordinates; Mixamo left/right
- * clips are local to the character, so the world-space vector must be
- * projected onto the keeper's local right axis.
+ * Resolve a goalkeeper dive using the viewer-facing screen convention.
+ * Animation filenames use LEFT/RIGHT as seen by a viewer facing the keeper.
+ * The keeper's anatomical right therefore appears on screen-left.
  */
 export function resolveKeeperDiveSide(diveAng, facing) {
   const angle = Number.isFinite(diveAng) ? diveAng : 0;
@@ -15,18 +14,18 @@ export function resolveKeeperDiveSide(diveAng, facing) {
   const localRightX = Math.sin(yaw);
   const localRightY = -Math.cos(yaw);
   const lateral = diveX * localRightX + diveY * localRightY;
-  if (Math.abs(lateral) < 1e-6) return angle < 0 ? "left" : "right";
-  return lateral < 0 ? "left" : "right";
+  if (Math.abs(lateral) < 1e-6) return angle < 0 ? "right" : "left";
+  return lateral > 0 ? "left" : "right";
 }
 
 /**
- * Convert a keeper-local lateral dive into the legacy pitch/world angle.
- * "Left" and "right" are from the goalkeeper's own point of view, not the
- * camera or the attacking team's point of view.
+ * Convert a viewer-facing screen-side dive into the legacy pitch/world angle.
+ * Screen-left maps to the keeper's anatomical right when viewed from the
+ * front; screen-right maps to the anatomical left.
  */
 export function resolveKeeperDiveAngle(side, facing) {
   const yaw = Number.isFinite(facing) ? facing : 0;
-  const lateralSign = String(side || "").toLowerCase() === "left" ? -1 : 1;
+  const lateralSign = String(side || "").toLowerCase() === "left" ? 1 : -1;
   const worldX = Math.sin(yaw) * lateralSign;
   const worldY = -Math.cos(yaw) * lateralSign;
   return Math.atan2(worldY, worldX);
@@ -48,13 +47,14 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (player.dive > 0) {
     if (!player.gk) action = "fall";
     else {
-      // The decision layer's requested keeper-local side is authoritative.
+      // The decision layer's requested viewer-facing screen side is authoritative.
       // Re-deriving it from a world angle can flip the selected clip after
       // facing interpolation; only legacy callers without diveSide use the angle.
       const side = player.diveSide === "left" || player.diveSide === "right"
         ? player.diveSide
         : resolveKeeperDiveSide(player.diveAng, player.face);
-      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` : `keeper-dive-${side}`;
+      action = player.diveHeight === "low" ? `keeper-dive-low-${side}` :
+        player.diveHeight === "middle" ? `keeper-dive-middle-${side}` : `keeper-dive-${side}`;
     }
   }
   else if (player.gk && player.diveRecover > 0) action = "get-up";
@@ -84,6 +84,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
     number: Number(player.num) || 0,
     stamina: Math.max(0, Math.min(1, Number(player.stam) || 0)),
     winded: !!player.winded,
+    manualClipFile: typeof player.manualClipFile === "string" ? player.manualClipFile : "",
     skinTone: SKIN_TONES[id % SKIN_TONES.length],
     hairTone: HAIR_TONES[(id * 3 + team) % HAIR_TONES.length],
     visible: !player.out

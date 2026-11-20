@@ -30,10 +30,12 @@ export function evaluateGoalkeeperShot({
   const verticalReach=keeperHeight*.82+(.52+available*.9)*(side==="center"?.72:1);
   const reachable=inGoalMouth&&available>=0&&requiredTravelTime<=available&&targetY<=verticalReach;
   // Classify from the ball's actual goal-line contact height, not shot type.
-  const heightBand=targetY<=.9?"low":"high";
-  const action=side==="center"?(heightBand==="low"?"catch":"parry"):(heightBand==="low"?"lowDive":"dive");
+  const heightBand=targetY<=.9?"low":targetY<=1.65?"middle":"high";
+  const action=side==="center"?(targetY<=1.45?"catch":"parry"):
+    heightBand==="low"?"lowDive":heightBand==="middle"?"middleDive":"dive";
   const animationState=side==="center"?(action==="catch"?"keeperCatch":"keeperParry"):
     heightBand==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):
+    heightBand==="middle"?(side==="left"?"keeperDiveMiddleLeft":"keeperDiveMiddleRight"):
     (side==="left"?"keeperDiveLeft":"keeperDiveRight");
   const confidence=reachable?clamp(1-(requiredTravelTime/Math.max(.001,available))*.35-(targetY/Math.max(.1,verticalReach))*.2,0,1):0;
   return Object.freeze({

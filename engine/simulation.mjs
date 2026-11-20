@@ -562,7 +562,8 @@ export class FootballSimulation {
         b.vx = ownGoal === 0 ? Math.abs(b.vx) * .55 : -Math.abs(b.vx) * .55;
         b.vy += clamp((predictedY - keeper.y) * .45, -2.5, 2.5);
         b.vz = Math.max(.8, Math.abs(b.vz) * .35);
-        keeper.action = predictedY < keeper.y ? "keeper-dive-left" : "keeper-dive-right";
+        const screenLeft = team === 0 ? predictedY < keeper.y : predictedY > keeper.y;
+        keeper.action = screenLeft ? "keeper-dive-left" : "keeper-dive-right";
         keeper.actionUntil = this.time + .78;
       }
       this.events.push({ type: "keeperSave", keeper: keeper.id, team, caught: b.owner === keeper.id });

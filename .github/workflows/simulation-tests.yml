@@ -2,7 +2,7 @@ name: Simulation regression tests
 
 on:
   push:
-    branches: [engine-adaptation]
+    branches: [engine-adaptation, assets/goalkeeper-animation-review]
   pull_request:
     branches: [main]
 
@@ -12,10 +12,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install Assimp FBX inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y assimp-utils
+      - name: Inspect all active FBX animation sources
+        run: node scripts/inspect-player-fbx-package.mjs
+      - name: Compare active animation tracks against the character FBX rig
+        run: node scripts/inspect-player-model-candidate.mjs
       - name: Check browser lab module syntax
         run: |
           node --check engine/simulation-lab.mjs
