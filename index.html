@@ -4742,7 +4742,32 @@ AU.musOn=function(on){if(!this.c)return;const t=this.c.currentTime;
       f.connect(g);g.connect(this.m);this.pd={g};}
     this.pd.g.gain.setTargetAtTime(.05,t,.9);}
   else if(this.pd)this.pd.g.gain.setTargetAtTime(0,t,.4);};
-const _tk33=AU.tick;AU.tick=function(){_tk33.call(this);this.musOn(S.mode==='menu');};
+const _tk33=AU.tick;let p11FootstepTimer=0,p11DribbleTimer=0;AU.tick=function(){
+  _tk33.call(this);this.musOn(S.mode==='menu');
+  const active=S.mode==='play'&&!S.prac&&!S.so;
+  const selected=active?ctrl:null;
+  if(selected&&!selected.out){
+    const speed=Math.hypot(selected.vx||0,selected.vy||0);
+    if(speed>38){
+      p11FootstepTimer-=DT;
+      if(p11FootstepTimer<=0){
+        window.P11AudioAssets?.play('grassStep',.24);
+        p11FootstepTimer=clamp(.52-speed/1050,.24,.46);
+      }
+    }else p11FootstepTimer=0;
+  }else p11FootstepTimer=0;
+  const carrier=active?ball.owner:null;
+  if(carrier&&!carrier.gk){
+    const speed=Math.hypot(carrier.vx||0,carrier.vy||0);
+    if(speed>30){
+      p11DribbleTimer-=DT;
+      if(p11DribbleTimer<=0){
+        window.P11AudioAssets?.play('dribble',.2);
+        p11DribbleTimer=clamp(.58-speed/1100,.3,.5);
+      }
+    }else p11DribbleTimer=0;
+  }else p11DribbleTimer=0;
+};
 const _gl33=goal;goal=function(dr){_gl33(dr);AU.goalFx();buzz(60);};
 const _ttA=tryTackle;tryTackle=function(p,c){const r=_ttA(p,c);if(r||p===ctrl)AU.tackle();return r;};
 const _tkA=take;take=function(p,byHand=false){_tkA(p,byHand);if(p.gk&&S.mode==='play')AU.glove();};
