@@ -597,128 +597,295 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  }
 
  function createPlayerEntranceTunnel(){
-   // Full pitch-side entrance, enclosed route through the main stand and three-room split.
+   // A practical, full-scale players' route: pitch portal -> enclosed approach
+   // -> T-junction -> home / officials / away changing rooms.
    const root=new THREE.Group();root.name='P11_PlayerEntranceTunnel';root.position.set(0,pitchSurfaceY,0);
-   const mat=(color,roughness=.72,metalness=.18)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
-   const shell=mat(0x171d25,.58,.42),inner=mat(0x252e38,.82,.12),floorMat=mat(0x10151c,.9,.08),trim=mat(0x7b8792,.34,.72),dark=mat(0x090d12,.48,.25);
-   const blue=mat(0x263e59,.62,.24),red=mat(0x542b32,.62,.24),official=mat(0x65502b,.62,.24);
-   const led=new THREE.MeshStandardMaterial({color:0xb5f36b,emissive:0x83c93e,emissiveIntensity:1.15,roughness:.32,metalness:.12});
-   const addBox=(name,w,h,d,x,y,z,material)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.name=name;m.position.set(x,y,z);m.castShadow=false;m.receiveShadow=false;root.add(m);return m;};
-   const addSign=(name,label,sub,x,z,color,width=5.2)=>{
-    const c=document.createElement('canvas');c.width=1024;c.height=256;const g=c.getContext('2d');
-    if(g){g.fillStyle='#0b1118';g.fillRect(0,0,1024,256);g.fillStyle=color;g.fillRect(44,205,936,7);g.textAlign='center';g.textBaseline='middle';g.font='900 76px Arial';g.fillStyle='#f2f4f5';g.fillText(label,512,96);g.font='600 27px Arial';g.fillStyle='#aab5bf';g.fillText(sub,512,163);}
-    const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
-    const sign=new THREE.Mesh(new THREE.PlaneGeometry(width,.92),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));sign.name=name;sign.position.set(x,3.35,z);root.add(sign);
-   };
-   const front=45.5,passageEnd=62.2,hallEnd=70.1,roomBack=84.2,width=8.6,height=4.25,wall=.32;
-   addBox('Pitch-side entrance apron',7.8,.12,11.2,0,.035,40.05,floorMat);
-   addBox('Entrance apron centre inlay',.12,.018,10.8,0,.105,40.05,trim);
-   const mid=(front+passageEnd)/2,depth=passageEnd-front;
-   addBox('Players tunnel floor',width,.16,depth,0,.08,mid,floorMat);
-   addBox('Players tunnel left wall',wall,height,depth,-width/2+wall/2,height/2+.12,mid,inner);
-   addBox('Players tunnel right wall',wall,height,depth,width/2-wall/2,height/2+.12,mid,inner);
-   addBox('Players tunnel roof',width,.52,depth,0,height+.02,mid,shell);
-   addBox('Entrance portal left pier',.58,height,.58,-4.01,height/2+.12,front,shell);
-   addBox('Entrance portal right pier',.58,height,.58,4.01,height/2+.12,front,shell);
-   addBox('Entrance portal header',8.6,.78,.64,0,height-.28,front,shell);
-   addBox('Entrance portal threshold',7.35,.12,.5,0,.12,front,floorMat);
-   addBox('Entrance portal left trim',.075,3.55,.68,-3.68,1.92,front-.03,trim);
-   addBox('Entrance portal right trim',.075,3.55,.68,3.68,1.92,front-.03,trim);
-   addBox('Entrance portal top trim',7.42,.075,.68,0,3.72,front-.03,trim);
-   addSign('PITCH 11 entrance sign','PITCH 11','PLAYERS ENTRANCE',0,front-.34,'#a3e635',5.6);
-   for(let i=0;i<13;i++){
-    const z=front+1.15+i*2;
-    addBox('Tunnel left wall rib '+i,.12,3.65,.16,-width/2+wall+.08,2.02,z,trim);
-    addBox('Tunnel right wall rib '+i,.12,3.65,.16,width/2-wall-.08,2.02,z,trim);
-    addBox('Tunnel left LED guide '+i,.055,.075,.9,-width/2+wall+.18,.42,z,led);
-    addBox('Tunnel right LED guide '+i,.055,.075,.9,width/2-wall-.18,.42,z,led);
-    addBox('Tunnel ceiling luminaire '+i,.34,.055,1.05,0,height-.14,z,led);
-   }
-   const hallWidth=40,hallDepth=hallEnd-passageEnd,hallMid=(passageEnd+hallEnd)/2;
-   addBox('Changing room junction floor',hallWidth,.18,hallDepth,0,.09,hallMid,floorMat);
-   addBox('Changing room junction roof',hallWidth,.42,hallDepth,0,height+.02,hallMid,shell);
-   addBox('Changing room junction left wall',.34,height,hallDepth,-hallWidth/2,height/2+.12,hallMid,inner);
-   addBox('Changing room junction right wall',.34,height,hallDepth,hallWidth/2,height/2+.12,hallMid,inner);
-   const rooms=[
-    {id:'home',name:'HOME TEAM',sub:'FIRST TEAM DRESSING ROOM',x:-13.1,w:11.5,color:'#76b9ff',material:blue},
-    {id:'officials',name:'MATCH OFFICIALS',sub:'REFEREES DRESSING ROOM',x:0,w:9.5,color:'#e8c36c',material:official},
-    {id:'away',name:'AWAY TEAM',sub:'VISITING TEAM DRESSING ROOM',x:13.1,w:11.5,color:'#ff8c91',material:red}
-   ];
-   for(const room of rooms){
-    const x=room.x,w=room.w,frontZ=hallEnd,roomDepth=roomBack-frontZ,roomMid=frontZ+roomDepth/2,doorW=3,sideWall=.28,roomHeight=3.85;
-    addBox(room.id+' dressing room floor',w,.16,roomDepth,x,.08,roomMid,floorMat);
-    addBox(room.id+' dressing room roof',w,.34,roomDepth,x,roomHeight+.02,roomMid,shell);
-    addBox(room.id+' dressing room left wall',sideWall,roomHeight,roomDepth,x-w/2+sideWall/2,roomHeight/2+.12,roomMid,inner);
-    addBox(room.id+' dressing room right wall',sideWall,roomHeight,roomDepth,x+w/2-sideWall/2,roomHeight/2+.12,roomMid,inner);
-    const sideSpan=(w-doorW)/2;
-    addBox(room.id+' doorway left wall',sideSpan,roomHeight,.3,x-w/2+sideSpan/2,roomHeight/2+.12,frontZ,room.material);
-    addBox(room.id+' doorway right wall',sideSpan,roomHeight,.3,x+w/2-sideSpan/2,roomHeight/2+.12,frontZ,room.material);
-    addBox(room.id+' doorway header',doorW,.55,.3,x,roomHeight-.15,frontZ,room.material);
-    addBox(room.id+' rear wall',w,roomHeight,.3,x,roomHeight/2+.12,roomBack,room.material);
-    addSign(room.id+' changing room sign',room.name,room.sub,x,frontZ-.08,room.color,Math.min(6.2,w-.8));
-    const count=room.id==='officials'?3:4,lockerW=(w-1.4)/count;
-    for(let i=0;i<count;i++){
-     const lx=x-w/2+.7+lockerW*(i+.5);
-     addBox(room.id+' locker '+i,lockerW-.16,2.15,.48,lx,1.2,roomBack-1.05,room.material);
-     addBox(room.id+' locker door '+i,lockerW-.28,1.86,.035,lx,1.22,roomBack-.79,trim);
-     addBox(room.id+' locker handle '+i,.045,.24,.055,lx+lockerW*.27,1.2,roomBack-.74,dark);
+   const material=(color,roughness=.82,metalness=.04)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+   const concrete=material(0x777b78,.94,.02),paint=material(0xb9b9ad,.88,.02),floor=material(0x343b3d,.96,.01);
+   const rubber=material(0x202629,.98,0),steel=material(0x596168,.48,.55),darkSteel=material(0x252d33,.62,.42);
+   const ceiling=material(0x92958e,.92,.01),homeMat=material(0x526c82,.8,.06),awayMat=material(0x80605b,.8,.06),officialMat=material(0x77715e,.82,.04);
+   const white=material(0xe1e1d7,.86,.02),black=material(0x151a1d,.82,.08);
+   const led=new THREE.MeshStandardMaterial({color:0xf1e6c8,emissive:0x8e7850,emissiveIntensity:.24,roughness:.5});
+   const applySurfaceGrain=(mat,seed,bumpScale)=>{
+    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#eeeeea';ctx.fillRect(0,0,256,256);
+    let state=seed>>>0;const rnd=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
+    for(let i=0;i<7200;i++){
+     const x=rnd()*256,y=rnd()*256,r=.25+rnd()*1.25;
+     ctx.fillStyle=rnd()>.48?'rgba(0,0,0,.075)':'rgba(255,255,255,.11)';
+     ctx.fillRect(x,y,r,r);
     }
-    const benchW=Math.max(3.2,w-2.2);
-    addBox(room.id+' changing bench',benchW,.18,.72,x,.62,frontZ+5.2,trim);
-    addBox(room.id+' changing bench base',benchW-.3,.48,.5,x,.32,frontZ+5.2,dark);
-    for(let i=0;i<3;i++){const light=new THREE.PointLight(0xd9f7c2,1.15,8,2);light.position.set(x,3.35,frontZ+2.5+i*3.6);light.castShadow=false;root.add(light);}
+    const colorMap=new THREE.CanvasTexture(canvas);colorMap.colorSpace=THREE.SRGBColorSpace;
+    colorMap.wrapS=colorMap.wrapT=THREE.RepeatWrapping;colorMap.repeat.set(3,3);
+    colorMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+    const bumpMap=colorMap.clone();bumpMap.colorSpace=THREE.NoColorSpace;bumpMap.needsUpdate=true;
+    mat.map=colorMap;mat.bumpMap=bumpMap;mat.bumpScale=bumpScale;mat.needsUpdate=true;
+   };
+   applySurfaceGrain(concrete,1901,.018);applySurfaceGrain(paint,1902,.009);
+   applySurfaceGrain(floor,1903,.024);applySurfaceGrain(rubber,1904,.012);
+   applySurfaceGrain(ceiling,1905,.008);
+   const add=(name,w,h,d,x,y,z,mat,parent=root)=>{
+    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
+    mesh.castShadow=false;mesh.receiveShadow=false;parent.add(mesh);return mesh;
+   };
+   const sign=(name,title,subtitle,x,y,z,accent=0xc9b77a,rotation=0,width=4.4)=>{
+    const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=320;const g=canvas.getContext('2d');
+    g.fillStyle='#252c30';g.fillRect(0,0,1024,320);g.fillStyle='#b7b8ae';g.fillRect(0,0,1024,10);
+    g.fillStyle='#'+accent.toString(16).padStart(6,'0');g.fillRect(54,244,916,5);
+    g.textAlign='left';g.textBaseline='middle';g.fillStyle='#f2f1e9';g.font='700 66px Arial';g.fillText(title,68,112);
+    g.fillStyle='#c1c5c2';g.font='500 30px Arial';g.fillText(subtitle,70,190);
+    const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(width,1.38),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+    m.name=name;m.position.set(x,y,z);m.rotation.y=rotation;root.add(m);return m;
+   };
+   const light=(x,y,z,rotation=0)=>{
+    add('Recessed tunnel light housing',.72,.12,.42,x,y,z,darkSteel);
+    const lens=add('Warm white tunnel light lens',.56,.035,.29,x,y-.075,z,led);
+    lens.rotation.y=rotation;
+    const point=new THREE.PointLight(0xffe8c2,.48,7,2);point.position.set(x,y-.18,z);root.add(point);
+   };
+   const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
+   const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
+   // Pitch-side apron aligns to the first terrace step and stays open to the pitch.
+   add('Concrete pitch-side apron',7.6,.18,11.2,0,.04,40.0,concrete);
+   add('Rubber threshold strip',5.65,.025,.42,0,.145,45.38,rubber);
+   for(let i=0;i<8;i++)add('Apron expansion joint '+i,7.3,.012,.025,0,.14,34.9+i*1.42,darkSteel);
+   // Entrance portal: robust concrete piers, metal lintel, drainage and kick plates.
+   add('Portal left concrete pier',.42,height,.5,-3.02,height/2+.16,front,concrete);
+   add('Portal right concrete pier',.42,height,.5,3.02,height/2+.16,front,concrete);
+   add('Portal reinforced lintel',6.45,.42,.58,0,height-.08,front,concrete);
+   add('Portal left steel reveal',.075,3.15,.64,-2.77,1.72,front-.035,steel);
+   add('Portal right steel reveal',.075,3.15,.64,2.77,1.72,front-.035,steel);
+   sign('Players entrance wayfinding','PLAYERS','ACCESS TO THE FIELD',0,3.08,front-.34,0xc9b77a);
+   add('Main corridor floor slab',mainW,.18,mainDepth,0,.08,mainMid,floor);
+   add('Main corridor anti-slip runner',4.7,.025,mainDepth-.35,0,.185,mainMid,rubber);
+   add('Main corridor left wall',wall,height,mainDepth,-mainW/2+wall/2,height/2+.18,mainMid,paint);
+   add('Main corridor right wall',wall,height,mainDepth,mainW/2-wall/2,height/2+.18,mainMid,paint);
+   add('Main corridor ceiling',mainW,.24,mainDepth,0,height+.12,mainMid,ceiling);
+   // Low stainless kick plates and painted wall protection prevent the empty-box look.
+   add('Left stainless wall kick plate',.035,.42,mainDepth-.25,-mainW/2+wall+.025,.42,mainMid,steel);
+   add('Right stainless wall kick plate',.035,.42,mainDepth-.25,mainW/2-wall-.025,.42,mainMid,steel);
+   add('Left wall protection rail',.09,.12,mainDepth-1,-mainW/2+wall+.06,1.02,mainMid,steel);
+   add('Right wall protection rail',.09,.12,mainDepth-1,mainW/2-wall-.06,1.02,mainMid,steel);
+   for(let z=front+1.4;z<junction-1;z+=3.1){
+    light(0,height-.02,z);
+    add('Left service access panel',.045,.72,.58,-mainW/2+wall+.035,2.35,z,concrete);
+    add('Right service access panel',.045,.72,.58,mainW/2-wall-.035,2.35,z,concrete);
    }
-   addBox('Home route floor marker',3.8,.035,1.25,-13.1,.205,68.9,blue);
-   addBox('Officials route floor marker',3.2,.035,1.25,0,.205,68.9,official);
-   addBox('Away route floor marker',3.8,.035,1.25,13.1,.205,68.9,red);
-   root.userData={kind:'player-entrance',frontZ:front,passageEndZ:passageEnd,hallEndZ:hallEnd,roomBackZ:roomBack,centerX:0,width,height,openPitchEnd:true,threeWayJunction:true,changingRooms:rooms.map(r=>({id:r.id,name:r.name,x:r.x,width:r.w}))};
+   // Realistic exposed services: cable tray, sprinkler main and ventilation grilles.
+   add('Main cable tray',.24,.16,mainDepth-1,-1.9,height-.22,mainMid,steel);
+   add('Sprinkler pipe',.075,.075,mainDepth-1,1.82,height-.2,mainMid,steel);
+   for(let z=front+2;z<junction-1;z+=5.5){
+    add('Ventilation grille',1.05,.045,.42,0,height-.16,z,darkSteel);
+    for(let k=0;k<5;k++)add('Vent grille slot '+k,.035,.012,.3,-.38+k*.19,height-.125,z,steel);
+   }
+   // T-junction: three genuinely separate routes rather than three doors in one hall.
+   const branchZ=66.1,branchW=4.8,branchHeight=3.55,branchLength=34;
+   add('T-junction floor',branchLength,.18,branchW,0,.08,branchZ,floor);
+   add('T-junction anti-slip surface',branchLength-.25,.025,branchW-.35,0,.185,branchZ,rubber);
+   add('T-junction ceiling',branchLength,.24,branchW,0,branchHeight+.12,branchZ,ceiling);
+   add('T-junction front wall',branchLength,branchHeight,.24,0,branchHeight/2+.18,branchZ-branchW/2,paint);
+   add('T-junction rear wall',branchLength,branchHeight,.24,0,branchHeight/2+.18,branchZ+branchW/2,paint);
+   for(let x=-15;x<=15;x+=5){light(x,branchHeight-.02,branchZ);add('Junction column',.16,branchHeight,.18,x,branchHeight/2+.18,branchZ,concrete);}
+   // Three branch corridors lead to their own doors; all room geometry remains separated.
+   const branch=(id,x1,x2,z,accentMat,accent)=>{
+    // The left/right routes are the wings of the T-junction itself. Do not
+    // duplicate floors, walls or ceilings over the shared junction geometry.
+    const len=Math.abs(x2-x1),cx=(x1+x2)/2;
+    add(id+' route stripe',len-.5,.018,.11,cx,.195,z,accentMat);
+    sign(id+' direction sign',id.toUpperCase(),'CHANGING ROOM',cx,3.0,z-2.28,accent);
+   };
+   branch('Home team branch',-17,-3.0,branchZ,homeMat,0x8ab7d2);
+   branch('Away team branch',3.0,17,branchZ,awayMat,0xc99b8f);
+   // The officials' forward corridor begins beyond the T-junction, avoiding
+   // coplanar floor and ceiling overlaps at the three-way intersection.
+   const officialsStart=branchZ+branchW/2,officialsLength=roomDoorZ-officialsStart,officialsMid=(officialsStart+roomDoorZ)/2;
+   add('Officials corridor floor',5.8,.16,officialsLength,0,.08,officialsMid,floor);
+   add('Officials corridor runner',4.5,.025,officialsLength-.25,0,.17,officialsMid,rubber);
+   add('Officials corridor left wall',.22,3.55,officialsLength,-2.9,1.94,officialsMid,paint);
+   add('Officials corridor right wall',.22,3.55,officialsLength,2.9,1.94,officialsMid,paint);
+   add('Officials corridor ceiling',5.8,.22,officialsLength,0,3.67,officialsMid,ceiling);
+   light(0,3.62,70);light(0,3.62,75);
+   // Dressing-room shells have a single controlled doorway facing their corridor.
+   const makeRoom=(id,cx,cz,w,d,accent,accentMat,orientation='front')=>{
+    const h=3.55,door=2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
+    add(id+' floor',w,.18,d,cx,.08,cz,floor);
+    add(id+' ceiling',w,.22,d,cx,h+.12,cz,ceiling);
+    if(orientation==='front'){
+     add(id+' left wall',side,h,d,cx-w/2+side/2,h/2+.18,cz,paint);
+     add(id+' right wall',side,h,d,cx+w/2-side/2,h/2+.18,cz,paint);
+     const span=(w-door)/2;
+     add(id+' entrance left return',span,h,.24,cx-w/2+span/2,h/2+.18,frontZ,accentMat);
+     add(id+' entrance right return',span,h,.24,cx+w/2-span/2,h/2+.18,frontZ,accentMat);
+     add(id+' entrance lintel',door,.38,.26,cx,h-.01,frontZ,accentMat);
+     add(id+' rear wall',w,h,.24,cx,h/2+.18,backZ,accentMat);
+    }else{
+     const doorSide=orientation==='side-reverse'?-1:1,doorX=cx+doorSide*w/2,span=(d-door)/2;
+     add(id+' near side wall',w,h,.22,cx,h/2+.18,cz-d/2,paint);
+     add(id+' far side wall',w,h,.22,cx,h/2+.18,cz+d/2,paint);
+     add(id+' entrance front return',.24,h,span,doorX,h/2+.18,cz-d/2+span/2,accentMat);
+     add(id+' entrance rear return',.24,h,span,doorX,h/2+.18,cz+d/2-span/2,accentMat);
+     add(id+' entrance lintel',.26,.38,door,doorX,h-.01,cz,accentMat);
+     add(id+' rear wall',.24,h,d,cx-doorSide*w/2,h/2+.18,cz,accentMat);
+    }
+    // Locker banks face the room, with individual doors, vents and numbered plates.
+    const count=id==='Officials'?4:8,lockerWidth=(orientation==='front'?w:d)-1.2;
+    const unit=lockerWidth/count;
+    for(let i=0;i<count;i++){
+     if(orientation==='front'){
+      const lx=cx-w/2+.6+unit*(i+.5),lz=backZ-.34;
+      add(id+' locker carcass '+i,unit-.07,2.0,.48,lx,1.22,lz,accentMat);
+      add(id+' locker door '+i,unit-.16,1.78,.035,lx,1.25,lz-.255,steel);
+      add(id+' locker handle '+i,.035,.2,.045,lx+unit*.28,1.18,lz-.29,black);
+      add(id+' locker number plate '+i,unit*.38,.1,.025,lx,1.9,lz-.29,white);
+      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,unit*.45,.018,.02,lx,1.65+vent*.07,lz-.292,black);
+     }else{
+      const doorSide=orientation==='side-reverse'?-1:1,lx=cx-doorSide*(w/2-.34),lz=cz-d/2+.6+unit*(i+.5);
+      add(id+' locker carcass '+i,.48,2.0,unit-.07,lx,1.22,lz,accentMat);
+      add(id+' locker door '+i,.035,1.78,unit-.16,lx+doorSide*.255,1.25,lz,steel);
+      add(id+' locker handle '+i,.045,.2,.035,lx+doorSide*.29,1.18,lz+unit*.28,black);
+      add(id+' locker number plate '+i,.025,.1,unit*.38,lx+doorSide*.29,1.9,lz,white);
+      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,.02,.018,unit*.45,lx+doorSide*.292,1.65+vent*.07,lz,black);
+     }
+    }
+    const benchW=Math.min((orientation==='front'?w:d)-1.4,orientation==='front'?w-1.4:d-1.4);
+    const bx=orientation==='front'?cx:cx-(orientation==='side-reverse'?-1:1)*1.8,bz=orientation==='front'?frontZ+2.0:cz;
+    if(orientation==='front'){
+     add(id+' changing bench seat',benchW,.14,.58,bx,.58,bz,accentMat);
+     add(id+' changing bench frame',benchW-.25,.48,.12,bx,.28,bz,steel);
+     for(let i=0;i<4;i++)add(id+' boot shelf '+i,.55,.12,.48,bx-benchW/2+.45+i*(benchW-.9)/3,.16,bz+.55,black);
+    }else{
+     add(id+' changing bench seat',.58,.14,benchW,bx,.58,bz,accentMat);
+     add(id+' changing bench frame',.12,.48,benchW-.25,bx,.28,bz,steel);
+     for(let i=0;i<4;i++)add(id+' boot shelf '+i,.48,.12,.55,bx-(orientation==='side-reverse'?-1:1)*.55,.16,bz-benchW/2+.45+i*(benchW-.9)/3,black);
+    }
+    // Kit rail and hooks sit against the usable wall, not floating in the room.
+    if(orientation==='front'){
+     const railLength=Math.min(w-2,7.5);
+     add(id+' kit rail',railLength,.055,.055,cx,2.35,cz-.7,steel);
+     for(let i=0;i<8;i++)add(id+' kit hook '+i,.045,.2,.045,cx-railLength/2+.45+i*(railLength-.9)/7,2.2,cz-.7,steel);
+    }else{
+     const doorSide=orientation==='side-reverse'?-1:1,railX=cx-doorSide*(w/2-1.0),railLength=Math.min(d-2,7.5);
+     add(id+' kit rail',.055,.055,railLength,railX,2.35,cz,steel);
+     for(let i=0;i<8;i++)add(id+' kit hook '+i,.045,.2,.045,railX,2.2,cz-railLength/2+.45+i*(railLength-.9)/7,steel);
+    }
+    // Practical ceiling luminaires and ventilation panels.
+    for(let i=0;i<3;i++){light(cx-w/3+i*w/3,3.62,cz);add(id+' ceiling vent '+i,.7,.045,.34,cx-w/3+i*w/3,3.68,backZ-1.0,darkSteel);}
+    sign(id+' room identification',id==='Home'?'HOME TEAM':id==='Away'?'AWAY TEAM':'MATCH OFFICIALS',
+      id==='Officials'?'REFEREES & DELEGATES': 'FIRST TEAM DRESSING ROOM',
+      orientation==='front'?cx:cx+(orientation==='side-reverse'?-w/2:w/2),3.0,orientation==='front'?frontZ-.18:cz,accent,
+      orientation==='front'?0:(orientation==='side-reverse'?-Math.PI/2:Math.PI/2),orientation==='front'?4.4:3.0);
+   };
+   makeRoom('Home',-23.0,branchZ,11.0,11.5,0x8ab7d2,homeMat,'side');
+   makeRoom('Away',23.0,branchZ,11.0,11.5,0xc99b8f,awayMat,'side-reverse');
+   makeRoom('Officials',0,85.6,10.5,11.8,0xc9b77a,officialMat,'front');
+   // Fire safety, CCTV and accessible service details in the public-facing corridor.
+   for(const z of[52,61]){
+    add('Fire extinguisher cabinet',.38,.72,.2,-2.55,1.0,z,material(0x9b302a,.72,.02));
+    add('CCTV camera housing',.28,.18,.22,2.55,3.15,z,darkSteel);
+    const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),new THREE.MeshBasicMaterial({color:0x171d22}));
+    lens.name='CCTV camera lens';lens.position.set(2.55,3.06,z+.1);root.add(lens);
+   }
+   root.userData={kind:'player-entrance',frontZ:front,junctionZ:junction,homeRoom:{x:-23,z:branchZ},officialsRoom:{x:0,z:85.6},awayRoom:{x:23,z:branchZ},openPitchEnd:true,threeWayJunction:true};
    scene.add(root);return root;
   }
-function carveStadiumForPlayerEntrance(stadium){
-  // Only imported stadium GLB geometry is carved. Separate Environment Lab
-  // objects (tunnel, dugouts, user props) are never traversed or removed.
-  const y0=pitchSurfaceY-.65,y1=pitchSurfaceY+5.35;
+ function carveStadiumForPlayerEntrance(stadium){
+  // Clip triangles against exact tunnel volumes. Unlike the old whole-triangle
+  // deletion, this preserves the stadium surface outside the actual cut boundary.
   const cuts=[
-   {minX:-4.9,maxX:4.9,minY:y0,maxY:y1,minZ:44.2,maxZ:70.6},
-   {minX:-20,maxX:20,minY:y0,maxY:y1,minZ:69.65,maxZ:70.65},
-   {minX:-19.2,maxX:-7.2,minY:y0,maxY:y1,minZ:70,maxZ:85},
-   {minX:-4.9,maxX:4.9,minY:y0,maxY:y1,minZ:70,maxZ:85},
-   {minX:7.2,maxX:19.2,minY:y0,maxY:y1,minZ:70,maxZ:85}
+   {minX:-3.25,maxX:3.25,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.35,minZ:44.9,maxZ:66.4},
+   {minX:-17.5,maxX:17.5,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.2,minZ:63.45,maxZ:68.75},
+   {minX:-28.8,maxX:-16.1,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:59.8,maxZ:72.4},
+   {minX:16.1,maxX:28.8,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:59.8,maxZ:72.4},
+   {minX:-5.8,maxX:5.8,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:78.8,maxZ:92.0}
   ];
-  const intersects=(a,b)=>a.max.x>=b.minX&&a.min.x<=b.maxX&&a.max.y>=b.minY&&a.min.y<=b.maxY&&a.max.z>=b.minZ&&a.min.z<=b.maxZ;
-  stadium.updateMatrixWorld(true);
-  let meshesVisited=0,meshesChanged=0,trianglesRemoved=0;
-  const vA=new THREE.Vector3(),vB=new THREE.Vector3(),vC=new THREE.Vector3();
-  stadium.traverse(mesh=>{
-   if(!mesh.isMesh||mesh.isSkinnedMesh||!mesh.geometry||!mesh.geometry.attributes.position)return;
-   meshesVisited++;
-   const source=mesh.geometry,position=source.attributes.position;
-   const worldBounds=new THREE.Box3().setFromBufferAttribute(position).applyMatrix4(mesh.matrixWorld);
-   if(!cuts.some(cut=>intersects(worldBounds,cut)))return;
-   const sourceIndex=source.index,vertexCount=position.count;
-   const indexAt=i=>sourceIndex?sourceIndex.getX(i):i;
-   const sourceGroups=source.groups.length?source.groups:[{start:0,count:sourceIndex?sourceIndex.count:vertexCount,materialIndex:0}];
-   const kept=[],newGroups=[];let removedHere=0;
-   for(const group of sourceGroups){
-    const groupStart=Math.max(0,group.start),groupEnd=Math.min(sourceIndex?sourceIndex.count:vertexCount,group.start+group.count),groupStartOut=kept.length;
-    for(let i=groupStart;i+2<groupEnd;i+=3){
-     const ia=indexAt(i),ib=indexAt(i+1),ic=indexAt(i+2);
-     vA.fromBufferAttribute(position,ia).applyMatrix4(mesh.matrixWorld);vB.fromBufferAttribute(position,ib).applyMatrix4(mesh.matrixWorld);vC.fromBufferAttribute(position,ic).applyMatrix4(mesh.matrixWorld);
-     const tri={min:{x:Math.min(vA.x,vB.x,vC.x),y:Math.min(vA.y,vB.y,vC.y),z:Math.min(vA.z,vB.z,vC.z)},max:{x:Math.max(vA.x,vB.x,vC.x),y:Math.max(vA.y,vB.y,vC.y),z:Math.max(vA.z,vB.z,vC.z)}};
-     if(cuts.some(cut=>intersects(tri,cut))){removedHere++;continue;}
-     kept.push(ia,ib,ic);
-    }
-    const count=kept.length-groupStartOut;if(count)newGroups.push({start:groupStartOut,count,materialIndex:group.materialIndex||0});
+  const axis=['x','y','z'];
+  const interpolate=(a,b,t)=>{
+   const v={world:a.world.clone().lerp(b.world,t),attrs:{}};
+   for(const name of Object.keys(a.attrs)){const av=a.attrs[name],bv=b.attrs[name];v.attrs[name]=av.map((n,i)=>n+(bv[i]-n)*t);}
+   return v;
+  };
+  const clip=(poly,key,bound,greater)=>{
+   if(!poly.length)return [];
+   const out=[];let previous=poly[poly.length-1],pv=previous.world[key],pin=greater?pv>=bound:pv<=bound;
+   for(const current of poly){
+    const cv=current.world[key],cin=greater?cv>=bound:cv<=bound;
+    if(cin!==pin){const t=(bound-pv)/(cv-pv);out.push(interpolate(previous,current,THREE.MathUtils.clamp(t,0,1)));}
+    if(cin)out.push(current);
+    previous=current;pv=cv;pin=cin;
    }
-   if(!removedHere)return;
-   const geometry=source.clone();geometry.setIndex(kept);geometry.clearGroups();
+   return out;
+  };
+  const subtractBox=(poly,box)=>{
+   let inside=[poly],outside=[];
+   for(const [key,bound,greater] of [['x',box.minX,true],['x',box.maxX,false],['y',box.minY,true],['y',box.maxY,false],['z',box.minZ,true],['z',box.maxZ,false]]){
+    const next=[];
+    for(const part of inside){
+     const out=clip(part,key,bound,!greater),inn=clip(part,key,bound,greater);
+     if(out.length>=3)outside.push(out);
+     if(inn.length>=3)next.push(inn);
+    }
+    inside=next;if(!inside.length)break;
+   }
+   return outside;
+  };
+  stadium.updateMatrixWorld(true);
+  let meshesVisited=0,meshesChanged=0,trianglesClipped=0,trianglesRemoved=0,fragmentsCreated=0;
+  const worldBounds=new THREE.Box3(),v=new THREE.Vector3();
+  stadium.traverse(mesh=>{
+   if(!mesh.isMesh||mesh.isSkinnedMesh||!mesh.geometry?.attributes?.position)return;
+   meshesVisited++;
+   const source=mesh.geometry,pos=source.attributes.position,index=source.index;
+   worldBounds.setFromBufferAttribute(pos).applyMatrix4(mesh.matrixWorld);
+   const relevant=cuts.filter(c=>worldBounds.max.x>=c.minX&&worldBounds.min.x<=c.maxX&&worldBounds.max.y>=c.minY&&worldBounds.min.y<=c.maxY&&worldBounds.max.z>=c.minZ&&worldBounds.min.z<=c.maxZ);
+   if(!relevant.length)return;
+   const names=Object.keys(source.attributes),inverse=mesh.matrixWorld.clone().invert(),arrays=Object.fromEntries(names.map(n=>[n,[]]));
+   const groups=source.groups.length?source.groups:[{start:0,count:index?index.count:pos.count,materialIndex:0}];
+   const newGroups=[];let emitted=0,removed=0,clipped=0;
+   const readVertex=vi=>{
+    const attrs={};for(const name of names){const a=source.attributes[name],values=[];for(let c=0;c<a.itemSize;c++)values.push(c===0?a.getX(vi):c===1?a.getY(vi):c===2?a.getZ(vi):c===3?a.getW(vi):0);attrs[name]=values;}
+    const p=new THREE.Vector3().fromBufferAttribute(pos,vi).applyMatrix4(mesh.matrixWorld);
+    return{world:p,attrs};
+   };
+   for(const group of groups){
+    const groupStart=emitted,limit=Math.min(index?index.count:pos.count,group.start+group.count);
+    for(let i=group.start;i+2<limit;i+=3){
+     const ids=[index?index.getX(i):i,index?index.getX(i+1):i+1,index?index.getX(i+2):i+2];
+     let polygons=[[readVertex(ids[0]),readVertex(ids[1]),readVertex(ids[2])]];
+     for(const cut of relevant){
+      polygons=polygons.flatMap(poly=>subtractBox(poly,cut));
+      if(!polygons.length)break;
+     }
+     const kept=polygons.reduce((sum,p)=>sum+Math.max(0,p.length-2),0);
+     if(!kept){removed++;continue;}
+     if(polygons.length!==1||polygons[0].length!==3)clipped++;
+     for(const poly of polygons){
+      for(let n=1;n<poly.length-1;n++){
+       for(const vertex of[poly[0],poly[n],poly[n+1]]){
+        for(const name of names){
+         let values=vertex.attrs[name];
+         if(name==='position'){v.copy(vertex.world).applyMatrix4(inverse);values=[v.x,v.y,v.z];}
+         arrays[name].push(...values);
+        }
+        emitted++;
+       }
+       fragmentsCreated++;
+      }
+     }
+    }
+    if(emitted>groupStart)newGroups.push({start:groupStart,count:emitted-groupStart,materialIndex:group.materialIndex||0});
+   }
+   if(!clipped&&!removed)return;
+   const geometry=new THREE.BufferGeometry();
+   for(const name of names){const old=source.attributes[name];geometry.setAttribute(name,new THREE.Float32BufferAttribute(arrays[name],old.itemSize,old.normalized));}
    for(const group of newGroups)geometry.addGroup(group.start,group.count,group.materialIndex);
-   geometry.computeBoundingBox();geometry.computeBoundingSphere();mesh.geometry=geometry;
-   trianglesRemoved+=removedHere;meshesChanged++;
+   geometry.computeBoundingBox();geometry.computeBoundingSphere();
+   mesh.geometry=geometry;meshesChanged++;trianglesClipped+=clipped;trianglesRemoved+=removed;
   });
-  const diagnostics={meshesVisited,meshesChanged,trianglesRemoved,cutVolumes:cuts.length,scope:'imported-stadium-glb-only',firstStepStartZ:45.5};
-  console.info('PITCH 11 Environment Lab tunnel clearance:',diagnostics);return diagnostics;
+  const diagnostics={meshesVisited,meshesChanged,trianglesClipped,trianglesRemoved,fragmentsCreated,cutVolumes:cuts.length,scope:'imported-stadium-glb-only',firstStepStartZ:45.5,method:'triangle-box-clipping'};
+  console.info('PITCH 11 Environment Lab precise tunnel clearance:',diagnostics);return diagnostics;
  }
+
 function finishStadiumLoad(gltf){
   const stadium=gltf.scene;
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
