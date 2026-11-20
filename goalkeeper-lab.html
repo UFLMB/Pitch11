@@ -110,8 +110,8 @@ function updateKeeper(dt){
    if(!clipIsActive){phaseTimer=.05;return}
    keeper.dive=0;
    keeper.diveRecover=0;
-   if(keeper.diveHeight==="high"){
-    // The high diving-save clips stand the keeper up, but can leave him
+   if(keeper.diveHeight==="high"||keeper.diveHeight==="middle"){
+    // The high and middle diving-save clips stand the keeper up, but can leave him
     // displaced. Reposition only after the authored animation has finished.
     keeper.animationOverride="keeper-move";
     setPhase("return",.9);
