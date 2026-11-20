@@ -28,7 +28,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  syncRendererSize();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();
- const environmentMode=new URLSearchParams(location.search).has('environment');
+ const environmentMode=new URLSearchParams(location.search).has('environment')||location.pathname.endsWith('/graphics3d.html');
  let playerRenderer=null,matchBallMesh=null,matchBallShadow=null;
  if(!environmentMode){
   playerRenderer=new MatchPlayerRenderer(scene,{mobile});
