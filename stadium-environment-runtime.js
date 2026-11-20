@@ -628,14 +628,14 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
     mesh.castShadow=false;mesh.receiveShadow=false;parent.add(mesh);return mesh;
    };
-   const sign=(name,title,subtitle,x,y,z,accent=0xc9b77a,rotation=0)=>{
+   const sign=(name,title,subtitle,x,y,z,accent=0xc9b77a,rotation=0,width=4.4)=>{
     const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=320;const g=canvas.getContext('2d');
     g.fillStyle='#252c30';g.fillRect(0,0,1024,320);g.fillStyle='#b7b8ae';g.fillRect(0,0,1024,10);
     g.fillStyle='#'+accent.toString(16).padStart(6,'0');g.fillRect(54,244,916,5);
     g.textAlign='left';g.textBaseline='middle';g.fillStyle='#f2f1e9';g.font='700 66px Arial';g.fillText(title,68,112);
     g.fillStyle='#c1c5c2';g.font='500 30px Arial';g.fillText(subtitle,70,190);
     const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
-    const m=new THREE.Mesh(new THREE.PlaneGeometry(4.4,1.38),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
+    const m=new THREE.Mesh(new THREE.PlaneGeometry(width,1.38),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     m.name=name;m.position.set(x,y,z);m.rotation.y=rotation;root.add(m);return m;
    };
    const light=(x,y,z,rotation=0)=>{
@@ -759,18 +759,22 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' changing bench frame',.12,.48,benchW-.25,bx,.28,bz,steel);
      for(let i=0;i<4;i++)add(id+' boot shelf '+i,.48,.12,.55,bx-(orientation==='side-reverse'?-1:1)*.55,.16,bz-benchW/2+.45+i*(benchW-.9)/3,black);
     }
-    // Kit rail and numbered hooks make the room read as a working team space.
-    add(id+' kit rail',Math.min(w-2,7.5),.055,.055,cx,2.35,cz-.7,steel);
-    for(let i=0;i<8;i++){
-     const hx=cx-3.2+i*.91;
-     add(id+' kit hook '+i,.045,.2,.045,hx,2.2,cz-.7,steel);
+    // Kit rail and hooks sit against the usable wall, not floating in the room.
+    if(orientation==='front'){
+     const railLength=Math.min(w-2,7.5);
+     add(id+' kit rail',railLength,.055,.055,cx,2.35,cz-.7,steel);
+     for(let i=0;i<8;i++)add(id+' kit hook '+i,.045,.2,.045,cx-railLength/2+.45+i*(railLength-.9)/7,2.2,cz-.7,steel);
+    }else{
+     const doorSide=orientation==='side-reverse'?-1:1,railX=cx-doorSide*(w/2-1.0),railLength=Math.min(d-2,7.5);
+     add(id+' kit rail',.055,.055,railLength,railX,2.35,cz,steel);
+     for(let i=0;i<8;i++)add(id+' kit hook '+i,.045,.2,.045,railX,2.2,cz-railLength/2+.45+i*(railLength-.9)/7,steel);
     }
     // Practical ceiling luminaires and ventilation panels.
     for(let i=0;i<3;i++){light(cx-w/3+i*w/3,3.62,cz);add(id+' ceiling vent '+i,.7,.045,.34,cx-w/3+i*w/3,3.68,backZ-1.0,darkSteel);}
     sign(id+' room identification',id==='Home'?'HOME TEAM':id==='Away'?'AWAY TEAM':'MATCH OFFICIALS',
       id==='Officials'?'REFEREES & DELEGATES': 'FIRST TEAM DRESSING ROOM',
       orientation==='front'?cx:cx+(orientation==='side-reverse'?-w/2:w/2),3.0,orientation==='front'?frontZ-.18:cz,accent,
-      orientation==='front'?0:(orientation==='side-reverse'?-Math.PI/2:Math.PI/2));
+      orientation==='front'?0:(orientation==='side-reverse'?-Math.PI/2:Math.PI/2),orientation==='front'?4.4:3.0);
    };
    makeRoom('Home',-23.0,branchZ,11.0,11.5,0x8ab7d2,homeMat,'side');
    makeRoom('Away',23.0,branchZ,11.0,11.5,0xc99b8f,awayMat,'side-reverse');
