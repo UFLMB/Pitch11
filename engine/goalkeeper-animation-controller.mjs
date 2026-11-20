@@ -73,3 +73,7 @@ export function getGoalkeeperReturnStep({ distance, rootMotionAvailable, rootMot
   if ((Number(rootMotionMagnitude) || 0) <= 1e-9) return "wait";
   return "root-motion";
 }
+
+export function shouldPreserveGoalkeeperAnimationAfterShot(phase) {
+  return phase === "diving" || phase === "action";
+}
