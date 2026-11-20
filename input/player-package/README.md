@@ -10,7 +10,7 @@ The old generic goalkeeper catch, body-block, diving-save, miss and scoop FBXs h
 - Rolling-ball pickup is registered as goalkeeper scoop.
 - High and middle dives are paired by screen-left/screen-right as seen by a viewer facing the goalkeeper.
 - All low-shot source takes are labeled ball_not_in_hand. The two alternate takes are marked variant_2; they remain distinct.
-- Fingertip save is registered separately and remains subject to the dedicated in-goal distal fingertip-bone-to-ball contact validation before it is considered a confirmed save.
+- The fingertip-save candidate was tested against 54 in-goal ball trajectories and made no distal fingertip contact. It is rejected and is not included in the active runtime package; its source copy remains only in the review folder.
 
 ## Runtime rules
 
