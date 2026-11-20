@@ -61,6 +61,7 @@ export function mapLegacyPlayerState(player, index, alpha = 1, selectedPlayer = 
   else if (player.sd) action = "slide-tackle";
   else if (player.down) action = "fallen-idle";
   else if (player.jump > 0) action = "header";
+  else if (player.ak === 1 && restart?.kind === "pen") action = "penalty-shot";
   else if (player.ak === 1) action = "shot";
   else if (player.ak === 2) action = "pass";
   else if (player.ak === 3) action = "tackle";
