@@ -102,12 +102,13 @@ function detectKeeperBallContact(){
  const entry=keeperRenderer.players.get(0);if(!entry?.model)return null;
  entry.model.updateMatrixWorld(true);
  const handNames=new Set(["lefthand","righthand"]),armNames=new Set(["leftforearm","rightforearm","leftarm","rightarm"]);
+ const legNames=new Set(["leftupleg","rightupleg","leftleg","rightleg","leftfoot","rightfoot"]);
  const point=new THREE.Vector3();let nearest=null;
  for(const [name,bone] of entry.bones){
-  if(!handNames.has(name)&&!armNames.has(name)&&!["spine2","spine1","head"].includes(name))continue;
+  if(!handNames.has(name)&&!armNames.has(name)&&!legNames.has(name)&&!["spine2","spine1","head"].includes(name))continue;
   bone.getWorldPosition(point);
   const distance=point.distanceTo(ball.position);
-  const radius=handNames.has(name)?.43:armNames.has(name)?.38:name==="head"?.31:.42;
+  const radius=handNames.has(name)?.43:armNames.has(name)?.38:legNames.has(name)?.44:name==="head"?.31:.42;
   if(distance<=radius&&(!nearest||distance<nearest.distance))nearest={bone:name,distance};
  }
  return nearest;
