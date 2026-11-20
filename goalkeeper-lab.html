@@ -47,7 +47,7 @@ import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
 import { clampRootMotionDeltaToTarget } from "./engine/locomotion-animation.mjs";
-import { createGoalkeeperAnimationController, getGoalkeeperReturnStep, isGoalkeeperSaveClipComplete, selectGoalkeeperReturnClip, transitionGoalkeeperPhase } from "./engine/goalkeeper-animation-controller.mjs";
+import { createGoalkeeperAnimationController, getGoalkeeperReturnStep, isGoalkeeperSaveClipComplete, selectGoalkeeperReturnClip, shouldPreserveGoalkeeperAnimationAfterShot, transitionGoalkeeperPhase } from "./engine/goalkeeper-animation-controller.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
@@ -88,7 +88,7 @@ const net=new THREE.LineSegments(netGeometry,netMat);goal.add(net);
 // The source Mixamo FBX is ~52 MB. Give mobile a bounded load window;
  // if it fails, report an asset error rather than substituting another model.
 const keeperRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:60000,castShadows:true});
-const keeper={gk:true,manualClipToken:0,team:0,pos:"GK",num:1,px:585,py:730,x:585,y:730,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0};
+const keeper={gk:true,manualClipToken:0,team:0,pos:"GK",num:1,px:585,py:730,x:585,y:730,face:-Math.PI/2,vx:0,vy:0,stam:1,out:false,dive:0,diveAng:0,diveRecover:0,down:false,ak:0,actionClipState:"",diveClipState:"",diveClipFile:"",diveClipWait:0};
 const goalkeeperAnimationController=createGoalkeeperAnimationController("loading");
 let phase="loading",phaseTimer=0,shot=null,shotResult="Ready",sequenceIndex=-1,sequenceTimer=0,saveCount=0,goalCount=0,aiMode=false,aiDecision=null,aiReactionTimer=0,aiDecisionFired=false;
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.11,24,16),mat(0xf4f4ed,.38));scene.add(ball);const ballShadow=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.28}));ballShadow.rotation.x=-Math.PI/2;scene.add(ballShadow);
@@ -100,13 +100,13 @@ function setPhase(next,duration=0){
  phase=goalkeeperAnimationController.phase;
  phaseTimer=duration;
 }
-function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;keeper.manualClipFile="";keeper.animationOverride="";const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.72,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration,goalWidth:7.32,goalHeight:2.44,keeperHeight:1.9});aiReactionTimer=aiDecision.reactionTime;if(aiMode)shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase();}
+function fireShot(kind){if(!keeperRenderer.ready||phase==="loading")return;const t=targets[kind];if(!t)return;keeper.manualClipFile="";keeper.animationOverride="";keeper.actionClipState="";keeper.diveClipWait=0;const from={x:(Math.random()-.5)*.9,y:1.1,z:18};shot={kind,from,to:t,elapsed:0,duration:.72,saveResolved:false};ball.position.set(from.x,from.y,from.z);ball.visible=true;shotResult="Shot incoming";setPhase("shot",.58);keeper.dive=0;keeper.diveRecover=0;keeper.diveHeight="";keeper.ak=0;keeper.down=false;keeper.vx=keeper.vy=0;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;aiDecision=evaluateGoalkeeperShot({targetX:t.x,targetY:t.y,keeperX:(keeper.x-585)*.1,flightTime:shot.duration,goalWidth:7.32,goalHeight:2.44,keeperHeight:1.9});aiReactionTimer=aiDecision.reactionTime;if(aiMode)shotResult="AI READ · "+aiDecision.side.toUpperCase()+" · "+aiDecision.action.toUpperCase();}
 function keeperCatchFileForShot(){const y=shot?.to?.y??1.1;if(y>=1.75)return "gk_catch-middle-jump-above_head_height.fbx";if(y>=1.15)return "gk_catch-middle-head_height.fbx";if(y>=.65)return "gk_catch-middle-stomach_height.fbx";return "gk_catch-middle-rolling_ball_pickup.fbx"}
-function triggerAction(action,clipFile=""){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.diveSide="";keeper.diveHeight="";keeper.animationOverride=action;keeper.manualClipFile=clipFile;if(clipFile)keeper.manualClipToken=(keeper.manualClipToken||0)+1;shotResult=action==="keeper-catch"?"CATCH · "+(clipFile||"SELECTING HEIGHT-APPROPRIATE CLIP"):"PARRY · NO DEDICATED PARRY FBX — HOLDING GOALKEEPER SET";setPhase("action",action==="keeper-catch"?2.4:1.05)}
-function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.manualClipFile="";keeper.animationOverride="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":kind==="middle"?"middle":"high";keeper.diveClipState=kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):kind==="middle"?(side==="left"?"keeperDiveMiddleLeft":"keeperDiveMiddleRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight");keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="middle"?"MID ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
-function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.manualClipFile="";keeper.animationOverride="";keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
+function triggerAction(action,clipFile=""){if(!keeperRenderer.ready)return;keeper.dive=0;keeper.diveRecover=0;keeper.diveSide="";keeper.diveHeight="";keeper.actionClipState=action==="keeper-catch"?"keeperCatch":"";keeper.animationOverride=action;keeper.manualClipFile=clipFile;if(clipFile)keeper.manualClipToken=(keeper.manualClipToken||0)+1;shotResult=action==="keeper-catch"?"CATCH · "+(clipFile||"SELECTING HEIGHT-APPROPRIATE CLIP"):"PARRY · NO DEDICATED PARRY FBX — HOLDING GOALKEEPER SET";setPhase("action",action==="keeper-catch"?7.5:1.05)}
+function triggerSave(side,kind="high"){if(!keeperRenderer.ready)return;keeper.manualClipFile="";keeper.animationOverride="";keeper.actionClipState="";keeper.diveSide=side;keeper.diveHeight=kind==="low"?"low":kind==="middle"?"middle":"high";keeper.diveClipState=kind==="low"?(side==="left"?"keeperDiveLowLeft":"keeperDiveLowRight"):kind==="middle"?(side==="left"?"keeperDiveMiddleLeft":"keeperDiveMiddleRight"):(side==="left"?"keeperDiveLeft":"keeperDiveRight");keeper.diveClipFile=kind==="low"?(side==="left"?"gk_dive-low_shot-left-ball_not_in_hand.fbx":"gk_dive-low_shot-right-ball_not_in_hand.fbx"):kind==="middle"?(side==="left"?"gk_dive-middle_shot-left-ball_in_hand.fbx":"gk_dive-middle_shot-right-ball_in_hand.fbx"):(side==="left"?"gk_dive-high_shot-left-ball_in_hand.fbx":"gk_dive-high_shot-right-ball_in_hand.fbx");keeper.diveClipWait=0;keeper.dive=1;keeper.diveRecover=0;keeper.diveAng=resolveKeeperDiveAngle(side,keeper.face);keeper.down=false;keeper.ak=0;keeper.diveStartX=keeper.x;const lateralSign=side==="left"?-1:side==="right"?1:0;const keeperAimX=THREE.MathUtils.clamp((shot?.to.x??lateralSign*2)-lateralSign*1.35,-2.2,2.2);keeper.diveTargetX=585+keeperAimX*10;keeper.diveElapsed=0;keeper.diveDuration=.52;keeper.vx=keeper.vy=0;shotResult=(kind==="low"?"LOW ":kind==="middle"?"MID ":kind==="high"?"HIGH ":"")+side.toUpperCase()+" DIVE";setPhase("diving",.78)}
+function resetKeeper(){shot=null;ball.visible=false;aiDecision=null;aiReactionTimer=0;aiDecisionFired=false;keeper.manualClipFile="";keeper.animationOverride="";keeper.actionClipState="";keeper.diveClipState="";keeper.diveClipFile="";keeper.diveClipWait=0;keeper.dive=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";keeper.diveRecover=0;keeper.down=false;keeper.ak=0;setKeeperPosition(0);setPhase("idle");shotResult="Ready"}
 function targetSide(kind){return kind.startsWith("left")?"left":kind.startsWith("right")?"right":"center"}
-function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;goalCount++;keeper.dive=0;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+(aiDecision?.reachable?"NO PHYSICAL CONTACT":"OUT OF REACH");setPhase("miss",.5)}
+function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true;goalCount++;shotResult=(aiMode?"AI MISSED · ":"GOAL · ")+(aiDecision?.reachable?"NO PHYSICAL CONTACT":"OUT OF REACH");if(!shouldPreserveGoalkeeperAnimationAfterShot(phase)){keeper.dive=0;keeper.actionClipState="";keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle")}}
 function detectKeeperBallContact(){
  const entry=keeperRenderer.players.get(0);if(!entry?.model)return null;
  entry.model.updateMatrixWorld(true);
@@ -122,7 +122,7 @@ function detectKeeperBallContact(){
  }
  return nearest;
 }
-function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.bone.toUpperCase();shot=null;ball.visible=false;setPhase("idle");return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
+function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.bone.toUpperCase();shot=null;ball.visible=false;if(!shouldPreserveGoalkeeperAnimationAfterShot(phase)){keeper.dive=0;setPhase("idle")}return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
 function beginKeeperReturn(){
  const files=["goalkeeper sidestep.fbx","goalkeeper sidestep (2).fbx"];
  const target={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
@@ -165,7 +165,16 @@ function applyKeeperRootMotion(dt){
 function updateKeeper(dt){
  if(phase==="action"){
   phaseTimer-=dt;
-  if(phaseTimer<=0){keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle")}
+  const expected=keeper.actionClipState||"";
+  if(expected){
+   const entry=keeperRenderer.players.get(0),action=entry?.activeAction,clip=action?.getClip?.();
+   const complete=!!(entry&&clip&&isGoalkeeperSaveClipComplete({expectedState:expected,activeState:entry.state,actionTime:action.time,clipDuration:clip.duration,endTolerance:.04}));
+   const failed=!!(keeper.manualClipFile&&keeperRenderer.failedClips.has(keeper.manualClipFile));
+   if(complete||failed||phaseTimer<=0){
+    if(failed)shotResult="ACTION CLIP FAILED · "+keeper.manualClipFile;
+    keeper.manualClipFile="";keeper.animationOverride="";keeper.actionClipState="";setPhase("idle");
+   }
+  }else if(phaseTimer<=0){keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle")}
  }else if(phase==="diving"){
   phaseTimer-=dt;
   keeper.diveElapsed=Math.min(keeper.diveDuration||.52,(keeper.diveElapsed||0)+dt);
@@ -183,9 +192,14 @@ function updateKeeper(dt){
    const clip=action?.getClip?.();
    const expected=keeper.diveClipState||"";
    const clipIsActive=!!(entry&&clip&&isGoalkeeperSaveClipComplete({expectedState:expected,activeState:entry.state,actionTime:action.time,clipDuration:clip.duration,endTolerance:.04}));
-   if(!clipIsActive){phaseTimer=.05;return}
-   // The complete save clip has finished. Select the sidestep whose
-   // extracted root displacement points toward the actual home position.
+   if(!clipIsActive){
+    keeper.diveClipWait=(keeper.diveClipWait||0)+dt;
+    const failed=!!(keeper.diveClipFile&&keeperRenderer.failedClips.has(keeper.diveClipFile));
+    if(!failed&&keeper.diveClipWait<8){phaseTimer=.05;return}
+    shotResult="DIVE CLIP "+(failed?"FAILED":"TIMED OUT")+" · RECOVERING";
+   }
+   // The selected one-shot save clip is allowed to finish completely.
+   // The approved dive FBXs already contain their own landing/get-up motion.
    beginKeeperReturn();
   }
  }else if(phase==="recover"){
@@ -240,7 +254,8 @@ document.querySelectorAll("[data-clip]").forEach(button=>button.addEventListener
  if(!keeperRenderer.ready)return;
  button.disabled=true;shot=null;ball.visible=false;keeper.dive=0;keeper.diveRecover=0;keeper.diveSide="";keeper.diveHeight="";keeper.diveClipState="";
  keeper.manualClipToken=(keeper.manualClipToken||0)+1;keeper.animationOverride=file.startsWith("gk_catch")?"keeper-catch":file.includes("middle_shot")?(file.includes("-left-")?"keeper-dive-middle-left":"keeper-dive-middle-right"):file.includes("low_shot")?(file.includes("-left-")?"keeper-dive-low-left":"keeper-dive-low-right"):(file.includes("-left-")?"keeper-dive-left":"keeper-dive-right");
- keeper.manualClipFile=file;setPhase("action",3.2);shotResult="PREVIEW · "+file;
+ keeper.actionClipState=file.startsWith("gk_catch")?"keeperCatch":file.includes("middle_shot")?(file.includes("-left-")?"keeperDiveMiddleLeft":"keeperDiveMiddleRight"):file.includes("low_shot")?(file.includes("-left-")?"keeperDiveLowLeft":"keeperDiveLowRight"):(file.includes("-left-")?"keeperDiveLeft":"keeperDiveRight");
+ keeper.manualClipFile=file;setPhase("action",7.5);shotResult="PREVIEW · "+file;
  try{await keeperRenderer.loadMixamoClip(file);shotResult="PLAYING · "+file}catch(error){keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle");shotResult="CLIP ERROR · "+(error?.message||String(error))}
  button.disabled=false;updateReadout();
 }));
