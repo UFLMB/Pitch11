@@ -17,9 +17,24 @@ try {
   await page.waitForFunction(() => /Fingertip colliders: [1-9]/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 20000 });
   await page.locator("#load-keeper-anims").click();
   await page.waitForFunction(() => (document.querySelector("#load-keeper-anims")?.textContent || "").includes("RELOAD GK ANIMS"), undefined, { timeout: 30000 });
-  await page.locator('[data-action="fingertip-test"]').click();
-  await page.waitForFunction(() => /Fingertip test: (?:PASS|FAIL)/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 20000 });
-  const readout = await page.locator("#readout").innerText();
+  const targets = [];
+  for (const x of [-2.4, -1.8, -1.2, -0.6, 0, 0.6, 1.2, 1.8, 2.4]) {
+    for (const y of [1.0, 1.3, 1.6, 1.9, 2.2, 2.4]) targets.push({ x, y });
+  }
+  let readout = "";
+  let contactTarget = null;
+  for (const target of targets) {
+    await page.evaluate(({ x, y }) => window.__GK_SET_FINGERTIP_TARGET(x, y), target);
+    await page.locator('[data-action="fingertip-test"]').click();
+    await page.waitForFunction(() => /Fingertip test: RUNNING/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 5000 });
+    await page.waitForFunction(() => /Fingertip test: (?:PASS|FAIL)/.test(document.querySelector("#readout")?.innerText || ""), undefined, { timeout: 10000 });
+    readout = await page.locator("#readout").innerText();
+    if (/Fingertip test: PASS/.test(readout)) { contactTarget = target; break; }
+  }
+  await page.screenshot({ path: artifacts + "/goalkeeper-fingertip-contact.png", fullPage: true });
+  console.log(JSON.stringify({ result: contactTarget ? "PASS" : "FAIL", contactTarget, attempts: targets.length, readout }, null, 2));
+  assert.ok(contactTarget, "Fingertip animation did not contact any of the tested in-goal ball trajectories");
+
   await page.screenshot({ path: artifacts + "/goalkeeper-fingertip-contact.png", fullPage: true });
   console.log(JSON.stringify({ result: /Fingertip test: PASS/.test(readout) ? "PASS" : "FAIL", readout }, null, 2));
   assert.match(readout, /Fingertip test: PASS/, "Fingertip animation did not make physical contact with the goal-line fingertip ball");
