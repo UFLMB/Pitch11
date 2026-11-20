@@ -46,6 +46,7 @@ import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
+import { findGoalkeeperBallContact } from "./engine/goalkeeper-contact.mjs";
 import { createGoalkeeperAnimationController, isGoalkeeperSaveClipComplete, shouldPreserveGoalkeeperAnimationAfterShot, transitionGoalkeeperPhase } from "./engine/goalkeeper-animation-controller.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
@@ -109,19 +110,11 @@ function resolveShot(){if(!shot||shot.saveResolved)return;shot.saveResolved=true
 function detectKeeperBallContact(){
  const entry=keeperRenderer.players.get(0);if(!entry?.model)return null;
  entry.model.updateMatrixWorld(true);
- const handNames=new Set(["lefthand","righthand"]),armNames=new Set(["leftforearm","rightforearm","leftarm","rightarm"]);
- const legNames=new Set(["leftupleg","rightupleg","leftleg","rightleg","leftfoot","rightfoot"]);
- const point=new THREE.Vector3();let nearest=null;
- for(const [name,bone] of entry.bones){
-  if(!handNames.has(name)&&!armNames.has(name)&&!legNames.has(name)&&!["spine2","spine1","head"].includes(name))continue;
-  bone.getWorldPosition(point);
-  const distance=point.distanceTo(ball.position);
-  const radius=handNames.has(name)?.43:armNames.has(name)?.38:legNames.has(name)?.44:name==="head"?.31:.42;
-  if(distance<=radius&&(!nearest||distance<nearest.distance))nearest={bone:name,distance};
- }
- return nearest;
+ const bonePositions=new Map(),point=new THREE.Vector3();
+ for(const [name,bone] of entry.bones){bone.getWorldPosition(point);bonePositions.set(name,{x:point.x,y:point.y,z:point.z})}
+ return findGoalkeeperBallContact({bonePositions,ballPosition:ball.position,ballRadius:.11});
 }
-function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.bone.toUpperCase();shot=null;ball.visible=false;if(!shouldPreserveGoalkeeperAnimationAfterShot(phase)){keeper.dive=0;setPhase("idle")}return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
+function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.zone.toUpperCase()+" · "+contact.bone.toUpperCase();shot=null;ball.visible=false;if(!shouldPreserveGoalkeeperAnimationAfterShot(phase)){keeper.dive=0;setPhase("idle")}return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
 function beginKeeperReturn(){
  // Recovery has exactly one owner: the simulation position controller.
  // Do not combine extracted sidestep root motion with engine interpolation.
