@@ -687,14 +687,35 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  function loadStadium(attempt=0){
   stadiumLoadAttempts=attempt+1;stadiumLoadProgress=0;
   setStadiumLoadState(attempt?'retrying':'loading');
+  // GLTFLoader does not expose a request timeout. Guard each attempt so a
+  // stalled transfer cannot leave the lab in LOADING forever.
+  let settled=false;
+  const timeout=setTimeout(()=>{
+   if(settled)return;
+   settled=true;
+   const message='Stadium GLB request timed out after 30 seconds: '+stadiumUrl;
+   if(attempt<2){
+    console.warn('PITCH 11 stadium load timed out; retrying',attempt+1);
+    setStadiumLoadState('retrying',message);
+    setTimeout(()=>loadStadium(attempt+1),700*(attempt+1));
+   }else{
+    console.error('PITCH 11 stadium unavailable after timed-out retries.');
+    setStadiumLoadState('error',message);
+   }
+  },30000);
   loader.load(stadiumUrl,gltf=>{
+   if(settled)return;
+   settled=true;clearTimeout(timeout);
    try{finishStadiumLoad(gltf);}
    catch(e){console.error('PITCH 11 stadium setup failed',e);setStadiumLoadState('error',e&&e.message?e.message:String(e));}
   },event=>{
+   if(settled)return;
    if(event&&event.lengthComputable&&event.total>0){
     stadiumLoadProgress=Math.max(0,Math.min(1,event.loaded/event.total));boot.progress=stadiumLoadProgress;
    }
   },error=>{
+   if(settled)return;
+   settled=true;clearTimeout(timeout);
    const message=error&&error.message?error.message:String(error||'Unknown GLB load error');
    if(attempt<2){
     console.warn('PITCH 11 stadium load failed; retrying',attempt+1,error);
