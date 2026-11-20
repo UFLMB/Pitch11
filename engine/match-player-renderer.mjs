@@ -475,7 +475,7 @@ export class MatchPlayerRenderer {
     const required = ["leftforearm", "lefthand", "rightforearm", "righthand", "leftupleg", "leftleg", "leftfoot", "rightupleg", "rightleg", "rightfoot", "hips", "spine2"];
     const missing = required.filter(name => !entry.bones.has(name));
     const colliders = this.getGoalkeeperContactColliders(playerId);
-    return { available: colliders.length > 0, colliderCount: colliders.length, missing };
+    return { available: colliders.length > 0, colliderCount: colliders.length, fingertipColliderCount: colliders.filter(item => item.part === "fingertip").length, missing };
   }
 
   get ready() { return this.status === "ready" && !!this.template; }
