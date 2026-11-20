@@ -546,3 +546,40 @@ test("auto switching preserves a selected player who is already close to the pla
   assert.equal(sim.updateAutoPlayerSelection(), false);
   assert.equal(sim.selectedPlayer, 9);
 });
+
+
+test("legacy goalkeeper AI keeps its save decision and tags the matching FBX height band", () => {
+  const makeShot = z => {
+    const sim = new FootballSimulation();
+    const keeper = sim.players[0];
+    keeper.x = 2; keeper.y = 34;
+    sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
+    sim.ball.x = 5; sim.ball.y = 34; sim.ball.z = 2.5;
+    const flight = 5 / 8;
+    sim.ball.vx = -8; sim.ball.vy = 0; sim.ball.vz = (z - 2.5 + 4.905 * flight * flight) / flight;
+    sim.resolveGoalkeeperSaves();
+    return keeper.action;
+  };
+  assert.equal(makeShot(.35), "keeper-catch-stomach");
+  assert.equal(makeShot(1.1), "keeper-catch-head");
+  assert.equal(makeShot(2.0), "keeper-catch-jump");
+});
+
+test("legacy goalkeeper AI selects low, middle and high directional FBX actions without changing save physics", () => {
+  const makeShot = z => {
+    const sim = new FootballSimulation();
+    const keeper = sim.players[0];
+    keeper.x = 2; keeper.y = 34;
+    sim.ball.owner = -1; sim.ball.lastTouchTeam = 1;
+    sim.ball.x = 5; sim.ball.y = 34;
+    sim.ball.z = 2.5;
+    const flight = 5 / 18;
+    sim.ball.vx = -18; sim.ball.vy = -1; sim.ball.vz = (z - 2.5 + 4.905 * flight * flight) / flight;
+    sim.resolveGoalkeeperSaves();
+    return { action: keeper.action, vx: sim.ball.vx };
+  };
+  assert.equal(makeShot(.35).action, "keeper-dive-low-left");
+  assert.equal(makeShot(1.1).action, "keeper-dive-middle-left");
+  assert.equal(makeShot(2.0).action, "keeper-dive-left");
+  assert.ok(makeShot(1.1).vx > 0);
+});

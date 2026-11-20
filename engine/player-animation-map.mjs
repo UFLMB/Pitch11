@@ -11,6 +11,9 @@ const CLIP_ALIASES = Object.freeze({
   keeperMove: ["gkmove", "keepersidestep"],
   keeperDirect: ["gkdirect", "keeperdirecting"],
   keeperScoop: ["gkscoop", "keeperscoop"],
+  keeperCatchHead: ["gkcatchhead"],
+  keeperCatchStomach: ["gkcatchstomach"],
+  keeperCatchJump: ["gkcatchjump"],
   keeperMiss: ["gkmiss", "keepermiss"],
   keeperPenaltyReady: ["gkpenaltyready", "penaltyready", "keeperpenaltyready"],
   keeperPass: ["gkpass", "keeperpass"],
@@ -81,6 +84,9 @@ const ALIAS_TO_STATE = new Map(
 
 export function resolvePlayerAnimationState(player, speed = 0) {
   const action = normalize(player?.action);
+  if (action.includes("keepercatchjump")) return "keeperCatchJump";
+  if (action.includes("keepercatchhead")) return "keeperCatchHead";
+  if (action.includes("keepercatchstomach")) return "keeperCatchStomach";
   if (action.includes("keepercatch") || action.includes("keeperclaim")) return "keeperCatch";
   if (action.includes("keeperpass")) return "keeperPass";
   if (player?.role === "GK" && action.includes("pass")) return "keeperPass";
@@ -154,7 +160,7 @@ export const PLAYER_ANIMATION_STATES = Object.freeze(Object.keys(CLIP_ALIASES));
 export const ONE_SHOT_ANIMATION_STATES = Object.freeze([
   "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "header", "fall", "getUp", "throwIn",
   "keeperDiveLeft", "keeperDiveRight", "keeperDiveMiddleLeft", "keeperDiveMiddleRight", "keeperDiveLowLeft", "keeperDiveLowRight", "keeperCatch", "keeperScoop", "keeperPass",
-  "keeperDropKick", "keeperThrow", "keeperPlace"
+  "keeperDropKick", "keeperThrow", "keeperPlace", "keeperCatchHead", "keeperCatchStomach", "keeperCatchJump"
 ]);
 const ONE_SHOT_ANIMATION_STATE_SET = new Set(ONE_SHOT_ANIMATION_STATES);
 export function isOneShotAnimationState(state) {

@@ -4,6 +4,9 @@ import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState
 
 test("maps simulation action states to goalkeeper and outfield animation states", () => {
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch" }, 0), "keeperCatch");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch-head" }, 0), "keeperCatchHead");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch-stomach" }, 0), "keeperCatchStomach");
+  assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch-jump" }, 0), "keeperCatchJump");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-parry" }, 0), "keeperParry");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-left" }, 0), "keeperDiveMiddleLeft");
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-dive-middle-right" }, 0), "keeperDiveMiddleRight");
@@ -55,7 +58,7 @@ test("resolves Mixamo-specific receive, pass, fall, recovery and goalkeeper move
 
 
 test("treats header and other action clips as one-shot animations", () => {
-  for (const state of ["header", "jump", "keeperDiveLeft", "keeperDiveRight", "keeperDiveMiddleLeft", "keeperDiveMiddleRight", "pass", "shot", "getUp"]) {
+  for (const state of ["header", "jump", "keeperDiveLeft", "keeperDiveRight", "keeperDiveMiddleLeft", "keeperDiveMiddleRight", "keeperCatchHead", "keeperCatchStomach", "keeperCatchJump", "pass", "shot", "getUp"]) {
     assert.equal(isOneShotAnimationState(state), true, `${state} should play once`);
   }
   for (const state of ["idle", "walk", "run", "sprint", "keeperSet", "keeperPenaltyReady", "fallenIdle"]) {

@@ -555,7 +555,9 @@ export class FootballSimulation {
       if (Math.abs(keeper.x - ownGoal) > 10 || Math.abs(predictedY - keeper.y) > reach) continue;
       const speed = Math.hypot(b.vx,b.vy,b.vz);
       if (speed < 10) {
-        b.owner = keeper.id; keeper.hasBall = true; keeper.action = "keeper-catch"; keeper.actionUntil = this.time + .72;
+        b.owner = keeper.id; keeper.hasBall = true;
+        keeper.action = predictedZ > 1.65 ? "keeper-catch-jump" : predictedZ > .9 ? "keeper-catch-head" : "keeper-catch-stomach";
+        keeper.actionUntil = this.time + .72;
         b.vx = 0; b.vy = 0; b.vz = 0;
       } else {
         b.x = ownGoal === 0 ? .28 : 104.72;
@@ -563,7 +565,9 @@ export class FootballSimulation {
         b.vy += clamp((predictedY - keeper.y) * .45, -2.5, 2.5);
         b.vz = Math.max(.8, Math.abs(b.vz) * .35);
         const screenLeft = team === 0 ? predictedY < keeper.y : predictedY > keeper.y;
-        keeper.action = screenLeft ? "keeper-dive-left" : "keeper-dive-right";
+        const side = screenLeft ? "left" : "right";
+        const height = predictedZ <= .9 ? "low" : predictedZ <= 1.65 ? "middle" : "high";
+        keeper.action = height === "high" ? `keeper-dive-${side}` : `keeper-dive-${height}-${side}`;
         keeper.actionUntil = this.time + .78;
       }
       this.events.push({ type: "keeperSave", keeper: keeper.id, team, caught: b.owner === keeper.id });
