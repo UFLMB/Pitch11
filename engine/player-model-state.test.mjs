@@ -96,17 +96,15 @@ test("converts keeper-local dive sides into world angles for either facing direc
   }
 });
 
-test("resolves the replacement FBX clips for all four directional and height-specific saves", () => {
+test("resolves the replacement FBX clips including exactly two low-shot saves", () => {
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLeft"), ["gk_dive-high_shot-left-ball_in_hand.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveMiddleLeft"), ["gk_dive-middle_shot-left-ball_in_hand.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveRight"), ["gk_dive-high_shot-right-ball_in_hand.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveMiddleRight"), ["gk_dive-middle_shot-right-ball_in_hand.fbx"]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), [
-    "gk_dive-low_shot-left-ball_not_in_hand.fbx",
-    "gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx"
+    "gk_dive-low_shot-left-ball_not_in_hand.fbx"
   ]);
   assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), [
-    "gk_dive-low_shot-right-ball_not_in_hand.fbx",
-    "gk_dive-low_shot-right-ball_not_in_hand-variant_2.fbx"
+    "gk_dive-low_shot-right-ball_not_in_hand.fbx"
   ]);
 });
