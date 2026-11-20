@@ -11,9 +11,22 @@ function getRootTarget(track) {
 
 function findRootTrack(clip) {
   const candidates = (clip?.tracks || []).filter(track => ROOT_TARGETS.has(getRootTarget(track)));
-  // Prefer an explicit skeleton root. Otherwise use the Mixamo Hips track.
-  return candidates.find(track => getRootTarget(track) === "root" || getRootTarget(track) === "mixamorigroot") ||
-    candidates.find(track => getRootTarget(track) === "hips" || getRootTarget(track) === "mixamorighips") || null;
+  const isRoot = track => getRootTarget(track) === "root" || getRootTarget(track) === "mixamorigroot";
+  const isUsable = track => {
+    const valueSize = typeof track.getValueSize === "function" ? track.getValueSize() : 3;
+    return valueSize === 3 && track.times?.length >= 2 && track.values?.length === track.times.length * 3;
+  };
+  const hasDisplacement = track => {
+    if (!isUsable(track)) return false;
+    const last = track.values.length - 3;
+    return Math.hypot(track.values[last] - track.values[0], track.values[last + 2] - track.values[2]) > 1e-5;
+  };
+  // Prefer a moving explicit root. Some FBXs contain a static Root plus the
+  // actual horizontal displacement on Hips, so fall back to moving Hips.
+  return candidates.find(track => isRoot(track) && hasDisplacement(track)) ||
+    candidates.find(track => !isRoot(track) && hasDisplacement(track)) ||
+    candidates.find(track => isRoot(track) && isUsable(track)) ||
+    candidates.find(track => !isRoot(track) && isUsable(track)) || null;
 }
 
 export function flattenHorizontalRootMotion(clip) {
