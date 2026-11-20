@@ -704,11 +704,11 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' entrance lintel',door,.38,.26,cx,h-.01,frontZ,accentMat);
      add(id+' rear wall',w,h,.24,cx,h/2+.18,backZ,accentMat);
     }else{
-     const span=(d-door)/2;
-     add(id+' entrance front return',.24,h,span,cx+w/2,h/2+.18,cz-d/2+span/2,accentMat);
-     add(id+' entrance rear return',.24,h,span,cx+w/2,h/2+.18,cz+d/2-span/2,accentMat);
-     add(id+' entrance lintel',.26,.38,door,cx+w/2,h-.01,cz,accentMat);
-     add(id+' rear wall',.24,h,d,cx-w/2,h/2+.18,cz,accentMat);
+     const doorSide=orientation==='side-reverse'?-1:1,doorX=cx+doorSide*w/2,span=(d-door)/2;
+     add(id+' entrance front return',.24,h,span,doorX,h/2+.18,cz-d/2+span/2,accentMat);
+     add(id+' entrance rear return',.24,h,span,doorX,h/2+.18,cz+d/2-span/2,accentMat);
+     add(id+' entrance lintel',.26,.38,door,doorX,h-.01,cz,accentMat);
+     add(id+' rear wall',.24,h,d,cx-doorSide*w/2,h/2+.18,cz,accentMat);
     }
     // Locker bank: individual doors, vents, handles and numbered plates.
     const count=id==='Officials'?4:8,lockerWidth=(w-1.2)/count,lockerZ=backZ-.34;
@@ -735,15 +735,15 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     for(let i=0;i<3;i++){light(cx-w/3+i*w/3,3.62,cz);add(id+' ceiling vent '+i,.7,.045,.34,cx-w/3+i*w/3,3.68,backZ-1.0,darkSteel);}
     sign(id+' room identification',id==='Home'?'HOME TEAM':id==='Away'?'AWAY TEAM':'MATCH OFFICIALS',
       id==='Officials'?'REFEREES & DELEGATES': 'FIRST TEAM DRESSING ROOM',
-      orientation==='front'?cx:cx+w/2,3.0,orientation==='front'?frontZ-.18:cz,accent,
-      orientation==='front'?0:Math.PI/2);
+      orientation==='front'?cx:cx+(orientation==='side-reverse'?-w/2:w/2),3.0,orientation==='front'?frontZ-.18:cz,accent,
+      orientation==='front'?0:(orientation==='side-reverse'?-Math.PI/2:Math.PI/2));
    };
    makeRoom('Home',-23.0,branchZ,11.0,11.5,0x8ab7d2,homeMat,'side');
-   makeRoom('Away',23.0,branchZ,11.0,11.5,0xc99b8f,awayMat,'side');
+   makeRoom('Away',23.0,branchZ,11.0,11.5,0xc99b8f,awayMat,'side-reverse');
    makeRoom('Officials',0,85.6,10.5,11.8,0xc9b77a,officialMat,'front');
    // Fire safety, CCTV and accessible service details in the public-facing corridor.
    for(const z of[52,61]){
-    add('Fire extinguisher cabinet',.38,.72,.2,-2.55,1.0,z,0xc33d32?material(0x9b302a,.72,.02):black);
+    add('Fire extinguisher cabinet',.38,.72,.2,-2.55,1.0,z,material(0x9b302a,.72,.02));
     add('CCTV camera housing',.28,.18,.22,2.55,3.15,z,darkSteel);
     const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),new THREE.MeshBasicMaterial({color:0x171d22}));
     lens.name='CCTV camera lens';lens.position.set(2.55,3.06,z+.1);root.add(lens);
