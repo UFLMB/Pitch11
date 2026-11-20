@@ -462,7 +462,7 @@ export class MatchPlayerRenderer {
     entry.group.updateMatrixWorld(true);
     const positions = {};
     for (const [name, bone] of entry.bones) {
-      if (!/^(leftarm|leftshoulder|leftforearm|lefthand|rightarm|rightshoulder|rightforearm|righthand|leftupleg|leftleg|leftfoot|rightupleg|rightleg|rightfoot|hips|spine|spine1|spine2|neck)$/.test(name)) continue;
+      if (!/^(leftarm|leftshoulder|leftforearm|lefthand|lefthandindex3|lefthandmiddle3|lefthandring3|lefthandpinky3|lefthandthumb3|rightarm|rightshoulder|rightforearm|righthand|righthandindex3|righthandmiddle3|righthandring3|righthandpinky3|righthandthumb3|leftupleg|leftleg|leftfoot|rightupleg|rightleg|rightfoot|hips|spine|spine1|spine2|neck)$/.test(name)) continue;
       const world = bone.getWorldPosition(new THREE.Vector3());
       positions[name] = { x: world.x, y: world.y, z: world.z };
     }
