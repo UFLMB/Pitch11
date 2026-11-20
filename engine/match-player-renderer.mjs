@@ -5,7 +5,7 @@ import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
-import { flattenHorizontalRootMotion, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
@@ -13,7 +13,8 @@ const CORE_MIXAMO_CLIPS = [
   "jog backward.fbx",
   "jog strafe left.fbx",
   "jog strafe right.fbx",
-  "goalkeeper sidestep.fbx"
+  "goalkeeper sidestep.fbx",
+  "goalkeeper sidestep (2).fbx"
 ];
 function loadWithTimeout(promise, timeoutMs, label) {
   if (!(timeoutMs > 0)) return promise;
@@ -226,7 +227,9 @@ export class MatchPlayerRenderer {
       clip.name = file.replace(/\.fbx$/i, "");
       // The simulation owns world translation; flatten horizontal root drift
       // while retaining vertical pelvis motion for natural gait bounce.
-      if (shouldFlattenHorizontalRootMotion(file)) {
+      if (/^goalkeeper sidestep(?: \\(2\\))?\\.fbx$/i.test(file)) {
+        extractHorizontalRootMotion(clip);
+      } else if (shouldFlattenHorizontalRootMotion(file)) {
         flattenHorizontalRootMotion(clip);
       }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
@@ -342,7 +345,7 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "" };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionDelta: { x: 0, z: 0 } };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -372,6 +375,7 @@ export class MatchPlayerRenderer {
       if (!entry) continue;
 
       const { group, mixer, ring } = entry;
+      entry.rootMotionDelta = { x: 0, z: 0 };
       group.visible = state.visible;
       group.position.set(state.x, this.groundHeight, state.z);
       const targetYaw = -state.facing + Math.PI / 2;
@@ -407,6 +411,8 @@ export class MatchPlayerRenderer {
         nextAction.fadeIn(0.16).play();
         if (entry.activeAction) entry.activeAction.crossFadeTo(nextAction, 0.16, false);
         entry.activeAction = nextAction;
+        entry.rootMotionAction = null;
+        entry.rootMotionLastTime = null;
         entry.activeClipName = clip.name;
         entry.activeManualClipToken = state.manualClipToken;
         entry.state = animationState;
@@ -414,7 +420,22 @@ export class MatchPlayerRenderer {
       if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
         entry.activeAction.timeScale = getLocomotionTimeScale(animationState, state.speed);
       }
-      if (updateAnimations) mixer.update(animationDelta);
+      if (updateAnimations) {
+        mixer.update(animationDelta);
+        const action = entry.activeAction;
+        const activeClip = action?.getClip?.();
+        if (activeClip?.userData?.rootMotionExtracted && activeClip.userData.rootMotion) {
+          const previousTime = entry.rootMotionAction === action ? entry.rootMotionLastTime : NaN;
+          const localDelta = getHorizontalRootMotionDelta(activeClip, previousTime, action.time);
+          entry.rootMotionAction = action;
+          entry.rootMotionLastTime = action.time;
+          const worldDelta = new THREE.Vector3(localDelta.x * model.scale.x, 0, localDelta.z * model.scale.z).applyQuaternion(group.quaternion);
+          entry.rootMotionDelta = { x: worldDelta.x, z: worldDelta.z };
+        } else {
+          entry.rootMotionAction = null;
+          entry.rootMotionLastTime = null;
+        }
+      }
     }
     return true;
   }
