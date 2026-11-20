@@ -225,8 +225,10 @@ export class MatchPlayerRenderer {
       const binding = validateDirectMixamoClip(this.template, sourceClip);
       const clip = binding.clip;
       clip.name = file.replace(/\.fbx$/i, "");
-      // The simulation owns world translation; flatten horizontal root drift
-      // while retaining vertical pelvis motion for natural gait bounce.
+      // Dive and ordinary locomotion translation is simulation-owned. Sidestep
+      // translation is extracted for one-time engine application below; its
+      // mixer track is neutralized to prevent double movement. Vertical pelvis
+      // motion remains animated in every case.
       if (/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(file)) {
         extractHorizontalRootMotion(clip);
       } else if (shouldFlattenHorizontalRootMotion(file)) {
