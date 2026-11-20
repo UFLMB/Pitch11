@@ -69,6 +69,11 @@ test("treats header and other action clips as one-shot animations", () => {
 
 
 test("maps directional locomotion actions to dedicated animation states", () => {
+  assert.equal(resolvePlayerAnimationState({ action: "backward" }, 4), "backward");
+  assert.equal(resolvePlayerAnimationState({ action: "strafe-left" }, 4), "strafeLeft");
+  assert.equal(resolvePlayerAnimationState({ action: "strafe-right" }, 4), "strafeRight");
+  assert.equal(resolvePlayerAnimationState({ action: "shot-high" }, 4), "shotHigh");
+  assert.equal(resolvePlayerAnimationState({ action: "penalty-shot" }, 4), "penaltyShot");
   assert.equal(resolvePlayerAnimationState({ action: "forward-diagonal-left" }, 4), "forwardDiagonalLeft");
   assert.equal(resolvePlayerAnimationState({ action: "forward-diagonal-right" }, 4), "forwardDiagonalRight");
   assert.equal(resolvePlayerAnimationState({ action: "backward-diagonal-left" }, 4), "backwardDiagonalLeft");

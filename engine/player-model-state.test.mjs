@@ -19,6 +19,8 @@ test("maps legacy pitch coordinates to the Three.js stadium coordinate system", 
 
 test("maps legacy actions to the shared GLB animation states", () => {
   assert.equal(mapLegacyPlayerState(player({ ak: 1 }), 0).action, "shot");
+  const penaltyTaker = player({ ak: 1 });
+  assert.equal(mapLegacyPlayerState(penaltyTaker, 0, 1, null, null, { kind: "pen", p: penaltyTaker }).action, "penalty-shot");
   assert.equal(mapLegacyPlayerState(player({ ak: 2 }), 0).action, "pass");
   assert.equal(mapLegacyPlayerState(player({ sd: { t: .2 } }), 0).action, "slide-tackle");
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: 1, diveAng: -1 }), 0).action, "keeper-dive-left");
