@@ -30,6 +30,16 @@ test("extracts sidestep root displacement while neutralizing mixer X/Z translati
  assert.deepEqual(getHorizontalRootMotionDisplacement(clip),{x:6,z:8});
 });
 
+test("uses moving Hips when an FBX has a static explicit Root track", () => {
+ const root={...vectorTrack("mixamorigRoot.position",[0,0,0,0,0,0]),times:new Float32Array([0,1])};
+ const hips={...vectorTrack("mixamorigHips.position",[0,0,0,2,0,0]),times:new Float32Array([0,1])};
+ const clip={duration:1,tracks:[root,hips]};
+ extractHorizontalRootMotion(clip);
+ assert.equal(clip.userData.rootMotion.trackName,"mixamorigHips.position");
+ assert.deepEqual(getHorizontalRootMotionDisplacement(clip),{x:2,z:0});
+ assert.deepEqual(Array.from(hips.values),[0,0,0,0,0,0]);
+});
+
 test("samples extracted root motion continuously and across a looping sidestep boundary", () => {
  const hips={...vectorTrack("Hips.position",[0,0,0,2,.1,0,4,.2,0]),times:new Float32Array([0,.5,1])};
  const clip={duration:1,tracks:[hips]};
