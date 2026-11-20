@@ -107,6 +107,16 @@ export function getHorizontalRootMotionDisplacement(clip) {
   return getHorizontalRootMotionDelta(clip, 0, clip?.duration || 0);
 }
 
+export function clampRootMotionDeltaToTarget(delta, remaining) {
+  const distance = Math.hypot(remaining?.x || 0, remaining?.z || 0);
+  const length = Math.hypot(delta?.x || 0, delta?.z || 0);
+  if (distance <= 0 || length < 1e-9) return { x: 0, z: 0 };
+  const projection = ((delta.x || 0) * (remaining.x || 0) + (delta.z || 0) * (remaining.z || 0)) / distance;
+  if (projection <= 0) return { x: 0, z: 0 };
+  const scale = Math.min(1, distance / projection, distance / length);
+  return { x: (delta.x || 0) * scale, z: (delta.z || 0) * scale };
+}
+
 export function getLocomotionTimeScale(state, speed) {
   const velocity = Number.isFinite(speed) ? Math.max(0, speed) : 0;
   if (state === "walk") return clamp(0.72 * velocity / 1.45, 0.55, 0.95);
