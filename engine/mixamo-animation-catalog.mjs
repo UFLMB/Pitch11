@@ -71,8 +71,10 @@ const STATE_FILES = Object.freeze({
   keeperMove:["goalkeeper sidestep.fbx","goalkeeper sidestep (2).fbx"],
   keeperDirect:["goalkeeper directing.fbx","goalkeeper directing (2).fbx"],
   keeperCatch:["gk_catch-middle-head_height.fbx","gk_catch-middle-stomach_height.fbx","gk_catch-middle-jump-above_head_height.fbx","gk_catch-middle_2_steps_forward_jump-above_head_height.fbx"],
-  keeperDiveLeft:["gk_dive-high_shot-left-ball_in_hand.fbx","gk_dive-middle_shot-left-ball_in_hand.fbx"],
-  keeperDiveRight:["gk_dive-high_shot-right-ball_in_hand.fbx","gk_dive-middle_shot-right-ball_in_hand.fbx"],
+  keeperDiveLeft:["gk_dive-high_shot-left-ball_in_hand.fbx"],
+  keeperDiveMiddleLeft:["gk_dive-middle_shot-left-ball_in_hand.fbx"],
+  keeperDiveRight:["gk_dive-high_shot-right-ball_in_hand.fbx"],
+  keeperDiveMiddleRight:["gk_dive-middle_shot-right-ball_in_hand.fbx"],
   keeperDiveLowLeft:["gk_dive-low_shot-left-ball_not_in_hand.fbx","gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx"],
   keeperDiveLowRight:["gk_dive-low_shot-right-ball_not_in_hand.fbx","gk_dive-low_shot-right-ball_not_in_hand-variant_2.fbx"],
   keeperParry:["gk_catch-middle-fingertip_save.fbx"],
@@ -84,7 +86,7 @@ const STATE_FILES = Object.freeze({
 export function resolveMixamoClipCandidates(state, playerId=0) {
   const files=STATE_FILES[state]||STATE_FILES.idle;
   // LEFT/RIGHT are screen directions from the viewer facing the goalkeeper.
-  if(["keeperDiveLeft","keeperDiveRight","keeperDiveLowLeft","keeperDiveLowRight"].includes(state)) return [...files];
+  if(["keeperDiveLeft","keeperDiveRight","keeperDiveMiddleLeft","keeperDiveMiddleRight","keeperDiveLowLeft","keeperDiveLowRight"].includes(state)) return [...files];
   if(files.length<2) return [...files];
   const offset=Math.abs(Number(playerId)||0)%files.length;
   return [...files.slice(offset),...files.slice(0,offset)];
