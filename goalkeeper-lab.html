@@ -139,8 +139,8 @@ function beginKeeperReturn(){
 function applyKeeperRootMotion(dt){
  if(phase!=="return"||keeper.returnFallback)return;
  const entry=keeperRenderer.players.get(0);
- const delta=entry?.rootMotionDelta;
- if(!delta)return;
+ const delta=keeperRenderer.consumeRootMotionDelta(dt,0);
+ if(!entry||Math.hypot(delta.x,delta.z)<1e-9)return;
  const remaining={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
  const distance=Math.hypot(remaining.x,remaining.z);
  if(distance<.16){
@@ -158,6 +158,7 @@ function applyKeeperRootMotion(dt){
  keeper.x=keeper.px=keeper.x+step.x*10;
  keeper.y=keeper.py=keeper.y+step.z*10;
  keeper.vx=keeper.vy=0;
+ entry.group.position.set(keeper.x,keeperRenderer.groundHeight,keeper.y);
 }
 function updateKeeper(dt){
  if(phase==="action"){

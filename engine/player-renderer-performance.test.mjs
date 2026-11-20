@@ -10,7 +10,9 @@ test("player animation mixers are capped for mobile and desktop", () => {
   assert.ok(renderer.includes("this.animationAccumulator += dt"));
   assert.ok(renderer.includes("if (updateAnimations) {"));
   assert.ok(renderer.includes("mixer.update(animationDelta)"));
-  assert.ok(renderer.includes("entry.rootMotionDelta = { x: worldDelta.x, z: worldDelta.z }"));
+  assert.ok(renderer.includes("entry.rootMotionPendingDelta.x += worldDelta.x * weight"));
+  assert.ok(renderer.includes("entry.rootMotionPendingDuration += animationDelta"));
+  assert.ok(renderer.includes("consumeRootMotionDelta(deltaTime, playerId = 0)"));
 });
 
 test("player material variants and selection ring resources are shared", () => {

@@ -120,6 +120,19 @@ export function getHorizontalRootMotionDisplacement(clip) {
   return getHorizontalRootMotionDelta(clip, 0, clip?.duration || 0);
 }
 
+export function consumeRootMotionDelta(pendingDelta, pendingDuration, deltaTime) {
+  const duration = Math.max(0, Number(pendingDuration) || 0);
+  const elapsed = Math.min(duration, Math.max(0, Number(deltaTime) || 0));
+  if (duration <= 1e-8 || elapsed <= 0) {
+    return { delta: { x: 0, z: 0 }, pendingDelta: { x: pendingDelta?.x || 0, z: pendingDelta?.z || 0 }, pendingDuration: duration };
+  }
+  const fraction = elapsed / duration;
+  const delta = { x: (pendingDelta?.x || 0) * fraction, z: (pendingDelta?.z || 0) * fraction };
+  const remaining = { x: (pendingDelta?.x || 0) - delta.x, z: (pendingDelta?.z || 0) - delta.z };
+  const remainingDuration = Math.max(0, duration - elapsed);
+  return { delta, pendingDelta: remainingDuration <= 1e-8 ? { x: 0, z: 0 } : remaining, pendingDuration: remainingDuration <= 1e-8 ? 0 : remainingDuration };
+}
+
 export function clampRootMotionDeltaToTarget(delta, remaining) {
   const distance = Math.hypot(remaining?.x || 0, remaining?.z || 0);
   const length = Math.hypot(delta?.x || 0, delta?.z || 0);
