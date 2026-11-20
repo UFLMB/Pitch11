@@ -342,6 +342,13 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   for(const g of securityGuards)g.rotation.y=g.userData.base+Math.sin(t+g.userData.phase)*.09;
  }
  function board(len,x,z,rot){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(len,.95,.3),new THREE.MeshStandardMaterial({color:0x071018,metalness:.55,roughness:.45})));const c=document.createElement('canvas');c.width=1024;c.height=128;const x2=c.getContext('2d'),labels=['PITCH 11 · MATCHDAY','MATCHDAY LIVE','PLAY BEAUTIFUL','ULTIMATE FOOTBALL'],cols=['#b5e65b','#f2c66d','#79d7cf','#f0f2e8'];for(let i=0;i<4;i++){const x0=i*256;x2.fillStyle='#101d25';x2.fillRect(x0,0,256,128);x2.fillStyle=cols[i];x2.fillRect(x0+10,18,3,92);x2.font='900 25px Arial';x2.textAlign='center';x2.fillText(labels[i],x0+132,73);}const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;ledTextures.push(tex);const screen=new THREE.Mesh(new THREE.PlaneGeometry(len-.15,.72),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));screen.position.z=.16;g.add(screen);g.position.set(x,.78,z);g.rotation.y=rot;scene.add(g);}
+  function sidelineBoardWithOpenings(z,openings){
+   const min=-56,max=56,sorted=openings.map(g=>[Math.max(min,g[0]),Math.min(max,g[1])]).sort((a,b)=>a[0]-b[0]),merged=[];
+   for(const gap of sorted){const last=merged[merged.length-1];if(last&&gap[0]<=last[1])last[1]=Math.max(last[1],gap[1]);else merged.push(gap);}
+   let cursor=min;
+   for(const gap of merged){if(gap[0]-cursor>.8)board(gap[0]-cursor,(cursor+gap[0])/2,z,Math.PI);cursor=Math.max(cursor,gap[1]);}
+   if(max-cursor>.8)board(max-cursor,(cursor+max)/2,z,Math.PI);
+  }
  function setGoalDimensions({halfWidth=DEFAULT_GOAL_LAYOUT.halfWidth,height=DEFAULT_GOAL_LAYOUT.height,depth=DEFAULT_GOAL_LAYOUT.depth}={}) {
   if(goalNetMesh){scene.remove(goalNetMesh);goalNetMesh.geometry.dispose();goalNetMesh.material.dispose();}
   const geometry=new THREE.BufferGeometry();
@@ -678,7 +685,7 @@ function finishStadiumLoad(gltf){
   scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   if(!environmentMode){previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);}
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
-  board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
+  board(112,0,-36.5,0);sidelineBoardWithOpenings(36.5,[[-17.1,-7.9],[-4.7,4.7],[7.9,17.1]]);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
   if(environmentMode){try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}}else{optionalAssets.playerEntrance='disabled-outside-environment-lab';}
   const details=new GLTFLoader();
