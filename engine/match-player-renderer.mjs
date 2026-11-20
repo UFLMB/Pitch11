@@ -5,7 +5,7 @@ import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
-import { flattenHorizontalRootMotion, getLocomotionTimeScale } from "./locomotion-animation.mjs";
+import { flattenHorizontalRootMotion, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
@@ -226,7 +226,7 @@ export class MatchPlayerRenderer {
       clip.name = file.replace(/\.fbx$/i, "");
       // The simulation owns world translation; flatten horizontal root drift
       // while retaining vertical pelvis motion for natural gait bounce.
-      if (/^(jog forward|jog backward|jog strafe left|jog strafe right|goalkeeper sidestep(?: \(2\))?)\.fbx$/i.test(file)) {
+      if (shouldFlattenHorizontalRootMotion(file)) {
         flattenHorizontalRootMotion(clip);
       }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
