@@ -5,24 +5,55 @@
  * resolve external hosts. If a source is unreachable, the existing Web Audio
  * synthesizers remain the fallback.
  */
-const ROOT = "https://sfxmint.com/dl/";
+const REMOTE_ROOT = "https://sfxmint.com/dl/";
 const SOURCES = Object.freeze({
-  kick: ROOT + "soccer-ball-kick-05.mp3",
-  header: ROOT + "soccer-ball-kick-06.mp3",
-  pass: ROOT + "soccer-ball-kick-08.mp3",
-  net: ROOT + "soccer-ball-kick-09.mp3",
-  post: ROOT + "soccer-ball-kick-10.mp3",
-  bounce: ROOT + "soccer-ball-kick-04.mp3",
-  dribble: ROOT + "soccer-ball-kick-02.mp3",
-  grassStep: ROOT + "footsteps-grass-05.mp3",
-  whistle: ROOT + "instrument-whistle-11.mp3",
-  uiClick: ROOT + "ready-click-06.mp3",
-  crowdGoal: ROOT + "stadium-crowd-02.mp3",
-  crowdLoop: ROOT + "stadium-crowd-03.mp3",
-  crowdApplause: ROOT + "stadium-crowd-05.mp3",
-  crowdBoo: ROOT + "stadium-crowd-01.mp3",
-  crowdWhistle: ROOT + "stadium-crowd-04.mp3"
+  kick: "./Audio/sounds/gameplay/ball/shot/hard-kick-05.mp3",
+  header: "./Audio/sounds/gameplay/ball/header/header-06.mp3",
+  pass: "./Audio/sounds/gameplay/ball/pass/long-pass-08.mp3",
+  net: "./Audio/sounds/gameplay/goal/net/net-hit-09.mp3",
+  post: "./Audio/sounds/gameplay/goal/post/post-hit-10.mp3",
+  bounce: "./Audio/sounds/gameplay/ball/bounce/grass-bounce-04.mp3",
+  dribble: "./Audio/sounds/gameplay/ball/touch/dribble-02.mp3",
+  grassStep: "./Audio/sounds/gameplay/player/shoe/grass-step/single-step-05.mp3",
+  whistle: "./Audio/sounds/gameplay/referee/whistle/single-sharp-11.mp3",
+  uiClick: "./Audio/sounds/ui/navigation/ui-click-06.mp3",
+  crowdGoal: "./Audio/sounds/stadium/goal-reaction/goal-cheer-02.mp3",
+  crowdLoop: "./Audio/sounds/stadium/ambience/murmuring-loop-03.mp3",
+  crowdApplause: "./Audio/sounds/stadium/applause/applause-05.mp3",
+  crowdBoo: "./Audio/sounds/stadium/booing/booing-01.mp3",
+  crowdWhistle: "./Audio/sounds/stadium/goal-reaction/crowd-whistle-04.mp3"
 });
+const REMOTE_SOURCES = Object.freeze({
+  kick: "soccer-ball-kick-05.mp3",
+  header: "soccer-ball-kick-06.mp3",
+  pass: "soccer-ball-kick-08.mp3",
+  net: "soccer-ball-kick-09.mp3",
+  post: "soccer-ball-kick-10.mp3",
+  bounce: "soccer-ball-kick-04.mp3",
+  dribble: "soccer-ball-kick-02.mp3",
+  grassStep: "footsteps-grass-05.mp3",
+  whistle: "instrument-whistle-11.mp3",
+  uiClick: "ready-click-06.mp3",
+  crowdGoal: "stadium-crowd-02.mp3",
+  crowdLoop: "stadium-crowd-03.mp3",
+  crowdApplause: "stadium-crowd-05.mp3",
+  crowdBoo: "stadium-crowd-01.mp3",
+  crowdWhistle: "stadium-crowd-04.mp3"
+});
+
+function createAudio(key) {
+  const audio = new Audio(SOURCES[key]);
+  audio.preload = "none";
+  audio.addEventListener("error", () => {
+    if (audio.dataset.remoteFallback) return;
+    audio.dataset.remoteFallback = "1";
+    audio.src = REMOTE_ROOT + REMOTE_SOURCES[key];
+    audio.load();
+    const result = audio.play();
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  });
+  return audio;
+}
 
 const pools = new Map();
 let ambience = null;
@@ -39,8 +70,7 @@ function audioFor(key) {
   }
   let audio = pool.find(item => item.paused || item.ended);
   if (!audio && pool.length < 4) {
-    audio = new Audio(src);
-    audio.preload = "none";
+    audio = createAudio(key);
     pool.push(audio);
   }
   if (!audio) return null;
@@ -61,9 +91,8 @@ function play(key, gain = 1) {
 
 function startAmbience() {
   if (!ambience) {
-    ambience = new Audio(SOURCES.crowdLoop);
+    ambience = createAudio("crowdLoop");
     ambience.loop = true;
-    ambience.preload = "none";
   }
   if (ambience.paused) {
     ambience.volume = Math.max(0, Math.min(.32, userVolume * crowdVolume * .2));
