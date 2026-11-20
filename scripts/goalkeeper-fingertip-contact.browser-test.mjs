@@ -20,7 +20,7 @@ try {
   const readout = await page.locator("#readout").innerText();
   await page.screenshot({ path: artifacts + "/goalkeeper-fingertip-contact.png", fullPage: true });
   console.log(JSON.stringify({ result: /Fingertip test: PASS/.test(readout) ? "PASS" : "FAIL", readout }, null, 2));
-  assert.match(readout, /Fingertip test: PASS/, "Fingertip animation did not make physical contact with the middle-height goal-line ball");
+  assert.match(readout, /Fingertip test: PASS/, "Fingertip animation did not make physical contact with the goal-line fingertip ball");
 } finally {
   await browser.close();
 }
