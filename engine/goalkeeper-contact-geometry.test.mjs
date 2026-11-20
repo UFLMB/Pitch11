@@ -34,6 +34,22 @@ test("builds hand, arm and torso colliders from Mixamo rig bones", () => {
   assert.equal(colliders.find(item => item.id === "left-hand").radius, 0.145);
 });
 
+test("builds dedicated fingertip colliders from Mixamo finger-tip bones", () => {
+  const colliders = buildGoalkeeperContactColliders({
+    LeftHand: p(-0.5, 1.5, 0),
+    LeftHandIndex3: p(-0.62, 1.68, 0.08),
+    LeftHandMiddle3: p(-0.55, 1.7, 0.1),
+    RightHand: p(0.5, 1.5, 0),
+    RightHandIndex3: p(0.62, 1.68, 0.08),
+    RightHandMiddle3: p(0.55, 1.7, 0.1)
+  });
+  const tips = colliders.filter(item => item.part === "fingertip");
+  assert.equal(tips.length, 4);
+  assert.ok(tips.every(item => item.radius === 0.035));
+  assert.ok(tips.some(item => item.id === "left-handindex3-tip"));
+  assert.ok(tips.some(item => item.id === "right-handmiddle3-tip"));
+});
+
 test("detects a swept ball crossing a stationary hand collider between frames", () => {
   const collider = { id: "right-hand", part: "hand", side: "right", start: p(0, 1, 0), end: p(0, 1, 0), radius: 0.14 };
   const hit = findSweptBallContact({
