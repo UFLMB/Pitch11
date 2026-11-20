@@ -610,9 +610,9 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
     const sign=new THREE.Mesh(new THREE.PlaneGeometry(width,.92),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));sign.name=name;sign.position.set(x,3.35,z);root.add(sign);
    };
-   const front=34.55,passageEnd=62.2,hallEnd=70.1,roomBack=84.2,width=8.6,height=4.25,wall=.32;
-   addBox('Pitch-side entrance apron',7.8,.12,1.9,0,.035,33.85,floorMat);
-   addBox('Entrance apron centre inlay',.12,.018,1.65,0,.105,33.85,trim);
+   const front=45.5,passageEnd=62.2,hallEnd=70.1,roomBack=84.2,width=8.6,height=4.25,wall=.32;
+   addBox('Pitch-side entrance apron',7.8,.12,11.2,0,.035,40.05,floorMat);
+   addBox('Entrance apron centre inlay',.12,.018,10.8,0,.105,40.05,trim);
    const mid=(front+passageEnd)/2,depth=passageEnd-front;
    addBox('Players tunnel floor',width,.16,depth,0,.08,mid,floorMat);
    addBox('Players tunnel left wall',wall,height,depth,-width/2+wall/2,height/2+.12,mid,inner);
@@ -674,15 +674,62 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    root.userData={kind:'player-entrance',frontZ:front,passageEndZ:passageEnd,hallEndZ:hallEnd,roomBackZ:roomBack,centerX:0,width,height,openPitchEnd:true,threeWayJunction:true,changingRooms:rooms.map(r=>({id:r.id,name:r.name,x:r.x,width:r.w}))};
    scene.add(root);return root;
   }
+function carveStadiumForPlayerEntrance(stadium){
+  // Only imported stadium GLB geometry is carved. Separate Environment Lab
+  // objects (tunnel, dugouts, user props) are never traversed or removed.
+  const y0=pitchSurfaceY-.65,y1=pitchSurfaceY+5.35;
+  const cuts=[
+   {minX:-4.9,maxX:4.9,minY:y0,maxY:y1,minZ:44.2,maxZ:70.6},
+   {minX:-20,maxX:20,minY:y0,maxY:y1,minZ:69.65,maxZ:70.65},
+   {minX:-19.2,maxX:-7.2,minY:y0,maxY:y1,minZ:70,maxZ:85},
+   {minX:-4.9,maxX:4.9,minY:y0,maxY:y1,minZ:70,maxZ:85},
+   {minX:7.2,maxX:19.2,minY:y0,maxY:y1,minZ:70,maxZ:85}
+  ];
+  const intersects=(a,b)=>a.max.x>=b.minX&&a.min.x<=b.maxX&&a.max.y>=b.minY&&a.min.y<=b.maxY&&a.max.z>=b.minZ&&a.min.z<=b.maxZ;
+  stadium.updateMatrixWorld(true);
+  let meshesVisited=0,meshesChanged=0,trianglesRemoved=0;
+  const vA=new THREE.Vector3(),vB=new THREE.Vector3(),vC=new THREE.Vector3();
+  stadium.traverse(mesh=>{
+   if(!mesh.isMesh||mesh.isSkinnedMesh||!mesh.geometry||!mesh.geometry.attributes.position)return;
+   meshesVisited++;
+   const source=mesh.geometry,position=source.attributes.position;
+   const worldBounds=new THREE.Box3().setFromBufferAttribute(position).applyMatrix4(mesh.matrixWorld);
+   if(!cuts.some(cut=>intersects(worldBounds,cut)))return;
+   const sourceIndex=source.index,vertexCount=position.count;
+   const indexAt=i=>sourceIndex?sourceIndex.getX(i):i;
+   const sourceGroups=source.groups.length?source.groups:[{start:0,count:sourceIndex?sourceIndex.count:vertexCount,materialIndex:0}];
+   const kept=[],newGroups=[];let removedHere=0;
+   for(const group of sourceGroups){
+    const groupStart=Math.max(0,group.start),groupEnd=Math.min(sourceIndex?sourceIndex.count:vertexCount,group.start+group.count),groupStartOut=kept.length;
+    for(let i=groupStart;i+2<groupEnd;i+=3){
+     const ia=indexAt(i),ib=indexAt(i+1),ic=indexAt(i+2);
+     vA.fromBufferAttribute(position,ia).applyMatrix4(mesh.matrixWorld);vB.fromBufferAttribute(position,ib).applyMatrix4(mesh.matrixWorld);vC.fromBufferAttribute(position,ic).applyMatrix4(mesh.matrixWorld);
+     const tri={min:{x:Math.min(vA.x,vB.x,vC.x),y:Math.min(vA.y,vB.y,vC.y),z:Math.min(vA.z,vB.z,vC.z)},max:{x:Math.max(vA.x,vB.x,vC.x),y:Math.max(vA.y,vB.y,vC.y),z:Math.max(vA.z,vB.z,vC.z)}};
+     if(cuts.some(cut=>intersects(tri,cut))){removedHere++;continue;}
+     kept.push(ia,ib,ic);
+    }
+    const count=kept.length-groupStartOut;if(count)newGroups.push({start:groupStartOut,count,materialIndex:group.materialIndex||0});
+   }
+   if(!removedHere)return;
+   const geometry=source.clone();geometry.setIndex(kept);geometry.clearGroups();
+   for(const group of newGroups)geometry.addGroup(group.start,group.count,group.materialIndex);
+   geometry.computeBoundingBox();geometry.computeBoundingSphere();mesh.geometry=geometry;
+   trianglesRemoved+=removedHere;meshesChanged++;
+  });
+  const diagnostics={meshesVisited,meshesChanged,trianglesRemoved,cutVolumes:cuts.length,scope:'imported-stadium-glb-only',firstStepStartZ:45.5};
+  console.info('PITCH 11 Environment Lab tunnel clearance:',diagnostics);return diagnostics;
+ }
 function finishStadiumLoad(gltf){
   const stadium=gltf.scene;
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
   stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
+   let tunnelClearanceDiagnostics=null;
+   if(environmentMode){try{tunnelClearanceDiagnostics=carveStadiumForPlayerEntrance(stadium);}catch(e){console.warn('PITCH 11 tunnel clearance carving skipped',e);}}
   // Place player feet on the actual GLB pitch surface, not at world Y=0.
   if(playerRenderer)playerRenderer.setGroundHeight(pitchSurfaceY + 0.025);
-  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
+  scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.tunnelClearance=tunnelClearanceDiagnostics;pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   if(!environmentMode){previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);}
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
   board(112,0,-36.5,0);sidelineBoardWithOpenings(36.5,[[-17.1,-7.9],[-4.7,4.7],[7.9,17.1]]);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
