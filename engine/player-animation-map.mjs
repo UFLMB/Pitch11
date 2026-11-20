@@ -111,6 +111,11 @@ export function resolvePlayerAnimationState(player, speed = 0) {
   if (action.includes("forwarddiagonalright")) return "forwardDiagonalRight";
   if (action.includes("backwarddiagonalleft")) return "backwardDiagonalLeft";
   if (action.includes("backwarddiagonalright")) return "backwardDiagonalRight";
+  if (action.includes("penaltyshot")) return "penaltyShot";
+  if (action.includes("shothigh")) return "shotHigh";
+  if (action === "backward" || action.startsWith("backward")) return "backward";
+  if (action.includes("strafeleft")) return "strafeLeft";
+  if (action.includes("straferight")) return "strafeRight";
   if (action.includes("transition")) return "transition";
   if (action.includes("throwin")) return "throwIn";
   if (action.includes("receive")) return "receive";
@@ -162,7 +167,7 @@ export const PLAYER_ANIMATION_STATES = Object.freeze(Object.keys(CLIP_ALIASES));
 // simulation reports the next state. Header is the production state name;
 // "jump" remains listed for compatible callers that use the older alias.
 export const ONE_SHOT_ANIMATION_STATES = Object.freeze([
-  "receive", "pass", "shot", "shotHigh", "tackle", "slide", "jump", "header", "fall", "getUp", "throwIn",
+  "receive", "pass", "shot", "shotHigh", "penaltyShot", "tackle", "slide", "jump", "header", "fall", "getUp", "throwIn",
   "keeperDiveLeft", "keeperDiveRight", "keeperDiveMiddleLeft", "keeperDiveMiddleRight", "keeperDiveLowLeft", "keeperDiveLowRight", "keeperCatch", "keeperScoop", "keeperPass",
   "keeperDropKick", "keeperThrow", "keeperPlace", "keeperCatchHead", "keeperCatchStomach", "keeperCatchJump"
 ]);
