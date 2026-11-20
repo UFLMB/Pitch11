@@ -4725,9 +4725,9 @@ const _rs33=resetSave;resetSave=function(){_rs33();G.mus=1;G.shk=2;G.spc=1;save(
 /* --- sound: compressor on the master bus, more effects, menu music --- */
 AU.tone=function(f0,f1,dur,pk,type){if(!this.c||!G.vol)return;const c=this.c,t=c.currentTime,o=c.createOscillator(),g=c.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f0,t);if(f1&&f1!==f0)o.frequency.exponentialRampToValueAtTime(f1,t+dur);g.gain.setValueAtTime(pk,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(this.m);o.start(t);o.stop(t+dur+.02);};
 AU.swell=function(f0,f1,f2,len,pk){if(!this.c||!G.vol)return;const c=this.c,t=c.currentTime,s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();s.buffer=this.nb;s.loop=true;f.type='bandpass';f.Q.value=.7;f.frequency.setValueAtTime(f0,t);f.frequency.linearRampToValueAtTime(f1,t+len*.3);f.frequency.linearRampToValueAtTime(f2,t+len);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(pk,t+len*.15);g.gain.setValueAtTime(pk,t+len*.45);g.gain.exponentialRampToValueAtTime(.001,t+len);s.connect(f);f.connect(g);g.connect(this.m);s.start(t);s.stop(t+len+.1);};
-AU.post=function(v){const k=clamp(v/500,.3,1);this.tone(1250,1100,.5,.3*k,'triangle');this.tone(2400,2200,.35,.16*k);this.noise(.05,'highpass',3000,.4*k);this.tone(180,90,.12,.4*k);};
+AU.post=function(v){const k=clamp(v/500,.3,1);window.P11AudioAssets?.play('post',.35+k*.45);this.tone(1250,1100,.5,.3*k,'triangle');this.tone(2400,2200,.35,.16*k);this.noise(.05,'highpass',3000,.4*k);this.tone(180,90,.12,.4*k);};
 AU.net=function(){this.noise(.7,'bandpass',1800,.3);this.noise(.4,'highpass',4000,.12);};
-AU.bounce=function(v){const k=clamp(v/300,.12,1);this.tone(130+k*40,60,.09,.3*k);this.noise(.04,'lowpass',700,.2*k);};
+AU.bounce=function(v){const k=clamp(v/300,.12,1);window.P11AudioAssets?.play('bounce',.3+k*.42);this.tone(130+k*40,60,.09,.3*k);this.noise(.04,'lowpass',700,.2*k);};
 AU.tackle=function(){this.noise(.12,'lowpass',400,.7);this.tone(110,50,.14,.4);};
 AU.glove=function(){this.noise(.06,'bandpass',1600,.6);this.tone(150,70,.1,.4);};
 AU.head=function(){this.tone(210,90,.09,.4);this.noise(.06,'lowpass',900,.35);};
