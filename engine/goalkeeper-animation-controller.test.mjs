@@ -5,7 +5,8 @@ import {
   getGoalkeeperReturnStep,
   isGoalkeeperSaveClipComplete,
   selectGoalkeeperReturnClip,
-  transitionGoalkeeperPhase
+  transitionGoalkeeperPhase,
+  shouldPreserveGoalkeeperAnimationAfterShot
 } from "./goalkeeper-animation-controller.mjs";
 
 test("tracks valid goalkeeper animation phases and rejects impossible transitions", () => {
@@ -51,4 +52,11 @@ test("selects root motion, settle, fallback, wait and complete recovery steps", 
   assert.equal(getGoalkeeperReturnStep({ distance: .1, rootMotionAvailable: true, rootMotionMagnitude: .1 }), "settle");
   assert.equal(getGoalkeeperReturnStep({ distance: 2, rootMotionAvailable: false, rootMotionMagnitude: 0 }), "fallback");
   assert.equal(getGoalkeeperReturnStep({ distance: .01, rootMotionAvailable: true, rootMotionMagnitude: .1 }), "complete");
+});
+
+test("keeps active dive and catch animations running after the ball outcome", () => {
+  assert.equal(shouldPreserveGoalkeeperAnimationAfterShot("diving"), true);
+  assert.equal(shouldPreserveGoalkeeperAnimationAfterShot("action"), true);
+  assert.equal(shouldPreserveGoalkeeperAnimationAfterShot("shot"), false);
+  assert.equal(shouldPreserveGoalkeeperAnimationAfterShot("idle"), false);
 });
