@@ -347,7 +347,7 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionDelta: { x: 0, z: 0 } };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -377,7 +377,6 @@ export class MatchPlayerRenderer {
       if (!entry) continue;
 
       const { group, mixer, ring } = entry;
-      entry.rootMotionDelta = { x: 0, z: 0 };
       group.visible = state.visible;
       group.position.set(state.x, this.groundHeight, state.z);
       const targetYaw = -state.facing + Math.PI / 2;
@@ -414,7 +413,9 @@ export class MatchPlayerRenderer {
         if (entry.activeAction) entry.activeAction.crossFadeTo(nextAction, 0.16, false);
         entry.activeAction = nextAction;
         entry.rootMotionAction = null;
-        entry.rootMotionLastTime = null;
+          entry.rootMotionLastTime = null;
+          entry.rootMotionPendingDelta = { x: 0, z: 0 };
+          entry.rootMotionPendingDuration = 0;
         entry.activeClipName = clip.name;
         entry.activeManualClipToken = state.manualClipToken;
         entry.state = animationState;
@@ -432,14 +433,37 @@ export class MatchPlayerRenderer {
           entry.rootMotionAction = action;
           entry.rootMotionLastTime = action.time;
           const worldDelta = new THREE.Vector3(localDelta.x * entry.model.scale.x, 0, localDelta.z * entry.model.scale.z).applyQuaternion(group.quaternion);
-          entry.rootMotionDelta = { x: worldDelta.x, z: worldDelta.z };
+          const weight = action.getEffectiveWeight();
+          entry.rootMotionPendingDelta.x += worldDelta.x * weight;
+          entry.rootMotionPendingDelta.z += worldDelta.z * weight;
+          entry.rootMotionPendingDuration += animationDelta;
         } else {
           entry.rootMotionAction = null;
           entry.rootMotionLastTime = null;
+          entry.rootMotionPendingDelta = { x: 0, z: 0 };
+          entry.rootMotionPendingDuration = 0;
         }
       }
     }
     return true;
+  }
+
+  consumeRootMotionDelta(deltaTime, playerId = 0) {
+    const entry = this.players.get(playerId);
+    if (!entry) return { x: 0, z: 0 };
+    const duration = Math.max(0, entry.rootMotionPendingDuration || 0);
+    const elapsed = Math.min(duration, Math.max(0, Number(deltaTime) || 0));
+    if (duration <= 1e-8 || elapsed <= 0) return { x: 0, z: 0 };
+    const fraction = elapsed / duration;
+    const delta = { x: entry.rootMotionPendingDelta.x * fraction, z: entry.rootMotionPendingDelta.z * fraction };
+    entry.rootMotionPendingDelta.x -= delta.x;
+    entry.rootMotionPendingDelta.z -= delta.z;
+    entry.rootMotionPendingDuration = Math.max(0, duration - elapsed);
+    if (entry.rootMotionPendingDuration <= 1e-8) {
+      entry.rootMotionPendingDuration = 0;
+      entry.rootMotionPendingDelta = { x: 0, z: 0 };
+    }
+    return delta;
   }
 
   getRootMotionWorldDisplacement(file, playerId = 0) {
