@@ -12,7 +12,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(runtime.includes("playerRenderer.update(options.players"));
   assert.ok(runtime.includes("options.delta,options)"));
   assert.ok(index.includes("ballOwner:ball.owner,restart:S.rs"));
-  assert.ok(runtime.includes("playerRenderer.setGroundHeight(pitchSurfaceY + 0.025)"));
+  assert.ok(runtime.includes("if(playerRenderer)playerRenderer.setGroundHeight(pitchSurfaceY + 0.025)"));
   assert.ok(runtime.includes("get playerModelsReady(){"));
   assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
   assert.ok(!renderer.includes("player.glb"), "the character FBX is the only supported player model");
@@ -53,7 +53,7 @@ test("legacy 2D player bodies are disabled while 2D overlays and match HUD remai
   assert.ok(index.includes("function drawPlayerOld(p,a){return;}"));
   assert.ok(!index.includes("if(playerModelsReady)drawModelPlayerOverlay2D(p,a);else drawPlayer(p,a);"));
   assert.ok(!index.includes("drawPlayer3(p,a,playerModelsReady);"));
-  assert.ok(runtime.includes("get playerModelsReady(){return playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;}"));
+  assert.ok(runtime.includes("get playerModelsReady(){return !!playerRenderer&&playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;}"));
   assert.ok(index.includes("drawBallShadow3(a)"));
   assert.ok(index.includes("drawHud()"));
   assert.ok(index.includes("drawFig3(figO(REF,a))"));
