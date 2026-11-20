@@ -671,24 +671,22 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    for(let x=-15;x<=15;x+=5){light(x,branchHeight-.02,branchZ);add('Junction column',.16,branchHeight,.18,x,branchHeight/2+.18,branchZ,concrete);}
    // Three branch corridors lead to their own doors; all room geometry remains separated.
    const branch=(id,x1,x2,z,accentMat,accent)=>{
-    const len=Math.abs(x2-x1),cx=(x1+x2)/2,w=4.8,h=3.55;
-    add(id+' corridor floor',len,.16,w,cx,.08,z,floor);
-    add(id+' corridor runner',len-.2,.025,w-.4,cx,.17,z,rubber);
-    add(id+' corridor ceiling',len,.22,w,cx,h+.1,z,ceiling);
-    add(id+' corridor near wall',len,h,.22,cx,h/2+.16,z-w/2,paint);
-    add(id+' corridor far wall',len,h,.22,cx,h/2+.16,z+w/2,paint);
-    for(let x=Math.min(x1,x2)+1.5;x<Math.max(x1,x2)-.5;x+=3.8)light(x,h-.02,z);
+    // The left/right routes are the wings of the T-junction itself. Do not
+    // duplicate floors, walls or ceilings over the shared junction geometry.
+    const len=Math.abs(x2-x1),cx=(x1+x2)/2;
     add(id+' route stripe',len-.5,.018,.11,cx,.195,z,accentMat);
-    sign(id+' direction sign',id.toUpperCase(),'CHANGING ROOM',cx,3.0,z-1.95,accent);
+    sign(id+' direction sign',id.toUpperCase(),'CHANGING ROOM',cx,3.0,z-2.28,accent);
    };
    branch('Home team branch',-17,-3.0,branchZ,homeMat,0x8ab7d2);
    branch('Away team branch',3.0,17,branchZ,awayMat,0xc99b8f);
-   // A forward continuation is reserved for the match officials.
-   add('Officials corridor floor',5.8,.16,roomDoorZ-junction,0,.08,(roomDoorZ+junction)/2,floor);
-   add('Officials corridor runner',4.5,.025,roomDoorZ-junction-.25,0,.17,(roomDoorZ+junction)/2,rubber);
-   add('Officials corridor left wall',.22,3.55,roomDoorZ-junction, -2.9,1.94,(roomDoorZ+junction)/2,paint);
-   add('Officials corridor right wall',.22,3.55,roomDoorZ-junction,2.9,1.94,(roomDoorZ+junction)/2,paint);
-   add('Officials corridor ceiling',5.8,.22,roomDoorZ-junction,0,3.67,(roomDoorZ+junction)/2,ceiling);
+   // The officials' forward corridor begins beyond the T-junction, avoiding
+   // coplanar floor and ceiling overlaps at the three-way intersection.
+   const officialsStart=branchZ+branchW/2,officialsLength=roomDoorZ-officialsStart,officialsMid=(officialsStart+roomDoorZ)/2;
+   add('Officials corridor floor',5.8,.16,officialsLength,0,.08,officialsMid,floor);
+   add('Officials corridor runner',4.5,.025,officialsLength-.25,0,.17,officialsMid,rubber);
+   add('Officials corridor left wall',.22,3.55,officialsLength,-2.9,1.94,officialsMid,paint);
+   add('Officials corridor right wall',.22,3.55,officialsLength,2.9,1.94,officialsMid,paint);
+   add('Officials corridor ceiling',5.8,.22,officialsLength,0,3.67,officialsMid,ceiling);
    light(0,3.62,70);light(0,3.62,75);
    // Dressing-room shells have a single controlled doorway facing their corridor.
    const makeRoom=(id,cx,cz,w,d,accent,accentMat,orientation='front')=>{
