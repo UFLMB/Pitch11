@@ -298,6 +298,8 @@ export class MatchPlayerRenderer {
       ["keeperMove", 0],
       ["keeperDiveLeft", 0],
       ["keeperDiveRight", 0],
+      ["keeperDiveMiddleLeft", 0],
+      ["keeperDiveMiddleRight", 0],
       ["keeperDiveLowLeft", 0],
       ["keeperDiveLowRight", 0],
       ["keeperCatch", 0],
