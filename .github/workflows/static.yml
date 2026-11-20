@@ -240,8 +240,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Download verified CC0 audio assets for the Pages artifact
-        run: node scripts/download-cc0-audio.mjs
+      - name: Download and verify all CC0 audio assets for the Pages artifact
+        run: |
+          node scripts/download-cc0-audio.mjs
+          node --input-type=module -e "import fs from 'node:fs'; const m=JSON.parse(fs.readFileSync('Audio/audio-manifest.json','utf8')); if (!m.complete || m.downloaded !== m.expected) throw new Error('Incomplete CC0 audio manifest'); console.log('Verified audio manifest:', m.downloaded + '/' + m.expected);"
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Vendor pinned Three.js runtime for offline same-origin loading
