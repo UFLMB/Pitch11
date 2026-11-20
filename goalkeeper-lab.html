@@ -140,7 +140,7 @@ function applyKeeperRootMotion(dt){
  if(phase!=="return"||keeper.returnFallback)return;
  const entry=keeperRenderer.players.get(0);
  const delta=keeperRenderer.consumeRootMotionDelta(dt,0);
- if(!entry||Math.hypot(delta.x,delta.z)<1e-9)return;
+ if(!entry)return;
  const remaining={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
  const distance=Math.hypot(remaining.x,remaining.z);
  const recoveryStep=getGoalkeeperReturnStep({distance,rootMotionAvailable:!keeper.returnFallback,rootMotionMagnitude:Math.hypot(delta.x,delta.z)});
@@ -154,7 +154,7 @@ function applyKeeperRootMotion(dt){
   keeper.x=keeper.px=nextX;keeper.y=keeper.py=nextY;
   return;
  }
- if(recoveryStep==="wait")return;
+ if(recoveryStep==="wait"||Math.hypot(delta.x,delta.z)<1e-9)return;
  const step=clampRootMotionDeltaToTarget(delta,remaining);
  if(Math.hypot(step.x,step.z)<1e-6)return;
  keeper.x=keeper.px=keeper.x+step.x*10;
