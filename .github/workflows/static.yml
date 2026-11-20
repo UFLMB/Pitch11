@@ -171,6 +171,8 @@ jobs:
           }
           console.log('Goalkeeper Lab module syntax is valid.');
           NODE
+      - name: Check isolated Environment Lab runtime module syntax
+        run: node --check stadium-environment-runtime.js
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
