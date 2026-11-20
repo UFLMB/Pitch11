@@ -212,7 +212,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
- const optionalAssets={dugout:'pending',cornerFlag:'pending'};
+ const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending'};
+ let playerEntranceTunnel=null;
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
  function points(hx,hz,r){const p=[],line=(a,b,c,d)=>{const n=Math.max(2,Math.ceil(Math.hypot(c-a,d-b)/2));for(let i=0;i<n;i++){const t=i/n;p.push([a+(c-a)*t,b+(d-b)*t]);}},arc=(x,z,rad,a0,a1)=>{const n=Math.max(8,Math.ceil(Math.abs(a1-a0)*rad/2));for(let i=0;i<n;i++){const a=a0+(a1-a0)*i/n;p.push([x+Math.cos(a)*rad,z+Math.sin(a)*rad]);}};line(-hx+r,-hz,hx-r,-hz);arc(hx-r,-hz+r,r,-Math.PI/2,0);line(hx,-hz+r,hx,hz-r);arc(hx-r,hz-r,r,0,Math.PI/2);line(hx-r,hz,-hx+r,hz);arc(-hx+r,hz-r,r,Math.PI/2,Math.PI);line(-hx,hz-r,-hx,-hz+r);arc(-hx+r,-hz+r,r,Math.PI,Math.PI*1.5);return p;}
@@ -597,6 +598,76 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  function setStadiumLoadState(state,error=''){
   stadiumLoadState=state;stadiumLoadError=error;boot.state=state;boot.progress=stadiumLoadProgress;boot.error=error;
  }
+
+ function createPlayerEntranceTunnel(){
+  // Main-stand side: the entrance sits centrally behind the two existing dugouts.
+  // The dugouts remain at x +/-12.5 / z 36.5; the tunnel occupies the clear
+  // central service corridor between the pitch and the first spectator rows.
+  const root=new THREE.Group();
+  root.name='P11_PlayerEntranceTunnel';
+  root.position.set(0,pitchSurfaceY,0);
+  const mat=(color,roughness=.72,metalness=.18)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
+  const shell=mat(0x171d25,.58,.42),inner=mat(0x252e38,.82,.12),floorMat=mat(0x10151c,.9,.08);
+  const trim=mat(0x7b8792,.34,.72),dark=mat(0x090d12,.48,.25);
+  const led=new THREE.MeshStandardMaterial({color:0xb5f36b,emissive:0x83c93e,emissiveIntensity:1.25,roughness:.32,metalness:.12});
+  const glass=new THREE.MeshStandardMaterial({color:0x263b43,emissive:0x122b2d,emissiveIntensity:.32,roughness:.28,metalness:.3});
+  const addBox=(name,w,h,d,x,y,z,material)=>{
+   const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
+   mesh.name=name;mesh.position.set(x,y,z);mesh.castShadow=false;mesh.receiveShadow=false;root.add(mesh);return mesh;
+  };
+  // Walk-up apron: starts just outside the touchline and leads directly into the tunnel.
+  addBox('Entrance walkway',7.6,.12,4.9,0,.035,36.15,floorMat);
+  addBox('Walkway centre inlay',.12,.018,4.45,0,.105,36.15,trim);
+  // Enclosed player passage, open at both ends.
+  const front=38.75,back=44.95,mid=(front+back)/2,depth=back-front,width=8.6,height=4.25,wall=0.32;
+  addBox('Tunnel floor',width,.16,depth,0,.08,mid,floorMat);
+  addBox('Tunnel left wall',wall,height,depth,-width/2+wall/2,height/2+.12,mid,inner);
+  addBox('Tunnel right wall',wall,height,depth,width/2-wall/2,height/2+.12,mid,inner);
+  addBox('Tunnel roof',width,height*.12,depth,0,height+.02,mid,shell);
+  // Front portal: substantial side piers and a deep header leave a generous player opening.
+  addBox('Portal left pier',.58,height, .55,-4.01,height/2+.12,front, shell);
+  addBox('Portal right pier',.58,height,.55,4.01,height/2+.12,front,shell);
+  addBox('Portal header',8.6,.78,.62,0,height-.28,front,shell);
+  addBox('Portal lower threshold',7.35,.12,.5,0,.12,front,floorMat);
+  // Brushed-metal perimeter details.
+  addBox('Portal left trim',.075,3.55,.66,-3.68,1.92,front-.025,trim);
+  addBox('Portal right trim',.075,3.55,.66,3.68,1.92,front-.025,trim);
+  addBox('Portal top trim',7.42,.075,.66,0,3.72,front-.025,trim);
+  // Side-wall ribs and continuous low-level guidance strips.
+  for(let i=0;i<5;i++){
+   const z=front+.72+i*1.05;
+   addBox('Left wall rib '+i,.12,3.65,.16,-width/2+wall+.08,2.02,z,trim);
+   addBox('Right wall rib '+i,.12,3.65,.16,width/2-wall-.08,2.02,z,trim);
+   addBox('Left LED guide '+i,.055,.075,.72,-width/2+wall+.18,.42,z,led);
+   addBox('Right LED guide '+i,.055,.075,.72,width/2-wall-.18,.42,z,led);
+  }
+  // Recessed ceiling luminaires and restrained lime edge accents.
+  addBox('Ceiling centre light',.34,.055,5.15,0,height-.14,mid,led);
+  addBox('Left roof accent',.055,.045,depth-.5,-4.02,height-.12,mid,led);
+  addBox('Right roof accent',.055,.045,depth-.5,4.02,height-.12,mid,led);
+  // Backlit PITCH 11 identity panel, facing the pitch.
+  const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=256;
+  const ctx=canvas.getContext('2d');
+  if(ctx){
+   ctx.fillStyle='#0b1118';ctx.fillRect(0,0,1024,256);
+   ctx.fillStyle='#a3e635';ctx.fillRect(48,204,928,7);
+   ctx.font='900 116px Arial,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+   ctx.fillStyle='#f2f4f5';ctx.fillText('PITCH 11',512,112);
+   ctx.font='600 27px Arial,sans-serif';ctx.fillStyle='#9aa6b2';ctx.fillText('PLAYER ENTRANCE',512,174);
+  }
+  const signTexture=new THREE.CanvasTexture(canvas);signTexture.colorSpace=THREE.SRGBColorSpace;
+  const signMat=new THREE.MeshBasicMaterial({map:signTexture,transparent:false,side:THREE.DoubleSide});
+  const sign=new THREE.Mesh(new THREE.PlaneGeometry(5.6,.9),signMat);
+  sign.name='PITCH 11 entrance sign';sign.position.set(0,3.78,front-.325);sign.rotation.y=Math.PI;root.add(sign);
+  // Soft local lighting only; no cast shadows and no changes to stadium floodlights.
+  for(let i=0;i<3;i++){
+   const light=new THREE.PointLight(0xd9f7c2,1.7,7.2,2);
+   light.position.set(0,3.55,front+1.1+i*1.75);light.castShadow=false;root.add(light);
+  }
+  root.userData={kind:'player-entrance',frontZ:front,backZ:back,centerX:0,walkwayStartZ:33.7,walkwayEndZ:front,width,height,openEnds:true,behindDugouts:true};
+  scene.add(root);
+  return root;
+ }
  function finishStadiumLoad(gltf){
   const stadium=gltf.scene;
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
@@ -611,6 +682,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
+  try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}
   const details=new GLTFLoader();
   optionalAssets.dugout='loading';boot.optionalAssets=optionalAssets;
   details.load('./assets/team-dugout.glb',asset=>{
