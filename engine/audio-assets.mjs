@@ -1,9 +1,9 @@
 /**
  * PITCH 11 CC0 audio source bridge.
  * The source provider explicitly permits direct hotlink playback under CC0 1.0.
- * Local binary downloads are not bundled here: the build environment could not
- * resolve external hosts. If a source is unreachable, the existing Web Audio
- * synthesizers remain the fallback.
+ * MP3 files are downloaded by the GitHub Pages build into Audio/ subfolders.
+ * If a local build-time download is unavailable, the approved direct stream is
+ * used as fallback; synthesized Web Audio remains the final fallback.
  */
 const REMOTE_ROOT = "https://sfxmint.com/dl/";
 const SOURCES = Object.freeze({
