@@ -606,6 +606,24 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    const ceiling=material(0x92958e,.92,.01),homeMat=material(0x526c82,.8,.06),awayMat=material(0x80605b,.8,.06),officialMat=material(0x77715e,.82,.04);
    const white=material(0xe1e1d7,.86,.02),black=material(0x151a1d,.82,.08);
    const led=new THREE.MeshStandardMaterial({color:0xf1e6c8,emissive:0x8e7850,emissiveIntensity:.24,roughness:.5});
+   const applySurfaceGrain=(mat,seed,bumpScale)=>{
+    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#eeeeea';ctx.fillRect(0,0,256,256);
+    let state=seed>>>0;const rnd=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
+    for(let i=0;i<7200;i++){
+     const x=rnd()*256,y=rnd()*256,r=.25+rnd()*1.25;
+     ctx.fillStyle=rnd()>.48?'rgba(0,0,0,.075)':'rgba(255,255,255,.11)';
+     ctx.fillRect(x,y,r,r);
+    }
+    const colorMap=new THREE.CanvasTexture(canvas);colorMap.colorSpace=THREE.SRGBColorSpace;
+    colorMap.wrapS=colorMap.wrapT=THREE.RepeatWrapping;colorMap.repeat.set(3,3);
+    colorMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+    const bumpMap=colorMap.clone();bumpMap.colorSpace=THREE.NoColorSpace;bumpMap.needsUpdate=true;
+    mat.map=colorMap;mat.bumpMap=bumpMap;mat.bumpScale=bumpScale;mat.needsUpdate=true;
+   };
+   applySurfaceGrain(concrete,1901,.018);applySurfaceGrain(paint,1902,.009);
+   applySurfaceGrain(floor,1903,.024);applySurfaceGrain(rubber,1904,.012);
+   applySurfaceGrain(ceiling,1905,.008);
    const add=(name,w,h,d,x,y,z,mat,parent=root)=>{
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
     mesh.castShadow=false;mesh.receiveShadow=false;parent.add(mesh);return mesh;
