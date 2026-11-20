@@ -50,6 +50,10 @@ export function buildGoalkeeperContactColliders(bonePositions) {
     add(side + "-upper-arm", "arm", side, shoulder, elbow, 0.105);
     add(side + "-forearm", "arm", side, elbow, hand, 0.09);
     add(side + "-hand", "hand", side, hand, hand, 0.145);
+    for (const digit of ["HandIndex3", "HandMiddle3", "HandRing3", "HandPinky3", "HandThumb3"]) {
+      const tip = get(cap + digit);
+      add(side + "-" + digit.toLowerCase() + "-tip", "fingertip", side, hand, tip, 0.035);
+    }
     add(side + "-upper-leg", "leg", side, upperLeg, lowerLeg, 0.125);
     add(side + "-lower-leg", "leg", side, lowerLeg, foot, 0.105);
     add(side + "-foot", "foot", side, foot, foot, 0.125);
