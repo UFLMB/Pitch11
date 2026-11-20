@@ -115,6 +115,50 @@ function detectKeeperBallContact(){
  return nearest;
 }
 function animateShot(dt){if(!shot)return;shot.elapsed+=dt;const t=Math.min(1,shot.elapsed/shot.duration),e=1-Math.pow(1-t,2);ball.position.set(THREE.MathUtils.lerp(shot.from.x,shot.to.x,e),THREE.MathUtils.lerp(shot.from.y,shot.to.y,e)+Math.sin(t*Math.PI)*.16,THREE.MathUtils.lerp(shot.from.z,shot.to.z,e));const contact=detectKeeperBallContact();if(contact){saveCount++;shot.saveResolved=true;shotResult=(aiMode?"AI CONTACT SAVE · ":"CONTACT SAVE · ")+contact.bone.toUpperCase();shot=null;ball.visible=false;setPhase("idle");return}if(t>=1){resolveShot();shot=null;ball.visible=false}}
+function beginKeeperReturn(){
+ const files=["goalkeeper sidestep.fbx","goalkeeper sidestep (2).fbx"];
+ const target={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
+ let best=null;
+ for(const file of files){
+  const displacement=keeperRenderer.getRootMotionWorldDisplacement(file,0);
+  if(!displacement)continue;
+  const dot=displacement.x*target.x+displacement.z*target.z;
+  const magnitude=Math.hypot(displacement.x,displacement.z);
+  if(magnitude>.0001&&dot>0&&(!best||dot/magnitude>best.score))best={file,score:dot/magnitude};
+ }
+ keeper.dive=0;keeper.diveRecover=0;keeper.vx=keeper.vy=0;
+ keeper.animationOverride="keeper-move";
+ keeper.manualClipFile=best?.file||"";
+ if(best)keeper.manualClipToken=(keeper.manualClipToken||0)+1;
+ setPhase("return");
+ shotResult=best?"RETURN · ROOT-MOTION · "+best.file:"RETURN · NO VALID SIDESTEP ROOT TRACK";
+}
+function applyKeeperRootMotion(dt){
+ if(phase!=="return")return;
+ const entry=keeperRenderer.players.get(0);
+ const delta=entry?.rootMotionDelta;
+ if(!delta)return;
+ const remaining={x:(585-keeper.x)*.1,z:(730-keeper.y)*.1};
+ const distance=Math.hypot(remaining.x,remaining.z);
+ if(distance<.16){
+  const nextX=THREE.MathUtils.damp(keeper.x,585,12,dt);
+  const nextY=THREE.MathUtils.damp(keeper.y,730,12,dt);
+  keeper.x=keeper.px=nextX;keeper.y=keeper.py=nextY;
+  if(Math.hypot((585-keeper.x)*.1,(730-keeper.y)*.1)<.018){
+   keeper.x=keeper.px=585;keeper.y=keeper.py=730;keeper.vx=keeper.vy=0;
+   keeper.manualClipFile="";keeper.animationOverride="";setPhase("idle");
+  }
+  return;
+ }
+ const stepLength=Math.hypot(delta.x,delta.z);
+ if(stepLength<1e-6)return;
+ const projection=(delta.x*remaining.x+delta.z*remaining.z)/distance;
+ if(projection<=0)return;
+ const scale=Math.min(1,distance/projection);
+ keeper.x=keeper.px=keeper.x+delta.x*scale*10;
+ keeper.y=keeper.py=keeper.y+delta.z*scale*10;
+ keeper.vx=keeper.vy=0;
+}
 function updateKeeper(dt){
  if(phase==="action"){
   phaseTimer-=dt;
@@ -137,13 +181,9 @@ function updateKeeper(dt){
    const expected=keeper.diveClipState||"";
    const clipIsActive=!!(entry&&entry.state===expected&&clip&&action.time>=clip.duration-.04);
    if(!clipIsActive){phaseTimer=.05;return}
-   keeper.dive=0;
-   keeper.diveRecover=0;
-   // Every dive type can finish with the keeper displaced in world space,
-   // even when its authored pose appears to recover. Always run the explicit
-   // return-to-center phase after the save clip has fully completed.
-   keeper.animationOverride="keeper-move";
-   setPhase("return",1.6);
+   // The complete save clip has finished. Select the sidestep whose
+   // extracted root displacement points toward the actual home position.
+   beginKeeperReturn();
   }
  }else if(phase==="recover"){
   phaseTimer-=dt;
@@ -154,19 +194,9 @@ function updateKeeper(dt){
    setPhase("return",.85);
   }
  }else if(phase==="return"){
-  // Do not end this phase on a fixed timer: snapping to the home position
-  // while still moving creates a visible teleport/jitter on slower devices.
-  const previousX=keeper.x;
-  const nextX=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
-  keeper.x=keeper.px=nextX;
-  keeper.vx=dt>0?(nextX-previousX)/dt:0;
-  keeper.vy=0;
-  if(Math.abs(keeper.x-585)<.025){
-   keeper.x=keeper.px=585;
-   keeper.vx=keeper.vy=0;
-   keeper.animationOverride="";
-   setPhase("idle");
-  }
+  // The renderer supplies one root-motion delta per animation update.
+  // Position changes are applied after mixer.update(), never in parallel
+  // with a second engine-driven return interpolation.
  }else if(phase==="miss"){
   phaseTimer-=dt;
   if(phaseTimer<=0){
@@ -188,7 +218,7 @@ function updateReadout(){
  readout.innerHTML='<strong>'+shotResult+'</strong><br>Phase: '+phase.toUpperCase()+'<br>Saves: '+saveCount+' · Goals: '+goalCount+aiLine+'<br>Model: '+(keeperRenderer.modelSource||keeperRenderer.status)+' · Clips: '+keeperRenderer.clipCount+' · Active: '+keeperRenderer.animatedCount+rigLine+partLine+failureLine;
 }
 const clock=new THREE.Clock();let last=0;
-function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);if(aiMode&&shot&&!aiDecisionFired){aiReactionTimer-=dt;if(aiReactionTimer<=0){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="AI DECISION · CANNOT REACH"}}updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);
+function frame(){requestAnimationFrame(frame);const dt=Math.min(.05,clock.getDelta());if(keeperRenderer.ready){animateShot(dt);if(aiMode&&shot&&!aiDecisionFired){aiReactionTimer-=dt;if(aiReactionTimer<=0){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="AI DECISION · CANNOT REACH"}}updateKeeper(dt);keeperRenderer.update([keeper],keeper,1,dt);applyKeeperRootMotion(dt);
  if(!aiMode&&shot&&!aiDecisionFired&&shot.elapsed>=aiDecision?.reactionTime){aiDecisionFired=true;if(aiDecision?.reachable){if(aiDecision.side==="center")triggerAction(aiDecision.action==="catch"?"keeper-catch":"keeper-parry",aiDecision.action==="catch"?keeperCatchFileForShot():"");else triggerSave(aiDecision.side,aiDecision.heightBand)}else shotResult="KEEPER · OUT OF REACH"} }renderer.render(scene,camera);updateReadout()}
 // Start rendering immediately; keep the scene and diagnostics live while assets load.
 frame();
