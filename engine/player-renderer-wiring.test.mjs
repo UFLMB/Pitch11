@@ -15,7 +15,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(runtime.includes("playerRenderer.setGroundHeight(pitchSurfaceY + 0.025)"));
   assert.ok(runtime.includes("get playerModelsReady(){"));
   assert.ok(index.includes("players:P,selectedPlayer:ctrl,alpha:a,delta:window.P11Stadium.mobile?1/30:DT"));
-  assert.ok(renderer.includes("../assets/players/player.glb"));
+  assert.ok(!renderer.includes("player.glb"), "the character FBX is the only supported player model");
   assert.ok(renderer.includes("../input/player-model-candidate/character.fbx"));
   assert.ok(renderer.includes("new FBXLoader()"));
   assert.ok(renderer.includes("validateDirectMixamoClip"));
@@ -28,12 +28,9 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("group.position.set(state.x, this.groundHeight, state.z)"));
   assert.ok(renderer.includes("node.frustumCulled = false"));
   assert.ok(renderer.includes("isSkinnedMesh"));
-  assert.ok(renderer.includes("setMeshoptDecoder(MeshoptDecoder)"));
   assert.ok(renderer.includes("loading-mixamo-animations"));
-  assert.ok(renderer.includes("loading-fallback-animations"));
-  assert.ok(renderer.includes("idle.glb"));
-  assert.ok(renderer.includes("walk.glb"));
-  assert.ok(renderer.includes("run.glb"));
+  assert.ok(renderer.includes("status = \"asset-error\""));
+  assert.ok(!renderer.includes("fallbackModelUrl"));
   assert.ok(renderer.includes("this.inputPlayerCount = states.length"));
   assert.ok(renderer.includes("this.visiblePlayerCount = states.reduce"));
   assert.ok(renderer.includes("get expectedCount()"));
@@ -71,7 +68,7 @@ test("stadium GLB loader supports Meshopt-compressed geometry", () => {
 
 test("optional animation failures do not prevent skinned player models from rendering", () => {
   const renderer = read("./match-player-renderer.mjs");
-  assert.ok(renderer.includes("Promise.allSettled(clipFiles.map"));
+  assert.ok(renderer.includes("Promise.allSettled(CORE_MIXAMO_CLIPS.map"));
   assert.ok(renderer.includes("this.status = \"ready\";"));
   assert.ok(renderer.includes("this.template = null;"));
   assert.ok(!renderer.includes("this.animations = await Promise.all(clipFiles.map"));
