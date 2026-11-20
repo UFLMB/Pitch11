@@ -40,5 +40,5 @@ The game now has an optional CC0 audio-source bridge. It streams the listed MP3 
 ## Not imported yet
 
 - Main-menu music: no track has been added. The previously discussed OpenGameArt candidate was not retrievable in this environment and has not been independently validated at the downloadable-file level.
-- Player shoe/grass step: the asset is downloaded into the deployment artifact and exposed through the audio bridge, but precise animation-footfall timing is not yet connected.
-- Other contact, fall, goalkeeper, commentary and announcement sounds: left untouched until appropriate event hooks and reliable file sources are verified.
+- Player shoe/grass step: the asset is exposed through the audio bridge and now plays on a speed-based cadence for the selected player during active play. It is movement-paced rather than synchronized to exact animation foot-contact frames.
+- Ball bounce and goal-frame/post impacts now trigger their matching CC0 samples. Dribble contact audio plays on a movement-based cadence while a non-goalkeeper carrier is moving. Other contact, fall, goalkeeper, commentary and announcement sounds remain unconnected until appropriate event hooks and reliable file sources are verified.
