@@ -13,9 +13,9 @@ test("supports namespaced Mixamo roots and leaves unrelated bones unchanged", ()
  flattenHorizontalRootMotion({tracks:[root,hand]});
  assert.deepEqual(Array.from(root.values),[0,0,0,0,0,0]); assert.deepEqual(Array.from(hand.values),[1,2,3,4,5,6]);
 });
-test("selects both goalkeeper sidestep clips for root-motion flattening", () => {
- assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep.fbx"),true);
- assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep (2).fbx"),true);
+test("keeps goalkeeper sidestep clips out of the legacy locomotion-flattening path", () => {
+ assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep.fbx"),false);
+ assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep (2).fbx"),false);
  assert.equal(shouldFlattenHorizontalRootMotion("gk_dive-low_shot-left-ball_not_in_hand.fbx"),false);
 });
 test("extracts sidestep root displacement while neutralizing mixer X/Z translation", () => {
