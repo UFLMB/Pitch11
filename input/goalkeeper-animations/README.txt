@@ -1,18 +1,11 @@
 PITCH 11 — Goalkeeper Animation Review
 
-Upload the original animation files into this folder.
+The original uploaded goalkeeper FBX sources are retained in this review folder as source copies. The active runtime copies are in input/player-package/ and are registered in engine/mixamo-animation-catalog.mjs.
 
-Accepted formats: .fbx, .glb, .gltf (and any required companion texture/files).
+Naming and direction rules:
+- LEFT and RIGHT are defined from the viewpoint of a camera/viewer facing the goalkeeper: LEFT = screen-left, RIGHT = screen-right. They do NOT refer to the goalkeeper's own anatomical sides.
+- All four low-shot source takes are treated as no-possession saves. The two takes originally uploaded with a ball_in_hand suffix are renamed in the active package to ball_not_in_hand-variant_2 so the runtime filenames describe the actual motion without conflating distinct takes.
+- gk_catch-middle-fingertip_save.fbx is a separate candidate. It must pass the dedicated in-goal hand-to-ball contact check before it is considered a confirmed fingertip save.
+- slow_dribble_run.fbx is not a goalkeeper clip and remains outside the active goalkeeper mapping pending its separate review.
 
-Please keep original filenames. Do not upload videos or static-only models here.
-
-IMPORTANT ANIMATION-NAME CORRECTION:
-- gk_dive-low_shot-left-ball_in_hand.fbx is actually a low dive toward the LEFT side of the screen when viewing the goalkeeper from the front, WITHOUT securing the ball (ball_not_in_hand).
-- gk_dive-low_shot-right-ball_in_hand.fbx is actually a low dive toward the RIGHT side of the screen when viewing the goalkeeper from the front, WITHOUT securing the ball (ball_not_in_hand).
-- The two files already named gk_dive-low_shot-left/right-ball_not_in_hand.fbx are separate variants and must be kept distinct until their motions are compared.
-- IMPORTANT: all left/right directions in animation filenames and review notes are defined from the viewpoint of a camera/viewer facing the goalkeeper. LEFT means screen-left; RIGHT means screen-right. They do NOT refer to the goalkeeper's own left and right.
-- slow_dribble_run.fbx may be suitable for both goalkeeper and outfield-player use; verify in the animation review.
-
-For each animation, include its source page URL and license/usage terms in a note. Files will be inspected for skeleton compatibility, animation tracks, scale/root motion, and licensing before any integration.
-
-This is an isolated review branch. Nothing here is deployed to production.
+The active runtime uses input/player-package/ only. This review folder is not loaded by the game.

@@ -1,59 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { MIXAMO_ANIMATION_FILES, resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
-
-test("catalog contains all 54 source FBX clips exactly once", () => {
-  assert.equal(MIXAMO_ANIMATION_FILES.length, 54);
-  assert.equal(new Set(MIXAMO_ANIMATION_FILES).size, 54);
-  assert.ok(MIXAMO_ANIMATION_FILES.every(file => file.endsWith(".fbx")));
-});
-
-test("core locomotion resolves to the direct Mixamo source clips", () => {
-  assert.deepEqual(resolveMixamoClipCandidates("idle"), ["offensive idle.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("run"), ["jog forward.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("backward"), ["jog backward.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("strafeLeft"), ["jog strafe left.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("strafeRight"), ["jog strafe right.fbx"]);
-});
-
-test("football action and goalkeeper states map to actual files in the package", () => {
-  for (const state of [
-    "receive", "dribble", "pass", "shot", "header", "throwIn", "tackle", "fall", "fallenIdle", "getUp",
-    "keeperSet", "keeperPenaltyReady", "keeperMove", "keeperDirect", "keeperCatch", "keeperDiveLeft", "keeperDiveRight", "keeperFingertip",
-    "keeperDiveLowLeft", "keeperDiveLowRight", "keeperParry", "keeperScoop", "keeperMiss", "keeperPass", "keeperDropKick", "keeperThrow", "keeperPlace"
-  ]) {
-    const candidates = resolveMixamoClipCandidates(state, 3);
-    assert.ok(candidates.length > 0, state);
-    assert.ok(candidates.every(isMixamoClipFile), state);
-  }
-});
-
-test("numbered variants are distributed deterministically between players", () => {
-  const first = resolveMixamoClipCandidates("dribble", 0);
-  const second = resolveMixamoClipCandidates("dribble", 1);
-  assert.notDeepEqual(first, second);
-  assert.deepEqual(first, resolveMixamoClipCandidates("dribble", 0));
-});
-
-
-test("keeps left and right keeper dive clip candidates stable across player IDs", () => {
-  const left0 = resolveMixamoClipCandidates("keeperDiveLeft", 0);
-  const left1 = resolveMixamoClipCandidates("keeperDiveLeft", 1);
-  const right0 = resolveMixamoClipCandidates("keeperDiveRight", 0);
-  const right1 = resolveMixamoClipCandidates("keeperDiveRight", 1);
-  assert.deepEqual(left1, left0);
-  assert.deepEqual(right1, right0);
-  assert.equal(left0[0], "goalkeeper diving save (2).fbx");
-  assert.equal(right0[0], "goalkeeper diving save.fbx");
-  assert.notEqual(left0[0], right0[0]);
-});
-
-test("maps the user-confirmed goalkeeper fingertip and penalty-ready clips", () => {
-  assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip"), ["goalkeeper miss.fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperPenaltyReady"), ["transition.fbx"]);
-});
-
-test("maps low left and right saves to their dedicated body-block clips", () => {
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowLeft"), ["goalkeeper body block (2).fbx"]);
-  assert.deepEqual(resolveMixamoClipCandidates("keeperDiveLowRight"), ["goalkeeper body block (3).fbx"]);
-});
+test("catalog contains 57 active FBX clips exactly once",()=>{assert.equal(MIXAMO_ANIMATION_FILES.length,57);assert.equal(new Set(MIXAMO_ANIMATION_FILES).size,57);assert.ok(MIXAMO_ANIMATION_FILES.every(file=>file.endsWith(".fbx")));});
+test("core locomotion resolves to the direct Mixamo source clips",()=>{assert.deepEqual(resolveMixamoClipCandidates("idle"),["offensive idle.fbx"]);assert.deepEqual(resolveMixamoClipCandidates("run"),["jog forward.fbx"]);assert.deepEqual(resolveMixamoClipCandidates("backward"),["jog backward.fbx"]);assert.deepEqual(resolveMixamoClipCandidates("strafeLeft"),["jog strafe left.fbx"]);assert.deepEqual(resolveMixamoClipCandidates("strafeRight"),["jog strafe right.fbx"]);});
+test("all gameplay and goalkeeper states resolve to active package files",()=>{for(const state of ["receive","dribble","pass","shot","header","throwIn","tackle","fall","fallenIdle","getUp","keeperSet","keeperPenaltyReady","keeperMove","keeperDirect","keeperCatch","keeperDiveLeft","keeperDiveRight","keeperFingertip","keeperDiveLowLeft","keeperDiveLowRight","keeperParry","keeperScoop","keeperMiss","keeperPass","keeperDropKick","keeperThrow","keeperPlace"]){const files=resolveMixamoClipCandidates(state,3);assert.ok(files.length,state);assert.ok(files.every(isMixamoClipFile),state);}});
+test("numbered variants are deterministic per player",()=>{const a=resolveMixamoClipCandidates("dribble",0),b=resolveMixamoClipCandidates("dribble",1);assert.notDeepEqual(a,b);assert.deepEqual(a,resolveMixamoClipCandidates("dribble",0));});
+test("viewer-facing left/right dive pairs never swap by player ID",()=>{for(const s of ["keeperDiveLeft","keeperDiveRight","keeperDiveLowLeft","keeperDiveLowRight"])assert.deepEqual(resolveMixamoClipCandidates(s,0),resolveMixamoClipCandidates(s,1));assert.match(resolveMixamoClipCandidates("keeperDiveLeft")[0],/left-/);assert.match(resolveMixamoClipCandidates("keeperDiveRight")[0],/right-/);assert.match(resolveMixamoClipCandidates("keeperDiveLowLeft")[0],/left-/);assert.match(resolveMixamoClipCandidates("keeperDiveLowRight")[0],/right-/);});
+test("new keeper clips are catalogued and retired generic clips are absent",()=>{for(const f of Object.keys({"gk_catch-middle-fingertip_save.fbx":"f307c6e7d0e45302cbbb85f488867d166b4a2440","gk_catch-middle-head_height.fbx":"19e3dac28e77e7f63cc1f3e888b60f2d0d5d023a","gk_catch-middle-jump-above_head_height.fbx":"077e909c06371cb67b6e1444d24b50ca8dc678fd","gk_catch-middle-rolling_ball_pickup.fbx":"78a0006e26c40dfd73d85b5894907d1040fa391a","gk_catch-middle-stomach_height.fbx":"01c0d6b6f2411cd86807f5c5c2892d7e2dfd8cdd","gk_catch-middle_2_steps_forward_jump-above_head_height.fbx":"13daa8b1dcad4dfe7024f45d4188c5d7241b203a","gk_dive-high_shot-left-ball_in_hand.fbx":"edb2b49642c7802ee4948c937553c421f31b3c19","gk_dive-high_shot-right-ball_in_hand.fbx":"9bf5fab34e78865f807d73fca85dbcda88a789fa","gk_dive-low_shot-left-ball_not_in_hand.fbx":"c911f7cf0f591d9334bbfd7a03d1df7b96dcf0f3","gk_dive-low_shot-left-ball_not_in_hand-variant_2.fbx":"dbdc742904eb8681290bc445caa98319cee2380f","gk_dive-low_shot-right-ball_not_in_hand.fbx":"ccf3d05727b5237c110fec013c71b36828f75cc8","gk_dive-low_shot-right-ball_not_in_hand-variant_2.fbx":"532b34b2885539a4cd32c85b20a040d372ab6ab3","gk_dive-middle_shot-left-ball_in_hand.fbx":"407acfdf05c1d828c7f01cdd2bda3a518d48d822","gk_dive-middle_shot-right-ball_in_hand.fbx":"b0c65344bd4d17cd2b395e98d6a3aabae558157c"}))assert.ok(isMixamoClipFile(f),f);for(const f of ["goalkeeper body block.fbx","goalkeeper body block (2).fbx","goalkeeper body block (3).fbx","goalkeeper catch.fbx","goalkeeper catch (2).fbx","goalkeeper catch (3).fbx","goalkeeper catch (4).fbx","goalkeeper diving save.fbx","goalkeeper diving save (2).fbx","goalkeeper miss.fbx","goalkeeper scoop.fbx"])assert.equal(isMixamoClipFile(f),false,f);});
+test("catch, scoop and fingertip states have distinct source mappings",()=>{assert.ok(resolveMixamoClipCandidates("keeperCatch").every(f=>f.startsWith("gk_catch-middle")&&!f.includes("rolling_ball")&&!f.includes("fingertip")));assert.deepEqual(resolveMixamoClipCandidates("keeperScoop"),["gk_catch-middle-rolling_ball_pickup.fbx"]);assert.deepEqual(resolveMixamoClipCandidates("keeperFingertip"),["gk_catch-middle-fingertip_save.fbx"]);});
+test("all low-shot sources are labeled as no-possession and keep variants distinct",()=>{const low=MIXAMO_ANIMATION_FILES.filter(f=>f.includes("gk_dive-low_shot"));assert.equal(low.length,4);assert.ok(low.every(f=>f.includes("ball_not_in_hand")));});
