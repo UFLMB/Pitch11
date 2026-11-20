@@ -12,7 +12,8 @@ const CORE_MIXAMO_CLIPS = [
   "jog forward.fbx",
   "jog backward.fbx",
   "jog strafe left.fbx",
-  "jog strafe right.fbx"
+  "jog strafe right.fbx",
+  "goalkeeper sidestep.fbx"
 ];
 function loadWithTimeout(promise, timeoutMs, label) {
   if (!(timeoutMs > 0)) return promise;
@@ -225,7 +226,7 @@ export class MatchPlayerRenderer {
       clip.name = file.replace(/\.fbx$/i, "");
       // The simulation owns world translation; flatten horizontal root drift
       // while retaining vertical pelvis motion for natural gait bounce.
-      if (/^(jog forward|jog backward|jog strafe left|jog strafe right)\.fbx$/i.test(file)) {
+      if (/^(jog forward|jog backward|jog strafe left|jog strafe right|goalkeeper sidestep(?: \(2\))?)\.fbx$/i.test(file)) {
         flattenHorizontalRootMotion(clip);
       }
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
