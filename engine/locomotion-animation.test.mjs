@@ -14,6 +14,11 @@ test("supports namespaced Mixamo roots and leaves unrelated bones unchanged", ()
  flattenHorizontalRootMotion({tracks:[root,hand]});
  assert.deepEqual(Array.from(root.values),[0,0,0,0,0,0]); assert.deepEqual(Array.from(hand.values),[1,2,3,4,5,6]);
 });
+test("flattens every mapped outfield jog clip, including diagonal variants", () => {
+ for (const file of ["jog forward.fbx","jog backward.fbx","jog forward diagonal.fbx","jog forward diagonal (2).fbx","jog backward diagonal.fbx","jog backward diagonal (2).fbx","jog strafe left.fbx","jog strafe right.fbx"]) {
+  assert.equal(shouldFlattenHorizontalRootMotion(file),true,file);
+ }
+});
 test("keeps goalkeeper sidestep clips out of the legacy locomotion-flattening path", () => {
  assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep.fbx"),false);
  assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep (2).fbx"),false);
