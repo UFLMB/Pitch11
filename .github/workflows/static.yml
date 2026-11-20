@@ -117,6 +117,24 @@ jobs:
           }
           console.log('3D model viewer module syntax is valid.');
           NODE
+      - name: Check Matchday Environment Lab module syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('graphics3d.html', 'utf8');
+          const startTag = '<script type="module">';
+          const start = html.indexOf(startTag);
+          const end = start < 0 ? -1 : html.indexOf('</script>', start + startTag.length);
+          if (start < 0 || end < 0) throw new Error('Matchday Environment module not found');
+          fs.writeFileSync('/tmp/pitch11-matchday-environment.mjs', html.slice(start + startTag.length, end));
+          const result = spawnSync(process.execPath, ['--check', '/tmp/pitch11-matchday-environment.mjs'], { encoding: 'utf8' });
+          if (result.status !== 0) {
+            process.stderr.write(result.stderr || result.stdout);
+            process.exit(result.status || 1);
+          }
+          console.log('Matchday Environment module syntax is valid.');
+          NODE
       - name: Check diagnostic 3D UV inspector module syntax
         run: |
           node --input-type=module <<'NODE'
