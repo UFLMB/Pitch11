@@ -6,7 +6,7 @@ Updated: 2026-11-20
 
 The game now has an optional CC0 audio-source bridge. It streams the listed MP3 files directly from SFXMint, whose individual sound pages state CC0 1.0, commercial-game use, modification/redistribution rights, and direct hotlink permission.
 
-**Important:** the interactive workspace could not download MP3 binaries because external DNS/network access failed. The GitHub Actions Pages deployment now downloads and validates the MP3 files into their matching `Audio/` subfolders before publishing the site. The binaries are generated into the deployment artifact rather than committed to the source branch. If an individual download fails, the game falls back to the provider's explicitly hotlinkable CC0 stream; if that also fails, the existing synthesized Web Audio remains available.
+**Important:** the interactive workspace could not download MP3 binaries because external DNS/network access failed. The GitHub Actions Pages deployment now downloads and validates the MP3 files into their matching `Audio/` subfolders before publishing the site. The binaries are generated into the deployment artifact rather than committed to the source branch. The build now writes Audio/audio-manifest.json with each validated file's byte count and SHA-256 hash, and refuses to publish unless all 15 assets are present. If a local asset later fails in the browser, the game falls back to the provider's explicitly hotlinkable CC0 stream; existing synthesized Web Audio remains as a secondary layer/fallback.
 
 ## Source register
 
