@@ -139,16 +139,11 @@ function updateKeeper(dt){
    if(!clipIsActive){phaseTimer=.05;return}
    keeper.dive=0;
    keeper.diveRecover=0;
-   if(keeper.diveHeight==="high"||keeper.diveHeight==="middle"){
-    // The high and middle diving-save clips stand the keeper up, but can leave him
-    // displaced. Reposition only after the authored animation has finished.
-    keeper.animationOverride="keeper-move";
-    setPhase("return",.9);
-   }else{
-    // Low body-block clips already recover toward their starting position.
-    keeper.animationOverride="";
-    setPhase("idle");
-   }
+   // Every dive type can finish with the keeper displaced in world space,
+   // even when its authored pose appears to recover. Always run the explicit
+   // return-to-center phase after the save clip has fully completed.
+   keeper.animationOverride="keeper-move";
+   setPhase("return",1.6);
   }
  }else if(phase==="recover"){
   phaseTimer-=dt;
@@ -159,13 +154,14 @@ function updateKeeper(dt){
    setPhase("return",.85);
   }
  }else if(phase==="return"){
-  phaseTimer-=dt;
+  // Do not end this phase on a fixed timer: snapping to the home position
+  // while still moving creates a visible teleport/jitter on slower devices.
   const previousX=keeper.x;
   const nextX=THREE.MathUtils.damp(keeper.x,585,5.5,dt);
   keeper.x=keeper.px=nextX;
   keeper.vx=dt>0?(nextX-previousX)/dt:0;
   keeper.vy=0;
-  if(phaseTimer<=0||Math.abs(keeper.x-585)<.035){
+  if(Math.abs(keeper.x-585)<.025){
    keeper.x=keeper.px=585;
    keeper.vx=keeper.vy=0;
    keeper.animationOverride="";
