@@ -1,5 +1,5 @@
 export function shouldFlattenHorizontalRootMotion(file) {
-  return /^(jog forward|jog backward|jog strafe left|jog strafe right)\.fbx$/i.test(String(file || ""));
+  return /^(?:jog forward|jog backward|jog strafe left|jog strafe right|gk_dive-(?:high|middle|low)_shot-(?:left|right)-ball_(?:in|not_in)_hand)\.fbx$/i.test(String(file || ""));
 }
 
 const ROOT_TARGETS = new Set(["hips", "mixamorighips", "root", "mixamorigroot"]);
