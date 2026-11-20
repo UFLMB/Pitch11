@@ -46,6 +46,7 @@ import * as THREE from "./vendor/three/build/three.module.js";
 import { MatchPlayerRenderer } from "./engine/match-player-renderer.mjs";
 import { resolveKeeperDiveAngle } from "./engine/player-model-state.mjs";
 import { evaluateGoalkeeperShot } from "./engine/goalkeeper-ai.mjs";
+import { clampRootMotionDeltaToTarget } from "./engine/locomotion-animation.mjs";
 const host=document.querySelector("#stage"),status=document.querySelector("#status"),readout=document.querySelector("#readout");
 const mobile=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:"high-performance"});
@@ -152,13 +153,10 @@ function applyKeeperRootMotion(dt){
   }
   return;
  }
- const stepLength=Math.hypot(delta.x,delta.z);
- if(stepLength<1e-6)return;
- const projection=(delta.x*remaining.x+delta.z*remaining.z)/distance;
- if(projection<=0)return;
- const scale=Math.min(1,distance/projection,distance/stepLength);
- keeper.x=keeper.px=keeper.x+delta.x*scale*10;
- keeper.y=keeper.py=keeper.y+delta.z*scale*10;
+ const step=clampRootMotionDeltaToTarget(delta,remaining);
+ if(Math.hypot(step.x,step.z)<1e-6)return;
+ keeper.x=keeper.px=keeper.x+step.x*10;
+ keeper.y=keeper.py=keeper.y+step.z*10;
  keeper.vx=keeper.vy=0;
 }
 function updateKeeper(dt){
