@@ -2368,7 +2368,7 @@ tick(){if(!this.c)return;const m=S.mode,q=m==='menu'?0:(m==='half'||m==='subs'||
   this.f.frequency.setTargetAtTime(600+lv*350,t,.2);}};
 const _p11AuTick=AU.tick.bind(AU);AU.tick=function(){_p11AuTick();const m=S.mode;window.P11AudioAssets?.tick({active:m!=='menu'&&m!=='full'&&m!=='replay'&&!S.prac,volume:[0,1/3,2/3,1][G.vol],crowd:[0,.5,1][G.crowd]});};
 const p11AudioUnlockEvents=['keydown','PointerEvent' in window?'pointerdown':'touchstart'];
-for(const ev of p11AudioUnlockEvents)addEventListener(ev,()=>{AU.init();if(S.mode==='menu'||S.mode==='settings')window.P11AudioAssets?.play('uiClick',.45);},{passive:true});
+for(const ev of p11AudioUnlockEvents)addEventListener(ev,()=>{AU.init();},{passive:true});
 
 /* --- stat hooks: wrap existing actions --- */
 const _doShoot=doShoot;doShoot=function(p,pw,a,l,e){
@@ -2382,7 +2382,7 @@ const _goal=goal;goal=function(dr){_goal(dr);const t=S.goalTeam,sc=S.scorer,s=ST
   if(s&&!s.on&&s.t===t){s.on=true;ST.sot[t]++;}
   if(sc&&sc.team===t){rate(sc,1.2);if(a&&a.p.team===t&&a.p!==sc&&ST.now-a.at<8)rate(a.p,.8);}
   for(let r=0;r<5;r++)rate(P[(1-t)*11+r],-.15);
-  RP.gf=RP.total;RP.did=false;AU.roar(2.2);AU.noise(.3,'highpass',2500,.25);
+  RP.gf=RP.total;RP.did=false;AU.roar(2.2);
   cm(pick(['GOAL! ','What a goal! ','It\'s in! '])+(sc?tag(sc):KIT[t].name)+(a&&a.p.team===t&&a.p!==sc&&ST.now-a.at<8?' - set up by #'+a.p.num:''));};
 const _doPass=doPass;doPass=function(p,t,m){_doPass(p,t,m);if(S.so)return;ST.pa[p.team]++;ST.pp={p,team:p.team};};
 const _take=take;take=function(p,byHand=false){const q=ST.pp;
@@ -4772,7 +4772,7 @@ const _gl33=goal;goal=function(dr){_gl33(dr);AU.goalFx();buzz(60);};
 const _ttA=tryTackle;tryTackle=function(p,c){const r=_ttA(p,c);if(r||p===ctrl)AU.tackle();return r;};
 const _tkA=take;take=function(p,byHand=false){_tkA(p,byHand);if(p.gk&&S.mode==='play')AU.glove();};
 const _apA=airPlay;airPlay=function(p){_apA(p);if(p.jump>0)AU.head();};
-const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);const v=Math.hypot(vx,vy);if(m==='shot'){AU.tone(95,45,.12,.45);if(v>500)AU.noise(.15,'bandpass',1200,.22);}};
+const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);};
 const _uiT=uiTap;uiTap=function(x,y){AU.click();_uiT(x,y);};
 MS.opt=function(){mt('SOUND & VISUALS');mbk();
   [['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],['SOUND FX','vol',['OFF','LOW','MED','HIGH']],['MUSIC','mus',['OFF','ON']],['CROWD','crowd',['OFF','LOW','FULL']],['SCREEN SHAKE','shk',['OFF','LOW','FULL']],['MINI-MAP','radar',['OFF','SMALL','LARGE']],['GOAL REPLAYS','rep',['OFF','ON']],['COMMENTARY','com',['OFF','ON']],['DOUBLE-TAP SHOT','ftap',['OFF','ON']]]
@@ -6371,6 +6371,27 @@ take=function(p,byHand=false){
   }
   _takeRestartSecondTouch(p,byHand);
 };
+</script>
+<script>
+/* PITCH 11 audio arbitration: one playback source per action, avoiding stacked sample+synth duplicates. */
+(()=>{
+  if(typeof AU==='undefined')return;
+  AU.kick=function(v){window.P11AudioAssets?.play('kick',Math.min(1,Math.max(.35,v/500)));};
+  AU.whistle=function(len,n){window.P11AudioAssets?.play('whistle',n>1?.95:.72);};
+  AU.event=function(type){
+    window.P11AudioAssets?.event(type);
+    if(type==='goal')this.roar(1.4);
+  };
+  AU.post=function(v){const k=clamp(v/500,.3,1);window.P11AudioAssets?.play('post',.35+k*.45);};
+  AU.bounce=function(v){const k=clamp(v/300,.12,1);window.P11AudioAssets?.play('bounce',.3+k*.42);};
+  AU.click=function(){window.P11AudioAssets?.play('uiClick',.45);};
+  /* A goal already has a net sample and a crowd reaction; suppress the legacy
+     layered net/cheer/horn/drum/applause stack for that same single event. */
+  AU.goalFx=function(){};
+  AU.horn=function(){};
+  AU.drums=function(){};
+  AU.applause=function(){};
+})();
 </script>
 <script>
 /* Mobile-only immersive display: installed PWA starts fullscreen;
