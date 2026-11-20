@@ -8,7 +8,9 @@ test("player animation mixers are capped for mobile and desktop", () => {
   const renderer = read("./match-player-renderer.mjs");
   assert.ok(renderer.includes("this.animationHz = this.mobile ? 20 : 30"));
   assert.ok(renderer.includes("this.animationAccumulator += dt"));
-  assert.ok(renderer.includes("if (updateAnimations) mixer.update(animationDelta)"));
+  assert.ok(renderer.includes("if (updateAnimations) {"));
+  assert.ok(renderer.includes("mixer.update(animationDelta)"));
+  assert.ok(renderer.includes("entry.rootMotionDelta = { x: worldDelta.x, z: worldDelta.z }"));
 });
 
 test("player material variants and selection ring resources are shared", () => {
