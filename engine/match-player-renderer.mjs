@@ -225,10 +225,10 @@ export class MatchPlayerRenderer {
       const binding = validateDirectMixamoClip(this.template, sourceClip);
       const clip = binding.clip;
       clip.name = file.replace(/\.fbx$/i, "");
-      // Dive and ordinary locomotion translation is simulation-owned. Sidestep
-      // translation is extracted for one-time engine application below; its
-      // mixer track is neutralized to prevent double movement. Vertical pelvis
-      // motion remains animated in every case.
+      // The simulation owns horizontal player movement for every animation.
+      // Keeper sidesteps are the sole exception: extract their displacement
+      // for one-time engine application and neutralize the mixer track.
+      // Vertical pelvis motion remains animated for jumps and natural gait.
       if (/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(file)) {
         extractHorizontalRootMotion(clip);
       } else if (shouldFlattenHorizontalRootMotion(file)) {
