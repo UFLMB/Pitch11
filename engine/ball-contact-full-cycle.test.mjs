@@ -39,7 +39,7 @@ test('full fixed-update cycle blocks touches after body contact and releases aft
   assert.deepEqual(blocked, [true,true,true,true,true,true,true,false]); assert.equal(ball.contactPickupTicks, 0);
 });
 test('all loose-ball contact producers use the shared contact lock', () => {
-  for (const name of ['tryTackle', 'slideHit', 'bodyCollide', 'gkReact', 'gkStep', 'aiGK', 'touches'])
+  for (const name of ['tryTackle', 'slideHit', 'bodyCollide', 'gkReact', 'gkStep', 'aiGK', 'touches', 'skillAct'])
     assert.match(extractFunction(name), /registerBallContact\(/, `${name}() must register the shared lock`);
 });
 test('body collision cannot inject a vertical bounce into the ball', () => {
