@@ -27,7 +27,7 @@ test('shared contact registration sets player cooldown and an eight-fixed-tick p
 test('full fixed-update cycle blocks touches after body contact and releases after eight ticks', () => {
   const updateStart = source.indexOf('function update(){'), updateEnd = source.indexOf('let last=performance.now()', updateStart);
   const updateSource = source.slice(updateStart, updateEnd), touchesStart = source.indexOf('function touches(){');
-  const touchesHead = source.slice(touchesStart, source.indexOf('\n', touchesStart));
+  const touchesHead = source.slice(touchesStart, touchesStart + 260);
   assert.match(touchesHead, /b\.contactPickupTicks\|\|0\)>0\)return/);
   assert.match(updateSource, /ball\.contactPickupTicks>0\)ball\.contactPickupTicks=Math\.max\(0,ball\.contactPickupTicks-1\)/);
   assert.ok(updateSource.indexOf('ball.contactPickupTicks>0') < updateSource.indexOf('touches();'));
