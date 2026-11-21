@@ -1155,7 +1155,7 @@ function finishStadiumLoad(gltf){
    return true;
   }
  window.P11Stadium={
-   get ready(){return ready;},get environmentMode(){return environmentMode;},get scene(){return scene;},get renderer(){return renderer;},get editorMode(){return externalEditorActive;},setEditorMode(active){externalEditorActive=Boolean(active);return externalEditorActive;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
+   get ready(){return ready;},get environmentMode(){return environmentMode;},get scene(){return scene;},get camera(){return camera;},get renderer(){return renderer;},get editorMode(){return externalEditorActive;},setEditorMode(active){externalEditorActive=Boolean(active);return externalEditorActive;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
    get playerEntrance(){return playerEntranceTunnel;},
    get playerModelsReady(){return !!playerRenderer&&playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;},get playerModelsStatus(){return playerRenderer?playerRenderer.status:'disabled-in-environment-viewer'},
