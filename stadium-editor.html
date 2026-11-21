@@ -106,8 +106,6 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 const $=id=>document.getElementById(id);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
@@ -127,8 +125,9 @@ const detailName=/(board|advert|led|screen|seat|chair|bench|dugout|tunnel|flag|l
 const safeName=s=>String(s||'Unnamed mesh').replace(/[<>]/g,'').slice(0,90);
 function notify(message){toast.textContent=message;toast.classList.add('show');clearTimeout(notify.timer);notify.timer=setTimeout(()=>toast.classList.remove('show'),1900);}
 function stablePath(object){const parts=[];let node=object;while(node&&node!==root){const parent=node.parent;const siblings=parent?.children||[];parts.unshift((node.name||node.type||'node')+'['+siblings.indexOf(node)+']');node=parent;}return parts.join('/');}
+function hasLockedAncestor(object){for(let node=object;node&&node!==root;node=node.parent)if(node.userData?.editorLocked)return true;return false;}
 function isPitchMesh(mesh){const names=[mesh.name,mesh.parent?.name,mesh.material?.name].join(' ');return excludedName.test(names);}
-function collectMeshes(){state.meshes=[];root.traverse(o=>{if(!o.isMesh||o.userData.editorLocked||isPitchMesh(o))return;o.userData.editorPath=stablePath(o);o.userData.editorAdded=Boolean(o.userData.editorAdded);if(!o.userData.editorInitialTransform)o.userData.editorInitialTransform={position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()};state.meshes.push(o);});state.meshes.sort((a,b)=>a.userData.editorPath.localeCompare(b.userData.editorPath));}
+function collectMeshes(){state.meshes=[];root.traverse(o=>{if(!o.isMesh||hasLockedAncestor(o)||isPitchMesh(o))return;o.userData.editorPath=stablePath(o);o.userData.editorAdded=Boolean(o.userData.editorAdded);if(!o.userData.editorInitialTransform)o.userData.editorInitialTransform={position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()};state.meshes.push(o);});state.meshes.sort((a,b)=>a.userData.editorPath.localeCompare(b.userData.editorPath));}
 function objectCategory(o){if(o.userData.editorAdded)return'added';const n=(o.name+' '+(o.parent?.name||'')).toLowerCase();return detailName.test(n)?'detail':'structure';}
 function materialOf(o){const m=Array.isArray(o.material)?o.material[0]:o.material;return m||null;}
 function cloneMaterialsFor(o){if(o.userData.editorMaterialCloned)return materialOf(o);if(Array.isArray(o.material))o.material=o.material.map(m=>m?.clone?.()||m);else if(o.material)o.material=o.material.clone();o.userData.editorMaterialCloned=true;return materialOf(o);}
