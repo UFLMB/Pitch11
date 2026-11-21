@@ -33,7 +33,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("node.frustumCulled = false"));
   assert.ok(renderer.includes("isSkinnedMesh"));
   assert.ok(renderer.includes("loading-mixamo-animations"));
-  assert.ok(renderer.includes("status = \\"asset-error\\""));
+  assert.ok(renderer.includes('status = "asset-error"'));
   assert.ok(!renderer.includes("fallbackModelUrl"));
   assert.ok(renderer.includes("this.inputPlayerCount = states.length"));
   assert.ok(renderer.includes("this.visiblePlayerCount = states.reduce"));
