@@ -1797,9 +1797,10 @@ function drawControls(){
 }
 function startGame(){p11UiSemanticSound=true;window.P11AudioAssets?.play('uiConfirm',.75);goFullscreen();newMatch();}
 function uiTap(x,y){
-  if(S.t<0.4&&S.mode!=='subs')return;
-  for(const r of UI.r)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){r.fn();return;}
-  if(S.mode==='full'&&UI.def)UI.def();  // tap anywhere also starts / restarts
+  if(S.t<0.4&&S.mode!=='subs')return false;
+  for(const r of UI.r)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){r.fn();return true;}
+  if(S.mode==='full'&&UI.def){UI.def();return true;}  // tap anywhere also starts / restarts
+  return false;
 }
 function goFullscreen(){
   try{
@@ -4781,8 +4782,8 @@ const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,
 const _uiT=uiTap;uiTap=function(x,y){
   const target=UI.r.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);
   p11UiSemanticSound=false;
-  p11HoverIndex=-1;_uiT(x,y);
-  if(target&&!p11UiSemanticSound){
+  p11HoverIndex=-1;const handled=_uiT(x,y);
+  if(handled&&target&&!p11UiSemanticSound){
     if(target.kind==='segment')window.P11AudioAssets?.play('uiTransition',.42);
     else AU.click();
   }
