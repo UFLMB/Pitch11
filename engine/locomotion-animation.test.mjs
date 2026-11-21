@@ -1,9 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion, shouldFlattenVerticalRootMotion } from "./locomotion-animation.mjs";
+import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, removeLocomotionRootTranslation, shouldFlattenHorizontalRootMotion, shouldFlattenVerticalRootMotion, shouldRemoveLocomotionRootTranslation } from "./locomotion-animation.mjs";
 import { isOneShotAnimationState } from "./player-animation-map.mjs";
 import { MIXAMO_ANIMATION_FILES } from "./mixamo-animation-catalog.mjs";
 function vectorTrack(name, values) { return { name, values: new Float32Array(values), getValueSize: () => 3 }; }
+
+test("removes Root/Hips translation channels from every cyclic locomotion variant", () => {
+ const locomotion = [
+  "jog forward.fbx", "jog backward.fbx",
+  "jog forward diagonal.fbx", "jog forward diagonal (2).fbx",
+  "jog backward diagonal.fbx", "jog backward diagonal (2).fbx",
+  "jog strafe left.fbx", "jog strafe right.fbx"
+ ];
+ for (const file of locomotion) assert.equal(shouldRemoveLocomotionRootTranslation(file), true, file);
+ for (const file of ["offensive idle.fbx","header soccerball.fbx","soccer tackle.fbx","soccer penalty kick.fbx","goalkeeper sidestep.fbx","gk_dive-high_shot-left-ball_in_hand.fbx"]) {
+  assert.equal(shouldRemoveLocomotionRootTranslation(file), false, file);
+ }
+ const hips = vectorTrack("mixamorigHips.position", [0, 0, 0, 2, .3, 4]);
+ const root = vectorTrack("mixamorigRoot.position", [0, 0, 0, 1, 0, 1]);
+ const hand = vectorTrack("mixamorigLeftHand.position", [1, 2, 3, 4, 5, 6]);
+ const hipsRotation = { name: "mixamorigHips.quaternion", values: new Float32Array([0,0,0,1,0,0,0,1]) };
+ const clip = { tracks: [hips, root, hand, hipsRotation] };
+ removeLocomotionRootTranslation(clip);
+ assert.deepEqual(clip.tracks.map(track => track.name), ["mixamorigLeftHand.position","mixamorigHips.quaternion"]);
+ assert.equal(clip.userData.locomotionRootTranslationRemoved, true);
+ assert.equal(clip.userData.locomotionRootTranslationTracksRemoved, 2);
+});
 test("flattens horizontal Hips translation while preserving vertical pelvis motion", () => {
  const hips=vectorTrack("mixamorigHips.position",[1,0,2,4,.2,6,8,.4,10]); const clip={tracks:[hips]};
  assert.equal(flattenHorizontalRootMotion(clip),clip);
