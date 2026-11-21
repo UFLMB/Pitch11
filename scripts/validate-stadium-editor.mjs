@@ -25,6 +25,8 @@ for (const feature of [
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
 assert.ok(html.includes('renderer=live.renderer'), 'Editor must reuse the live Matchday WebGL renderer.');
+assert.ok(html.includes("width:'100vw',height:'100vh'"), 'Hidden Environment Lab bridge must use the full viewport, not a 2x2 pixel viewport.');
+assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environment Lab startup errors immediately.');
 assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
 assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
 assert.ok(runtime.includes('editorSelectable=true'), 'Runtime stadium assemblies are missing editor selection metadata.');
