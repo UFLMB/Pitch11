@@ -4052,8 +4052,8 @@ const _ss18=statsScr;statsScr=function(){_ss18();const sa=S.score,fin=i=>clamp(S
 
 
 /* ===================== 25. STAGE 19: ring + name tag, card zoom, VAR overturn, lineup walk-on, handshake, rating events, kick meter, skip ===================== */
-const LU={t:0,done:1,h:null},HS={on:0,t:0,st:0,h:null},TUN_D=3.6,HS_D=4.6;
-const _nm19=newMatch;newMatch=function(){_nm19();LU.t=0;LU.h=null;LU.done=TOSS.on?0:1;HS.on=0;HS.t=0;HS.st=0;HS.h=null;};
+const LU={t:0,done:1,h:null,musicFadeStarted:0},HS={on:0,t:0,st:0,h:null},TUN_D=3.6,HS_D=4.6;
+const _nm19=newMatch;newMatch=function(){_nm19();LU.t=0;LU.h=null;LU.done=TOSS.on?0:1;LU.musicFadeStarted=0;HS.on=0;HS.t=0;HS.st=0;HS.h=null;};
 /* controlled player: stamina ring + number tag */
 function ringTag(tr,a){return;const p=ctrl;if(!p||p.out||S.mode==='menu'||S.mode==='replay'||H>W)return;
   const x=p.px+(p.x-p.px)*a,y=p.py+(p.y-p.py)*a,s=clamp(p.stam===undefined?1:p.stam,0,1),col=s>.5?'#5cff8a':s>.25?'#ffd400':'#ff5a40',lab='#'+p.num+' '+(p.pos||'');
@@ -4744,7 +4744,9 @@ AU.goalFx=function(){this.net();this.cheer();this.roar(2.6);this.tone(196,196,1.
 AU.musOn=function(on,fadeSeconds=0){window.P11AudioAssets?.menuMusic(!!on,!!G.mus,.32,fadeSeconds);};
 const _tk33=AU.tick;let p11FootstepTimer=0,p11DribbleTimer=0;AU.tick=function(){
   _tk33.call(this);
-  const musicIntent=window.P11AudioAssets?.resolveMenuMusicIntent?.(S.mode,!!(TOSS.on&&!LU.done),!!(CUT.t>0))||{active:S.mode==='menu',fadeSeconds:0};
+  const walkoutFade=!!(S.mode==='kickoff'&&TOSS.on&&!LU.done&&!LU.musicFadeStarted);
+  if(walkoutFade)LU.musicFadeStarted=1;
+  const musicIntent=window.P11AudioAssets?.resolveMenuMusicIntent?.(S.mode,walkoutFade,!!(CUT.t>0))||{active:S.mode==='menu',fadeSeconds:0};
   this.musOn(musicIntent.active,musicIntent.fadeSeconds);
   const active=S.mode==='play'&&!S.prac&&!S.so;
   const selected=active?ctrl:null;
