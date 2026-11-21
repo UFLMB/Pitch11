@@ -112,9 +112,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 const $=id=>document.getElementById(id);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
 const mobile=matchMedia('(max-width:800px)').matches;
-const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:mobile?'low-power':'high-performance'});
-renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile ? 0.85 : 1.25));renderer.setSize(innerWidth,innerHeight);
-renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
+let renderer=null;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=12;orbit.maxDistance=650;orbit.maxPolarAngle=Math.PI*.495;orbit.target.set(0,12,0);
@@ -238,7 +236,7 @@ $('configFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)
 $('backBtn').addEventListener('click',()=>location.href='./environment-lab.html');
 $('objectsToggle').addEventListener('click',()=>$('leftPanel').classList.toggle('open'));$('propertiesToggle').addEventListener('click',()=>$('rightPanel').classList.toggle('open'));
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){setMode('view');}});
-window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(renderer)renderer.setSize(innerWidth,innerHeight,false);});
 function frame(){requestAnimationFrame(frame);clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.render(scene,camera);}
 async function boot(){
  try{
@@ -248,7 +246,11 @@ async function boot(){
   while(performance.now()-started<45000){live=bridge.contentWindow?.P11Stadium;if(live?.ready&&live.scene)break;await new Promise(resolve=>setTimeout(resolve,120));}
   if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
   if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
-  live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;root.add(live.scene);state.model=live.scene;state.modelScale=1;
+  live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
+  renderer=live.renderer;if(!renderer)throw new Error('The live Matchday renderer is unavailable.');
+  host.appendChild(renderer.domElement);renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.85:1.25));renderer.setSize(innerWidth,innerHeight,false);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;
+  renderer.domElement.style.touchAction='none';root.add(live.scene);state.model=live.scene;state.modelScale=1;
   const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
   collectMeshes();
   const finalBounds=new THREE.Box3().setFromObject(live.scene),center=finalBounds.getCenter(new THREE.Vector3()),radius=finalBounds.getSize(new THREE.Vector3()).length();
