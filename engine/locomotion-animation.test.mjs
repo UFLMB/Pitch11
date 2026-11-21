@@ -13,8 +13,9 @@ test("removes Root/Hips translation channels from every cyclic locomotion varian
   "jog strafe left.fbx", "jog strafe right.fbx"
  ];
  for (const file of locomotion) assert.equal(shouldRemoveLocomotionRootTranslation(file), true, file);
+ assert.equal(shouldRemoveLocomotionRootTranslation("offensive idle.fbx"), true);
  for (const file of MIXAMO_ANIMATION_FILES.filter(file => /^jog /.test(file))) assert.equal(shouldRemoveLocomotionRootTranslation(file), true, file);
- for (const file of ["offensive idle.fbx","header soccerball.fbx","soccer tackle.fbx","soccer penalty kick.fbx","goalkeeper sidestep.fbx","gk_dive-high_shot-left-ball_in_hand.fbx"]) {
+ for (const file of ["header soccerball.fbx","soccer tackle.fbx","soccer penalty kick.fbx","goalkeeper sidestep.fbx","gk_dive-high_shot-left-ball_in_hand.fbx"]) {
   assert.equal(shouldRemoveLocomotionRootTranslation(file), false, file);
  }
  const hips = vectorTrack("mixamorigHips.position", [0, 0, 0, 2, .3, 4]);
