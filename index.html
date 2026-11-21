@@ -90,6 +90,7 @@ function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width|
 const I={svar:'',pvar:'',tvar:'',ppow:0,skd:-1,tackle:false,swp:false,mx:0,my:0,sprint:false,spBtn:false,shoot:false,chargeT:0,shootUp:false,pass:false,thru:false,lob:false,sw:false,skill:false};
 const keys={},joy={on:false,id:-1,bx:0,by:0,kx:0,ky:0,vx:0,vy:0};
 const UI={r:[],def:null},pauseBtn={x:0,y:0,r:0},camBtn={x:0,y:0,r:0};
+let p11UiSemanticSound=false;
 /* ---- Stage 7: 4-button context diamond + gesture engine ---- */
 const TUNING={
   holdT:0.2,          // s before a press counts as HOLD
@@ -1794,7 +1795,7 @@ function drawControls(){
   }
   pop8Draw();
 }
-function startGame(){window.P11AudioAssets?.play('uiConfirm',.75);goFullscreen();newMatch();}
+function startGame(){p11UiSemanticSound=true;window.P11AudioAssets?.play('uiConfirm',.75);goFullscreen();newMatch();}
 function uiTap(x,y){
   if(S.t<0.4&&S.mode!=='subs')return;
   for(const r of UI.r)if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h){r.fn();return;}
@@ -1955,13 +1956,13 @@ const lgTable=()=>G.lg.t.map(c=>{const r=G.lg.tab[c];return{c,r,pts:r[1]*3+r[2],
 
 /* --- menus (drawn on the canvas, tap targets registered by ubtn / chip) --- */
 const Y='rgba(255,230,0,.38)';
-const go=s=>{window.P11AudioAssets?.play('menuOpen',.62);M.hist.push(M.scr);M.scr=s;M.conf=0;},back=()=>{window.P11AudioAssets?.play('uiBack',.62);M.scr=M.hist.pop()||'main';M.conf=0;};
+const go=s=>{p11UiSemanticSound=true;window.P11AudioAssets?.play('menuOpen',.62);M.hist.push(M.scr);M.scr=s;M.conf=0;},back=()=>{p11UiSemanticSound=true;window.P11AudioAssets?.play('uiBack',.62);M.scr=M.hist.pop()||'main';M.conf=0;};
 const pre=k=>{M.kind=k;if(M.opp===G.club)M.opp=nextOpp();go('pre');};
 const pickClub=(cb,cur,ban)=>{M.pick=cb;M.cur=cur;M.ban=ban;M.tp=Math.max(0,Math.floor((cur|0)/12));go('teams');};
 const mt=s=>mtHead(s),mtx=(s,y,c,z)=>txt(s,W/2,H*y,H*(z||.042),c||'#dfe7ee',700);
 const mbk=()=>ubtn(W*.02,H*.03,W*.14,H*.09,'‹ BACK',back);
 function fit(s,x,y,mw,sz,col,al){ctx.font='800 '+sz+'px sans-serif';const m=ctx.measureText(s).width;if(m>mw)sz*=mw/m;ctx.textAlign=al||'center';txt(s,x,y,sz,col||'#fff',800);ctx.textAlign='center';}
-function seg(x,y,w,h,labs,sel,fn){const bw=w/labs.length;labs.forEach((l,i)=>ubtn(x+i*bw+2,y,bw-4,h,l,()=>fn(i),i===sel?Y:0));}
+function seg(x,y,w,h,labs,sel,fn){const bw=w/labs.length;labs.forEach((l,i)=>{ubtn(x+i*bw+2,y,bw-4,h,l,()=>fn(i),i===sel?Y:0);UI.r[UI.r.length-1].kind='segment';});}
 function chip(x,y,w,h,ci,fn,hl,dis){
   const c=CL[ci];UI.r.push({x,y,w,h,fn});ctx.globalAlpha=dis?.35:1;
   ctx.fillStyle=hl?Y:'rgba(255,255,255,.12)';rr(x,y,w,h,h*.14);ctx.fill();ctx.strokeStyle=hl?'#ffe600':'rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.stroke();
@@ -4779,8 +4780,13 @@ const _apA=airPlay;airPlay=function(p){_apA(p);if(p.jump>0)AU.head();};
 const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);};
 const _uiT=uiTap;uiTap=function(x,y){
   const target=UI.r.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);
-  if(target&&target.kind==='segment')window.P11AudioAssets?.play('uiTransition',.42);else AU.click();
+  p11UiSemanticSound=false;
   p11HoverIndex=-1;_uiT(x,y);
+  if(target&&!p11UiSemanticSound){
+    if(target.kind==='segment')window.P11AudioAssets?.play('uiTransition',.42);
+    else AU.click();
+  }
+  p11UiSemanticSound=false;
 };
 MS.opt=function(){mt('SOUND & VISUALS');mbk();
   [['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],['SOUND FX','vol',['OFF','LOW','MED','HIGH']],['MUSIC','mus',['OFF','ON']],['CROWD','crowd',['OFF','LOW','FULL']],['SCREEN SHAKE','shk',['OFF','LOW','FULL']],['MINI-MAP','radar',['OFF','SMALL','LARGE']],['GOAL REPLAYS','rep',['OFF','ON']],['COMMENTARY','com',['OFF','ON']],['DOUBLE-TAP SHOT','ftap',['OFF','ON']]]
