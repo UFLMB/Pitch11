@@ -10,7 +10,10 @@ const game = read("../index.html");
 test("every registered menu audio source exists at its declared repository path", () => {
   const paths = [
     "../Audio/sounds/ui/navigation/click.wav",
+    "../Audio/sounds/ui/navigation/hover.wav",
     "../Audio/sounds/ui/navigation/menu-open.wav",
+    "../Audio/sounds/ui/navigation/transition.wav",
+    "../Audio/sounds/ui/navigation/error.wav",
     "../Audio/sounds/ui/back/back.wav",
     "../Audio/sounds/ui/confirm/confirm.wav",
     "../Audio/sounds/ui/match-start/match-start.wav",
@@ -29,6 +32,9 @@ test("every registered menu audio source exists at its declared repository path"
 
 test("menu audio actions are wired to their intended UI and match lifecycle events", () => {
   assert.match(audioModule, /uiClick:\s*new URL\("\.\.\/Audio\/sounds\/ui\/navigation\/click\.wav"/);
+  assert.match(audioModule, /uiHover:\s*new URL\("\.\.\/Audio\/sounds\/ui\/navigation\/hover\.wav"/);
+  assert.match(audioModule, /uiTransition:\s*new URL\("\.\.\/Audio\/sounds\/ui\/navigation\/transition\.wav"/);
+  assert.match(audioModule, /uiError:\s*new URL\("\.\.\/Audio\/sounds\/ui\/navigation\/error\.wav"/);
   assert.match(audioModule, /menuOpen:\s*new URL\("\.\.\/Audio\/sounds\/ui\/navigation\/menu-open\.wav"/);
   assert.match(audioModule, /uiBack:\s*new URL\("\.\.\/Audio\/sounds\/ui\/back\/back\.wav"/);
   assert.match(audioModule, /uiConfirm:\s*new URL\("\.\.\/Audio\/sounds\/ui\/confirm\/confirm\.wav"/);
@@ -38,7 +44,9 @@ test("menu audio actions are wired to their intended UI and match lifecycle even
   assert.match(game, /back=\(\)=>\{window\.P11AudioAssets\?\.play\('uiBack'/);
   assert.match(game, /function startGame\(\)\{window\.P11AudioAssets\?\.play\('uiConfirm'/);
   assert.match(game, /window\.P11AudioAssets\?\.play\('matchStart'/);
-  assert.match(game, /const _uiT=uiTap;uiTap=function\(x,y\)\{AU\.click\(\);_uiT\(x,y\);\};/);
+  assert.match(game, /const _uiT=uiTap;uiTap=function\(x,y\)\{[\s\S]*?target\.kind==='segment'[\s\S]*?AU\.click\(\)[\s\S]*?_uiT\(x,y\);/);
+  assert.match(game, /play\('uiHover',\.28\)/);
+  assert.match(game, /kind:'segment'/);
 });
 
 test("audio bridge keeps unsupported gameplay events unmapped instead of playing the wrong UI sound", () => {
