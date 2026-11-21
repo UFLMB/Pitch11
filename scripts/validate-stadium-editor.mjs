@@ -19,7 +19,7 @@ for (const feature of [
   'data-tool="rotate"', 'data-tool="scale"', 'materialColor', 'emissiveIntensity',
   'applyText', 'imageUpload', 'duplicateSelected', 'deleteSelected',
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
-  'football-stadium.glb', "cameraPreset('drone')", "cameraPreset('pov')"
+  'football-stadium.glb', 'NON-EDITABLE PLAYING FIELD', 'openConfigDb', 'Original object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
