@@ -35,8 +35,8 @@ assert.ok(runtime.includes('editorSelectable=true'), 'Runtime stadium assemblies
 assert.ok(runtime.includes('setEditorMode(active)'), 'Environment runtime does not expose the isolated editor bridge.');
 assert.ok(runtime.includes('if(externalEditorActive)return'), 'Environment runtime does not pause its own renderer while the editor owns the scene.');
 assert.ok(runtime.includes('editorLocked=true'), 'Playing surface lock metadata is missing.');
-assert.ok(env.includes('id="stadium-editor"'), 'Environment Lab has no Stadium Editor entry.');
-assert.ok(env.includes("location.href='./stadium-editor.html'"), 'Environment Lab must navigate to the separate Stadium Editor page.');
+assert.ok(!env.includes('id="stadium-editor"'), 'Stadium Viewer must not expose an Editor entry.');
+assert.ok(!env.includes("location.href='./stadium-editor.html'"), 'Stadium Viewer must not navigate to the standalone Stadium Editor.');
 assert.ok(!env.includes('function openStadiumEditor()'), 'Environment Lab must not create an inline editor overlay.');
 assert.ok(!env.includes("frame.src='./stadium-editor.html?embedded=1'"), 'Stadium Editor must not be embedded over the Matchday Viewer.');
 assert.ok(html.includes("bridge.src='./environment-lab.html?editorHost=1'"), 'Standalone editor must create its isolated Environment Lab bridge.');
