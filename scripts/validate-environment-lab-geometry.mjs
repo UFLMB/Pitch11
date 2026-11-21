@@ -49,3 +49,10 @@ assert.equal(wing, 14.4);
 assert.ok(Math.abs((wingCenter - wing / 2) - opening / 2) < 1e-9);
 assert.ok(Math.abs((wingCenter + wing / 2) - branchLength / 2) < 1e-9);
 console.log('Environment Lab stadium clearance, portal opening, centered wayfinding and independent tunnel LED lighting checks passed.');
+
+assert.match(source, /currentGround\+1\.25/, 'Player walking must detect the raised approach ramp landing');
+assert.match(source, /currentGround-1\.0/, 'Player walking must tolerate the ramp transition down');
+assert.match(html, /id="ui-toggle"/);
+assert.match(html, /function setUiHidden\(hidden\)/);
+assert.match(html, /body\.ui-hidden #pov-stick/);
+assert.match(html, /e\.key\.toLowerCase\(\)==='h'/);
