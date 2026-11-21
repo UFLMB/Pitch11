@@ -348,7 +348,15 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", sourcePlayer: null, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
+    mixer.addEventListener("finished", event => {
+      if (event.action !== entry.activeAction || !entry.state.startsWith("keeperDive")) return;
+      const source = entry.sourcePlayer;
+      if (!source?.diveAnimation) return;
+      source.diveAnimation = false;
+      source.diveAnimationFinished = true;
+      source.diveRecover = 0;
+    });
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -378,6 +386,7 @@ export class MatchPlayerRenderer {
       if (!entry) continue;
 
       const { group, mixer, ring } = entry;
+      entry.sourcePlayer = state.sourcePlayer || null;
       group.visible = state.visible;
       group.position.set(state.x, this.groundHeight, state.z);
       const targetYaw = -state.facing + Math.PI / 2;

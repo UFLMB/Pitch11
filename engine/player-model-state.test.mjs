@@ -51,6 +51,16 @@ test("uses the explicitly requested viewer-facing screen side instead of re-deri
   assert.equal(mapLegacyPlayerState(player({ gk: true, dive: .5, diveAng: Math.PI / 2, face: 0, diveSide: "left", diveHeight: "middle" }), 0).action, "keeper-dive-middle-left");
 });
 
+test("keeps the legacy AI dive animation selected after its physical dive timer ends", () => {
+  const legacyKeeper = player({ gk: true, dive: 0, diveAnimation: true, diveAnimationFinished: false,
+    diveAng: Math.PI / 2, face: Math.PI, diveHeight: "middle" });
+  const state = mapLegacyPlayerState(legacyKeeper, 0);
+  assert.equal(state.action, "keeper-dive-middle-left");
+  assert.equal(state.sourcePlayer, legacyKeeper);
+  legacyKeeper.diveAnimationFinished = true;
+  assert.equal(mapLegacyPlayerState(legacyKeeper, 0).action, "idle");
+});
+
 test("maps goalkeeper dive direction to the viewer-facing screen side", () => {
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: 0, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-right");
   assert.equal(mapLegacyPlayerState(player({ gk: true, face: Math.PI, dive: .5, diveAng: Math.PI / 2 }), 0).action, "keeper-dive-left");
