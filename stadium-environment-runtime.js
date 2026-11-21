@@ -13,8 +13,37 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  const uiCanvas=document.getElementById('c');
  let viewportWidth=uiCanvas?.getBoundingClientRect().width||innerWidth;
  let viewportHeight=uiCanvas?.getBoundingClientRect().height||innerHeight;
- const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance',stencil:false,depth:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));
+ // Acquire WebGL2 explicitly so mobile GPU failures can be diagnosed before
+ // Three.js initializes the renderer. Mobile starts low-power and antialias-free.
+ let renderer=null,gl=null,contextFailure='';
+ const contextAttempts=mobile
+  ?[{powerPreference:'low-power',antialias:false},{powerPreference:'default',antialias:false}]
+  :[{powerPreference:'high-performance',antialias:true},{powerPreference:'default',antialias:false}];
+ for(const attempt of contextAttempts){
+  const candidate=document.createElement('canvas');
+  try{
+   const context=candidate.getContext('webgl2',{
+    alpha:false,antialias:attempt.antialias,depth:true,stencil:false,
+    powerPreference:attempt.powerPreference,failIfMajorPerformanceCaveat:false,
+    preserveDrawingBuffer:false
+   });
+   if(!context){contextFailure='WebGL 2 context unavailable ('+attempt.powerPreference+')';continue;}
+   renderer=new THREE.WebGLRenderer({canvas:candidate,context,alpha:false,antialias:attempt.antialias,powerPreference:attempt.powerPreference,stencil:false,depth:true});
+   gl=context;
+   break;
+  }catch(error){
+   contextFailure=error&&error.message?error.message:String(error);
+   console.warn('PITCH 11 WebGL initialization attempt failed',attempt.powerPreference,error);
+  }
+ }
+ if(!renderer){
+  const detail=contextFailure||'WebGL 2 is unavailable in this browser or GPU session.';
+  boot.state='error';
+  boot.error='Mobile WebGL startup failed: '+detail+' Close other 3D tabs/apps, disable battery-saving graphics restrictions, then retry in Chrome.';
+  window.dispatchEvent(new CustomEvent('p11stadiumbooterror',{detail:boot.error}));
+  return;
+ }
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?.8:1.25));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
   if(!rect||rect.width<1||rect.height<1)return null;
