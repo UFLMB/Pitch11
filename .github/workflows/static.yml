@@ -62,6 +62,24 @@ jobs:
           });
           console.log(`Checked ${inline.length} inline application scripts.`);
           NODE
+      - name: Validate PITCH 11 audio module and registered assets
+        run: |
+          node --check engine/audio-assets.mjs
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const source = fs.readFileSync('engine/audio-assets.mjs', 'utf8');
+          const paths = [...source.matchAll(/new URL\("..\/(Audio\/[^"]+)", import\.meta\.url\)/g)]
+            .map(([, path]) => decodeURIComponent(path));
+          if (paths.length !== 9) {
+            throw new Error(`Expected 8 UI sound files plus 1 menu music file; found ${paths.length} registered paths.`);
+          }
+          for (const path of paths) {
+            if (!fs.existsSync(path) || fs.statSync(path).size === 0) {
+              throw new Error(`Registered audio asset is missing or empty: ${path}`);
+            }
+          }
+          console.log(`Validated ${paths.length} registered audio assets.`);
+          NODE
       - name: Check Player Kit Studio module syntax
         run: |
           node --input-type=module <<'NODE'

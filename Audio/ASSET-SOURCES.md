@@ -6,8 +6,11 @@ Updated: 2026-11-21
 
 | Asset | Repository path | Runtime use | Source / license record |
 |---|---|---|---|
-| Main-menu music | `Audio/music/menu/main-theme/hella bumps.mp3` | Looped on the main menu when MUSIC is ON; paused outside the main menu | Provenance and license details still need to be recorded |
-| Navigation click | `Audio/sounds/ui/navigation/click.wav` | Menu tap / UI click | Provenance and license details still need to be recorded |
+| Main-menu music | `Audio/music/menu/main-theme/hella bumps.mp3` | Looped on the main menu when MUSIC is ON; paused outside the main menu and while the page is hidden | Provenance and license details still need to be recorded |
+| Navigation click | `Audio/sounds/ui/navigation/click.wav` | General menu/button tap | Provenance and license details still need to be recorded |
+| Navigation hover | `Audio/sounds/ui/navigation/hover.wav` | Desktop pointer enters a menu control (once per control entry) | Provenance and license details still need to be recorded |
+| Menu transition | `Audio/sounds/ui/navigation/transition.wav` | Switching a segmented menu/settings option | Provenance and license details still need to be recorded |
+| UI error | `Audio/sounds/ui/navigation/error.wav` | Registered for explicit error feedback; no current menu action emits an error event | Provenance and license details still need to be recorded |
 | Menu open | `Audio/sounds/ui/navigation/menu-open.wav` | Opening a menu page | Provenance and license details still need to be recorded |
 | Back | `Audio/sounds/ui/back/back.wav` | Back navigation | Provenance and license details still need to be recorded |
 | Confirm | `Audio/sounds/ui/confirm/confirm.wav` | Confirm / start action | Provenance and license details still need to be recorded |
