@@ -242,7 +242,7 @@ const KEYACT={KeyL:0,KeyK:1,KeyJ:2,ShiftLeft:3,ShiftRight:3,Space:3};   // key -
 addEventListener('keydown',e=>{
   if(keys[e.code])return;keys[e.code]=true;if(S.mode==='replay'){RP.skip=1;return;}
   if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter'||e.code==='KeyU'||e.code==='KeyG')e.preventDefault();
-  if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){if((e.code==='Enter'||e.code==='Space')&&UI.def){window.P11AudioAssets?.play('uiConfirm',.7);UI.def();}else if(e.code==='Escape'&&S.mode==='menu')back();return;}
+  if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){if((e.code==='Enter'||e.code==='Space')&&UI.def)UI.def();else if(e.code==='Escape'&&S.mode==='menu')back();return;}
   if(e.code==='KeyP'){openSubs(S.mode);return;}
   if(e.code==='KeyC'){cycleCam();return;}
   if(e.code==='KeyG'){gkCharge(0,false);return;}
@@ -6299,7 +6299,7 @@ MS.data=function(){
  window.P11StadiumBoot={state:'loading-runtime',progress:0,error:'',optionalAssets:{}};
 </script>
 <script type="module">
- import('./engine/audio-assets.mjs').catch(error=>console.warn('PITCH 11 optional CC0 audio bridge unavailable.',error));
+ import('./engine/audio-assets.mjs').catch(error=>console.warn('PITCH 11 optional audio bridge unavailable.',error));
  import('./stadium-runtime.js').catch(error=>{
   const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
   boot.state='runtime-error';boot.error=error&&error.message?error.message:String(error);
