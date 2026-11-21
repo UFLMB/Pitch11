@@ -11,13 +11,14 @@ const bodySource = source.slice(start, end);
 const makeBodyCollide = ({ ball, players, state, height = 400, width = 900 }) => {
   const fn = new Function(
     'ball', 'P', 'S', 'H', 'W', 'BR', 'PITCH11Law',
-    'applyOffsideTouch', 'callOffside', 'rnd', 'AU',
+    'applyOffsideTouch', 'callOffside', 'rnd', 'AU', 'registerBallContact',
     bodySource + '\nreturn bodyCollide;'
   );
   return fn(
     ball, players, state, height, width, 4,
     { isRestartKickerSecondContact: () => false },
-    () => {}, () => {}, () => 0, undefined
+    () => {}, () => {}, () => 0, undefined,
+    p => { if (p) p.kcd = Math.max(p.kcd || 0, 0.3); ball.contactPickupTicks = Math.max(ball.contactPickupTicks || 0, 8); }
   );
 };
 
@@ -40,8 +41,8 @@ test('only the deepest approaching player resolves a multi-player contact in one
   collide();
 
   assert.equal(ball.last, first);
-  assert.equal(ball.bodyContactPlayer, first);
-  assert.equal(ball.bodyContactUntil, 1.12);
+  assert.equal(first.kcd, 0.3);
+  assert.equal(ball.contactPickupTicks, 8);
   assert.ok(Number.isFinite(ball.vx) && Number.isFinite(ball.vy));
 });
 
@@ -57,13 +58,14 @@ test('a descending ball keeps its vertical velocity during a body collision', ()
 
 test('the same player cannot repeatedly re-trigger body contact during the short separation window', () => {
   const tackler = player(1, -100);
-  const ball = looseBall({ bodyContactPlayer: tackler, bodyContactUntil: 10 });
+  const ball = looseBall({ contactPickupTicks: 8 });
   const state = { t: 9, so: null, prac: true };
   const collide = makeBodyCollide({ ball, players: [tackler], state });
 
   collide();
   assert.equal(ball.last, null);
 
+  ball.contactPickupTicks = 0;
   state.t = 11;
   collide();
   assert.equal(ball.last, tackler);
@@ -87,6 +89,7 @@ test('different nearby players cannot alternate body contacts inside the same gl
   collide();
   assert.equal(ball.last, first, 'a different player must not immediately reverse the previous contact');
 
+  for (let tick = 0; tick < 8; tick++) ball.contactPickupTicks = Math.max(0, ball.contactPickupTicks - 1);
   state.t = 1.13;
   collide();
   assert.equal(ball.last, second, 'normal contacts resume after the global separation window');

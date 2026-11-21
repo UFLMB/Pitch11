@@ -66,7 +66,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,lostTime:0,addedTime:0,addedTimeAnnounced:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
   ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],subExitRunners:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
-const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,restartDoubleTouchPending:null,px:CX,py:CY,pz:0};
+const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,contactPickupTicks:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,restartDoubleTouchPending:null,px:CX,py:CY,pz:0};
 function standardPlayerEquipment(){return{shirtWithSleeves:true,shorts:true,socks:true,shinguards:true,shinguardsCovered:true,footwear:true,dangerousEquipment:false,uncoveredAccessories:false,playerElectronicCommunicationEquipment:false,approvedEPTS:false,inspected:false};}
 const P=[];
 for(let t=0;t<2;t++)for(let r=0;r<11;r++)P.push({team:t,role:r,gk:r===0,equipment:standardPlayerEquipment(),captain:false,x:0,y:0,px:0,py:0,vx:0,vy:0,ix:0,iy:0,sp:false,face:0,turn:0,stam:1,
@@ -275,7 +275,12 @@ const endEdges=()=>{I.pass=I.thru=I.lob=I.sw=I.skill=I.shootUp=I.tackle=I.swp=fa
 
 /* ===================== 4. ACTIONS (kick, pass, shoot, tackle) ===================== */
 function clearOff(){for(const q of P)q.off=false;ball.ind=false;ball.refContact=null;}   // any new touch ends offside / indirect-kick status
-function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;ball.gkHoldShown=0;p.poss=0;p.force=false;clearOff();}
+function registerBallContact(p){                                  // shared post-contact lock for every loose-ball contact path
+  const b=ball;
+  if(p)p.kcd=Math.max(p.kcd||0,0.3);
+  b.contactPickupTicks=Math.max(b.contactPickupTicks||0,8);          // 8 fixed ticks = 133 ms; independent of the match clock
+}
+function take(p,byHand=false){if(!p.gk||ball.gkNoHands!==p.team){ball.gkNoHands=null;ball.gkNoHandsFrom=null;}if(ball.gkReleasedBy!==p)ball.gkReleasedBy=null;ball.contactPickupTicks=0;ball.owner=p;ball.last=p;ball.receiver=null;ball.gkHold=0;ball.gkHoldActive=!!(p.gk&&byHand);ball.gkHoldWarned=false;ball.gkHoldShown=0;p.poss=0;p.force=false;clearOff();}
 function markOff(p){                                       // snapshot the second-last opponent at the exact moment of the team-mate's touch
   clearOff();const t=p.team,d=dirOf(t),line=PITCH11Law.secondLastOpponentPosition(P,t,d);
   if(line===null)return;
@@ -382,7 +387,7 @@ function tryTackle(p,chance,context){
     o.stun=0.5;o.kcd=0.6;o.vx*=0.3;o.vy*=0.3;
     FX.hit=4;
     if(Math.random()<0.65)take(p);
-    else{p.kcd=Math.max(p.kcd||0,0.3);b.owner=null;b.last=p;const a=Math.atan2(b.y-p.y,b.x-p.x)+rnd(-.7,.7),v=rnd(110,200);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;}
+    else{b.owner=null;registerBallContact(p);b.last=p;const a=Math.atan2(b.y-p.y,b.x-p.x)+rnd(-.7,.7),v=rnd(110,200);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;}
     return true;
   }
   p.stun=0.45;return false;
@@ -559,7 +564,7 @@ function netClamp(){                                       // ball stays inside 
   }
 }
 function touches(){                                        // a free ball is picked up by the nearest outfielder; airborne balls become volleys, headers or chest control
-  const b=ball;if(b.owner||b.z>42)return;
+  const b=ball;if(b.owner||b.z>42||(b.contactPickupTicks||0)>0)return;
   const air=b.z>12;if(air&&b.hcd>0)return;
   let best=null,bs=-1e9,secondTouchCandidate=null,secondTouchScore=-1e9;
   for(const p of P){
@@ -610,7 +615,7 @@ function touches(){                                        // a free ball is pic
   if(!S.prac&&best.off){callOffside(best);return;}
   if(Math.hypot(b.vx,b.vy)>400+90*best.st.drib+(best===b.receiver?TUNING.rcv.hot+260:0)){           // too hot to control: deflect
     const previousLast=b.last,a=rnd(-.5,.5),c=Math.cos(a),s=Math.sin(a),vx=b.vx*0.45;
-    b.vx=vx*c-b.vy*0.45*s;b.vy=vx*s+b.vy*0.45*c;best.kcd=0.35;b.last=best;b.receiver=null;applyOffsideTouch(best,previousLast,false,false);
+    b.vx=vx*c-b.vy*0.45*s;b.vy=vx*s+b.vy*0.45*c;registerBallContact(best);b.last=best;b.receiver=null;applyOffsideTouch(best,previousLast,false,false);
     return;
   }
   if(air)airPlay(best);
@@ -618,7 +623,7 @@ function touches(){                                        // a free ball is pic
     const sp=Math.hypot(b.vx,b.vy);
     if(sp>240&&!S.rs&&Math.random()<0.5-0.4*best.st.drib+(sp-240)/1500+(best.team?0.08:-0.06)){      // heavy first touch: the ball bobbles away instead of sticking
       const previousLast=b.last,a=rnd(-.55,.55),c=Math.cos(a),sn=Math.sin(a),nx=(b.vx*c-b.vy*sn)*.32,ny=(b.vx*sn+b.vy*c)*.32;
-      b.vx=nx;b.vy=ny;b.vz=rnd(20,45);applyOffsideTouch(best,previousLast,true,false);b.last=best;best.kcd=.22;return;
+      b.vx=nx;b.vy=ny;b.vz=rnd(20,45);registerBallContact(best);applyOffsideTouch(best,previousLast,true,false);b.last=best;return;
     }
     take(best);
   }
@@ -671,9 +676,9 @@ function gkReact(p){                                       // save only a genuin
   b.x=cx;b.y=cy;
   const hold=sp<(175-q*52)*hd||(sp<(335-q*95)*hd&&Math.random()<0.36*hd);
   if(hold&&!(sp>160&&Math.random()<0.1*(1.5-hd))){take(p,true);p.dive=0;p.vx=p.vy=0;p.freeze=0.2;}
-  else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;b.last=p;b.receiver=null;p.kcd=0.35;applyOffsideTouch(p,previousLast,true,true);}
+  else if(hold){b.vx=d*sp*0.12;b.vy=rnd(-30,30);b.vz=20;b.spin=0;registerBallContact(p);b.last=p;b.receiver=null;applyOffsideTouch(p,previousLast,true,true);}
   else{const side=Math.abs(b.y-CY)>4?Math.sign(b.y-CY):(Math.random()<0.5?1:-1);
-    b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;b.last=p;b.receiver=null;p.kcd=0.4;applyOffsideTouch(p,previousLast,true,true);}
+    b.vx=d*sp*0.3;b.vy=side*sp*rnd(0.3,0.55);b.vz=rnd(30,70);b.spin=0;registerBallContact(p);b.last=p;b.receiver=null;applyOffsideTouch(p,previousLast,true,true);}
 }
 
 /* ===================== 6. AI ===================== */
@@ -919,7 +924,7 @@ function aiGK(p){
     if(dd<22&&p.tcd<=0&&b.protect<=0){
       p.tcd=0.8;
       if(Math.random()<0.35+0.4*st.def){take(p,true);o.stun=0.4;p.freeze=0.5;}
-      else{b.owner=null;b.last=p;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;}
+      else{b.owner=null;registerBallContact(p);b.last=p;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;}
       return;
     }
     const od=Math.hypot(o.x-gx,o.y-CY)||1,R=clamp(od*0.4,12,60);
@@ -1479,7 +1484,7 @@ function update(){
     if(ball.owner===p)p.poss+=DT;
   }
   if(S.swCd>0)S.swCd-=DT;
-  if(ball.protect>0)ball.protect-=DT;if(ball.hcd>0)ball.hcd-=DT;
+  if(ball.protect>0)ball.protect-=DT;if(ball.hcd>0)ball.hcd-=DT;if(ball.contactPickupTicks>0)ball.contactPickupTicks=Math.max(0,ball.contactPickupTicks-1);
   teamInfo();
   if(m==='play'){
     autoSwitch();
@@ -2833,7 +2838,7 @@ function slideHit(p,sd){
         if(win){
           sd.res=1;sd.rec=K.recHit;o.stun=0.6;o.kcd=0.7;o.vx*=0.2;o.vy*=0.2;D9.n.sw[p.team]++;act8('slide','win');popD(p,'SLIDE TACKLE');
           if(Math.random()<0.62)take(p);
-          else{p.kcd=Math.max(p.kcd||0,0.3);const previousLast=b.last;b.owner=null;b.last=p;b.receiver=null;const a=sd.a+rnd(-.5,.5),v=rnd(130,210);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;applyOffsideTouch(p,previousLast,true,false);}
+          else{const previousLast=b.last;b.owner=null;registerBallContact(p);b.last=p;b.receiver=null;const a=sd.a+rnd(-.5,.5),v=rnd(130,210);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;applyOffsideTouch(p,previousLast,true,false);}
         }else{sd.res=4;sd.rec=K.recMiss+0.45*(1-tq);D9.n.sm[p.team]++;act8('slide','miss');popD(p,'MISSED');}   // he rode it: long recovery
         return;
       }
@@ -2841,7 +2846,7 @@ function slideHit(p,sd){
   }else if(!o&&b.z<10&&p.kcd<=0&&!(b.receiver&&b.receiver.team===p.team)&&Math.hypot(b.x-p.x,b.y-p.y)<rch&&Math.abs(angd(Math.atan2(b.y-p.y,b.x-p.x),sd.a))<1.5){
     sd.res=1;sd.rec=K.recHit;act8('slide','ball');                               // loose ball: block or win it
     if(Math.hypot(b.vx,b.vy)<350&&Math.random()<0.7)take(p);
-    else{b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;clearOff();}
+    else{registerBallContact(p);b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;clearOff();}
     return;
   }
   for(let i=(1-p.team)*11+1;i<(1-p.team)*11+11;i++){        // took the man, not the ball
@@ -2961,7 +2966,7 @@ function gkStep(p){                                         // true = the keeper
       if(o.skill>0){p.stun=0.7;act8('gk','dummied');}       // skill move: beaten
       else if(Math.random()<0.3+0.4*p.st.def){take(p,true);o.stun=0.4;p.freeze=0.5;D9.n.gs[t]++;act8('gk','smother');gkEnd(c,t);return true;}
       else if(Math.random()<0.08){foul(p,o,false);gkEnd(c,t);return true;}
-      else{b.owner=null;b.last=p;b.receiver=null;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;act8('gk','spill');}
+      else{b.owner=null;registerBallContact(p);b.last=p;b.receiver=null;const a=Math.atan2(b.y-CY,b.x-gx)+rnd(-.8,.8),v=rnd(120,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;o.stun=0.35;o.kcd=0.5;act8('gk','spill');}
       return true;
     }
     tx=o.x+o.vx*0.25;ty=o.y+o.vy*0.25;
@@ -3482,13 +3487,12 @@ MS.layout=function(){
 /* ===================== 20. STAGE 14: real-football feel - body collisions, ball in hands, colour trajectories, aim preview ===================== */
 function bodyCollide(){                                    // resolve one stable ball/body contact per fixed tick
   const b=ball;if(b.owner||b.z>16||H>W)return;
-  // A single global contact window prevents adjacent players from ping-ponging a loose ball.
-  if(S.t<(b.bodyContactUntil||0))return;
+  // The shared fixed-tick lock also gates touches(), preventing immediate re-possession.
+  if((b.contactPickupTicks||0)>0)return;
   let hit=null;
   for(const p of P){
     if(p.out||p.substitutionExiting)continue;
     if(p===b.last&&p.kcd>0.1&&!(S.so&&S.so.live&&p===S.so.shooter))continue;
-    if(p===b.bodyContactPlayer&&S.t<(b.bodyContactUntil||0))continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
@@ -3516,10 +3520,9 @@ function bodyCollide(){                                    // resolve one stable
   b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
   // A small separation margin prevents the same pair from re-penetrating next tick.
   b.x=p.x+nx*(R+0.25);b.y=p.y+ny*(R+0.25);
-  // Side-on contact may lift a grounded ball, but must never reverse an existing fall.
-  if(-vn>220&&b.z<4&&Math.abs(b.vz)<0.001)b.vz=Math.min(55,18+(-vn-220)*0.035);
+  // This is a 2D side/body collision: it has no vertical contact normal and must not manufacture a jump impulse.
   const previousLast=b.last;b.spin+=rnd(-.4,.4);b.last=p;
-  b.bodyContactPlayer=p;b.bodyContactUntil=S.t+0.12;
+  registerBallContact(p);
   if(b.receiver!==p)b.receiver=null;applyOffsideTouch(p,previousLast,false,false);
   if(-vn>220&&typeof AU!=='undefined'&&AU.kick)AU.kick(-vn*0.5);
 }
