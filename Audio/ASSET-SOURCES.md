@@ -1,19 +1,24 @@
 # PITCH 11 Audio Source Register
 
-Updated: 2026-11-20
+Updated: 2026-11-21
 
-## Retained
+## Present in the repository and wired in the game
 
-| Asset | Repository path | Status |
-|---|---|---|
-| Main-menu music | `Audio/music/menu/main-theme/hella bumps.mp3` | Retained; do not replace |
+| Asset | Repository path | Runtime use | Source / license record |
+|---|---|---|---|
+| Main-menu music | `Audio/music/menu/main-theme/hella bumps.mp3` | Looped on the main menu when MUSIC is ON; paused outside the main menu | Provenance and license details still need to be recorded |
+| Navigation click | `Audio/sounds/ui/navigation/click.wav` | Menu tap / UI click | Provenance and license details still need to be recorded |
+| Menu open | `Audio/sounds/ui/navigation/menu-open.wav` | Opening a menu page | Provenance and license details still need to be recorded |
+| Back | `Audio/sounds/ui/back/back.wav` | Back navigation | Provenance and license details still need to be recorded |
+| Confirm | `Audio/sounds/ui/confirm/confirm.wav` | Confirm / start action | Provenance and license details still need to be recorded |
+| Match start | `Audio/sounds/ui/match-start/match-start.wav` | Initial kickoff | Provenance and license details still need to be recorded |
 
-## Removed
+## Not present yet
 
-The previous SFXMint audio set, its direct-stream fallback URLs, and its build-time downloader have been removed. No SFXMint sound is approved for the current game build.
+The separate football recordings for ball contact, player movement, goalkeeper actions, referee, and stadium atmosphere are not yet present as approved audio assets. Their folders are organizational placeholders only.
 
-## Awaiting import
+The previous SFXMint audio set, its direct-stream fallback URLs, and its build-time downloader have been removed. No SFXMint sound is approved for the current game build. The ZapSplat crossbar candidate remains pending license verification.
 
-The separately selected 15 football recordings and Kenney interface sound pack are not yet present in the repository. Their exact source files and license records must be added before wiring them into gameplay. The ZapSplat crossbar candidate is a separate asset and remains pending license verification.
+## Import requirements
 
-No unverified sound source should be fetched automatically during deployment.
+For every new imported asset, record the exact source URL, creator, license/version, proof of permission for game use, download date, and required attribution. Do not automatically fetch unverified sound sources during deployment.
