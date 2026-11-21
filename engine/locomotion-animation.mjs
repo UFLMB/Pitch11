@@ -21,6 +21,33 @@ export function shouldFlattenVerticalRootMotion(file) {
 
 const ROOT_TARGETS = new Set(["hips", "mixamorighips", "root", "mixamorigroot"]);
 
+/**
+ * In cyclic player locomotion, the simulation owns the complete world-space
+ * transform. Remove Root/Hips translation channels instead of pinning them to
+ * each clip's first key: per-clip constants can differ and cause a visible
+ * pelvis/root pop during cross-fades. Keep rotation channels so the gait stays
+ * expressive. One-shot actions and goalkeeper sidesteps are deliberately
+ * excluded because they need their authored body displacement.
+ */
+export function shouldRemoveLocomotionRootTranslation(file) {
+  const name = String(file || "").trim();
+  return /^jog (?:forward|backward)(?: diagonal)?(?: \\(\\d+\\))?\\.fbx$/i.test(name) ||
+    /^jog strafe (?:left|right)\\.fbx$/i.test(name);
+}
+
+export function removeLocomotionRootTranslation(clip) {
+  if (!clip || !Array.isArray(clip.tracks)) return clip;
+  const before = clip.tracks.length;
+  clip.tracks = clip.tracks.filter(track => !ROOT_TARGETS.has(getRootTarget(track)));
+  const removed = before - clip.tracks.length;
+  clip.userData = {
+    ...(clip.userData || {}),
+    locomotionRootTranslationRemoved: removed > 0,
+    locomotionRootTranslationTracksRemoved: removed
+  };
+  return clip;
+}
+
 function getRootTarget(track) {
   if (!/\.position$/i.test(String(track?.name || ""))) return "";
   return track.name.slice(0, track.name.lastIndexOf(".")).replace(/[^a-z0-9]/gi, "").toLowerCase();
