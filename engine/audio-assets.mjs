@@ -147,6 +147,7 @@ if (typeof window !== "undefined") {
   window.addEventListener("keydown", unlock, { capture: true, passive: true });
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
+      musicPlayPending = false;
       if (musicAudio && !musicAudio.paused) musicAudio.pause();
     } else if (menuRequested && menuEnabled && unlocked) {
       startMenuMusic();
