@@ -514,11 +514,20 @@ function separate(){                                       // bounded, order-ind
     }
   }
 }
+function dribbleBallTarget(carrier){
+  const speed=Math.hypot(carrier.vx,carrier.vy);
+  const control=clamp(carrier.st&&carrier.st.drib!==undefined?carrier.st.drib:0.5,0,1);
+  const stamina=clamp(carrier.stam===undefined?1:carrier.stam,0,1);
+  const sprint=carrier.sp&&!carrier.winded;
+  const lead=7.5+clamp(speed*0.018,0,4)+(1-control)*1.2+(1-stamina)*0.5+(sprint?1.2:0);
+  return{x:carrier.x+Math.cos(carrier.face)*lead,y:carrier.y+Math.sin(carrier.face)*lead,rate:14+control*4};
+}
 function stepBall(){
   const b=ball;
-  if(b.owner){                                             // dribbling: ball sits just ahead of the carrier
-    const o=b.owner,sp=Math.hypot(o.vx,o.vy),mv=sp>25,off=9+(mv?6*Math.pow(Math.max(0,Math.sin(o.anim)),2):0),lat=mv?2.5*Math.sin(o.anim):0;   // pushed ahead on each stride, drifts side to side
-    b.x+=(o.x+Math.cos(o.face)*off-Math.sin(o.face)*lat-b.x)*0.5;b.y+=(o.y+Math.sin(o.face)*off+Math.cos(o.face)*lat-b.y)*0.5;
+  if(b.owner){                                             // controlled, non-oscillating dribble touch
+    const o=b.owner,sp=Math.hypot(o.vx,o.vy),target=dribbleBallTarget(o);
+    const follow=1-Math.exp(-target.rate*DT);               // frame-rate-independent soft follow, not a hard attachment
+    b.x+=(target.x-b.x)*follow;b.y+=(target.y-b.y)*follow;
     b.vx=o.vx;b.vy=o.vy;b.z=b.vz=b.spin=0;b.rot+=sp*DT/BR;return;
   }
   if(b.spin){                                              // curve: rotate the velocity vector
@@ -5239,25 +5248,7 @@ gkReact=function(p){
   // larger dive reach to catch/parry the shot. Only aiGK owns dive initiation.
   _gkReact30(p);
 };
-const _stepBall30=stepBall;
-stepBall=function(){
-  const carrier=ball.owner;
-  _stepBall30();
-  if(!carrier||ball.owner!==carrier||carrier.gk||carrier.out||carrier.down||
-     S.mode!=='play'||(S.rs&&S.rs.p===carrier))return;
-  // The base stepBall already places the ball ahead of the carrier and adds stride-side motion.
-  // Apply only a small skill/pressure correction; never add a second full dribble lead.
-  const control=clamp(carrier.st&&carrier.st.drib!==undefined?carrier.st.drib:0.5,0,1);
-  const turn=clamp(Math.abs(carrier.turn||0)/12,0,1);
-  const pressure=nearestOpp(carrier);
-  const tight=clamp((52-pressure)/52,0,1);
-  const sprint=carrier.sp&&!carrier.winded;
-  const stamina=clamp(carrier.stam===undefined?1:carrier.stam,0,1);
-  const correction=clamp((1-control)*0.8+turn*0.35+tight*0.45+
-    (sprint?0.2:0)+(1-stamina)*0.15,0,1.5);
-  ball.x+=Math.cos(carrier.face)*correction;
-  ball.y+=Math.sin(carrier.face)*correction;
-};
+/* Dribble target and follow are calculated only in stepBall(); no second position writer. */
 /* Existing AI already includes support runs, width, cover, pressing, marking and
    onside-aware movement. Existing separate()/bodyCollide() already resolve
    player spacing and ball-body impacts; do not stack a second collision solver. */
