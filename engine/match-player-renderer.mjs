@@ -139,6 +139,8 @@ export class MatchPlayerRenderer {
     this.animations = [];
     this.players = new Map();
     this.status = "loading";
+    this.animationLoadState = "not-started";
+    this.animationLoadPromise = null;
     this.error = "";
     this.mixamoError = "";
     this.modelSource = "";
@@ -192,12 +194,21 @@ export class MatchPlayerRenderer {
       this.modelTriangleCount = stats.triangleCount;
       this.modelDiagnostics = inspectModelGeometry(fbx);
       this.boneNames = stats.boneNames;
-      this.status = "loading-mixamo-animations";
-      const results = await Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)));
-      const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${CORE_MIXAMO_CLIPS[index]}: ${result.reason?.message || String(result.reason)}`] : []);
-      this.clipCount = this.clipCache.size;
-      this.error = failures.join("; ");
+      // Make the validated character renderable immediately. Waiting for every
+      // animation FBX here hid the entire team on slow/mobile connections.
       this.status = "ready";
+      this.animationLoadState = "loading";
+      this.animationLoadPromise = Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)))
+        .then(results => {
+          const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${CORE_MIXAMO_CLIPS[index]}: ${result.reason?.message || String(result.reason)}`] : []);
+          this.clipCount = this.clipCache.size;
+          this.error = failures.join("; ");
+          this.animationLoadState = failures.length ? "partial" : "ready";
+        })
+        .catch(error => {
+          this.animationLoadState = "error";
+          this.error = error?.message || String(error);
+        });
       return;
     } catch (error) {
       this.mixamoError = error?.message || String(error || "Mixamo character unavailable");
