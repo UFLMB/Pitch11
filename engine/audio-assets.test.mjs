@@ -41,13 +41,16 @@ test("menu audio actions are wired to their intended UI and match lifecycle even
   assert.match(audioModule, /matchStart:\s*new URL\("\.\.\/Audio\/sounds\/ui\/match-start\/match-start\.wav"/);
   assert.match(game, /AU\.musOn=function\(on,fadeSeconds=0\)\{window\.P11AudioAssets\?\.menuMusic\(!!on,!!G\.mus,\.32,fadeSeconds\);\};/);
   assert.match(game, /resolveMenuMusicIntent\?\.\(S\.mode,walkoutFade,!!\(CUT\.t>0\)\)/);
-  assert.match(game, /const go=s=>\{window\.P11AudioAssets\?\.play\('menuOpen'/);
-  assert.match(game, /back=\(\)=>\{window\.P11AudioAssets\?\.play\('uiBack'/);
-  assert.match(game, /function startGame\(\)\{window\.P11AudioAssets\?\.play\('uiConfirm'/);
+  assert.match(game, /const go=s=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('menuOpen'/);
+  assert.match(game, /back=\(\)=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiBack'/);
+  assert.match(game, /function startGame\(\)\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiConfirm'/);
   assert.match(game, /window\.P11AudioAssets\?\.play\('matchStart'/);
-  assert.match(game, /const _uiT=uiTap;uiTap=function\(x,y\)\{[\s\S]*?target\.kind==='segment'[\s\S]*?AU\.click\(\)[\s\S]*?_uiT\(x,y\);/);
   assert.match(game, /play\('uiHover',\.28\)/);
-  assert.match(game, /kind:'segment'/);
+  assert.match(game, /UI\.r\[UI\.r\.length-1\]\.kind='segment'/);
+  assert.match(game, /const _uiT=uiTap;uiTap=function\(x,y\)\{[\s\S]*?p11UiSemanticSound=false;[\s\S]*?const handled=_uiT\(x,y\);[\s\S]*?if\(handled&&target&&!p11UiSemanticSound\)[\s\S]*?target\.kind==='segment'[\s\S]*?uiTransition[\s\S]*?AU\.click\(\)[\s\S]*?p11UiSemanticSound=false;/);
+  assert.match(game, /if\(S\.t<0\.4&&S\.mode!=='subs'\)return false/);
+  assert.match(game, /r\.fn\(\);return true/);
+  assert.match(game, /UI\.def\(\);return true/);
 });
 
 test("audio bridge keeps unsupported gameplay events unmapped instead of playing the wrong UI sound", () => {
