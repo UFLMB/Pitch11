@@ -308,6 +308,10 @@ window.addEventListener('message',event=>{
  window.P11Stadium?.setEditorMode?.(false);
 });
 document.querySelector('#stadium-editor').addEventListener('click',openStadiumEditor);
+if(new URLSearchParams(location.search).get('editor')==='1'){
+ if(ready)openStadiumEditor();
+ else window.addEventListener('p11stadiumready',openStadiumEditor,{once:true});
+}
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
