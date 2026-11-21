@@ -51,7 +51,7 @@ test('turning changes the target smoothly and the spring follows without a snap'
   const p = player(), initial = targetFn(p);
   p.face = Math.PI / 2;
   const turned = targetFn(p);
-  assert.ok(Math.abs(turned.x - initial.x) < 0.01);
+  assert.ok(Math.abs(turned.x - p.x) < 0.01);
   assert.ok(turned.y > initial.y);
   const ball = { x: initial.x, y: initial.y }, alpha = 1 - Math.exp(-turned.rate / 60);
   const first = { ...ball };
