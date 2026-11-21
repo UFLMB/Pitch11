@@ -3482,6 +3482,8 @@ MS.layout=function(){
 /* ===================== 20. STAGE 14: real-football feel - body collisions, ball in hands, colour trajectories, aim preview ===================== */
 function bodyCollide(){                                    // resolve one stable ball/body contact per fixed tick
   const b=ball;if(b.owner||b.z>16||H>W)return;
+  // A single global contact window prevents adjacent players from ping-ponging a loose ball.
+  if(S.t<(b.bodyContactUntil||0))return;
   let hit=null;
   for(const p of P){
     if(p.out||p.substitutionExiting)continue;
