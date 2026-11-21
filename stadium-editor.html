@@ -288,8 +288,15 @@ async function boot(){
  try{
   let live=null,bridge=null;
   if(embeddedMode){
-   live=window.parent.P11Stadium;
-   if(!live?.ready||!live.scene)throw new Error('The live Matchday Viewer is not ready yet. Close the editor and retry after the stadium loads.');
+   const started=performance.now();
+   while(performance.now()-started<45000){
+    live=window.parent.P11Stadium;
+    const boot=window.parent.P11StadiumBoot;
+    if(boot?.state==='error')throw new Error(boot.error||'The Matchday Viewer failed to initialize.');
+    if(live?.ready&&live.scene)break;
+    await new Promise(resolve=>setTimeout(resolve,120));
+   }
+   if(!live?.ready||!live.scene)throw new Error('The Matchday Viewer did not finish loading within 45 seconds.');
   }else{
    bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
    Object.assign(bridge.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',opacity:'0',pointerEvents:'none',border:'0',zIndex:'1'});document.body.appendChild(bridge);
@@ -317,7 +324,7 @@ async function boot(){
   state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();setMode('edit');loading.style.display='none';
   notify('Editing live Matchday stadium · '+state.meshes.length+' editable mesh objects.');
   frame();
- }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Return to Matchday Viewer and retry after the stadium loads.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
+ }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><div style="display:flex;gap:8px;justify-content:center;margin-top:14px"><button id="returnViewer">VIEWER</button><button id="retry">RETRY</button></div></div>';$('returnViewer').addEventListener('click',closeEditor);$('retry').addEventListener('click',()=>location.reload());}
 }
 boot();
 </script>
