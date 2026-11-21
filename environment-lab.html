@@ -226,7 +226,10 @@ function buildElementIds(){
  const api=window.P11Stadium;if(!api?.scene||!api?.camera)return;
  const candidates=[];
  api.scene.traverse(object=>{
-  if(!object.isMesh||!object.geometry||!object.visible)return;
+  if(!object.visible||object===api.scene)return;
+  const isMesh=object.isMesh&&!!object.geometry;
+  const isNamedGroup=!!object.name&&object.children?.length>0;
+  if(!isMesh&&!isNamedGroup)return;
   const parts=[];let node=object;
   while(node&&node!==api.scene){parts.push((node.name||node.type||'Object')+'['+(node.parent?.children?.indexOf(node)??0)+']');node=node.parent;}
   candidates.push({object,path:parts.reverse().join('/'),...elementCategory(object)});
