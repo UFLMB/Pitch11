@@ -5,7 +5,7 @@ import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
-import { extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion, shouldFlattenVerticalRootMotion } from "./locomotion-animation.mjs";
+import { extractHorizontalRootMotion, flattenHorizontalRootMotion, removeLocomotionRootTranslation, shouldRemoveLocomotionRootTranslation, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
@@ -228,13 +228,16 @@ export class MatchPlayerRenderer {
       // The simulation owns horizontal player movement for every animation.
       // Keeper sidesteps are the sole exception: extract their displacement
       // for one-time engine application and neutralize the mixer track.
-      // Vertical pelvis motion remains animated for jumps and natural gait.
-      if (/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(file)) {
+      // One-shot action clips retain their authored translation channels.
+      if (shouldRemoveLocomotionRootTranslation(file)) {
+        // Lock Root/Hips translation to the rig bind pose. This prevents
+        // root/pelvis drift and cross-fade pops while simulation owns movement.
+        removeLocomotionRootTranslation(clip);
+      } else if (/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(file)) {
         extractHorizontalRootMotion(clip);
       } else if (shouldFlattenHorizontalRootMotion(file)) {
         flattenHorizontalRootMotion(clip);
       }
-      if (shouldFlattenVerticalRootMotion(file)) flattenVerticalRootMotion(clip);
       clip.userData = { ...(clip.userData || {}), sourceFile: file, directBinding: binding };
       this.clipCache.set(file, clip);
       this.animations.push(clip);
