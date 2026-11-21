@@ -121,7 +121,7 @@ const key=new THREE.DirectionalLight(0xffe2bd,1.65);key.position.set(-100,160,10
 const fill=new THREE.DirectionalLight(0x8dbbff,.62);fill.position.set(100,80,-120);scene.add(fill);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=12;orbit.maxDistance=650;orbit.maxPolarAngle=Math.PI*.495;orbit.target.set(0,12,0);
-const transform=new TransformControls(camera,renderer.domElement);transform.setMode('translate');transform.setSpace('world');transform.size=mobile?.85:1;scene.add(transform.getHelper());
+const transform=new TransformControls(camera,renderer.domElement);transform.setMode('translate');transform.setSpace('world');transform.size=mobile ? 0.85 : 1;scene.add(transform.getHelper());
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),clock=new THREE.Clock();
 const root=new THREE.Group();root.name='STADIUM ROOT';scene.add(root);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),new THREE.MeshStandardMaterial({color:0x18251c,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.name='EDITOR GROUND · LOCKED';floor.userData.editorLocked=true;scene.add(floor);
@@ -146,7 +146,7 @@ function isPitchMesh(mesh){const names=[mesh.name,mesh.parent?.name,mesh.materia
 function collectMeshes(){state.meshes=[];root.traverse(o=>{if(!o.isMesh||o.userData.editorLocked||isPitchMesh(o))return;o.userData.editorPath=stablePath(o);o.userData.editorAdded=Boolean(o.userData.editorAdded);if(!o.userData.editorInitialTransform)o.userData.editorInitialTransform={position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray()};state.meshes.push(o);});state.meshes.sort((a,b)=>a.userData.editorPath.localeCompare(b.userData.editorPath));}
 function objectCategory(o){if(o.userData.editorAdded)return'added';const n=(o.name+' '+(o.parent?.name||'')).toLowerCase();return detailName.test(n)?'detail':'structure';}
 function materialOf(o){const m=Array.isArray(o.material)?o.material[0]:o.material;return m||null;}
-function cloneMaterialsFor(o){if(Array.isArray(o.material))o.material=o.material.map(m=>m?.clone?.()||m);else if(o.material)o.material=o.material.clone();return materialOf(o);}
+function cloneMaterialsFor(o){if(o.userData.editorMaterialCloned)return materialOf(o);if(Array.isArray(o.material))o.material=o.material.map(m=>m?.clone?.()||m);else if(o.material)o.material=o.material.clone();o.userData.editorMaterialCloned=true;return materialOf(o);}
 function colorHex(c){return c?.isColor?'#'+c.getHexString():'#ffffff';}
 function updateInspector(){
  const o=state.selected,disabled=!o;
