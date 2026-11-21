@@ -25,6 +25,8 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("CORE_MIXAMO_CLIPS"));
   assert.ok(renderer.includes("else if (shouldFlattenHorizontalRootMotion(file))"));
   assert.ok(renderer.includes("extractHorizontalRootMotion(clip)"));
+  assert.match(renderer, /import \{[^}]*shouldFlattenVerticalRootMotion[^}]*\} from "\.\/locomotion-animation\.mjs";/);
+  assert.ok(renderer.includes("if (shouldFlattenVerticalRootMotion(file)) flattenVerticalRootMotion(clip);"));
   assert.ok(renderer.includes("cloneSkeleton"));
   assert.ok(renderer.includes("setGroundHeight(value)"));
   assert.ok(renderer.includes("group.position.set(state.x, this.groundHeight, state.z)"));
