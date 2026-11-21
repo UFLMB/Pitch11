@@ -114,7 +114,7 @@ let renderer=null;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
 const orbit=new OrbitControls(camera,host);orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=12;orbit.maxDistance=650;orbit.maxPolarAngle=Math.PI*.495;orbit.target.set(0,12,0);
-const transform=new TransformControls(camera,host);transform.setMode('translate');transform.setSpace('world');transform.size=mobile ? 0.85 : 1;scene.add(transform.getHelper());
+const transform=new TransformControls(camera,host);transform.setMode('translate');transform.setSpace('local');transform.size=mobile ? 0.85 : 1;scene.add(transform.getHelper());
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),clock=new THREE.Clock();
 const root=new THREE.Group();root.name='STADIUM ROOT';scene.add(root);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),new THREE.MeshStandardMaterial({color:0x18251c,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.name='EDITOR GROUND · LOCKED';floor.userData.editorLocked=true;scene.add(floor);
