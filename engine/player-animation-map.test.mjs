@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
+import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
 
 test("maps simulation action states to goalkeeper and outfield animation states", () => {
   assert.equal(resolvePlayerAnimationState({ role: "GK", action: "keeper-catch" }, 0), "keeperCatch");
@@ -78,4 +78,23 @@ test("maps directional locomotion actions to dedicated animation states", () => 
   assert.equal(resolvePlayerAnimationState({ action: "forward-diagonal-right" }, 4), "forwardDiagonalRight");
   assert.equal(resolvePlayerAnimationState({ action: "backward-diagonal-left" }, 4), "backwardDiagonalLeft");
   assert.equal(resolvePlayerAnimationState({ action: "backward-diagonal-right" }, 4), "backwardDiagonalRight");
+});
+
+
+test("filters one-frame directional locomotion noise but accepts a persistent change", () => {
+  const first = stabilizeLocomotionAnimationState("forwardDiagonalRight", "forwardDiagonalLeft");
+  assert.deepEqual(first, { state: "forwardDiagonalLeft", pendingState: "forwardDiagonalRight", pendingFrames: 1 });
+  const second = stabilizeLocomotionAnimationState(first.pendingState, first.state, first.pendingState, first.pendingFrames);
+  assert.deepEqual(second, { state: "forwardDiagonalRight", pendingState: "", pendingFrames: 0 });
+  const reverted = stabilizeLocomotionAnimationState("forwardDiagonalLeft", first.state, first.pendingState, first.pendingFrames);
+  assert.deepEqual(reverted, { state: "forwardDiagonalLeft", pendingState: "", pendingFrames: 0 });
+});
+
+test("does not debounce logical run/sprint changes that share one locomotion clip", () => {
+  assert.deepEqual(stabilizeLocomotionAnimationState("sprint", "run"), {
+    state: "sprint", pendingState: "", pendingFrames: 0
+  });
+  assert.deepEqual(stabilizeLocomotionAnimationState("run", "walk"), {
+    state: "run", pendingState: "", pendingFrames: 0
+  });
 });

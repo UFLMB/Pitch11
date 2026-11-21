@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("player animation mixers are capped for mobile and desktop", () => {
+test("player animation mixers follow the mobile and desktop stadium frame cadence", () => {
   const renderer = read("./match-player-renderer.mjs");
-  assert.ok(renderer.includes("this.animationHz = this.mobile ? 20 : 30"));
+  assert.ok(renderer.includes("this.animationHz = this.mobile ? 30 : 60"));
   assert.ok(renderer.includes("this.animationAccumulator += dt"));
   assert.ok(renderer.includes("if (updateAnimations) {"));
   assert.ok(renderer.includes("mixer.update(animationDelta)"));
@@ -32,7 +32,7 @@ test("optimized GLB asset contract defines mobile-conscious geometry and texture
   assert.ok(readme.includes("8,000–12,000 triangles"));
   assert.ok(readme.includes("80 named joints"));
   assert.ok(readme.includes("Four embedded 1024 px PBR textures"));
-  assert.ok(readme.includes("20 Hz on mobile and 30 Hz on desktop"));
+  assert.ok(readme.includes("30 Hz on mobile and 60 Hz on desktop"));
   const workflow = read("../.github/workflows/static.yml");
   assert.ok(workflow.includes("test -s assets/players/player.glb"));
   assert.ok(workflow.includes('test "$(head -c 4 assets/players/player.glb)" = "glTF"'));

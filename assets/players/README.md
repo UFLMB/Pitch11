@@ -36,7 +36,7 @@ This is a **first integration/prototype asset**, not the final UFL/PITCH 11 play
 - Prefer one 1024 px texture set and a small number of materials.
 - Keep the same optimized model on mobile and desktop initially.
 - Reuse material variants and selection-ring geometry across players; keep player shadows disabled.
-- Cap animation mixer updates at 20 Hz on mobile and 30 Hz on desktop while keeping player transforms responsive.
+- Cap animation mixer updates at 30 Hz on mobile and 60 Hz on desktop while keeping player transforms responsive.
 
 ## Canonical UV mapping reference
 

@@ -154,3 +154,15 @@ test("every engine-driven Mixamo animation is horizontal in-place except extract
   assert.equal(shouldFlattenHorizontalRootMotion(file), !isSidestep, file);
  }
 });
+
+
+test("keeps locomotion cadence continuous across walk/run/sprint state boundaries", () => {
+ const belowWalkRun=getLocomotionTimeScale("walk",2.1-1e-4);
+ const aboveWalkRun=getLocomotionTimeScale("run",2.1+1e-4);
+ const belowRunSprint=getLocomotionTimeScale("run",5.2-1e-4);
+ const aboveRunSprint=getLocomotionTimeScale("sprint",5.2+1e-4);
+ assert.ok(Math.abs(belowWalkRun-aboveWalkRun)<1e-3);
+ assert.ok(Math.abs(belowRunSprint-aboveRunSprint)<1e-3);
+ assert.equal(getLocomotionTimeScale("walk",3.2),getLocomotionTimeScale("run",3.2));
+ assert.equal(getLocomotionTimeScale("run",6.1),getLocomotionTimeScale("sprint",6.1));
+});

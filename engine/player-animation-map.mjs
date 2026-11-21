@@ -80,6 +80,33 @@ const FALLBACKS = Object.freeze({
   keeperParry: ["keeperSet", "idle"]
 });
 
+const LOCOMOTION_STATES = new Set([
+  "idle", "walk", "run", "sprint", "backward", "strafeLeft", "strafeRight",
+  "forwardDiagonalLeft", "forwardDiagonalRight", "backwardDiagonalLeft",
+  "backwardDiagonalRight", "keeperMove"
+]);
+const DIRECTIONAL_LOCOMOTION_STATES = new Set([
+  "backward", "strafeLeft", "strafeRight", "forwardDiagonalLeft",
+  "forwardDiagonalRight", "backwardDiagonalLeft", "backwardDiagonalRight"
+]);
+
+/**
+ * Require a directional locomotion change to persist for two renderer updates.
+ * This filters one-frame direction noise without delaying action animations or
+ * the shared walk/run/sprint jog cycle.
+ */
+export function stabilizeLocomotionAnimationState(nextState, previousState, pendingState = "", pendingFrames = 0) {
+  if (!LOCOMOTION_STATES.has(nextState) || !LOCOMOTION_STATES.has(previousState) || nextState === previousState) {
+    return { state: nextState, pendingState: "", pendingFrames: 0 };
+  }
+  if (!DIRECTIONAL_LOCOMOTION_STATES.has(nextState) && !DIRECTIONAL_LOCOMOTION_STATES.has(previousState)) {
+    return { state: nextState, pendingState: "", pendingFrames: 0 };
+  }
+  const frames = pendingState === nextState ? pendingFrames + 1 : 1;
+  if (frames >= 2) return { state: nextState, pendingState: "", pendingFrames: 0 };
+  return { state: previousState, pendingState: nextState, pendingFrames: frames };
+}
+
 const normalize = value => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 const ALIAS_TO_STATE = new Map(
   Object.entries(CLIP_ALIASES).flatMap(([state, aliases]) =>

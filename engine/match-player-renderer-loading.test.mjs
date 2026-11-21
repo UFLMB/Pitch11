@@ -25,3 +25,15 @@ test("production player model load has a bounded mobile timeout and boot diagnos
   assert.match(runtimeSource, /modelLoadTimeoutMs:mobile\?90000:120000/);
   assert.match(runtimeSource, /boot\.playerModel=/);
 });
+
+
+test("same Mixamo clip is not restarted when only the logical locomotion state changes", () => {
+  assert.match(playerSource, /entry\.activeClip !== clip/);
+  assert.doesNotMatch(playerSource, /entry\.state !== animationState/);
+  assert.match(playerSource, /entry\.activeClip = clip/);
+});
+
+test("animation mixer cadence matches the stadium render cadence", () => {
+  assert.match(playerSource, /this\.animationHz = this\.mobile \? 30 : 60/);
+  assert.match(runtimeSource, /now-lastRender>\=\(mobile\?33:16\)/);
+});

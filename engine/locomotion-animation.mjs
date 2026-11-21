@@ -210,9 +210,11 @@ export function clampRootMotionDeltaToTarget(delta, remaining) {
 
 export function getLocomotionTimeScale(state, speed) {
   const velocity = Number.isFinite(speed) ? Math.max(0, speed) : 0;
-  if (state === "walk") return clamp(0.72 * velocity / 1.45, 0.55, 0.95);
-  if (state === "run") return clamp(velocity / 3.65, 0.75, 1.3);
-  if (state === "sprint") return clamp(1.28 * velocity / 6.2, 1.05, 1.5);
-  return 1;
+  if (!["walk", "run", "sprint"].includes(state)) return 1;
+  // A single continuous cadence curve prevents a timeScale pop when the
+  // logical state crosses walk/run/sprint thresholds. The same jog FBX is
+  // used for all three states, so cadence must depend on speed, not the label.
+  if (velocity <= 3.65) return clamp(0.72 + (velocity - 1.45) * (0.28 / 2.2), 0.55, 1);
+  return clamp(1 + (velocity - 3.65) * (0.28 / 2.55), 1, 1.5);
 }
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }

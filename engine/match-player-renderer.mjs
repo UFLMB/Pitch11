@@ -1,7 +1,7 @@
 import * as THREE from "../vendor/three/build/three.module.js";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
-import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
+import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
@@ -151,7 +151,8 @@ export class MatchPlayerRenderer {
     this.pendingStates = new Map();
     this.lastAnimationUpdate = 0;
     this.animationAccumulator = 0;
-    this.animationHz = this.mobile ? 20 : 30;
+    // Stadium runtime updates player models at 30 Hz on mobile and 60 Hz on desktop.
+    this.animationHz = this.mobile ? 30 : 60;
     this.materialVariants = new Map();
     this.ringGeometry = new THREE.TorusGeometry(0.62, 0.035, 6, 32);
     this.ringMaterial = new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false });
@@ -362,7 +363,7 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", pendingAnimationState: "", pendingAnimationFrames: 0, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -399,7 +400,13 @@ export class MatchPlayerRenderer {
       group.rotation.y += angleDelta * (1 - Math.exp(-12 * Math.max(dt, 1 / 120)));
       ring.visible = state.selected;
 
-      const animationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
+      const requestedAnimationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
+      const stableAnimation = stabilizeLocomotionAnimationState(
+        requestedAnimationState, entry.state, entry.pendingAnimationState, entry.pendingAnimationFrames
+      );
+      const animationState = stableAnimation.state;
+      entry.pendingAnimationState = stableAnimation.pendingState;
+      entry.pendingAnimationFrames = stableAnimation.pendingFrames;
       let clip = null;
       if (this.modelSource === "mixamo-fbx") {
         if (state.manualClipFile) {
@@ -414,7 +421,7 @@ export class MatchPlayerRenderer {
         clip = resolvePlayerClip(this.animations, animationState);
       }
 
-      if (clip && (entry.activeClipName !== clip.name || entry.state !== animationState || (state.manualClipFile && entry.activeManualClipToken !== state.manualClipToken))) {
+      if (clip && (entry.activeClip !== clip || (state.manualClipFile && entry.activeManualClipToken !== state.manualClipToken))) {
         const nextAction = mixer.clipAction(clip);
         nextAction.reset();
         if (isOneShotAnimationState(animationState)) {
@@ -427,14 +434,19 @@ export class MatchPlayerRenderer {
         nextAction.fadeIn(0.16).play();
         if (entry.activeAction) entry.activeAction.crossFadeTo(nextAction, 0.16, false);
         entry.activeAction = nextAction;
+        entry.activeClip = clip;
         entry.rootMotionAction = null;
-          entry.rootMotionLastTime = null;
-          entry.rootMotionPendingDelta = { x: 0, z: 0 };
-          entry.rootMotionPendingDuration = 0;
+        entry.rootMotionLastTime = null;
+        entry.rootMotionPendingDelta = { x: 0, z: 0 };
+        entry.rootMotionPendingDuration = 0;
         entry.activeClipName = clip.name;
-        entry.activeManualClipToken = state.manualClipToken;
-        entry.state = animationState;
       }
+      // Logical locomotion states may share one FBX (walk/run/sprint all use
+      // the jog cycle). Track the state without restarting that same action.
+      // Persist the stabilized logical state even while its FBX is still
+      // loading; otherwise the debounce window would restart on every frame.
+      entry.state = animationState;
+      if (clip) entry.activeManualClipToken = state.manualClipFile ? state.manualClipToken : -1;
       if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
         entry.activeAction.timeScale = getLocomotionTimeScale(animationState, state.speed);
       }
