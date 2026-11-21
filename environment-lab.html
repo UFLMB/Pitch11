@@ -40,6 +40,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #pov-help{position:absolute;right:18px;bottom:64px;max-width:230px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
 #ui-toggle{position:fixed;z-index:12;top:12px;right:12px;min-width:116px;min-height:42px}
 body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui-hidden #pov-stick,body.ui-hidden #pov-help,body.ui-hidden #status{opacity:0!important}
+body.editor-open .hud,body.editor-open #drone-hud,body.editor-open #drone-help,body.editor-open #pov-stick,body.editor-open #pov-help,body.editor-open #status,body.editor-open #ui-toggle,body.editor-open #fullscreen-entry{visibility:hidden!important}
 body.ui-hidden #ui-toggle{opacity:0!important}
 body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick{pointer-events:auto}
 #ui-toggle{transition:opacity .15s ease}
@@ -87,7 +88,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
   <button data-view="drone">DRONE CAM · DEV</button>
   <button id="pov">PLAYER POV · WALK</button>
   <button id="tunnel">TUNNEL ENTRY</button>
-  <button id="stadium-editor">STADIUM EDITOR</button>
+  <button id="stadium-editor" title="Enter safe stadium editing mode" aria-label="Enter stadium editor">✎ EDIT</button>
   <button id="day" class="active" data-time="0">DAY</button>
   <button id="sunset" data-time="1">SUNSET</button>
   <button id="night" data-time="2">NIGHT</button>
@@ -288,7 +289,25 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
  timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
 }));
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
-document.querySelector('#stadium-editor').addEventListener('click',()=>location.href='./stadium-editor.html');
+let editorFrame=null;
+function openStadiumEditor(){
+ if(editorFrame)return;
+ document.body.classList.add('editor-open');
+ const frame=document.createElement('iframe');
+ frame.title='PITCH 11 Stadium Editor';
+ frame.src='./stadium-editor.html?embedded=1';
+ frame.setAttribute('allowtransparency','true');
+ Object.assign(frame.style,{position:'fixed',inset:'0',width:'100vw',height:'100dvh',border:'0',zIndex:'40',background:'transparent'});
+ editorFrame=frame;
+ document.body.appendChild(frame);
+}
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin||event.data?.type!=='P11_STADIUM_EDITOR_CLOSE')return;
+ if(editorFrame){editorFrame.remove();editorFrame=null;}
+ document.body.classList.remove('editor-open');
+ window.P11Stadium?.setEditorMode?.(false);
+});
+document.querySelector('#stadium-editor').addEventListener('click',openStadiumEditor);
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
