@@ -173,6 +173,8 @@ jobs:
           NODE
       - name: Check isolated Environment Lab runtime module syntax
         run: node --check stadium-environment-runtime.js
+      - name: Validate Environment Lab tunnel and stadium clearance geometry
+        run: node scripts/validate-environment-lab-geometry.mjs
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
