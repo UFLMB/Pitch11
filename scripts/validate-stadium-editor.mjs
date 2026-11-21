@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 const html = fs.readFileSync('stadium-editor.html', 'utf8');
 const env = fs.readFileSync('environment-lab.html', 'utf8');
 const runtime = fs.readFileSync('stadium-environment-runtime.js', 'utf8');
-const moduleMatch = html.match(/<script type="module">([\\s\\S]*?)<\\/script>/);
+const moduleMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/);
 assert.ok(moduleMatch, 'Stadium Editor module script is missing.');
 fs.writeFileSync('/tmp/pitch11-stadium-editor.mjs', moduleMatch[1]);
 const syntax = spawnSync(process.execPath, ['--check', '/tmp/pitch11-stadium-editor.mjs'], { encoding: 'utf8' });
