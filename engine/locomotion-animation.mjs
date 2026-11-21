@@ -15,8 +15,7 @@ export function shouldFlattenHorizontalRootMotion(file) {
  */
 export function shouldFlattenVerticalRootMotion(file) {
   const name = String(file || "").trim();
-  return /^offensive idle\\.fbx$/i.test(name) ||
-    /^jog (?:forward|backward)(?: diagonal)?(?: \(\d+\))?\.fbx$/i.test(name) ||
+  return /^jog (?:forward|backward)(?: diagonal)?(?: \(\d+\))?\.fbx$/i.test(name) ||
     /^jog strafe (?:left|right)\.fbx$/i.test(name);
 }
 
