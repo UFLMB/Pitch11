@@ -34,6 +34,15 @@ assert.ok(runtime.includes('setEditorMode(active)'), 'Environment runtime does n
 assert.ok(runtime.includes('if(externalEditorActive)return'), 'Environment runtime does not pause its own renderer while the editor owns the scene.');
 assert.ok(runtime.includes('editorLocked=true'), 'Playing surface lock metadata is missing.');
 assert.ok(env.includes('id="stadium-editor"'), 'Environment Lab has no Stadium Editor entry.');
-assert.ok(env.includes("location.href='./stadium-editor.html'"), 'Environment Lab entry does not open Stadium Editor.');
+assert.ok(env.includes('function openStadiumEditor()'), 'Environment Lab must open the editor as an inline overlay.');
+assert.ok(env.includes("frame.src='./stadium-editor.html?embedded=1'"), 'Editor must be embedded over the Matchday Viewer.');
+assert.ok(env.includes("type:'P11_STADIUM_EDITOR_CLOSE'"), 'Editor must return to the viewer without navigating to a separate section.');
+assert.ok(html.includes('const embeddedMode='), 'Editor must detect embedded mode.');
+assert.ok(html.includes('live=window.parent.P11Stadium'), 'Embedded editor must reuse the existing Matchday Viewer runtime.');
+assert.ok(html.includes("if(!embeddedMode)host.appendChild(renderer.domElement)"), 'Embedded editor must keep the live viewer canvas in place.');
+assert.ok(html.includes('function closeEditor()'), 'Editor must provide a safe return-to-viewer action.');
+assert.ok(html.includes("document.querySelectorAll('.sectionTitle')"), 'Inspector sections must be collapsible.');
+assert.ok(html.includes('id="fileMenu"'), 'File actions must be grouped in a compact dropdown.');
+assert.ok(html.includes('id="objectsToggle" title="Object list"'), 'Mobile panels must use compact icon controls.');
 assert.ok(!html.includes('graphics3d.html'), 'Stadium Editor must not route into the production renderer.');
 console.log('Stadium Editor module syntax and feature-safety checks passed.');
