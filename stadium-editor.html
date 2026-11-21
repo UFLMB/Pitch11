@@ -241,9 +241,16 @@ function frame(){requestAnimationFrame(frame);clock.getDelta();if(state.mode==='
 async function boot(){
  try{
   const bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
-  Object.assign(bridge.style,{position:'fixed',width:'2px',height:'2px',left:'-10px',top:'-10px',opacity:'0',pointerEvents:'none',border:'0'});document.body.appendChild(bridge);
+  Object.assign(bridge.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',opacity:'0',pointerEvents:'none',border:'0',zIndex:'1'});document.body.appendChild(bridge);
   const started=performance.now();let live=null;
-  while(performance.now()-started<45000){live=bridge.contentWindow?.P11Stadium;if(live?.ready&&live.scene)break;await new Promise(resolve=>setTimeout(resolve,120));}
+  while(performance.now()-started<45000){
+   const child=bridge.contentWindow;
+   const boot=child?.P11StadiumBoot;
+   if(boot?.state==='error')throw new Error(boot.error||'The live Matchday environment failed to initialize.');
+   live=child?.P11Stadium;
+   if(live?.ready&&live.scene)break;
+   await new Promise(resolve=>setTimeout(resolve,120));
+  }
   if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
   if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
   live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
