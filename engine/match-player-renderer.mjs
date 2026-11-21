@@ -228,7 +228,7 @@ export class MatchPlayerRenderer {
       // The simulation owns horizontal player movement for every animation.
       // Keeper sidesteps are the sole exception: extract their displacement
       // for one-time engine application and neutralize the mixer track.
-      // Vertical pelvis motion remains animated for jumps and natural gait.
+      // One-shot action clips retain their authored translation channels.
       if (shouldRemoveLocomotionRootTranslation(file)) {
         // Lock Root/Hips translation to the rig bind pose. This prevents
         // root/pelvis drift and cross-fade pops while simulation owns movement.
