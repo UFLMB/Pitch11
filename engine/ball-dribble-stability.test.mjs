@@ -22,7 +22,8 @@ function extractFunction(name) {
   }
   throw new Error(`Unclosed function ${name}`);
 }
-const targetFn = new Function('clamp', 'Math', `return (${extractFunction('dribbleBallTarget')});`)(Math.min.bind(Math), Math);
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+const targetFn = new Function('clamp', 'Math', `return (${extractFunction('dribbleBallTarget')});`)(clamp, Math);
 const player = (overrides = {}) => ({
   x: 100, y: 100, vx: 60, vy: 0, face: 0, anim: 0, turn: 0,
   st: { drib: 0.8 }, stam: 1, sp: false, winded: false, ...overrides
