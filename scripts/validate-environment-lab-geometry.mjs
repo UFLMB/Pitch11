@@ -21,7 +21,7 @@ assert.match(html, /function enterPov\(\)/);
 assert.match(html, /function updatePov\(dt\)/);
 assert.match(html, /pov\.keys\.add\(k\)/);
 assert.match(html, /povStick\.addEventListener\('pointerdown'/);
-assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.16:\.11/);
+assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.42:\.34/);
 for (const [name, minZ, maxZ] of [
   ['main approach', '44.55', '66.75'],
   ['T-junction', '63.15', '69.05'],
