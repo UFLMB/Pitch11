@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 import { isOneShotAnimationState } from "./player-animation-map.mjs";
+import { MIXAMO_ANIMATION_FILES } from "./mixamo-animation-catalog.mjs";
 function vectorTrack(name, values) { return { name, values: new Float32Array(values), getValueSize: () => 3 }; }
 test("flattens horizontal Hips translation while preserving vertical pelvis motion", () => {
  const hips=vectorTrack("mixamorigHips.position",[1,0,2,4,.2,6,8,.4,10]); const clip={tracks:[hips]};
@@ -104,4 +105,12 @@ test("scales locomotion cadence with actual speed and clamps extremes", () => {
  assert.ok(getLocomotionTimeScale("run",2.5)<getLocomotionTimeScale("run",5));
  assert.ok(getLocomotionTimeScale("sprint",5.5)<getLocomotionTimeScale("sprint",8));
  assert.equal(getLocomotionTimeScale("walk",0),.55); assert.equal(getLocomotionTimeScale("sprint",20),1.5); assert.equal(getLocomotionTimeScale("idle",4),1);
+});
+
+
+test("every engine-driven Mixamo animation is horizontal in-place except extracted keeper sidesteps", () => {
+ for (const file of MIXAMO_ANIMATION_FILES) {
+  const isSidestep = /^goalkeeper sidestep(?: \\(2\\))?\\.fbx$/i.test(file);
+  assert.equal(shouldFlattenHorizontalRootMotion(file), !isSidestep, file);
+ }
 });
