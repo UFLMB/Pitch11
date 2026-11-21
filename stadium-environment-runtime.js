@@ -1070,9 +1070,11 @@ function finishStadiumLoad(gltf){
  loadStadium();
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*viewportWidth,sy=(-v3.y*.5+.5)*viewportHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*viewportWidth,sy2=(-v4.y*.5+.5)*viewportHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
- function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){if(playerRenderer)playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,camera);lastRender=now;}}
- function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,topCamera);lastRender=now;}}
+ let externalEditorActive=false;
+ function render(V,w,h,options={}){if(externalEditorActive)return;applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){if(playerRenderer)playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,camera);lastRender=now;}}
+ function renderTopDown(cx,cy,vw,vh,w,h,options={}){if(externalEditorActive)return;applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
+   if(externalEditorActive)return false;
    if(!ready){previewFailure=stadiumLoadState;return false;}
    if(!rect||rect.w<2||rect.h<2){previewFailure='invalid-preview-rect';return false;}
    // The preview rectangle is expressed in the UI canvas' local CSS pixels.
@@ -1138,7 +1140,7 @@ function finishStadiumLoad(gltf){
    return true;
   }
   function renderEnvironment(position,target,fov=62,timeOfDay=0){
-   if(!environmentMode||!ready)return false;
+   if(externalEditorActive||!environmentMode||!ready)return false;
    applyStadiumTimeOfDay(timeOfDay);
    camera.position.set(position.x,position.y,position.z);
    camera.up.set(0,1,0);
@@ -1153,7 +1155,7 @@ function finishStadiumLoad(gltf){
    return true;
   }
  window.P11Stadium={
-   get ready(){return ready;},get environmentMode(){return environmentMode;},get scene(){return scene;},get renderer(){return renderer;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
+   get ready(){return ready;},get environmentMode(){return environmentMode;},get scene(){return scene;},get renderer(){return renderer;},get editorMode(){return externalEditorActive;},setEditorMode(active){externalEditorActive=Boolean(active);return externalEditorActive;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
    get playerEntrance(){return playerEntranceTunnel;},
    get playerModelsReady(){return !!playerRenderer&&playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;},get playerModelsStatus(){return playerRenderer?playerRenderer.status:'disabled-in-environment-viewer'},
