@@ -4,12 +4,13 @@ This directory contains the audio assets used by PITCH 11.
 
 ## Current status
 
-- The existing main-menu music is retained at `music/menu/main-theme/hella bumps.mp3`.
-- The previous SFXMint sound set and its automatic build-time downloader have been removed.
-- The new, separately selected football recordings and Kenney interface sounds have not yet been imported. Do not treat empty folders or placeholder files as audio assets.
+- The existing main-menu music is retained at `music/menu/main-theme/hella bumps.mp3` and is wired to the main-menu music setting.
+- The UI sound effects are present and wired: navigation click, menu open, back, confirm, and match start.
+- The UI sound files are stored in their matching leaf folders under `sounds/ui/`; do not move them into the music folders.
+- Source URLs, creators, license/version details, game-use permissions, and attribution still need to be documented in `ASSET-SOURCES.md` before treating these files as cleared for redistribution or commercial use.
+- The previous SFXMint audio set and its automatic build-time downloader have been removed.
+- Football gameplay recordings (ball, player, goalkeeper, referee, and stadium) are not currently supplied by this audio set. Do not substitute menu sounds for gameplay sounds or assume empty folders contain audio.
 - Keep each sound in its relevant leaf folder and use descriptive lowercase kebab-case filenames.
-- For every imported asset, add a nearby `README.md` recording the exact source URL, creator, license/version, proof of permission for game use, download date, and required attribution.
-- Do not import assets until their redistribution and commercial-game rights are verified.
 - Do not add copyrighted EA SPORTS FC tracks, commercial recordings, or unlicensed imitations.
 
 ## Audio layout
