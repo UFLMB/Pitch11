@@ -2846,7 +2846,7 @@ function slideHit(p,sd){
   }else if(!o&&b.z<10&&p.kcd<=0&&!(b.receiver&&b.receiver.team===p.team)&&Math.hypot(b.x-p.x,b.y-p.y)<rch&&Math.abs(angd(Math.atan2(b.y-p.y,b.x-p.x),sd.a))<1.5){
     sd.res=1;sd.rec=K.recHit;act8('slide','ball');                               // loose ball: block or win it
     if(Math.hypot(b.vx,b.vy)<350&&Math.random()<0.7)take(p);
-    else{registerBallContact(p);b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);}b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;clearOff();}
+    else{registerBallContact(p);b.last=p;b.receiver=null;const a=sd.a+rnd(-.6,.6),v=rnd(130,220);b.vx=Math.cos(a)*v;b.vy=Math.sin(a)*v;clearOff();}
     return;
   }
   for(let i=(1-p.team)*11+1;i<(1-p.team)*11+11;i++){        // took the man, not the ball
