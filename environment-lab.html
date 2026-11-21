@@ -43,6 +43,12 @@ body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui
 body.ui-hidden #ui-toggle{opacity:0!important}
 body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick{pointer-events:auto}
 #ui-toggle{transition:opacity .15s ease}
+#fullscreen-entry{display:none;position:fixed;z-index:13;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);min-width:190px;min-height:48px;border:1px solid #c8ee8b;background:#172713ee;color:#efffd8;font-size:11px;letter-spacing:.1em;box-shadow:0 8px 28px #0009}
+#fullscreen-entry:disabled{opacity:.75;cursor:default}
+@media(max-width:700px){#fullscreen-entry{display:block}}
+:fullscreen{width:100%;height:100%;background:#07110c}
+:fullscreen #stadium3d,:fullscreen #c{width:100vw;height:100dvh}
+@media(max-width:700px){html,body{height:100%;height:100dvh}}
 @media(max-width:700px){
  .hud{align-items:flex-start;padding:10px;gap:8px}
  .controls{max-width:66vw;gap:5px}
@@ -87,6 +93,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
  </div>
 </div>
 <button id="ui-toggle" type="button" aria-pressed="false" title="Hide or show interface (H)">HIDE UI ELEMENTS</button>
+<button id="fullscreen-entry" type="button">ENTER FULLSCREEN</button>
 <div id="pov-hud"><div id="pov-stick" aria-label="Player movement joystick"><div id="pov-knob"></div></div><div id="pov-help">PLAYER POV<br>WASD: walk · Shift: run<br>Drag: look around<br>Mobile: joystick + swipe</div></div>
 <div id="drone-hud">
  <div class="drone-pad">
@@ -288,6 +295,35 @@ function setUiHidden(hidden){
  uiToggle.title=hidden?'Show interface (H or tap top-right)':'Hide interface (H)';
 }
 uiToggle.addEventListener('click',()=>setUiHidden(!document.body.classList.contains('ui-hidden')));
+const fullscreenEntry=document.querySelector('#fullscreen-entry');
+function syncFullscreenEntry(){
+ const active=Boolean(document.fullscreenElement);
+ fullscreenEntry.hidden=active;
+ if(!active&&matchMedia('(max-width: 700px)').matches){
+  fullscreenEntry.hidden=false;
+  fullscreenEntry.textContent='ENTER FULLSCREEN';
+ }
+}
+fullscreenEntry.addEventListener('click',async()=>{
+ if(document.fullscreenElement){syncFullscreenEntry();return;}
+ if(!document.documentElement.requestFullscreen){
+  fullscreenEntry.textContent='FULLSCREEN NOT SUPPORTED';
+  fullscreenEntry.disabled=true;
+  return;
+ }
+ fullscreenEntry.disabled=true;
+ fullscreenEntry.textContent='ENTERING FULLSCREEN…';
+ try{
+  await document.documentElement.requestFullscreen({navigationUI:'hide'});
+  try{await screen.orientation?.lock?.('landscape');}catch(_orientationError){}
+  fullscreenEntry.hidden=true;
+ }catch(_fullscreenError){
+  fullscreenEntry.textContent='TAP TO TRY FULLSCREEN';
+  fullscreenEntry.disabled=false;
+ }
+});
+document.addEventListener('fullscreenchange',syncFullscreenEntry);
+syncFullscreenEntry();
 window.addEventListener('keydown',e=>{
  if(e.key.toLowerCase()==='h'&&!e.repeat&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){
   setUiHidden(!document.body.classList.contains('ui-hidden'));
