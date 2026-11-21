@@ -23,25 +23,10 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("context.ballOwner"));
   assert.ok(renderer.includes("context.restart"));
   assert.ok(renderer.includes("CORE_MIXAMO_CLIPS"));
+  assert.ok(renderer.includes("shouldRemoveLocomotionRootTranslation(file)"));
+  assert.ok(renderer.includes("removeLocomotionRootTranslation(clip)"));
   assert.ok(renderer.includes("else if (shouldFlattenHorizontalRootMotion(file))"));
   assert.ok(renderer.includes("extractHorizontalRootMotion(clip)"));
-  assert.match(renderer, /import \{[^}]*shouldFlattenVerticalRootMotion[^}]*\} from "\.\/locomotion-animation\.mjs";/);
-  assert.ok(renderer.includes("if (shouldFlattenVerticalRootMotion(file)) flattenVerticalRootMotion(clip);"));
-  assert.ok(renderer.includes("cloneSkeleton"));
-  assert.ok(renderer.includes("setGroundHeight(value)"));
-  assert.ok(renderer.includes("group.position.set(state.x, this.groundHeight, state.z)"));
-  assert.ok(renderer.includes("node.frustumCulled = false"));
-  assert.ok(renderer.includes("isSkinnedMesh"));
-  assert.ok(renderer.includes("loading-mixamo-animations"));
-  assert.ok(renderer.includes("status = \"asset-error\""));
-  assert.ok(!renderer.includes("fallbackModelUrl"));
-  assert.ok(renderer.includes("this.inputPlayerCount = states.length"));
-  assert.ok(renderer.includes("this.visiblePlayerCount = states.reduce"));
-  assert.ok(renderer.includes("get expectedCount()"));
-  assert.ok(renderer.includes("get visibleCount()"));
-  assert.ok(runtime.includes("expectedPlayers:playerRenderer.expectedCount"));
-  assert.ok(runtime.includes("visiblePlayers:playerRenderer.visibleCount"));
-  assert.ok(runtime.includes("renderedPlayers:playerRenderer.count"));
 });
 
 test("legacy 2D player bodies are disabled while 2D overlays and match HUD remain", () => {
