@@ -78,7 +78,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
   </div>
  </aside>
  <div id="centerTools">
-  <button data-tool="translate" class="active">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="scale">SCALE</button><button id="focusBtn">FOCUS</button>
+  <button data-tool="translate" class="active">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="scale">SCALE</button><button id="droneView">DRONE</button><button id="povView">POV</button><button id="focusBtn">FOCUS</button>
  </div>
  <div id="mobilePanels"><button id="objectsToggle">OBJECTS</button><button id="propertiesToggle">PROPERTIES</button></div>
  <aside id="rightPanel" class="panel">
@@ -163,6 +163,7 @@ function selectObject(o){
  updateInspector();renderList();
 }
 function focusObject(){const o=state.selected;if(!o)return;const box=new THREE.Box3().setFromObject(o);if(box.isEmpty())return;const center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3()),distance=Math.max(size.length()*2.1,8);orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(distance*.55,distance*.45,distance));orbit.update();}
+function cameraPreset(mode){const box=new THREE.Box3().setFromObject(state.model||root),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());if(mode==='drone'){orbit.target.copy(center);camera.position.set(center.x,box.max.y+Math.max(65,size.z*.72),box.max.z+Math.max(50,size.z*.5));}else{const z=box.max.z+Math.max(10,size.z*.08);camera.position.set(center.x,box.min.y+1.7,z);orbit.target.set(center.x,box.min.y+12,center.z); }orbit.update();}
 function setMode(mode){state.mode=mode;const editing=mode==='edit';$('editMode').classList.toggle('active',editing);$('viewMode').classList.toggle('active',!editing);transform.enabled=editing;orbit.enabled=!transform.dragging; if(editing&&state.selected)transform.attach(state.selected);else transform.detach();$('selectionHint').textContent=editing?'EDIT MODE · SELECT OBJECTS · MOVE / ROTATE / SCALE · MATERIAL / DECAL TOOLS':'VIEW MODE · DRAG TO ORBIT · SCROLL TO ZOOM · SWITCH TO EDIT MODE TO MODIFY OBJECTS';}
 function snapshot(){const entries=state.meshes.map(o=>({path:o.userData.editorPath,name:o.name,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray(),visible:o.visible,color:colorHex(materialOf(o)?.color),roughness:materialOf(o)?.roughness??.7,metalness:materialOf(o)?.metalness??0,emissive:colorHex(materialOf(o)?.emissive),emissiveIntensity:materialOf(o)?.emissiveIntensity??0,added:o.userData.editorAdded||false,geometry:{type:o.geometry?.type,parameters:o.geometry?.parameters||{}}}));return JSON.stringify({entries,decals:[...state.decals.entries()]});}
 function pushHistory(){if(state.restoring)return;const value=snapshot();if(state.history[state.historyIndex]===value)return;state.history=state.history.slice(0,state.historyIndex+1);state.history.push(value);if(state.history.length>80)state.history.shift();state.historyIndex=state.history.length-1;syncHistory();}
@@ -220,7 +221,7 @@ transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.v
 transform.addEventListener('objectChange',()=>updateInspector());
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{transform.setMode(b.dataset.tool);document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));}));
 $('viewMode').addEventListener('click',()=>setMode('view'));$('editMode').addEventListener('click',()=>setMode('edit'));
-$('focusBtn').addEventListener('click',focusObject);$('objectSearch').addEventListener('input',renderList);
+$('focusBtn').addEventListener('click',focusObject);$('droneView').addEventListener('click',()=>cameraPreset('drone'));$('povView').addEventListener('click',()=>cameraPreset('pov'));$('objectSearch').addEventListener('input',renderList);
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));renderList();}));
 ['posX','posY','posZ','rotX','rotY','rotZ','scaleX','scaleY','scaleZ'].forEach(id=>$(id).addEventListener('change',updateTransformFromFields));
 ['materialColor','roughness','metalness','emissiveColor','emissiveIntensity'].forEach(id=>$(id).addEventListener('change',applyMaterial));
