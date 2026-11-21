@@ -680,13 +680,20 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     for(let k=0;k<5;k++)add('Vent grille slot '+k,.035,.012,.3,-.38+k*.19,height-.125,z,steel);
    }
    // T-junction: three genuinely separate routes rather than three doors in one hall.
-   const branchZ=66.1,branchW=4.8,branchHeight=3.55,branchLength=34;
+   const branchZ=66.1,branchW=4.8,branchHeight=3.55,branchLength=35,junctionOpening=6.2;
    add('T-junction floor',branchLength,.18,branchW,0,.08,branchZ,floor);
    add('T-junction anti-slip surface',branchLength-.25,.025,branchW-.35,0,.185,branchZ,rubber);
    add('T-junction ceiling',branchLength,.24,branchW,0,branchHeight+.12,branchZ,ceiling);
-   add('T-junction front wall',branchLength,branchHeight,.24,0,branchHeight/2+.18,branchZ-branchW/2,paint);
-   add('T-junction rear wall',branchLength,branchHeight,.24,0,branchHeight/2+.18,branchZ+branchW/2,paint);
-   for(let x=-15;x<=15;x+=5){light(x,branchHeight-.02,branchZ);add('Junction column',.16,branchHeight,.18,x,branchHeight/2+.18,branchZ,concrete);}
+   // Split both transverse walls around a full-width opening. The old
+   // continuous walls sealed the main approach and the officials corridor.
+   const wallWing=(branchLength-junctionOpening)/2,wallWingX=junctionOpening/2+wallWing/2;
+   for(const side of[-1,1]){
+    const wallX=side*wallWingX;
+    add('T-junction front wall '+(side<0?'left':'right'),wallWing,branchHeight,.24,wallX,branchHeight/2+.18,branchZ-branchW/2,paint);
+    add('T-junction rear wall '+(side<0?'left':'right'),wallWing,branchHeight,.24,wallX,branchHeight/2+.18,branchZ+branchW/2,paint);
+   }
+   // Flush luminaires only; no columns or posts may obstruct the walkable route.
+   for(let x=-12;x<=12;x+=6)light(x,branchHeight-.02,branchZ);
    // Three branch corridors lead to their own doors; all room geometry remains separated.
    const branch=(id,x1,x2,z,accentMat,accent)=>{
     // The left/right routes are the wings of the T-junction itself. Do not
@@ -708,7 +715,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    light(0,3.62,70);light(0,3.62,75);
    // Dressing-room shells have a single controlled doorway facing their corridor.
    const makeRoom=(id,cx,cz,w,d,accent,accentMat,orientation='front')=>{
-    const h=3.55,door=2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
+    const h=3.55,door=id==='Officials'?4.2:2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
     add(id+' floor',w,.18,d,cx,.08,cz,floor);
     add(id+' ceiling',w,.22,d,cx,h+.12,cz,ceiling);
     if(orientation==='front'){
@@ -790,14 +797,22 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    scene.add(root);return root;
   }
  function carveStadiumForPlayerEntrance(stadium){
-  // Clip triangles against exact tunnel volumes. Unlike the old whole-triangle
-  // deletion, this preserves the stadium surface outside the actual cut boundary.
+  // Clip imported GLB triangles against the complete corridor/room clearances.
+  // This removes seats, terrace steps and their foundations as real geometry,
+  // rather than hiding them behind tunnel walls.
+  const clearanceBottom=pitchSurfaceY-1.0,clearanceTop=pitchSurfaceY+4.8;
   const cuts=[
-   {minX:-3.25,maxX:3.25,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.35,minZ:44.9,maxZ:66.4},
-   {minX:-17.5,maxX:17.5,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.2,minZ:63.45,maxZ:68.75},
-   {minX:-28.8,maxX:-16.1,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:59.8,maxZ:72.4},
-   {minX:16.1,maxX:28.8,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:59.8,maxZ:72.4},
-   {minX:-5.8,maxX:5.8,minY:pitchSurfaceY-.55,maxY:pitchSurfaceY+4.15,minZ:78.8,maxZ:92.0}
+   // Pitch portal and main approach, with vertical clearance above the ceiling.
+   {minX:-3.8,maxX:3.8,minY:clearanceBottom,maxY:clearanceTop,minZ:44.55,maxZ:66.75},
+   // Full T-junction crossbar including wall thickness and door returns.
+   {minX:-18.0,maxX:18.0,minY:clearanceBottom,maxY:clearanceTop,minZ:63.15,maxZ:69.05},
+   // Home and away changing rooms and their side-door thresholds.
+   {minX:-29.2,maxX:-16.0,minY:clearanceBottom,maxY:clearanceTop,minZ:59.45,maxZ:72.75},
+   {minX:16.0,maxX:29.2,minY:clearanceBottom,maxY:clearanceTop,minZ:59.45,maxZ:72.75},
+   // The complete officials corridor was previously missing from the cut.
+   {minX:-3.25,maxX:3.25,minY:clearanceBottom,maxY:clearanceTop,minZ:68.15,maxZ:80.05},
+   // Officials dressing room, continuously joined to the corridor clearance.
+   {minX:-5.9,maxX:5.9,minY:clearanceBottom,maxY:clearanceTop,minZ:78.45,maxZ:92.25}
   ];
   const axis=['x','y','z'];
   const interpolate=(a,b,t)=>{
@@ -865,6 +880,10 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
         for(const name of names){
          let values=vertex.attrs[name];
          if(name==='position'){v.copy(vertex.world).applyMatrix4(inverse);values=[v.x,v.y,v.z];}
+         if((name==='normal'||name==='tangent')&&values.length>=3){
+          const n=new THREE.Vector3(values[0],values[1],values[2]).normalize();
+          values=[n.x,n.y,n.z,...values.slice(3)];
+         }
          arrays[name].push(...values);
         }
         emitted++;
@@ -882,7 +901,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    geometry.computeBoundingBox();geometry.computeBoundingSphere();
    mesh.geometry=geometry;meshesChanged++;trianglesClipped+=clipped;trianglesRemoved+=removed;
   });
-  const diagnostics={meshesVisited,meshesChanged,trianglesClipped,trianglesRemoved,fragmentsCreated,cutVolumes:cuts.length,scope:'imported-stadium-glb-only',firstStepStartZ:45.5,method:'triangle-box-clipping'};
+  const diagnostics={meshesVisited,meshesChanged,trianglesClipped,trianglesRemoved,fragmentsCreated,cutVolumes:cuts.length,clearanceY:{bottom:+clearanceBottom.toFixed(3),top:+clearanceTop.toFixed(3)},clearanceZones:{mainApproach:[44.55,66.75],tJunction:[63.15,69.05],homeAwayRooms:[59.45,72.75],officialsCorridor:[68.15,80.05],officialsRoom:[78.45,92.25]},scope:'imported-stadium-glb-only',firstStepStartZ:45.5,method:'triangle-box-clipping'};
   console.info('PITCH 11 Environment Lab precise tunnel clearance:',diagnostics);return diagnostics;
  }
 
