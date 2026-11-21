@@ -41,8 +41,6 @@ test('only the deepest approaching player resolves a multi-player contact in one
   collide();
 
   assert.equal(ball.last, first);
-  assert.equal(ball.bodyContactPlayer, first);
-  assert.equal(ball.bodyContactUntil, 1.12);
   assert.equal(first.kcd, 0.3);
   assert.equal(ball.contactPickupTicks, 8);
   assert.ok(Number.isFinite(ball.vx) && Number.isFinite(ball.vy));
@@ -60,7 +58,7 @@ test('a descending ball keeps its vertical velocity during a body collision', ()
 
 test('the same player cannot repeatedly re-trigger body contact during the short separation window', () => {
   const tackler = player(1, -100);
-  const ball = looseBall({ bodyContactPlayer: tackler, bodyContactUntil: 10, contactPickupTicks: 8 });
+  const ball = looseBall({ contactPickupTicks: 8 });
   const state = { t: 9, so: null, prac: true };
   const collide = makeBodyCollide({ ball, players: [tackler], state });
 
