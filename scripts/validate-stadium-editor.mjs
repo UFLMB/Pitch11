@@ -38,7 +38,7 @@ assert.ok(env.includes('function openStadiumEditor()'), 'Environment Lab must op
 assert.ok(env.includes("frame.src='./stadium-editor.html?embedded=1'"), 'Editor must be embedded over the Matchday Viewer.');
 assert.ok(html.includes("location.replace('./environment-lab.html?editor=1')"), 'Direct editor URL must return to the Matchday Viewer and open edit mode there.');
 assert.ok(html.includes("#duplicateBtn::before{content:'⧉'"), 'Mobile editing actions must use compact icon controls.');
-assert.ok(env.includes("type:'P11_STADIUM_EDITOR_CLOSE'"), 'Editor must return to the viewer without navigating to a separate section.');
+assert.ok(env.includes("event.data?.type!=='P11_STADIUM_EDITOR_CLOSE'"), 'Editor must return to the viewer without navigating to a separate section.');
 assert.ok(html.includes('const embeddedMode='), 'Editor must detect embedded mode.');
 assert.ok(html.includes('live=window.parent.P11Stadium'), 'Embedded editor must reuse the existing Matchday Viewer runtime.');
 assert.ok(html.includes("if(!embeddedMode)host.appendChild(renderer.domElement)"), 'Embedded editor must keep the live viewer canvas in place.');
