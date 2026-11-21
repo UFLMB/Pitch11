@@ -854,9 +854,12 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   const groundRay=new THREE.Vector3(0,-1,0),current={x:position.x,y:position.y,z:position.z};
   for(let step=0;step<steps;step++){
    const nextX=current.x+stepX,nextZ=current.z+stepZ,currentGround=current.y-1.65;
+   // Probe above the current floor so a raised ramp landing is detected
+   // before the player reaches its first edge. Keep a bounded step-up/down
+   // window to avoid snapping through unrelated upper stadium geometry.
    const nearby=walkColliderMeshes.filter(mesh=>{
     const b=mesh.userData.p11WalkBounds;
-    return b&&nextX>=b.min.x-1.5&&nextX<=b.max.x+1.5&&nextZ>=b.min.z-1.5&&nextZ<=b.max.z+1.5&&b.max.y>=currentGround-.8&&b.min.y<=currentGround+5.5;
+    return b&&nextX>=b.min.x-1.5&&nextX<=b.max.x+1.5&&nextZ>=b.min.z-1.5&&nextZ<=b.max.z+1.5&&b.max.y>=currentGround-1.25&&b.min.y<=currentGround+7.0;
    });
    if(!nearby.length)break;
    let blocked=false;
@@ -866,9 +869,9 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     if(walkRaycaster.intersectObjects(nearby,false).some(hit=>hit.distance<walkRaycaster.far-.015)){blocked=true;break;}
    }
    if(blocked)break;
-   walkRaycaster.set(new THREE.Vector3(nextX,currentGround+5.5,nextZ),groundRay);
+   walkRaycaster.set(new THREE.Vector3(nextX,currentGround+6.5,nextZ),groundRay);
    walkRaycaster.near=0;walkRaycaster.far=8.0;
-   const floorHit=walkRaycaster.intersectObjects(nearby,false).find(hit=>hit.point.y<=currentGround+.42&&hit.point.y>=currentGround-.78);
+   const floorHit=walkRaycaster.intersectObjects(nearby,false).find(hit=>hit.point.y<=currentGround+1.25&&hit.point.y>=currentGround-1.0);
    if(!floorHit)break;
    const nextGround=floorHit.point.y;
    current.x=nextX;current.z=nextZ;current.y=nextGround+1.65;
