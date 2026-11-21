@@ -19,6 +19,10 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;col
 .controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:75vw}
 button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 10px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.07em;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
+#element-id-layer{position:fixed;inset:0;z-index:11;pointer-events:none;overflow:hidden;display:none}
+.element-id-tag{position:absolute;transform:translate(-50%,-50%);padding:2px 5px;border:1px solid currentColor;border-radius:5px;background:#07110ced;color:white;font:900 10px/1.2 ui-monospace,monospace;box-shadow:0 2px 7px #000b;white-space:nowrap}
+#element-id-legend{position:fixed;z-index:12;left:10px;top:64px;display:none;max-width:min(340px,calc(100vw - 20px));padding:7px 9px;border:1px solid #ffffff30;border-radius:8px;background:#07130de8;color:#f4f7f4;font-size:9px;line-height:1.7;pointer-events:none}
+#element-id-legend span{margin-right:8px;white-space:nowrap}
 #status{position:fixed;z-index:4;left:50%;bottom:16px;transform:translateX(-50%);padding:8px 12px;border:1px solid #ffffff22;border-radius:99px;background:#07130dbb;color:#d2dfd3;font-size:10px;letter-spacing:.07em;white-space:nowrap;backdrop-filter:blur(12px);max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis}
 #loading{position:fixed;inset:0;display:grid;place-items:center;background:#07110c;z-index:8;color:#d9f3d5;font-size:12px;letter-spacing:.16em;text-align:center;padding:24px}
 #loading small{display:block;margin-top:10px;color:#819884;letter-spacing:.05em;line-height:1.6}
@@ -88,7 +92,8 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
   <button data-view="drone">DRONE CAM · DEV</button>
   <button id="pov">PLAYER POV · WALK</button>
   <button id="tunnel">TUNNEL ENTRY</button>
-  <button id="stadium-editor" title="Enter safe stadium editing mode" aria-label="Enter stadium editor">✎ EDIT</button>
+  <button id="stadium-editor" title="Open separate Stadium Editor" aria-label="Open stadium editor">✎ EDITOR</button>
+  <button id="element-ids" title="Show color-coded element IDs" aria-pressed="false"># IDs</button>
   <button id="day" class="active" data-time="0">DAY</button>
   <button id="sunset" data-time="1">SUNSET</button>
   <button id="night" data-time="2">NIGHT</button>
@@ -111,6 +116,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
  </div>
 </div>
 <div id="drone-help">DEVELOPER CAMERA ONLY<br>WASD / arrows: move · Q/E: altitude<br>Drag: look around · Wheel: zoom<br>Mobile: directional controls<br>Free flight · no collision limits</div>
+<div id="element-id-layer" aria-hidden="true"></div><div id="element-id-legend"></div>
 <div id="status">MATCHDAY ENVIRONMENT · LOADING LIVE STADIUM SYSTEM…</div>
 <div id="loading">LOADING LIVE MATCHDAY ENVIRONMENT<small>Using the current PITCH 11 stadium runtime · player models and gameplay disabled</small></div>
 <script type="module">
@@ -133,7 +139,7 @@ sizeOverlay();
 addEventListener('resize',sizeOverlay);
 const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
 const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},drag:false,lastX:0,lastY:0};
-let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0,elementIdsVisible=false,elementIdRecords=[],elementIdFrame=0;
+let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
 const presets={
  broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
  tactical:{position:{x:0,y:250,z:1},target:{x:0,y:0,z:0},fov:43},
@@ -206,6 +212,7 @@ const ELEMENT_CATEGORIES=[
  ['ADVERTISING',/board|advert|led|screen|banner|sign|sponsor/i,'#fb923c'],
  ['EQUIPMENT',/light|lamp|flood|speaker|camera|flag|gate|door|tunnel|goal|net|bench|dugout/i,'#f87171']
 ];
+let elementIdsVisible=false,elementIdRecords=[],elementIdFrame=0;
 function elementCategory(object){
  let node=object;
  while(node&&node!==window.P11Stadium?.scene){
@@ -222,42 +229,35 @@ function buildElementIds(){
   if(!object.isMesh||!object.geometry||!object.visible)return;
   const parts=[];let node=object;
   while(node&&node!==api.scene){parts.push((node.name||node.type||'Object')+'['+(node.parent?.children?.indexOf(node)??0)+']');node=node.parent;}
-  const path=parts.reverse().join('/');
-  const group=elementCategory(object);
-  candidates.push({object,path,...group});
+  candidates.push({object,path:parts.reverse().join('/'),...elementCategory(object)});
  });
  candidates.sort((a,b)=>a.path.localeCompare(b.path));
+ const layer=document.querySelector('#element-id-layer'),fragment=document.createDocumentFragment();
  elementIdRecords=candidates.slice(0,400).map((record,index)=>{
-  const tag=document.createElement('span');tag.className='element-id-tag';tag.textContent=String(index+1);tag.style.color=record.color;tag.title=record.category+' · '+record.path;
-  document.querySelector('#element-id-layer').appendChild(tag);
+  const tag=document.createElement('span');tag.className='element-id-tag';tag.textContent=String(index+1);tag.style.color=record.color;tag.title=record.category+' · '+record.path;fragment.appendChild(tag);
   const bounds=new THREE.Box3().setFromObject(record.object);
   return{...record,id:index+1,tag,center:bounds.isEmpty()?record.object.getWorldPosition(new THREE.Vector3()):bounds.getCenter(new THREE.Vector3())};
  });
- document.querySelector('#element-id-legend').innerHTML=[
-  ['STADIUM','#22d3ee'],['SCENERY','#fbbf24'],['PITCH','#a3e635'],['SECTORS','#e879f9'],['SEATING','#60a5fa'],['ADVERTISING','#fb923c'],['EQUIPMENT','#f87171'],['OTHER','#d1d5db']
- ].map(([name,color])=>'<span style="color:'+color+'">● '+name+'</span>').join('');
+ layer.replaceChildren(fragment);
+ document.querySelector('#element-id-legend').innerHTML=[['STADIUM','#22d3ee'],['SCENERY','#fbbf24'],['PITCH','#a3e635'],['SECTORS','#e879f9'],['SEATING','#60a5fa'],['ADVERTISING','#fb923c'],['EQUIPMENT','#f87171'],['OTHER','#d1d5db']].map(([n,c])=>'<span style="color:'+c+'">● '+n+'</span>').join('');
 }
 function updateElementIds(){
  if(!elementIdsVisible||!elementIdRecords.length)return;
- const api=window.P11Stadium,camera=api?.camera;if(!camera)return;
+ const camera=window.P11Stadium?.camera;if(!camera)return;
  const layer=document.querySelector('#element-id-layer'),rect=layer.getBoundingClientRect(),v=new THREE.Vector3();
  for(const record of elementIdRecords){
   if(!record.object.visible||!record.object.parent){record.tag.style.display='none';continue;}
   v.copy(record.center).project(camera);
-  const x=(v.x*.5+.5)*rect.width,y=(-v.y*.5+.5)*rect.height;
-  const visible=v.z>-1&&v.z<1&&x>0&&x<rect.width&&y>0&&y<rect.height;
+  const x=(v.x*.5+.5)*rect.width,y=(-v.y*.5+.5)*rect.height,visible=v.z>-1&&v.z<1&&x>0&&x<rect.width&&y>0&&y<rect.height;
   record.tag.style.display=visible?'block':'none';
   if(visible){record.tag.style.left=x+'px';record.tag.style.top=y+'px';}
  }
 }
 document.querySelector('#element-ids').addEventListener('click',()=>{
  elementIdsVisible=!elementIdsVisible;
- const button=document.querySelector('#element-ids');
- button.classList.toggle('active',elementIdsVisible);button.setAttribute('aria-pressed',String(elementIdsVisible));
- document.querySelector('#element-id-layer').style.display=elementIdsVisible?'block':'none';
- document.querySelector('#element-id-legend').style.display=elementIdsVisible?'block':'none';
- if(elementIdsVisible&&!elementIdRecords.length)buildElementIds();
- updateElementIds();
+ const button=document.querySelector('#element-ids');button.classList.toggle('active',elementIdsVisible);button.setAttribute('aria-pressed',String(elementIdsVisible));
+ document.querySelector('#element-id-layer').style.display=elementIdsVisible?'block':'none';document.querySelector('#element-id-legend').style.display=elementIdsVisible?'block':'none';
+ if(elementIdsVisible&&!elementIdRecords.length)buildElementIds();updateElementIds();
 });
 
 function animate(now){
@@ -353,29 +353,7 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
  timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
 }));
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
-let editorFrame=null;
-function openStadiumEditor(){
- if(editorFrame)return;
- document.body.classList.add('editor-open');
- const frame=document.createElement('iframe');
- frame.title='PITCH 11 Stadium Editor';
- frame.src='./stadium-editor.html?embedded=1';
- frame.setAttribute('allowtransparency','true');
- Object.assign(frame.style,{position:'fixed',inset:'0',width:'100vw',height:'100dvh',border:'0',zIndex:'40',background:'transparent'});
- editorFrame=frame;
- document.body.appendChild(frame);
-}
-window.addEventListener('message',event=>{
- if(event.origin!==location.origin||event.source!==editorFrame?.contentWindow||event.data?.type!=='P11_STADIUM_EDITOR_CLOSE')return;
- if(editorFrame){editorFrame.remove();editorFrame=null;}
- document.body.classList.remove('editor-open');
- window.P11Stadium?.setEditorMode?.(false);
-});
-document.querySelector('#stadium-editor').addEventListener('click',openStadiumEditor);
-if(new URLSearchParams(location.search).get('editor')==='1'){
- if(ready)openStadiumEditor();
- else window.addEventListener('p11stadiumready',openStadiumEditor,{once:true});
-}
+document.querySelector('#stadium-editor').addEventListener('click',()=>location.href='./stadium-editor.html');
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
