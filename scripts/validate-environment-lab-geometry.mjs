@@ -28,6 +28,6 @@ const opening = 6.2;
 const wing = (branchLength - opening) / 2;
 const wingCenter = opening / 2 + wing / 2;
 assert.equal(wing, 14.4);
-assert.equal(wingCenter - wing / 2, opening / 2);
-assert.equal(wingCenter + wing / 2, branchLength / 2);
+assert.ok(Math.abs((wingCenter - wing / 2) - opening / 2) < 1e-9);
+assert.ok(Math.abs((wingCenter + wing / 2) - branchLength / 2) < 1e-9);
 console.log('Environment Lab stadium clearance and T-junction geometry checks passed.');
