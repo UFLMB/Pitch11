@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
+import { MENU_MUSIC, SOURCES } from "./audio-assets.mjs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const audioModule = read("./audio-assets.mjs");
@@ -20,6 +21,10 @@ test("every registered menu audio source exists at its declared repository path"
     assert.ok(existsSync(new URL(decoded, import.meta.url)), "Missing audio asset: " + decoded);
     assert.ok(audioModule.includes(path), "Audio module does not register: " + path);
   }
+  for (const [name, url] of Object.entries(SOURCES)) {
+    assert.ok(existsSync(new URL(url)), "Registered sound file is missing: " + name);
+  }
+  assert.ok(existsSync(new URL(MENU_MUSIC)), "Registered menu music file is missing");
 });
 
 test("menu audio actions are wired to their intended UI and match lifecycle events", () => {
