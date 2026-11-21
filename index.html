@@ -3480,34 +3480,46 @@ MS.layout=function(){
 };
 
 /* ===================== 20. STAGE 14: real-football feel - body collisions, ball in hands, colour trajectories, aim preview ===================== */
-function bodyCollide(){                                    // the ball bounces off bodies it cannot be controlled by (blocked passes, keepers, stunned players)
+function bodyCollide(){                                    // resolve one stable ball/body contact per fixed tick
   const b=ball;if(b.owner||b.z>16||H>W)return;
+  let hit=null;
   for(const p of P){
     if(p.out||p.substitutionExiting)continue;
     if(p===b.last&&p.kcd>0.1&&!(S.so&&S.so.live&&p===S.so.shooter))continue;
+    if(p===b.bodyContactPlayer&&S.t<(b.bodyContactUntil||0))continue;
     const dx=b.x-p.x,dy=b.y-p.y,d=Math.hypot(dx,dy),R=BR+(p.down?3:4.8);
     if(d>=R||d<0.01)continue;
     const nx=dx/d,ny=dy/d,rx=b.vx-p.vx,ry=b.vy-p.vy,vn=rx*nx+ry*ny;
     if(vn>=0)continue;
-    const shootoutKickerContact=!!(S.so&&S.so.live&&p===S.so.shooter);
-    if(shootoutKickerContact||PITCH11Law.isRestartKickerSecondContact({
-      isRestartKicker:p===b.dbl&&b.last===p,
-      approaching:true
-    })){
-      if(shootoutKickerContact){
-        const accidental=b.last===p&&Number.isFinite(S.so.kickAt)&&S.so.t-S.so.kickAt<=0.25;
-        if(accidental)b.shootoutDoubleTouch=true;
-        else b.shootoutDeliberateDoubleTouch=true;
-      }else if(ball.pen&&!ball.penaltyWasShootout&&p===ball.penaltyKicker)ball.penaltyDoubleTouch=true;
-      else if(!ball.pen&&!S.so)b.restartDoubleTouchPending={player:p,x:b.x,y:b.y,kind:b.dblKind};
-    }
-    if(!S.prac&&p.off){callOffside(p);return;}
-    const e=0.48;b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
-    b.x=p.x+nx*R;b.y=p.y+ny*R;
-    if(-vn>220&&b.z<4&&b.vz<25)b.vz=Math.min(55,18+(-vn-220)*0.035);
-    const previousLast=b.last;b.spin+=rnd(-.4,.4);b.last=p;if(b.receiver!==p)b.receiver=null;applyOffsideTouch(p,previousLast,false,false);
-    if(-vn>220&&typeof AU!=='undefined'&&AU.kick)AU.kick(-vn*0.5);
+    // Prefer the deepest approaching contact; break close ties by impact speed.
+    const score=(R-d)+Math.min(600,-vn)*0.002;
+    if(!hit||score>hit.score)hit={p,nx,ny,R,rx,ry,vn,score};
   }
+  if(!hit)return;
+  const {p,nx,ny,R,rx,ry,vn}=hit;
+  const shootoutKickerContact=!!(S.so&&S.so.live&&p===S.so.shooter);
+  if(shootoutKickerContact||PITCH11Law.isRestartKickerSecondContact({
+    isRestartKicker:p===b.dbl&&b.last===p,
+    approaching:true
+  })){
+    if(shootoutKickerContact){
+      const accidental=b.last===p&&Number.isFinite(S.so.kickAt)&&S.so.t-S.so.kickAt<=0.25;
+      if(accidental)b.shootoutDoubleTouch=true;
+      else b.shootoutDeliberateDoubleTouch=true;
+    }else if(ball.pen&&!ball.penaltyWasShootout&&p===ball.penaltyKicker)ball.penaltyDoubleTouch=true;
+    else if(!ball.pen&&!S.so)b.restartDoubleTouchPending={player:p,x:b.x,y:b.y,kind:b.dblKind};
+  }
+  if(!S.prac&&p.off){callOffside(p);return;}
+  const e=0.48;
+  b.vx=p.vx+rx-(1+e)*vn*nx;b.vy=p.vy+ry-(1+e)*vn*ny;
+  // A small separation margin prevents the same pair from re-penetrating next tick.
+  b.x=p.x+nx*(R+0.25);b.y=p.y+ny*(R+0.25);
+  // Side-on contact may lift a grounded ball, but must never reverse an existing fall.
+  if(-vn>220&&b.z<4&&Math.abs(b.vz)<0.001)b.vz=Math.min(55,18+(-vn-220)*0.035);
+  const previousLast=b.last;b.spin+=rnd(-.4,.4);b.last=p;
+  b.bodyContactPlayer=p;b.bodyContactUntil=S.t+0.12;
+  if(b.receiver!==p)b.receiver=null;applyOffsideTouch(p,previousLast,false,false);
+  if(-vn>220&&typeof AU!=='undefined'&&AU.kick)AU.kick(-vn*0.5);
 }
 const _sbH=stepBall;
 stepBall=function(){                                        // keeper holds the ball in his hands; throw-in taker holds it overhead
