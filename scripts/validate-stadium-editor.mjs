@@ -43,6 +43,8 @@ assert.ok(html.includes('const embeddedMode='), 'Editor must detect embedded mod
 assert.ok(html.includes('live=window.parent.P11Stadium'), 'Embedded editor must reuse the existing Matchday Viewer runtime.');
 assert.ok(html.includes("if(!embeddedMode)host.appendChild(renderer.domElement)"), 'Embedded editor must keep the live viewer canvas in place.');
 assert.ok(html.includes('function closeEditor()'), 'Editor must provide a safe return-to-viewer action.');
+assert.ok(html.includes('window.parent.P11StadiumBoot'), 'Embedded editor must wait for the parent viewer to finish booting.');
+assert.ok(env.includes('event.source!==editorFrame?.contentWindow'), 'Viewer must validate the editor close message source.');
 assert.ok(html.includes("document.querySelectorAll('.sectionTitle')"), 'Inspector sections must be collapsible.');
 assert.ok(html.includes('id="fileMenu"'), 'File actions must be grouped in a compact dropdown.');
 assert.ok(html.includes('id="objectsToggle" title="Object list"'), 'Mobile panels must use compact icon controls.');
