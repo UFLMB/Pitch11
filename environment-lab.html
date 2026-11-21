@@ -38,6 +38,11 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #pov-stick{position:absolute;left:20px;bottom:64px;width:132px;height:132px;border:1px solid #ffffff55;border-radius:50%;background:#07130d88;box-shadow:inset 0 0 24px #0008;pointer-events:auto;touch-action:none;display:grid;place-items:center}
 #pov-knob{width:54px;height:54px;border-radius:50%;background:#a3e635bb;border:1px solid #e7ffc2;box-shadow:0 3px 14px #0009;transform:translate(0,0);pointer-events:none}
 #pov-help{position:absolute;right:18px;bottom:64px;max-width:230px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
+#ui-toggle{position:fixed;z-index:12;top:12px;right:12px;min-width:116px;min-height:42px}
+body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui-hidden #pov-stick,body.ui-hidden #pov-help,body.ui-hidden #status{opacity:0!important}
+body.ui-hidden #ui-toggle{opacity:0!important}
+body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick{pointer-events:auto}
+#ui-toggle{transition:opacity .15s ease}
 @media(max-width:700px){
  .hud{align-items:flex-start;padding:10px;gap:8px}
  .controls{max-width:66vw;gap:5px}
@@ -81,6 +86,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
   <button id="back">BACK TO GAME</button>
  </div>
 </div>
+<button id="ui-toggle" type="button" aria-pressed="false" title="Hide or show interface (H)">HIDE UI ELEMENTS</button>
 <div id="pov-hud"><div id="pov-stick" aria-label="Player movement joystick"><div id="pov-knob"></div></div><div id="pov-help">PLAYER POV<br>WASD: walk · Shift: run<br>Drag: look around<br>Mobile: joystick + swipe</div></div>
 <div id="drone-hud">
  <div class="drone-pad">
@@ -274,6 +280,19 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
 }));
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
+const uiToggle=document.querySelector('#ui-toggle');
+function setUiHidden(hidden){
+ document.body.classList.toggle('ui-hidden',hidden);
+ uiToggle.setAttribute('aria-pressed',String(hidden));
+ uiToggle.textContent=hidden?'SHOW UI ELEMENTS':'HIDE UI ELEMENTS';
+ uiToggle.title=hidden?'Show interface (H or tap top-right)':'Hide interface (H)';
+}
+uiToggle.addEventListener('click',()=>setUiHidden(!document.body.classList.contains('ui-hidden')));
+window.addEventListener('keydown',e=>{
+ if(e.key.toLowerCase()==='h'&&!e.repeat&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName)){
+  setUiHidden(!document.body.classList.contains('ui-hidden'));
+ }
+});
 window.addEventListener('error',e=>{
  if(!ready)showBootFailure(String(e.message||'Unknown browser error'));
 });
