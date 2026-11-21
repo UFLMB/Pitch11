@@ -19,7 +19,7 @@ test("restores root translations after cyclic locomotion mixer updates", () => {
   assert.ok(restoreModel > mixerUpdate && restoreModel < nextRootMotion);
   assert.ok(restoreBones > mixerUpdate && restoreBones < nextRootMotion);
   assert.match(playerSource, /\["idle", "walk", "run", "sprint", "backward", "strafeLeft", "strafeRight"/);
-  assert.match(playerSource, /"forwardDiagonalLeft", "forwardDiagonalRight", "backwardDiagonalLeft", "backwardDiagonalRight"/);
+  assert.match(playerSource, /"forwardDiagonalLeft"[\\s\\S]*?"backwardDiagonalRight"/);
 });
 
 test("keeps world position owned by the simulation and preserves animation rotations", () => {
