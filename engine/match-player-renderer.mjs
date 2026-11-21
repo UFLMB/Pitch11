@@ -5,7 +5,7 @@ import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
-import { extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion, shouldFlattenVerticalRootMotion } from "./locomotion-animation.mjs";
 
 const CORE_MIXAMO_CLIPS = [
   "offensive idle.fbx",
