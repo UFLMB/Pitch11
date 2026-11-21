@@ -2663,7 +2663,7 @@ function skillAct(p){
   if(!skillMove(p,fw+T.a,K8))return;
   p.scd=TUNING.sk.cd;act8('skill',T.n+(ok?'':'!'));
   if(ok)pop8(T.n);
-  else{pop8('LOST IT');p.stun=0.25;if(Math.random()<TUNING.sk.loose){const b=ball;b.owner=null;b.last=p;b.receiver=null;b.vx=Math.cos(fw+T.a)*70;b.vy=Math.sin(fw+T.a)*70;p.kcd=0.4;}}
+  else{pop8('LOST IT');p.stun=0.25;if(Math.random()<TUNING.sk.loose){const b=ball;b.owner=null;registerBallContact(p);b.last=p;b.receiver=null;b.vx=Math.cos(fw+T.a)*70;b.vy=Math.sin(fw+T.a)*70;}}
 }
 /* --- per-tick state: wind-up, first-time arming, wall pass, timers --- */
 function tick8(){
