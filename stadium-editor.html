@@ -72,6 +72,12 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
  #leftPanel,#rightPanel{width:min(270px,86vw)}
  #selectionHint{bottom:6px;max-width:calc(100% - 16px)}
  #fileMenu summary{padding:8px 11px}
+ #addBox,#addPanel,#resetTransform,#toggleVisible,#duplicateBtn,#deleteBtn,#undoBtn,#redoBtn,#applyText,#removeDecal{font-size:0;min-width:38px;min-height:36px;padding:7px}
+ #addBox::before{content:'▣';font-size:16px}#addPanel::before{content:'▤';font-size:16px}
+ #resetTransform::before{content:'↺';font-size:16px}#toggleVisible::before{content:'◉';font-size:16px}
+ #duplicateBtn::before{content:'⧉';font-size:16px}#deleteBtn::before{content:'⌫';font-size:16px}
+ #undoBtn::before{content:'↶';font-size:16px}#redoBtn::before{content:'↷';font-size:16px}
+ #applyText::before{content:'T+';font-size:12px}#removeDecal::before{content:'T−';font-size:12px}
 }
 </style>
 <script type="importmap">
@@ -98,7 +104,7 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
    <div class="filters"><button class="active" data-filter="all">ALL</button><button data-filter="structure">STRUCTURE</button><button data-filter="detail">DETAILS</button><button data-filter="added">ADDED</button></div>
    <div id="objectList"><div class="muted">Loading stadium objects…</div></div>
    <div style="height:10px"></div>
-   <div class="section"><button type="button" class="sectionTitle">ADD OBJECT</button><div class="btnRow"><button id="addBox">＋ BOX</button><button id="addPanel">＋ PANEL</button></div><div class="muted">Added objects are independent editable meshes.</div></div>
+   <div class="section"><button type="button" class="sectionTitle">ADD OBJECT</button><div class="btnRow"><button id="addBox" title="Add box" aria-label="Add box">＋ BOX</button><button id="addPanel" title="Add advertising panel" aria-label="Add advertising panel">＋ PANEL</button></div><div class="muted">Added objects are independent editable meshes.</div></div>
   </div>
  </aside>
  <div id="centerTools">
@@ -114,12 +120,12 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
     <div class="fieldGrid"><div class="field"><label>POSITION X</label><input id="posX" type="number" step=".01"></div><div class="field"><label>POSITION Y</label><input id="posY" type="number" step=".01"></div><div class="field"><label>POSITION Z</label><input id="posZ" type="number" step=".01"></div></div>
     <div class="fieldGrid"><div class="field"><label>ROTATION X°</label><input id="rotX" type="number" step="1"></div><div class="field"><label>ROTATION Y°</label><input id="rotY" type="number" step="1"></div><div class="field"><label>ROTATION Z°</label><input id="rotZ" type="number" step="1"></div></div>
     <div class="fieldGrid"><div class="field"><label>SCALE X</label><input id="scaleX" type="number" step=".01" min=".001"></div><div class="field"><label>SCALE Y</label><input id="scaleY" type="number" step=".01" min=".001"></div><div class="field"><label>SCALE Z</label><input id="scaleZ" type="number" step=".01" min=".001"></div></div>
-    <div class="btnRow"><button id="resetTransform">RESET TRANSFORM</button><button id="toggleVisible">HIDE</button></div>
+    <div class="btnRow"><button id="resetTransform" title="Reset transform" aria-label="Reset transform">RESET TRANSFORM</button><button id="toggleVisible" title="Toggle object visibility" aria-label="Toggle object visibility">HIDE</button></div>
    </div>
    <div class="section"><button type="button" class="sectionTitle">MATERIAL</button><div class="row"><div class="field"><label>BASE COLOR</label><input id="materialColor" type="color" value="#ffffff"></div><div class="field"><label>ROUGHNESS</label><input id="roughness" type="number" min="0" max="1" step=".05" value=".7"></div><div class="field"><label>METALNESS</label><input id="metalness" type="number" min="0" max="1" step=".05" value="0"></div></div><div class="field"><label>EMISSION COLOR</label><input id="emissiveColor" type="color" value="#000000"></div><div class="field"><label>EMISSION STRENGTH</label><input id="emissiveIntensity" type="number" min="0" max="20" step=".1" value="0"></div><div class="muted" id="materialMeta">Material edits are isolated to the selected mesh.</div></div>
-   <div class="section"><button type="button" class="sectionTitle">TEXT / GRAPHIC DECAL</button><div class="field"><label>TEXT</label><textarea id="decalText" placeholder="Enter a stadium sign or advertising message…"></textarea></div><div class="fieldGrid"><div class="field"><label>TEXT COLOR</label><input id="decalColor" type="color" value="#ffffff"></div><div class="field"><label>BACKGROUND</label><input id="decalBg" type="color" value="#101820"></div><div class="field"><label>FONT SIZE</label><input id="decalSize" type="number" min="12" max="180" value="64"></div></div><div class="btnRow"><button id="applyText">APPLY TEXT</button><button id="removeDecal">REMOVE DECAL</button></div><label class="muted">Upload an image / sponsor logo</label><input id="imageUpload" type="file" accept="image/*"></div>
-   <div class="section"><button type="button" class="sectionTitle">OBJECT ACTIONS</button><div class="btnRow"><button id="duplicateBtn">DUPLICATE</button><button id="deleteBtn">DELETE</button></div></div>
-   <div class="section"><button type="button" class="sectionTitle">HISTORY</button><div class="btnRow"><button id="undoBtn">↶ UNDO</button><button id="redoBtn">REDO ↷</button></div><div class="muted" id="historyMeta">No changes yet.</div></div>
+   <div class="section"><button type="button" class="sectionTitle">TEXT / GRAPHIC DECAL</button><div class="field"><label>TEXT</label><textarea id="decalText" placeholder="Enter a stadium sign or advertising message…"></textarea></div><div class="fieldGrid"><div class="field"><label>TEXT COLOR</label><input id="decalColor" type="color" value="#ffffff"></div><div class="field"><label>BACKGROUND</label><input id="decalBg" type="color" value="#101820"></div><div class="field"><label>FONT SIZE</label><input id="decalSize" type="number" min="12" max="180" value="64"></div></div><div class="btnRow"><button id="applyText" title="Apply text decal" aria-label="Apply text decal">APPLY TEXT</button><button id="removeDecal" title="Remove decal" aria-label="Remove decal">REMOVE DECAL</button></div><label class="muted">Upload an image / sponsor logo</label><input id="imageUpload" type="file" accept="image/*"></div>
+   <div class="section"><button type="button" class="sectionTitle">OBJECT ACTIONS</button><div class="btnRow"><button id="duplicateBtn" title="Duplicate selected object" aria-label="Duplicate selected object">DUPLICATE</button><button id="deleteBtn" title="Delete selected object" aria-label="Delete selected object">DELETE</button></div></div>
+   <div class="section"><button type="button" class="sectionTitle">HISTORY</button><div class="btnRow"><button id="undoBtn" title="Undo change" aria-label="Undo change">↶ UNDO</button><button id="redoBtn" title="Redo change" aria-label="Redo change">REDO ↷</button></div><div class="muted" id="historyMeta">No changes yet.</div></div>
   </div>
  </aside>
 </div>
@@ -127,6 +133,7 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
 <div id="loading">LOADING STADIUM EDITOR<small>Preparing the stadium model and editable object hierarchy…</small></div>
 <div id="toast"></div>
 <input id="configFile" type="file" accept="application/json,.json" hidden>
+<script>if(new URLSearchParams(location.search).get('embedded')!=='1')location.replace('./environment-lab.html?editor=1');</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
