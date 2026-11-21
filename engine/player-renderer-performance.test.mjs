@@ -4,9 +4,9 @@ import { readFileSync } from "node:fs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("player animation mixers are capped for mobile and desktop", () => {
+test("player animation mixers follow the mobile and desktop stadium frame cadence", () => {
   const renderer = read("./match-player-renderer.mjs");
-  assert.ok(renderer.includes("this.animationHz = this.mobile ? 20 : 30"));
+  assert.ok(renderer.includes("this.animationHz = this.mobile ? 30 : 60"));
   assert.ok(renderer.includes("this.animationAccumulator += dt"));
   assert.ok(renderer.includes("if (updateAnimations) {"));
   assert.ok(renderer.includes("mixer.update(animationDelta)"));
