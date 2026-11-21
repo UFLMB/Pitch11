@@ -44,6 +44,7 @@ assert.ok(html.includes('const child=bridge.contentWindow'), 'Standalone editor 
 assert.ok(html.includes('host.appendChild(renderer.domElement)'), 'Standalone editor must mount the shared Environment Lab renderer in its own viewport.');
 assert.ok(html.includes('live.setEditorMode(true)'), 'Standalone editor must explicitly acquire the isolated scene for editing.');
 assert.ok(html.includes("$('backBtn').addEventListener('click',()=>location.href='./environment-lab.html')"), 'Editor BACK action must return to the Matchday Viewer.');
-assert.ok(html.includes("#duplicateBtn::before{content:'⧉'"), 'Mobile editing actions must use compact icon controls.');
+assert.ok(html.includes('#mobilePanels{display:none}') && html.includes('#mobilePanels{display:flex'), 'Mobile editor must expose compact object/property panel toggles.');
+assert.ok(html.includes('id="duplicateBtn"') && html.includes('id="deleteBtn"'), 'Object actions must remain available in the responsive inspector.');
 assert.ok(!html.includes('graphics3d.html'), 'Stadium Editor must not route into the production renderer.');
 console.log('Standalone Stadium Editor module syntax and feature-safety checks passed.');
