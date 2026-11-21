@@ -37,18 +37,6 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 #toast{position:fixed;z-index:30;left:50%;bottom:20px;transform:translateX(-50%);padding:9px 13px;border-radius:99px;background:#1c2b1e;border:1px solid #a3e63566;color:#e7ffd0;font-size:10px;opacity:0;transition:opacity .18s;pointer-events:none}
 #toast.show{opacity:1}
 #mobilePanels{display:none}
-html.embedded-mode,body.embedded-mode{background:transparent!important}
-body.embedded-mode #viewport{background:transparent}
-body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755)}
-#fileMenu{position:relative}
-#fileMenu summary{list-style:none;cursor:pointer;border:1px solid #ffffff2a;border-radius:8px;background:#17221c;padding:8px 12px;font-weight:900}
-#fileMenu summary::-webkit-details-marker{display:none}
-#fileMenu .menuItems{position:absolute;right:0;top:calc(100% + 7px);display:flex;flex-direction:column;gap:5px;min-width:118px;padding:7px;background:#0a100ef2;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px #0009}
-#fileMenu .menuItems button{width:100%;text-align:left}
-.sectionTitle{display:block;width:100%;text-align:left;border:0;border-radius:0;background:transparent;color:#a3e635;padding:0;font-size:8px;font-weight:900;letter-spacing:.14em}
-.section.collapsed>:not(.sectionTitle){display:none!important}
-.sectionTitle::after{content:'−';float:right;color:#93a397}
-.section.collapsed .sectionTitle::after{content:'+'}
 @media(max-width:850px){
  .topbar{min-height:54px;padding:7px 9px}.brand{min-width:100px}.brand b{font-size:11px}.brand small{font-size:7px}
  .actions button{padding:8px 8px;font-size:8px}
@@ -62,23 +50,7 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
  #mobilePanels button{padding:8px 10px}
  #selectionHint{bottom:8px;font-size:8px}
 }
-@media(max-width:430px){
- .brand{min-width:86px}.brand small{letter-spacing:.08em}
- .topbar{gap:5px}.actions{gap:4px}
- #centerTools{top:66px;left:auto;right:8px;transform:none;padding:4px}
- #centerTools button{min-width:34px;padding:7px 8px;font-size:14px}
- #mobilePanels{left:8px;transform:none}
- #mobilePanels button{width:38px;height:38px;padding:0;font-size:16px}
- #leftPanel,#rightPanel{width:min(270px,86vw)}
- #selectionHint{bottom:6px;max-width:calc(100% - 16px)}
- #fileMenu summary{padding:8px 11px}
- #addBox,#addPanel,#resetTransform,#toggleVisible,#duplicateBtn,#deleteBtn,#undoBtn,#redoBtn,#applyText,#removeDecal{font-size:0;min-width:38px;min-height:36px;padding:7px}
- #addBox::before{content:'▣';font-size:16px}#addPanel::before{content:'▤';font-size:16px}
- #resetTransform::before{content:'↺';font-size:16px}#toggleVisible::before{content:'◉';font-size:16px}
- #duplicateBtn::before{content:'⧉';font-size:16px}#deleteBtn::before{content:'⌫';font-size:16px}
- #undoBtn::before{content:'↶';font-size:16px}#redoBtn::before{content:'↷';font-size:16px}
- #applyText::before{content:'T+';font-size:12px}#removeDecal::before{content:'T−';font-size:12px}
-}
+@media(max-width:430px){.actions button[data-wide="1"]{display:none}.brand{min-width:86px}.brand small{letter-spacing:.08em}}
 </style>
 <script type="importmap">
 {"imports":{"three":"./vendor/three/build/three.module.js","three/":"./vendor/three/","three/addons/":"./vendor/three/examples/jsm/"}}
@@ -89,11 +61,9 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
 <header class="topbar">
  <div class="brand"><b>PITCH 11</b><small>STADIUM EDITOR · WORKSPACE</small></div>
  <div class="actions">
-  <button id="viewMode" class="active" title="Return to Matchday Viewer">◉ VIEW</button><button id="editMode" hidden>EDIT MODE</button>
-  <details id="fileMenu"><summary title="Save and file actions" aria-label="Save and file actions">⋯</summary><div class="menuItems">
-   <button id="saveBtn" class="primary">SAVE</button><button id="exportBtn">EXPORT</button><button id="importBtn">IMPORT</button>
-  </div></details>
-  <button id="backBtn" hidden>BACK</button>
+  <button id="viewMode" class="active">VIEW MODE</button><button id="editMode">EDIT MODE</button>
+  <button id="saveBtn" class="primary" data-wide="1">SAVE</button><button id="exportBtn" data-wide="1">EXPORT</button><button id="importBtn" data-wide="1">IMPORT</button>
+  <button id="backBtn">BACK</button>
  </div>
 </header>
 <div id="layout">
@@ -104,28 +74,27 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
    <div class="filters"><button class="active" data-filter="all">ALL</button><button data-filter="structure">STRUCTURE</button><button data-filter="detail">DETAILS</button><button data-filter="added">ADDED</button></div>
    <div id="objectList"><div class="muted">Loading stadium objects…</div></div>
    <div style="height:10px"></div>
-   <div class="section"><button type="button" class="sectionTitle">ADD OBJECT</button><div class="btnRow"><button id="addBox" title="Add box" aria-label="Add box">＋ BOX</button><button id="addPanel" title="Add advertising panel" aria-label="Add advertising panel">＋ PANEL</button></div><div class="muted">Added objects are independent editable meshes.</div></div>
+   <div class="section"><div class="sectionTitle">ADD OBJECT</div><div class="btnRow"><button id="addBox">＋ BOX</button><button id="addPanel">＋ PANEL</button></div><div class="muted">Added objects are independent editable meshes.</div></div>
   </div>
  </aside>
  <div id="centerTools">
-  <button data-tool="translate" class="active" title="Move" aria-label="Move">↔</button><button data-tool="rotate" title="Rotate" aria-label="Rotate">⟳</button><button data-tool="scale" title="Scale" aria-label="Scale">⤢</button>
-  <button id="droneView" title="Drone camera" aria-label="Drone camera">♧</button><button id="povView" title="Pitch-side camera" aria-label="Pitch-side camera">◎</button><button id="focusBtn" title="Focus selected object" aria-label="Focus selected object">⌖</button>
+  <button data-tool="translate" class="active">MOVE</button><button data-tool="rotate">ROTATE</button><button data-tool="scale">SCALE</button><button id="droneView">DRONE</button><button id="povView">POV</button><button id="focusBtn">FOCUS</button>
  </div>
- <div id="mobilePanels"><button id="objectsToggle" title="Object list" aria-label="Object list">☷</button><button id="propertiesToggle" title="Properties" aria-label="Properties">⚙</button></div>
+ <div id="mobilePanels"><button id="objectsToggle">OBJECTS</button><button id="propertiesToggle">PROPERTIES</button></div>
  <aside id="rightPanel" class="panel">
   <h2>OBJECT INSPECTOR</h2>
   <div class="panelBody">
-   <div class="section"><button type="button" class="sectionTitle">SELECTION</button><div class="field"><label>OBJECT NAME</label><input id="objectName" type="text" placeholder="Select an object" disabled></div><div class="muted" id="objectMeta">Select a mesh in the viewport or object list.</div></div>
-   <div class="section"><button type="button" class="sectionTitle">TRANSFORM · LOCAL SPACE</button>
+   <div class="section"><div class="sectionTitle">SELECTION</div><div class="field"><label>OBJECT NAME</label><input id="objectName" type="text" placeholder="Select an object" disabled></div><div class="muted" id="objectMeta">Select a mesh in the viewport or object list.</div></div>
+   <div class="section"><div class="sectionTitle">TRANSFORM · LOCAL SPACE</div>
     <div class="fieldGrid"><div class="field"><label>POSITION X</label><input id="posX" type="number" step=".01"></div><div class="field"><label>POSITION Y</label><input id="posY" type="number" step=".01"></div><div class="field"><label>POSITION Z</label><input id="posZ" type="number" step=".01"></div></div>
     <div class="fieldGrid"><div class="field"><label>ROTATION X°</label><input id="rotX" type="number" step="1"></div><div class="field"><label>ROTATION Y°</label><input id="rotY" type="number" step="1"></div><div class="field"><label>ROTATION Z°</label><input id="rotZ" type="number" step="1"></div></div>
     <div class="fieldGrid"><div class="field"><label>SCALE X</label><input id="scaleX" type="number" step=".01" min=".001"></div><div class="field"><label>SCALE Y</label><input id="scaleY" type="number" step=".01" min=".001"></div><div class="field"><label>SCALE Z</label><input id="scaleZ" type="number" step=".01" min=".001"></div></div>
-    <div class="btnRow"><button id="resetTransform" title="Reset transform" aria-label="Reset transform">RESET TRANSFORM</button><button id="toggleVisible" title="Toggle object visibility" aria-label="Toggle object visibility">HIDE</button></div>
+    <div class="btnRow"><button id="resetTransform">RESET TRANSFORM</button><button id="toggleVisible">HIDE</button></div>
    </div>
-   <div class="section"><button type="button" class="sectionTitle">MATERIAL</button><div class="row"><div class="field"><label>BASE COLOR</label><input id="materialColor" type="color" value="#ffffff"></div><div class="field"><label>ROUGHNESS</label><input id="roughness" type="number" min="0" max="1" step=".05" value=".7"></div><div class="field"><label>METALNESS</label><input id="metalness" type="number" min="0" max="1" step=".05" value="0"></div></div><div class="field"><label>EMISSION COLOR</label><input id="emissiveColor" type="color" value="#000000"></div><div class="field"><label>EMISSION STRENGTH</label><input id="emissiveIntensity" type="number" min="0" max="20" step=".1" value="0"></div><div class="muted" id="materialMeta">Material edits are isolated to the selected mesh.</div></div>
-   <div class="section"><button type="button" class="sectionTitle">TEXT / GRAPHIC DECAL</button><div class="field"><label>TEXT</label><textarea id="decalText" placeholder="Enter a stadium sign or advertising message…"></textarea></div><div class="fieldGrid"><div class="field"><label>TEXT COLOR</label><input id="decalColor" type="color" value="#ffffff"></div><div class="field"><label>BACKGROUND</label><input id="decalBg" type="color" value="#101820"></div><div class="field"><label>FONT SIZE</label><input id="decalSize" type="number" min="12" max="180" value="64"></div></div><div class="btnRow"><button id="applyText" title="Apply text decal" aria-label="Apply text decal">APPLY TEXT</button><button id="removeDecal" title="Remove decal" aria-label="Remove decal">REMOVE DECAL</button></div><label class="muted">Upload an image / sponsor logo</label><input id="imageUpload" type="file" accept="image/*"></div>
-   <div class="section"><button type="button" class="sectionTitle">OBJECT ACTIONS</button><div class="btnRow"><button id="duplicateBtn" title="Duplicate selected object" aria-label="Duplicate selected object">DUPLICATE</button><button id="deleteBtn" title="Delete selected object" aria-label="Delete selected object">DELETE</button></div></div>
-   <div class="section"><button type="button" class="sectionTitle">HISTORY</button><div class="btnRow"><button id="undoBtn" title="Undo change" aria-label="Undo change">↶ UNDO</button><button id="redoBtn" title="Redo change" aria-label="Redo change">REDO ↷</button></div><div class="muted" id="historyMeta">No changes yet.</div></div>
+   <div class="section"><div class="sectionTitle">MATERIAL</div><div class="row"><div class="field"><label>BASE COLOR</label><input id="materialColor" type="color" value="#ffffff"></div><div class="field"><label>ROUGHNESS</label><input id="roughness" type="number" min="0" max="1" step=".05" value=".7"></div><div class="field"><label>METALNESS</label><input id="metalness" type="number" min="0" max="1" step=".05" value="0"></div></div><div class="field"><label>EMISSION COLOR</label><input id="emissiveColor" type="color" value="#000000"></div><div class="field"><label>EMISSION STRENGTH</label><input id="emissiveIntensity" type="number" min="0" max="20" step=".1" value="0"></div><div class="muted" id="materialMeta">Material edits are isolated to the selected mesh.</div></div>
+   <div class="section"><div class="sectionTitle">TEXT / GRAPHIC DECAL</div><div class="field"><label>TEXT</label><textarea id="decalText" placeholder="Enter a stadium sign or advertising message…"></textarea></div><div class="fieldGrid"><div class="field"><label>TEXT COLOR</label><input id="decalColor" type="color" value="#ffffff"></div><div class="field"><label>BACKGROUND</label><input id="decalBg" type="color" value="#101820"></div><div class="field"><label>FONT SIZE</label><input id="decalSize" type="number" min="12" max="180" value="64"></div></div><div class="btnRow"><button id="applyText">APPLY TEXT</button><button id="removeDecal">REMOVE DECAL</button></div><label class="muted">Upload an image / sponsor logo</label><input id="imageUpload" type="file" accept="image/*"></div>
+   <div class="section"><div class="sectionTitle">OBJECT ACTIONS</div><div class="btnRow"><button id="duplicateBtn">DUPLICATE</button><button id="deleteBtn">DELETE</button></div></div>
+   <div class="section"><div class="sectionTitle">HISTORY</div><div class="btnRow"><button id="undoBtn">↶ UNDO</button><button id="redoBtn">REDO ↷</button></div><div class="muted" id="historyMeta">No changes yet.</div></div>
   </div>
  </aside>
 </div>
@@ -133,7 +102,6 @@ body.embedded-mode .topbar{background:linear-gradient(180deg,#050907e8,#05090755
 <div id="loading">LOADING STADIUM EDITOR<small>Preparing the stadium model and editable object hierarchy…</small></div>
 <div id="toast"></div>
 <input id="configFile" type="file" accept="application/json,.json" hidden>
-<script>if(new URLSearchParams(location.search).get('embedded')!=='1')location.replace('./environment-lab.html?editor=1');</script>
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -150,9 +118,7 @@ const transform=new TransformControls(camera,host);transform.setMode('translate'
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),clock=new THREE.Clock();
 const root=new THREE.Group();root.name='STADIUM ROOT';scene.add(root);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),new THREE.MeshStandardMaterial({color:0x18251c,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.name='EDITOR GROUND · LOCKED';floor.userData.editorLocked=true;scene.add(floor);
-const embeddedMode=new URLSearchParams(location.search).get('embedded')==='1'&&window.parent!==window;
-if(embeddedMode){document.body.classList.add('embedded-mode');document.documentElement.style.background='transparent';}
-const state={ready:false,mode:'edit',selected:null,meshes:[],records:[],filter:'all',history:[],historyIndex:-1,restoring:false,dragStart:null,decals:new Map(),model:null,modelScale:1};
+const state={ready:false,mode:'view',selected:null,meshes:[],records:[],filter:'all',history:[],historyIndex:-1,restoring:false,dragStart:null,decals:new Map(),model:null,modelScale:1};
 const excludedName=/(^|[^a-z])(pitch|pitch.?surface|turf|grass|field.?mark|touchline|goal.?line)([^a-z]|$)/i;
 const structureName=/(stand|stadium|roof|tier|concourse|facade|concrete|structure|beam|truss|pillar|column|wall|stair|ramp)/i;
 const detailName=/(board|advert|led|screen|seat|chair|bench|dugout|tunnel|flag|light|lamp|sign|banner|railing|barrier|gate|door|post|pole|camera|speaker)/i;
@@ -193,13 +159,7 @@ function selectObject(o){
 }
 function focusObject(){const o=state.selected;if(!o)return;const box=new THREE.Box3().setFromObject(o);if(box.isEmpty())return;const center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3()),distance=Math.max(size.length()*2.1,8);orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(distance*.55,distance*.45,distance));orbit.update();}
 function cameraPreset(mode){const box=new THREE.Box3().setFromObject(state.model||root),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());if(mode==='drone'){orbit.target.copy(center);camera.position.set(center.x,box.max.y+Math.max(65,size.z*.72),box.max.z+Math.max(50,size.z*.5));}else{const z=box.max.z+Math.max(10,size.z*.08);camera.position.set(center.x,box.min.y+1.7,z);orbit.target.set(center.x,box.min.y+12,center.z); }orbit.update();}
-function setMode(mode){state.mode=mode;const editing=mode==='edit';$('editMode').classList.toggle('active',editing);$('viewMode').classList.toggle('active',!editing);transform.enabled=editing;orbit.enabled=!transform.dragging;if(editing&&state.selected)transform.attach(state.selected);else transform.detach();$('selectionHint').textContent=editing?'EDITOR ACTIVE · SELECT OBJECTS · MOVE / ROTATE / SCALE':'VIEW ONLY · DRAG TO ORBIT · SCROLL TO ZOOM';}
-function closeEditor(){
- if(state.model)root.remove(state.model);
- if(state.liveBridge?.setEditorMode)state.liveBridge.setEditorMode(false);
- if(embeddedMode&&window.parent!==window){window.parent.postMessage({type:'P11_STADIUM_EDITOR_CLOSE'},location.origin);return;}
- location.href='./environment-lab.html';
-}
+function setMode(mode){state.mode=mode;const editing=mode==='edit';$('editMode').classList.toggle('active',editing);$('viewMode').classList.toggle('active',!editing);transform.enabled=editing;orbit.enabled=!transform.dragging; if(editing&&state.selected)transform.attach(state.selected);else transform.detach();$('selectionHint').textContent=editing?'EDIT MODE · SELECT OBJECTS · MOVE / ROTATE / SCALE · MATERIAL / DECAL TOOLS':'VIEW MODE · DRAG TO ORBIT · SCROLL TO ZOOM · SWITCH TO EDIT MODE TO MODIFY OBJECTS';}
 function snapshot(){const entries=state.meshes.map(o=>({path:o.userData.editorPath,name:o.name,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray(),visible:o.visible,color:colorHex(materialOf(o)?.color),roughness:materialOf(o)?.roughness??.7,metalness:materialOf(o)?.metalness??0,emissive:colorHex(materialOf(o)?.emissive),emissiveIntensity:materialOf(o)?.emissiveIntensity??0,added:o.userData.editorAdded||false,geometry:{type:o.geometry?.type,parameters:o.geometry?.parameters||{}}}));return JSON.stringify({entries,decals:[...state.decals.entries()]});}
 function pushHistory(){if(state.restoring)return;const value=snapshot();if(state.history[state.historyIndex]===value)return;state.history=state.history.slice(0,state.historyIndex+1);state.history.push(value);if(state.history.length>80)state.history.shift();state.historyIndex=state.history.length-1;syncHistory();}
 function syncHistory(){$('undoBtn').disabled=state.historyIndex<=0;$('redoBtn').disabled=state.historyIndex>=state.history.length-1;$('historyMeta').textContent=state.history.length?('Step '+(state.historyIndex+1)+' / '+state.history.length):'No changes yet.';}
@@ -257,13 +217,7 @@ let down=null;host.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clie
 transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value){updateInspector();pushHistory();}});
 transform.addEventListener('objectChange',()=>updateInspector());
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>{transform.setMode(b.dataset.tool);document.querySelectorAll('[data-tool]').forEach(x=>x.classList.toggle('active',x===b));}));
-document.querySelectorAll('.sectionTitle').forEach(button=>button.addEventListener('click',()=>{
- const section=button.closest('.section');const opening=section.classList.contains('collapsed');
- document.querySelectorAll('.section').forEach(item=>item.classList.add('collapsed'));
- if(opening)section.classList.remove('collapsed');
-}));
-document.querySelectorAll('#rightPanel .section').forEach((section,index)=>{if(index>1)section.classList.add('collapsed');});
-$('viewMode').addEventListener('click',closeEditor);$('editMode').addEventListener('click',()=>setMode('edit'));
+$('viewMode').addEventListener('click',()=>setMode('view'));$('editMode').addEventListener('click',()=>setMode('edit'));
 $('focusBtn').addEventListener('click',focusObject);$('droneView').addEventListener('click',()=>cameraPreset('drone'));$('povView').addEventListener('click',()=>cameraPreset('pov'));$('objectSearch').addEventListener('input',renderList);
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{state.filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));renderList();}));
 ['posX','posY','posZ','rotX','rotY','rotZ','scaleX','scaleY','scaleZ'].forEach(id=>$(id).addEventListener('change',updateTransformFromFields));
@@ -279,52 +233,39 @@ $('removeDecal').addEventListener('click',()=>{if(!state.selected)return;removeD
 $('imageUpload').addEventListener('change',e=>{const file=e.target.files?.[0];if(!file||!state.selected)return;const reader=new FileReader();reader.onload=()=>{const img=new Image();img.onload=()=>{const data={text:'',color:'#ffffff',background:'#101820',fontSize:64,imageData:String(reader.result)};applyDecal(state.selected,data,img);pushHistory();notify('Graphic applied to selected object.');};img.src=String(reader.result);};reader.readAsDataURL(file);});
 $('saveBtn').addEventListener('click',saveLocal);$('exportBtn').addEventListener('click',downloadJson);$('importBtn').addEventListener('click',()=>$('configFile').click());
 $('configFile').addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=()=>{try{applyConfig(JSON.parse(String(reader.result)));}catch(error){notify(error.message||'Invalid config file.');}};reader.readAsText(f);e.target.value='';});
-$('backBtn').addEventListener('click',closeEditor);
+$('backBtn').addEventListener('click',()=>location.href='./environment-lab.html');
 $('objectsToggle').addEventListener('click',()=>$('leftPanel').classList.toggle('open'));$('propertiesToggle').addEventListener('click',()=>$('rightPanel').classList.toggle('open'));
-window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){closeEditor();}});
+window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){setMode('view');}});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(renderer)renderer.setSize(innerWidth,innerHeight,false);});
 function frame(){requestAnimationFrame(frame);clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.render(scene,camera);}
 async function boot(){
  try{
-  let live=null,bridge=null;
-  if(embeddedMode){
-   const started=performance.now();
-   while(performance.now()-started<45000){
-    live=window.parent.P11Stadium;
-    const boot=window.parent.P11StadiumBoot;
-    if(boot?.state==='error')throw new Error(boot.error||'The Matchday Viewer failed to initialize.');
-    if(live?.ready&&live.scene)break;
-    await new Promise(resolve=>setTimeout(resolve,120));
-   }
-   if(!live?.ready||!live.scene)throw new Error('The Matchday Viewer did not finish loading within 45 seconds.');
-  }else{
-   bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
-   Object.assign(bridge.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',opacity:'0',pointerEvents:'none',border:'0',zIndex:'1'});document.body.appendChild(bridge);
-   const started=performance.now();
-   while(performance.now()-started<45000){
-    const child=bridge.contentWindow,boot=child?.P11StadiumBoot;
-    if(boot?.state==='error')throw new Error(boot.error||'The live Matchday environment failed to initialize.');
-    live=child?.P11Stadium;
-    if(live?.ready&&live.scene)break;
-    await new Promise(resolve=>setTimeout(resolve,120));
-   }
-   if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
+  const bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
+  Object.assign(bridge.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',opacity:'0',pointerEvents:'none',border:'0',zIndex:'1'});document.body.appendChild(bridge);
+  const started=performance.now();let live=null;
+  while(performance.now()-started<45000){
+   const child=bridge.contentWindow;
+   const boot=child?.P11StadiumBoot;
+   if(boot?.state==='error')throw new Error(boot.error||'The live Matchday environment failed to initialize.');
+   live=child?.P11Stadium;
+   if(live?.ready&&live.scene)break;
+   await new Promise(resolve=>setTimeout(resolve,120));
   }
+  if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
   if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
   live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
   renderer=live.renderer;if(!renderer)throw new Error('The live Matchday renderer is unavailable.');
-  if(!embeddedMode)host.appendChild(renderer.domElement);
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.85:1.25));renderer.setSize(innerWidth,innerHeight,false);
+  host.appendChild(renderer.domElement);renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.85:1.25));renderer.setSize(innerWidth,innerHeight,false);
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;
   renderer.domElement.style.touchAction='none';root.add(live.scene);state.model=live.scene;state.modelScale=1;
   const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
   collectMeshes();
   const finalBounds=new THREE.Box3().setFromObject(live.scene),center=finalBounds.getCenter(new THREE.Vector3()),radius=finalBounds.getSize(new THREE.Vector3()).length();
   orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(radius*.58,radius*.42,radius*1.12));camera.near=.1;camera.far=Math.max(1200,radius*8);camera.updateProjectionMatrix();orbit.update();
-  state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();setMode('edit');loading.style.display='none';
-  notify('Editing live Matchday stadium · '+state.meshes.length+' editable mesh objects.');
+  state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();loading.style.display='none';
+  notify('Connected to live Matchday scene · '+state.meshes.length+' editable mesh objects.');
   frame();
- }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><div style="display:flex;gap:8px;justify-content:center;margin-top:14px"><button id="returnViewer">VIEWER</button><button id="retry">RETRY</button></div></div>';$('returnViewer').addEventListener('click',closeEditor);$('retry').addEventListener('click',()=>location.reload());}
+ }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Open Environment Lab first to confirm the stadium asset is available, then retry.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
 }
 boot();
 </script>
