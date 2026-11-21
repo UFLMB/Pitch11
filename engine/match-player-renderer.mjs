@@ -1,7 +1,7 @@
 import * as THREE from "../vendor/three/build/three.module.js";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
-import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState } from "./player-animation-map.mjs";
+import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
 import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
@@ -363,7 +363,7 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
+    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", pendingAnimationState: "", pendingAnimationFrames: 0, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -400,7 +400,13 @@ export class MatchPlayerRenderer {
       group.rotation.y += angleDelta * (1 - Math.exp(-12 * Math.max(dt, 1 / 120)));
       ring.visible = state.selected;
 
-      const animationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
+      const requestedAnimationState = resolvePlayerAnimationState({ role: state.role, action: state.action }, state.speed);
+      const stableAnimation = stabilizeLocomotionAnimationState(
+        requestedAnimationState, entry.state, entry.pendingAnimationState, entry.pendingAnimationFrames
+      );
+      const animationState = stableAnimation.state;
+      entry.pendingAnimationState = stableAnimation.pendingState;
+      entry.pendingAnimationFrames = stableAnimation.pendingFrames;
       let clip = null;
       if (this.modelSource === "mixamo-fbx") {
         if (state.manualClipFile) {
