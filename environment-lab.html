@@ -33,6 +33,11 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 .drone-alt{display:flex;flex-direction:column;gap:5px}
 #drone-help{position:fixed;z-index:5;right:16px;bottom:16px;display:none;max-width:240px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
 #drone-help.visible{display:block}
+#pov-hud{position:fixed;z-index:6;inset:0;display:none;pointer-events:none}
+#pov-hud.visible{display:block}
+#pov-stick{position:absolute;left:20px;bottom:64px;width:132px;height:132px;border:1px solid #ffffff55;border-radius:50%;background:#07130d88;box-shadow:inset 0 0 24px #0008;pointer-events:auto;touch-action:none;display:grid;place-items:center}
+#pov-knob{width:54px;height:54px;border-radius:50%;background:#a3e635bb;border:1px solid #e7ffc2;box-shadow:0 3px 14px #0009;transform:translate(0,0);pointer-events:none}
+#pov-help{position:absolute;right:18px;bottom:64px;max-width:230px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
 @media(max-width:700px){
  .hud{align-items:flex-start;padding:10px;gap:8px}
  .controls{max-width:66vw;gap:5px}
@@ -42,6 +47,9 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
  .drone-pad{grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px)}
  .drone-pad button,.drone-alt button{width:38px;height:38px}
  #drone-help{right:9px;bottom:48px;max-width:145px;font-size:9px}
+ #pov-stick{left:12px;bottom:54px;width:116px;height:116px}
+ #pov-knob{width:48px;height:48px}
+ #pov-help{right:10px;bottom:54px;max-width:138px;font-size:9px}
  #status{bottom:8px;font-size:8px}
 }
 </style>
@@ -65,6 +73,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
   <button data-view="tactical">TACTICAL</button>
   <button data-view="low">LOW STADIUM</button>
   <button data-view="drone">DRONE CAM · DEV</button>
+  <button id="pov">PLAYER POV · WALK</button>
   <button id="tunnel">TUNNEL ENTRY</button>
   <button id="day" class="active" data-time="0">DAY</button>
   <button id="sunset" data-time="1">SUNSET</button>
@@ -72,6 +81,7 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
   <button id="back">BACK TO GAME</button>
  </div>
 </div>
+<div id="pov-hud"><div id="pov-stick" aria-label="Player movement joystick"><div id="pov-knob"></div></div><div id="pov-help">PLAYER POV<br>WASD: walk · Shift: run<br>Drag: look around<br>Mobile: joystick + swipe</div></div>
 <div id="drone-hud">
  <div class="drone-pad">
   <button data-move="forward" aria-label="Move forward">▲</button>
@@ -106,6 +116,7 @@ function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio)
 sizeOverlay();
 addEventListener('resize',sizeOverlay);
 const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
+const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},drag:false,lastX:0,lastY:0};
 let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
 const presets={
  broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
@@ -113,25 +124,47 @@ const presets={
  low:{position:{x:0,y:34,z:150},target:{x:0,y:9,z:0},fov:58}
 };
 function setDroneHud(on){document.querySelector('#drone-hud').classList.toggle('visible',on);document.querySelector('#drone-help').classList.toggle('visible',on);}
+function setPovHud(on){document.querySelector('#pov-hud').classList.toggle('visible',on);}
+function povDirection(){const cp=Math.cos(pov.pitch);return{x:Math.sin(pov.yaw)*cp,y:Math.sin(pov.pitch),z:-Math.cos(pov.yaw)*cp};}
 function lookDirection(){const cp=Math.cos(drone.pitch);return{x:Math.sin(drone.yaw)*cp,y:Math.sin(drone.pitch),z:-Math.cos(drone.yaw)*cp};}
 function render(){
  const api=window.P11Stadium;if(!api?.ready)return;
  let p,t,fov;
- if(drone.active){const d=lookDirection();p=drone.position;t={x:p.x+d.x,y:p.y+d.y,z:p.z+d.z};fov=62;}
+ if(pov.active){const d=povDirection();p=pov.position;t={x:p.x+d.x,y:p.y+d.y,z:p.z+d.z};fov=76;}
+ else if(drone.active){const d=lookDirection();p=drone.position;t={x:p.x+d.x,y:p.y+d.y,z:p.z+d.z};fov=62;}
  else{const v=presets[activeView]||presets.broadcast;p=v.position;t=v.target;fov=v.fov;}
  api.renderEnvironment(p,t,fov,timeOfDay);
 }
 function selectView(name){
+ pov.active=false;pov.keys.clear();pov.stick={x:0,y:0};setPovHud(false);
  activeView=name;drone.active=name==='drone';setDroneHud(drone.active);
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
  if(name==='drone'){drone.position={x:0,y:32,z:92};drone.yaw=Math.PI;drone.pitch=-.2;}
  render();
 }
 function enterTunnel(){
+ pov.active=false;setPovHud(false);
  activeView='drone';drone.active=true;drone.position={x:0,y:2.1,z:31.5};drone.yaw=Math.PI;drone.pitch=-.025;
  setDroneHud(true);
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='drone'));
  render();
+}
+function enterPov(){
+ drone.active=false;setDroneHud(false);pov.active=true;pov.keys.clear();pov.stick={x:0,y:0};
+ const ground=Number(window.P11Stadium?.diagnostics?.pitch?.pitchSurfaceY)||0;
+ pov.position={x:0,y:ground+1.65,z:0};pov.yaw=0;pov.pitch=-.025;activeView='pov';setPovHud(true);
+ document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
+ status.textContent='PLAYER POV · WALK THE STADIUM · WASD / TOUCH JOYSTICK';render();
+}
+function updatePov(dt){
+ if(!pov.active)return;
+ const forward=(pov.keys.has('w')||pov.keys.has('arrowup')?1:0)-(pov.keys.has('s')||pov.keys.has('arrowdown')?1:0)-pov.stick.y;
+ const strafe=(pov.keys.has('d')||pov.keys.has('arrowright')?1:0)-(pov.keys.has('a')||pov.keys.has('arrowleft')?1:0)+pov.stick.x;
+ const length=Math.hypot(forward,strafe);if(length<.04)return;
+ const f=forward/Math.max(1,length),r=strafe/Math.max(1,length),speed=(pov.keys.has('shift')?4.4:2.65)*dt;
+ const dx=(Math.sin(pov.yaw)*f+Math.cos(pov.yaw)*r)*speed;
+ const dz=(-Math.cos(pov.yaw)*f+Math.sin(pov.yaw)*r)*speed;
+ const next=window.P11Stadium?.movePlayerWalk(pov.position,dx,dz);if(next)pov.position=next;
 }
 function updateDrone(dt){
  if(!drone.active)return;
@@ -151,7 +184,7 @@ function animate(now){
  requestAnimationFrame(animate);
  if(!ready||now-lastFrame<16)return;
  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
- updateDrone(dt);render();
+ updatePov(dt);updateDrone(dt);render();
 }
 function showBootFailure(message){
  const panel=document.createElement('div');
@@ -192,12 +225,15 @@ function boot(){
 if(window.P11Stadium?.ready)boot();
 else window.addEventListener('p11stadiumready',boot,{once:true});
 window.addEventListener('keydown',e=>{
- if(!drone.active)return;const k=e.key.toLowerCase();
+ const k=e.key.toLowerCase();
+ if(pov.active){if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift'].includes(k)){pov.keys.add(k);e.preventDefault();}return;}
+ if(!drone.active)return;
  const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
  if(map[k]){drone.keys.add(map[k]);e.preventDefault();}
 });
 window.addEventListener('keyup',e=>{
- const k=e.key.toLowerCase(),map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
+ const k=e.key.toLowerCase();pov.keys.delete(k);
+ const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
  if(map[k])drone.keys.delete(map[k]);
 });
 document.querySelectorAll('.drone-pad button').forEach(button=>{
@@ -206,20 +242,33 @@ document.querySelectorAll('.drone-pad button').forEach(button=>{
  const stop=e=>{e.preventDefault();drone.touch.delete(move);};
  button.addEventListener('pointerdown',start);button.addEventListener('pointerup',stop);button.addEventListener('pointercancel',stop);button.addEventListener('lostpointercapture',stop);
 });
-canvas.addEventListener('pointerdown',e=>{if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointerdown',e=>{
+ if(pov.active){pov.drag=true;pov.lastX=e.clientX;pov.lastY=e.clientY;canvas.setPointerCapture(e.pointerId);return;}
+ if(!drone.active)return;drone.drag=true;drone.lastX=e.clientX;drone.lastY=e.clientY;canvas.setPointerCapture(e.pointerId);
+});
 canvas.addEventListener('pointermove',e=>{
+ if(pov.active&&pov.drag){const dx=e.clientX-pov.lastX,dy=e.clientY-pov.lastY;pov.lastX=e.clientX;pov.lastY=e.clientY;pov.yaw-=dx*.004;pov.pitch=Math.max(-1.15,Math.min(1.15,pov.pitch-dy*.003));render();return;}
  if(!drone.active||!drone.drag)return;
  const dx=e.clientX-drone.lastX,dy=e.clientY-drone.lastY;drone.lastX=e.clientX;drone.lastY=e.clientY;
  drone.yaw-=dx*.004;drone.pitch=Math.max(-1.48,Math.min(1.35,drone.pitch-dy*.003));render();
 });
-canvas.addEventListener('pointerup',()=>drone.drag=false);
-canvas.addEventListener('pointercancel',()=>drone.drag=false);
+canvas.addEventListener('pointerup',()=>{drone.drag=false;pov.drag=false;});
+canvas.addEventListener('pointercancel',()=>{drone.drag=false;pov.drag=false;});
 canvas.addEventListener('wheel',e=>{
  if(!drone.active)return;e.preventDefault();
  const d=lookDirection(),distance=e.deltaY*.035;
  drone.position.x+=d.x*distance;drone.position.y+=d.y*distance;drone.position.z+=d.z*distance;
 },{passive:false});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>selectView(b.dataset.view)));
+document.querySelector('#pov').addEventListener('click',enterPov);
+const povStick=document.querySelector('#pov-stick'),povKnob=document.querySelector('#pov-knob');
+let povStickPointer=null;
+function updatePovStick(e){const rect=povStick.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=rect.width*.34,len=Math.hypot(dx,dy),scale=len>max?max/len:1;pov.stick={x:dx*scale/max,y:dy*scale/max};povKnob.style.transform='translate('+dx*scale+'px,'+dy*scale+'px)';}
+function resetPovStick(){povStickPointer=null;pov.stick={x:0,y:0};povKnob.style.transform='translate(0,0)';}
+povStick.addEventListener('pointerdown',e=>{if(!pov.active)return;e.preventDefault();povStickPointer=e.pointerId;povStick.setPointerCapture(e.pointerId);updatePovStick(e);});
+povStick.addEventListener('pointermove',e=>{if(e.pointerId===povStickPointer)updatePovStick(e);});
+povStick.addEventListener('pointerup',e=>{if(e.pointerId===povStickPointer)resetPovStick();});
+povStick.addEventListener('pointercancel',resetPovStick);
 document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',()=>{
  timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
 }));

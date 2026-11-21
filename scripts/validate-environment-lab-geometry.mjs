@@ -7,8 +7,21 @@ assert.match(source, /const clearanceBottom=pitchSurfaceY-1\.0,clearanceTop=pitc
 assert.match(source, /minX:-4\.35,maxX:4\.35,minY:clearanceBottom,maxY:clearanceTop,minZ:34\.1,maxZ:45\.05/,
   'The narrow portal cut must clear only the entrance fascia and end-stand obstruction');
 assert.match(source, /g\.textAlign='center'.*g\.fillText\(title,512,112\)/);
-assert.match(source, /new THREE\.PointLight\(0xffe8c2,2\.15,9,1\.65\)/);
-assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.16:\.11/);
+assert.match(source, /new THREE\.PointLight\(0xffe8c2,4\.8,11\.5,1\.35\)/);
+assert.match(source, /mat\.emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.42:\.34/);
+assert.match(source, /renderer\.toneMappingExposure=1\.05/);
+assert.match(source, /function rebuildWalkColliders\(stadiumRoot\)/);
+assert.match(source, /function movePlayerWalk\(position,deltaX,deltaZ\)/);
+assert.match(source, /walkRaycaster\.intersectObjects\(nearby,false\)/);
+assert.match(source, /movePlayerWalk,project/);
+const html = fs.readFileSync('environment-lab.html', 'utf8');
+assert.match(html, /id="pov"/);
+assert.match(html, /id="pov-stick"/);
+assert.match(html, /function enterPov\(\)/);
+assert.match(html, /function updatePov\(dt\)/);
+assert.match(html, /pov\.keys\.add\(k\)/);
+assert.match(html, /povStick\.addEventListener\('pointerdown'/);
+assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.42:\.34/);
 for (const [name, minZ, maxZ] of [
   ['main approach', '44.55', '66.75'],
   ['T-junction', '63.15', '69.05'],
