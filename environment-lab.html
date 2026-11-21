@@ -133,7 +133,7 @@ sizeOverlay();
 addEventListener('resize',sizeOverlay);
 const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
 const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},drag:false,lastX:0,lastY:0};
-let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
+let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0,elementIdsVisible=false,elementIdRecords=[],elementIdFrame=0;
 const presets={
  broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
  tactical:{position:{x:0,y:250,z:1},target:{x:0,y:0,z:0},fov:43},
@@ -196,11 +196,75 @@ function updateDrone(dt){
  if(keys.has('down'))drone.position.y-=step;
  drone.position.y=Math.max(.25,drone.position.y);
 }
+
+const ELEMENT_CATEGORIES=[
+ ['STADIUM',/stadium|stand|roof|tier|concourse|facade|structure|beam|truss|pillar|column|wall|stair|ramp|railing/i,'#22d3ee'],
+ ['SCENERY',/tree|plant|terrain|landscape|road|parking|outside|environment/i,'#fbbf24'],
+ ['PITCH',/pitch|turf|grass|field|touchline|goal.?line|marking/i,'#a3e635'],
+ ['SECTORS',/sector|block|tribune.?section|stand.?section/i,'#e879f9'],
+ ['SEATING',/seat|chair|row|bleacher/i,'#60a5fa'],
+ ['ADVERTISING',/board|advert|led|screen|banner|sign|sponsor/i,'#fb923c'],
+ ['EQUIPMENT',/light|lamp|flood|speaker|camera|flag|gate|door|tunnel|goal|net|bench|dugout/i,'#f87171']
+];
+function elementCategory(object){
+ let node=object;
+ while(node&&node!==window.P11Stadium?.scene){
+  const name=(node.name||'').toLowerCase();
+  for(const [category,pattern,color] of ELEMENT_CATEGORIES)if(pattern.test(name))return{category,color};
+  node=node.parent;
+ }
+ return{category:'OTHER',color:'#d1d5db'};
+}
+function buildElementIds(){
+ const api=window.P11Stadium;if(!api?.scene||!api?.camera)return;
+ const candidates=[];
+ api.scene.traverse(object=>{
+  if(!object.isMesh||!object.geometry||!object.visible)return;
+  const parts=[];let node=object;
+  while(node&&node!==api.scene){parts.push((node.name||node.type||'Object')+'['+(node.parent?.children?.indexOf(node)??0)+']');node=node.parent;}
+  const path=parts.reverse().join('/');
+  const group=elementCategory(object);
+  candidates.push({object,path,...group});
+ });
+ candidates.sort((a,b)=>a.path.localeCompare(b.path));
+ elementIdRecords=candidates.slice(0,400).map((record,index)=>{
+  const tag=document.createElement('span');tag.className='element-id-tag';tag.textContent=String(index+1);tag.style.color=record.color;tag.title=record.category+' · '+record.path;
+  document.querySelector('#element-id-layer').appendChild(tag);
+  const bounds=new THREE.Box3().setFromObject(record.object);
+  return{...record,id:index+1,tag,center:bounds.isEmpty()?record.object.getWorldPosition(new THREE.Vector3()):bounds.getCenter(new THREE.Vector3())};
+ });
+ document.querySelector('#element-id-legend').innerHTML=[
+  ['STADIUM','#22d3ee'],['SCENERY','#fbbf24'],['PITCH','#a3e635'],['SECTORS','#e879f9'],['SEATING','#60a5fa'],['ADVERTISING','#fb923c'],['EQUIPMENT','#f87171'],['OTHER','#d1d5db']
+ ].map(([name,color])=>'<span style="color:'+color+'">● '+name+'</span>').join('');
+}
+function updateElementIds(){
+ if(!elementIdsVisible||!elementIdRecords.length)return;
+ const api=window.P11Stadium,camera=api?.camera;if(!camera)return;
+ const layer=document.querySelector('#element-id-layer'),rect=layer.getBoundingClientRect(),v=new THREE.Vector3();
+ for(const record of elementIdRecords){
+  if(!record.object.visible||!record.object.parent){record.tag.style.display='none';continue;}
+  v.copy(record.center).project(camera);
+  const x=(v.x*.5+.5)*rect.width,y=(-v.y*.5+.5)*rect.height;
+  const visible=v.z>-1&&v.z<1&&x>0&&x<rect.width&&y>0&&y<rect.height;
+  record.tag.style.display=visible?'block':'none';
+  if(visible){record.tag.style.left=x+'px';record.tag.style.top=y+'px';}
+ }
+}
+document.querySelector('#element-ids').addEventListener('click',()=>{
+ elementIdsVisible=!elementIdsVisible;
+ const button=document.querySelector('#element-ids');
+ button.classList.toggle('active',elementIdsVisible);button.setAttribute('aria-pressed',String(elementIdsVisible));
+ document.querySelector('#element-id-layer').style.display=elementIdsVisible?'block':'none';
+ document.querySelector('#element-id-legend').style.display=elementIdsVisible?'block':'none';
+ if(elementIdsVisible&&!elementIdRecords.length)buildElementIds();
+ updateElementIds();
+});
+
 function animate(now){
  requestAnimationFrame(animate);
  if(!ready||now-lastFrame<16)return;
  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
- updatePov(dt);updateDrone(dt);render();
+ updatePov(dt);updateDrone(dt);render();if(elementIdsVisible&&++elementIdFrame%3===0)updateElementIds();
 }
 function showBootFailure(message){
  const panel=document.createElement('div');
