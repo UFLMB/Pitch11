@@ -317,7 +317,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    const radio=new THREE.Mesh(new THREE.BoxGeometry(.1,.16,.06),boots);radio.position.set(.2,1.1,.16);guard.add(radio);
    guard.position.set(p.x,0,p.z);
    guard.rotation.y=p.zone==='sideline-stand'?(p.z>0?0:Math.PI):(p.x>0?Math.PI/2:-Math.PI/2);
-   guard.userData={base:guard.rotation.y,phase:i*.71};
+   guard.userData={base:guard.rotation.y,phase:i*.71,editorSelectable:true};
    securityGuards.push(guard);scene.add(guard);
   });
  }
@@ -346,7 +346,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    actor.name='Touchline Staff '+(side>0?'North ':'South ')+(i+1);actor.userData.editorSelectable=true;
    const z=side*38.1,x=-22+i*11;
    actor.position.set(x,0,z);actor.rotation.y=side>0?Math.PI:0;
-   actor.userData={base:actor.rotation.y,phase:i*.8+side*.6,role:i};
+   actor.userData={base:actor.rotation.y,phase:i*.8+side*.6,role:i,editorSelectable:true};
    staffActors.push(actor);scene.add(actor);
   }
  }
