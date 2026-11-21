@@ -102,19 +102,19 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    hemi.color.set(0x7895c5);hemi.groundColor.set(0x101923);hemi.intensity=.48;
    key.color.set(0x8aa7d6);key.intensity=.18;fill.color.set(0x7399d8);fill.intensity=.16;
    floodlights.forEach(light=>{light.intensity=620;});setFloodlightFixtureState(2);
-   renderer.toneMappingExposure=.94;
+   renderer.toneMappingExposure=1.05;
   }else if(mode===1){
    scene.background.set(0x382b3b);if(scene.fog)scene.fog.color.set(0x493746);
    hemi.color.set(0xe0a17d);hemi.groundColor.set(0x30252b);hemi.intensity=1.0;
    key.color.set(0xffad78);key.intensity=1.05;fill.color.set(0x8aa7c7);fill.intensity=.48;
    floodlights.forEach(light=>{light.intensity=110;});setFloodlightFixtureState(1);
-   renderer.toneMappingExposure=1.02;
+   renderer.toneMappingExposure=1.05;
   }else{
    scene.background.set(0x15263a);if(scene.fog)scene.fog.color.set(0x15263a);
    hemi.color.set(0xc8ddff);hemi.groundColor.set(0x1b251d);hemi.intensity=1.5;
    key.color.set(0xffdfb5);key.intensity=1.35;fill.color.set(0x8dbbff);fill.intensity=.65;
    floodlights.forEach(light=>{light.intensity=0;});setFloodlightFixtureState(0);
-   renderer.toneMappingExposure=1.08;
+   renderer.toneMappingExposure=1.05;
   }
  }
  const camera=new THREE.PerspectiveCamera(48,viewportWidth/Math.max(1,viewportHeight),.1,1000);
@@ -230,7 +230,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
  const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending'};
- let playerEntranceTunnel=null;
+ let playerEntranceTunnel=null,walkColliderMeshes=[];
+ const walkRaycaster=new THREE.Raycaster();
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
  function points(hx,hz,r){const p=[],line=(a,b,c,d)=>{const n=Math.max(2,Math.ceil(Math.hypot(c-a,d-b)/2));for(let i=0;i<n;i++){const t=i/n;p.push([a+(c-a)*t,b+(d-b)*t]);}},arc=(x,z,rad,a0,a1)=>{const n=Math.max(8,Math.ceil(Math.abs(a1-a0)*rad/2));for(let i=0;i<n;i++){const a=a0+(a1-a0)*i/n;p.push([x+Math.cos(a)*rad,z+Math.sin(a)*rad]);}};line(-hx+r,-hz,hx-r,-hz);arc(hx-r,-hz+r,r,-Math.PI/2,0);line(hx,-hz+r,hx,hz-r);arc(hx-r,hz-r,r,0,Math.PI/2);line(hx-r,hz,-hx+r,hz);arc(-hx+r,hz-r,r,Math.PI/2,Math.PI);line(-hx,hz-r,-hx,-hz+r);arc(-hx+r,-hz+r,r,Math.PI,Math.PI*1.5);return p;}
@@ -638,8 +639,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     // Low-level self-illumination keeps enclosed surfaces readable independently
     // of the outdoor day/sunset/night lighting preset.
     for(const mat of [concrete,paint,floor,rubber,steel,darkSteel,ceiling,homeMat,awayMat,officialMat,white,black]){
-     mat.emissive.setHex(mat===floor||mat===rubber||mat===black?0x111820:0x242a2b);
-     mat.emissiveIntensity=mat===floor||mat===rubber||mat===black?.16:.11;
+     mat.emissive.setHex(mat===floor||mat===rubber||mat===black?0x343b3d:0x4b4b43);
+     mat.emissiveIntensity=mat===floor||mat===rubber||mat===black?.42:.34;
     }
     const tunnelPointLights=[];
    const applySurfaceGrain=(mat,seed,bumpScale)=>{
@@ -678,7 +679,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     add('Recessed tunnel light housing',.72,.12,.42,x,y,z,darkSteel);
     const lens=add('Warm white tunnel light lens',.56,.035,.29,x,y-.075,z,led);
     lens.rotation.y=rotation;
-    const point=new THREE.PointLight(0xffe8c2,2.15,9,1.65);point.position.set(x,y-.18,z);root.add(point);tunnelPointLights.push(point);
+    const point=new THREE.PointLight(0xffe8c2,4.8,11.5,1.35);point.position.set(x,y-.18,z);root.add(point);tunnelPointLights.push(point);
    };
    const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
    const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
@@ -832,6 +833,48 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    root.userData={kind:'player-entrance',frontZ:front,junctionZ:junction,homeRoom:{x:-23,z:branchZ},officialsRoom:{x:0,z:85.6},awayRoom:{x:23,z:branchZ},openPitchEnd:true,threeWayJunction:true};
    scene.add(root);return root;
   }
+ function rebuildWalkColliders(stadiumRoot){
+  walkColliderMeshes=[];
+  const addRoot=root=>root?.traverse(object=>{
+   if(object.isMesh&&object.geometry?.attributes?.position&&object.visible){
+    object.updateWorldMatrix(true,false);
+    object.userData.p11WalkBounds=new THREE.Box3().setFromObject(object);
+    walkColliderMeshes.push(object);
+   }
+  });
+  addRoot(stadiumRoot);
+  addRoot(playerEntranceTunnel);
+  console.info('PITCH 11 first-person walk colliders:',walkColliderMeshes.length);
+ }
+ function movePlayerWalk(position,deltaX,deltaZ){
+  const distance=Math.hypot(deltaX,deltaZ);
+  if(!Number.isFinite(distance)||distance<1e-5||!walkColliderMeshes.length)return position;
+  const steps=Math.max(1,Math.ceil(distance/.16)),stepX=deltaX/steps,stepZ=deltaZ/steps;
+  const direction=new THREE.Vector3(stepX,0,stepZ).normalize();
+  const groundRay=new THREE.Vector3(0,-1,0),current={x:position.x,y:position.y,z:position.z};
+  for(let step=0;step<steps;step++){
+   const nextX=current.x+stepX,nextZ=current.z+stepZ,currentGround=current.y-1.65;
+   const nearby=walkColliderMeshes.filter(mesh=>{
+    const b=mesh.userData.p11WalkBounds;
+    return b&&nextX>=b.min.x-1.5&&nextX<=b.max.x+1.5&&nextZ>=b.min.z-1.5&&nextZ<=b.max.z+1.5&&b.max.y>=currentGround-.8&&b.min.y<=currentGround+5.5;
+   });
+   if(!nearby.length)break;
+   let blocked=false;
+   for(const height of [.28,.88,1.48]){
+    walkRaycaster.set(new THREE.Vector3(current.x,currentGround+height,current.z),direction);
+    walkRaycaster.near=0;walkRaycaster.far=Math.hypot(stepX,stepZ)+.2;
+    if(walkRaycaster.intersectObjects(nearby,false).some(hit=>hit.distance<walkRaycaster.far-.015)){blocked=true;break;}
+   }
+   if(blocked)break;
+   walkRaycaster.set(new THREE.Vector3(nextX,currentGround+5.5,nextZ),groundRay);
+   walkRaycaster.near=0;walkRaycaster.far=8.0;
+   const floorHit=walkRaycaster.intersectObjects(nearby,false).find(hit=>hit.point.y<=currentGround+.42&&hit.point.y>=currentGround-.78);
+   if(!floorHit)break;
+   const nextGround=floorHit.point.y;
+   current.x=nextX;current.z=nextZ;current.y=nextGround+1.65;
+  }
+  return current;
+ }
  function carveStadiumForPlayerEntrance(stadium){
   // Clip imported GLB triangles against the complete corridor/room clearances.
   // This removes seats, terrace steps and their foundations as real geometry,
@@ -959,7 +1002,9 @@ function finishStadiumLoad(gltf){
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
   board(112,0,-36.5,0);sidelineBoardWithOpenings(36.5,[[-17.1,-7.9],[-4.7,4.7],[7.9,17.1]]);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
-  if(environmentMode){try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}}else{optionalAssets.playerEntrance='disabled-outside-environment-lab';}
+  if(environmentMode){try{playerEntranceTunnel=createPlayerEntranceTunnel();optionalAssets.playerEntrance='ready';}catch(e){optionalAssets.playerEntrance='error';console.warn('PITCH 11 player entrance setup failed',e);}}
+  else{optionalAssets.playerEntrance='disabled-outside-environment-lab';}
+  if(environmentMode)rebuildWalkColliders(stadium);
   const details=new GLTFLoader();
   optionalAssets.dugout='loading';boot.optionalAssets=optionalAssets;
   details.load('./assets/team-dugout.glb',asset=>{
@@ -1112,7 +1157,7 @@ function finishStadiumLoad(gltf){
     pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
     activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
    },
-   render,renderTopDown,renderPreview,renderEnvironment,project,setGoalDimensions
+   render,renderTopDown,renderPreview,renderEnvironment,movePlayerWalk,project,setGoalDimensions
   };
  const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
  addEventListener('resize',resizeStadium);
