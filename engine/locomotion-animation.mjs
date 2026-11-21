@@ -32,7 +32,7 @@ const ROOT_TARGETS = new Set(["hips", "mixamorighips", "root", "mixamorigroot"])
 export function shouldRemoveLocomotionRootTranslation(file) {
   const name = String(file || "").trim();
   return /^jog (?:forward|backward)(?: diagonal)?(?: \(\d+\))?\.fbx$/i.test(name) ||
-    /^jog strafe (?:left|right)\\.fbx$/i.test(name);
+    /^jog strafe (?:left|right)\.fbx$/i.test(name);
 }
 
 export function removeLocomotionRootTranslation(clip) {
