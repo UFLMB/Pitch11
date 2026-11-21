@@ -13,8 +13,36 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  const uiCanvas=document.getElementById('c');
  let viewportWidth=uiCanvas?.getBoundingClientRect().width||innerWidth;
  let viewportHeight=uiCanvas?.getBoundingClientRect().height||innerHeight;
- const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPreference:'high-performance',stencil:false,depth:true});
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1:1.25));
+ // Match the proven Environment Lab startup path: explicitly acquire WebGL2,
+ // prefer low-power on mobile, and retry with conservative context attributes.
+ let renderer=null,contextFailure='';
+ const contextAttempts=mobile
+  ?[{powerPreference:'low-power',antialias:false},{powerPreference:'default',antialias:false}]
+  :[{powerPreference:'high-performance',antialias:true},{powerPreference:'default',antialias:false}];
+ for(const attempt of contextAttempts){
+  const canvas=document.createElement('canvas');
+  try{
+   const context=canvas.getContext('webgl2',{
+    alpha:false,antialias:attempt.antialias,depth:true,stencil:false,
+    powerPreference:attempt.powerPreference,failIfMajorPerformanceCaveat:false,
+    preserveDrawingBuffer:false
+   });
+   if(!context){contextFailure='WebGL 2 context unavailable ('+attempt.powerPreference+')';continue;}
+   renderer=new THREE.WebGLRenderer({canvas,context,alpha:false,antialias:attempt.antialias,powerPreference:attempt.powerPreference,stencil:false,depth:true});
+   break;
+  }catch(error){
+   contextFailure=error&&error.message?error.message:String(error);
+   console.warn('PITCH 11 production WebGL initialization attempt failed',attempt.powerPreference,error);
+  }
+ }
+ if(!renderer){
+  boot.state='error';
+  boot.error='Stadium graphics could not start: '+(contextFailure||'WebGL 2 is unavailable.')+' Close other 3D tabs/apps, disable battery-saving graphics restrictions, then retry in Chrome.';
+  window.dispatchEvent(new CustomEvent('p11stadiumbooterror',{detail:boot.error}));
+  return;
+ }
+ boot.renderer={webgl2:true,powerPreference:mobile?'low-power':'high-performance'};
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.8:1.25));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
   if(!rect||rect.width<1||rect.height<1)return null;
@@ -28,8 +56,12 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  syncRendererSize();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();
- const playerRenderer=new MatchPlayerRenderer(scene,{mobile});
- playerRenderer.load();
+ const playerRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:mobile?90000:120000});
+ playerRenderer.load().then(()=>{
+  boot.playerModel={state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',error:playerRenderer.error||''};
+ }).catch(error=>{
+  boot.playerModel={state:'error',error:error&&error.message?error.message:String(error)};
+ });
  function createMatchBallTexture(){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;
   const c=canvas.getContext('2d');c.fillStyle='#f4f2e9';c.fillRect(0,0,512,256);
@@ -650,8 +682,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  loadStadium();
  function setCamera(V,w,h){const ch=V.yw?V.ch:0,sh=V.yw?V.sh:-1,cx=V.yw?V.ex:V.cx,cy=V.yw?V.ey:V.Cy,fy=V.fy,fz=V.fz,hz=V.hz;const pos=new THREE.Vector3((cx-585)*.1,hz*.1,(cy-400)*.1);forward.set(ch*fy,-fz,sh*fy).normalize();up.set(ch*fz,fy,sh*fz).normalize();camera.position.copy(pos);camera.up.copy(up);camera.lookAt(pos.clone().add(forward));const focal=V.K||h*.95;camera.fov=2*Math.atan(h/(2*focal))*180/Math.PI;camera.aspect=w/h;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);}
  function project(x,y,z){v3.set((x-585)*.1,z*.1,(y-400)*.1).project(camera);const sx=(v3.x*.5+.5)*viewportWidth,sy=(-v3.y*.5+.5)*viewportHeight;v4.set((x+1-585)*.1,z*.1,(y-400)*.1).project(camera);const sx2=(v4.x*.5+.5)*viewportWidth,sy2=(-v4.y*.5+.5)*viewportHeight;return{x:sx,y:sy,s:Math.max(.001,Math.hypot(sx2-sx,sy2-sy))};}
- function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,camera);lastRender=now;}}
- function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,topCamera);lastRender=now;}}
+ function render(V,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);setCamera(V,w,h);boot.playerModel={state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',players:playerRenderer.count,expected:playerRenderer.expectedCount,error:playerRenderer.error||playerRenderer.mixamoError||''};const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,camera);lastRender=now;}}
+ function renderTopDown(cx,cy,vw,vh,w,h,options={}){applyStadiumTimeOfDay(options.timeOfDay);boot.playerModel={state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',players:playerRenderer.count,expected:playerRenderer.expectedCount,error:playerRenderer.error||playerRenderer.mixamoError||''};const width=Math.max(1,vw*.1),height=Math.max(1,vh*.1),x=(cx-585)*.1,z=(cy-400)*.1;topCamera.left=-width/2;topCamera.right=width/2;topCamera.top=height/2;topCamera.bottom=-height/2;topCamera.position.set(x,220,z);topCamera.up.set(0,0,-1);topCamera.lookAt(x,0,z);topCamera.updateProjectionMatrix();topCamera.updateMatrixWorld(true);const now=performance.now();flagMeshes.forEach(f=>f.rotation.z=Math.sin(now*.0015+f.userData.phase)*.08);updateSecurity(now);updateStaff(now);updateCrowd(now);if(now-lastRender>=(mobile?33:16)){playerRenderer.update(options.players,options.selectedPlayer,options.alpha,options.delta,options);syncMatchBall(options.ball,options.alpha);renderer.render(scene,topCamera);lastRender=now;}}
  function renderPreview(rect,options={}){
    if(!ready){previewFailure=stadiumLoadState;return false;}
    if(!rect||rect.w<2||rect.h<2){previewFailure='invalid-preview-rect';return false;}
