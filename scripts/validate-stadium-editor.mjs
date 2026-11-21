@@ -20,11 +20,13 @@ for (const feature of [
   'data-tool="rotate"', 'data-tool="scale"', 'materialColor', 'emissiveIntensity',
   'applyText', 'imageUpload', 'duplicateSelected', 'deleteSelected',
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
-  'environment-lab.html?editorHost=1', 'P11Stadium', 'setEditorMode(true)', 'live.renderer', 'live.scene', 'openConfigDb', 'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
+  "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
+  'live.renderer', 'live.scene', 'openConfigDb',
+  'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
-assert.ok(html.includes('renderer=live.renderer'), 'Editor must reuse the live Matchday WebGL renderer.');
+assert.ok(html.includes('renderer=live.renderer'), 'Standalone editor must reuse the isolated Matchday Environment renderer.');
 assert.ok(html.includes("width:'100vw',height:'100vh'"), 'Hidden Environment Lab bridge must use the full viewport, not a 2x2 pixel viewport.');
 assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environment Lab startup errors immediately.');
 assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
@@ -34,19 +36,15 @@ assert.ok(runtime.includes('setEditorMode(active)'), 'Environment runtime does n
 assert.ok(runtime.includes('if(externalEditorActive)return'), 'Environment runtime does not pause its own renderer while the editor owns the scene.');
 assert.ok(runtime.includes('editorLocked=true'), 'Playing surface lock metadata is missing.');
 assert.ok(env.includes('id="stadium-editor"'), 'Environment Lab has no Stadium Editor entry.');
-assert.ok(env.includes('function openStadiumEditor()'), 'Environment Lab must open the editor as an inline overlay.');
-assert.ok(env.includes("frame.src='./stadium-editor.html?embedded=1'"), 'Editor must be embedded over the Matchday Viewer.');
-assert.ok(html.includes("location.replace('./environment-lab.html?editor=1')"), 'Direct editor URL must return to the Matchday Viewer and open edit mode there.');
-assert.ok(html.includes("#duplicateBtn::before{content:'⧉'"), 'Mobile editing actions must use compact icon controls.');
-assert.ok(env.includes("event.data?.type!=='P11_STADIUM_EDITOR_CLOSE'"), 'Editor must return to the viewer without navigating to a separate section.');
-assert.ok(html.includes('const embeddedMode='), 'Editor must detect embedded mode.');
-assert.ok(html.includes('live=window.parent.P11Stadium'), 'Embedded editor must reuse the existing Matchday Viewer runtime.');
-assert.ok(html.includes("if(!embeddedMode)host.appendChild(renderer.domElement)"), 'Embedded editor must keep the live viewer canvas in place.');
-assert.ok(html.includes('function closeEditor()'), 'Editor must provide a safe return-to-viewer action.');
-assert.ok(html.includes('window.parent.P11StadiumBoot'), 'Embedded editor must wait for the parent viewer to finish booting.');
-assert.ok(env.includes('event.source!==editorFrame?.contentWindow'), 'Viewer must validate the editor close message source.');
-assert.ok(html.includes("document.querySelectorAll('.sectionTitle')"), 'Inspector sections must be collapsible.');
-assert.ok(html.includes('id="fileMenu"'), 'File actions must be grouped in a compact dropdown.');
-assert.ok(html.includes('id="objectsToggle" title="Object list"'), 'Mobile panels must use compact icon controls.');
+assert.ok(env.includes("location.href='./stadium-editor.html'"), 'Environment Lab must navigate to the separate Stadium Editor page.');
+assert.ok(!env.includes('function openStadiumEditor()'), 'Environment Lab must not create an inline editor overlay.');
+assert.ok(!env.includes("frame.src='./stadium-editor.html?embedded=1'"), 'Stadium Editor must not be embedded over the Matchday Viewer.');
+assert.ok(html.includes("bridge.src='./environment-lab.html?editorHost=1'"), 'Standalone editor must create its isolated Environment Lab bridge.');
+assert.ok(html.includes('const child=bridge.contentWindow'), 'Standalone editor must read the bridge from its own iframe, not its parent window.');
+assert.ok(html.includes('host.appendChild(renderer.domElement)'), 'Standalone editor must mount the shared Environment Lab renderer in its own viewport.');
+assert.ok(html.includes('live.setEditorMode(true)'), 'Standalone editor must explicitly acquire the isolated scene for editing.');
+assert.ok(html.includes("$('backBtn').addEventListener('click',()=>location.href='./environment-lab.html')"), 'Editor BACK action must return to the Matchday Viewer.');
+assert.ok(html.includes('#mobilePanels{display:none}') && html.includes('#mobilePanels{display:flex'), 'Mobile editor must expose compact object/property panel toggles.');
+assert.ok(html.includes('id="duplicateBtn"') && html.includes('id="deleteBtn"'), 'Object actions must remain available in the responsive inspector.');
 assert.ok(!html.includes('graphics3d.html'), 'Stadium Editor must not route into the production renderer.');
-console.log('Stadium Editor module syntax and feature-safety checks passed.');
+console.log('Standalone Stadium Editor module syntax and feature-safety checks passed.');
