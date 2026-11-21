@@ -43,7 +43,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   window.dispatchEvent(new CustomEvent('p11stadiumbooterror',{detail:boot.error}));
   return;
  }
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?.8:1.25));
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile ? 0.8 : 1.25));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
   if(!rect||rect.width<1||rect.height<1)return null;
