@@ -27,6 +27,8 @@ let menuRequested = false;
 let menuEnabled = true;
 let musicAudio = null;
 let musicPlayPending = false;
+let musicFadeFrame = 0;
+let musicTargetVolume = 0;
 const pools = new Map();
 const warned = new Set();
 
@@ -69,17 +71,79 @@ function startMenuMusic() {
   }
 }
 
-function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME) {
-  menuRequested = !!active;
-  menuEnabled = !!enabled;
-  musicVolume = Math.max(0, Math.min(1, Number(volume) || 0));
+function cancelMusicFade() {
+  if (musicFadeFrame && typeof cancelAnimationFrame === "function") cancelAnimationFrame(musicFadeFrame);
+  musicFadeFrame = 0;
+}
+
+function rampMusicVolume(target, seconds, pauseAtEnd = false) {
   const audio = getMusicAudio();
   if (!audio) return false;
-  audio.volume = musicVolume;
-  if (menuRequested && menuEnabled) return startMenuMusic();
-  musicPlayPending = false;
-  if (!audio.paused) audio.pause();
+  cancelMusicFade();
+  const destination = Math.max(0, Math.min(1, Number(target) || 0));
+  const duration = Math.max(0, Number(seconds) || 0);
+  const start = Number.isFinite(audio.volume) ? audio.volume : 0;
+  if (duration <= 0 || Math.abs(destination - start) < 0.001 || typeof requestAnimationFrame !== "function") {
+    audio.volume = destination;
+    if (pauseAtEnd) audio.pause();
+    return true;
+  }
+  const startedAt = performance.now();
+  const step = now => {
+    const progress = Math.max(0, Math.min(1, (now - startedAt) / (duration * 1000)));
+    const eased = progress * (2 - progress);
+    audio.volume = start + (destination - start) * eased;
+    if (progress < 1) musicFadeFrame = requestAnimationFrame(step);
+    else {
+      musicFadeFrame = 0;
+      audio.volume = destination;
+      if (pauseAtEnd) audio.pause();
+    }
+  };
+  musicFadeFrame = requestAnimationFrame(step);
   return true;
+}
+
+function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME, fadeSeconds = 0) {
+  const nextRequested = !!active;
+  const nextEnabled = !!enabled;
+  const nextVolume = Math.max(0, Math.min(1, Number(volume) || 0));
+  const target = nextRequested && nextEnabled ? nextVolume : 0;
+  const unchanged = nextRequested === menuRequested && nextEnabled === menuEnabled &&
+    Math.abs(target - musicTargetVolume) < 0.001;
+  menuRequested = nextRequested;
+  menuEnabled = nextEnabled;
+  musicVolume = nextVolume;
+  const audio = getMusicAudio();
+  if (!audio) return false;
+  if (unchanged) return true;
+  musicTargetVolume = target;
+  const duration = Math.max(0, Number(fadeSeconds) || 0);
+  if (target > 0) {
+    if (audio.paused) {
+      audio.volume = duration > 0 ? 0 : target;
+      startMenuMusic();
+    }
+    rampMusicVolume(target, duration, false);
+  } else {
+    musicPlayPending = false;
+    if (audio.paused) {
+      cancelMusicFade();
+      audio.volume = 0;
+      return true;
+    }
+    rampMusicVolume(0, duration, true);
+  }
+  return true;
+}
+
+const INTERRUPTION_MODES = new Set(["half", "full", "subs", "whistle", "goal", "replay"]);
+function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false) {
+  if (mode === "menu" || INTERRUPTION_MODES.has(mode) || cutsceneActive) {
+    return { active: true, fadeSeconds: 0 };
+  }
+  if (walkoutActive) return { active: false, fadeSeconds: 3.25 };
+  return { active: false, fadeSeconds: 0 };
 }
 
 function unlock() {
@@ -134,7 +198,7 @@ function setLevels(levels = {}) {
 function tick(state = {}) {
   if (Number.isFinite(state.volume)) sfxVolume = Math.max(0, Math.min(1, state.volume));
   if (typeof state.menu === "boolean") {
-    menuMusic(state.menu, state.music !== false, state.musicVolume ?? musicVolume);
+    menuMusic(state.menu, state.music !== false, state.musicVolume ?? musicVolume, state.fadeSeconds ?? 0);
   }
 }
 
@@ -156,6 +220,7 @@ if (typeof window !== "undefined") {
   window.P11AudioAssets = Object.freeze({
     sources: SOURCES,
     menuMusic,
+    resolveMenuMusicIntent,
     play,
     event,
     tick,
@@ -165,4 +230,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { SOURCES, MENU_MUSIC, menuMusic, play, setLevels, tick };
+export { SOURCES, MENU_MUSIC, menuMusic, resolveMenuMusicIntent, play, setLevels, tick };
