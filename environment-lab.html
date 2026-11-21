@@ -89,12 +89,19 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 <div id="loading">LOADING LIVE MATCHDAY ENVIRONMENT<small>Using the current PITCH 11 stadium runtime · player models and gameplay disabled</small></div>
 <script type="module">
 const runtimeImport=import('./stadium-environment-runtime.js');
+runtimeImport.catch(error=>{
+ const message=error&&error.message?error.message:String(error||'Unknown runtime import error');
+ window.P11StadiumBoot=window.P11StadiumBoot||{};
+ window.P11StadiumBoot.state='error';
+ window.P11StadiumBoot.error='Stadium runtime module failed to load: '+message;
+ showBootFailure(window.P11StadiumBoot.error);
+});
 
 const canvas=document.querySelector('#c');
 const status=document.querySelector('#status');
 const loading=document.querySelector('#loading');
 const mobile=matchMedia('(max-width: 700px)').matches;
-const pixelRatio=mobile?1:Math.min(devicePixelRatio||1,1.25);
+const pixelRatio=mobile?Math.min(devicePixelRatio||1,.8):Math.min(devicePixelRatio||1,1.25);
 function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio));canvas.height=Math.max(1,Math.round(innerHeight*pixelRatio));}
 sizeOverlay();
 addEventListener('resize',sizeOverlay);
