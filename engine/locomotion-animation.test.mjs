@@ -110,7 +110,7 @@ test("scales locomotion cadence with actual speed and clamps extremes", () => {
 
 test("every engine-driven Mixamo animation is horizontal in-place except extracted keeper sidesteps", () => {
  for (const file of MIXAMO_ANIMATION_FILES) {
-  const isSidestep = /^goalkeeper sidestep(?: \\(2\\))?\\.fbx$/i.test(file);
+  const isSidestep = file.startsWith("goalkeeper sidestep");
   assert.equal(shouldFlattenHorizontalRootMotion(file), !isSidestep, file);
  }
 });
