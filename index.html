@@ -466,13 +466,46 @@ function integrate(p){
   clampPos(p);
 }
 function clampPos(p){p.x=clamp(p.x,PX0-18,PX1+18);p.y=clamp(p.y,PY0-18,PY1+18);}
-function separate(){                                       // soft player-player collision
-  for(let i=0;i<22;i++){
-    const a=P[i];if(a.dive>0||a.out||a.substitutionExiting)continue;
-    for(let j=i+1;j<22;j++){
-      const b=P[j];if(b.dive>0||b.out||b.substitutionExiting)continue;
-      const dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
-      if(d2<144&&d2>0.01){const d=Math.sqrt(d2),k=(12-d)/d,s=a.st.phys+b.st.phys,ka=k*b.st.phys/s,kb=k*a.st.phys/s;a.x-=dx*ka;a.y-=dy*ka;b.x+=dx*kb;b.y+=dy*kb;}   // stronger player gets pushed less
+function separate(){                                       // bounded, order-independent player-player collision resolution
+  const ITERATIONS=4,MAX_STEP_PER_ITERATION=0.45,RELAXATION=0.45;
+  const count=P.length;
+  const dxMove=new Float64Array(count),dyMove=new Float64Array(count);
+  for(let iteration=0;iteration<ITERATIONS;iteration++){
+    dxMove.fill(0);dyMove.fill(0);
+    for(let i=0;i<count;i++){
+      const a=P[i];if(a.dive>0||a.out||a.substitutionExiting)continue;
+      for(let j=i+1;j<count;j++){
+        const b=P[j];if(b.dive>0||b.out||b.substitutionExiting)continue;
+        let dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy;
+        if(d2>=144)continue;
+        let d;
+        if(d2<1e-8){
+          // Deterministic fallback direction for coincident players; no random impulse.
+          const angle=((i+1)*0.754877666+(j+1)*0.569840296)*Math.PI*2;
+          dx=Math.cos(angle);dy=Math.sin(angle);d=0;
+        }else{d=Math.sqrt(d2);dx/=d;dy/=d;}
+        const overlap=12-d;
+        if(overlap<=0)continue;
+        const strengthA=Math.max(0.01,Number(a.st&&a.st.phys)||0.5);
+        const strengthB=Math.max(0.01,Number(b.st&&b.st.phys)||0.5);
+        const total=strengthA+strengthB;
+        const correction=overlap*RELAXATION;
+        // Keep the original physical-strength weighting: stronger players move less.
+        const moveA=correction*strengthB/total;
+        const moveB=correction*strengthA/total;
+        dxMove[i]-=dx*moveA;dyMove[i]-=dy*moveA;
+        dxMove[j]+=dx*moveB;dyMove[j]+=dy*moveB;
+      }
+    }
+    // Apply accumulated Jacobi corrections together, avoiding pair-order bias.
+    for(let i=0;i<count;i++){
+      const p=P[i];if(p.dive>0||p.out||p.substitutionExiting)continue;
+      const mx=dxMove[i],my=dyMove[i],length=Math.hypot(mx,my);
+      if(length>MAX_STEP_PER_ITERATION){
+        const scale=MAX_STEP_PER_ITERATION/length;
+        p.x+=mx*scale;p.y+=my*scale;
+      }else if(length>0){p.x+=mx;p.y+=my;}
+      if(length>0)clampPos(p);
     }
   }
 }
