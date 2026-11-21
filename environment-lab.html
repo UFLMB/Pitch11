@@ -89,10 +89,9 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
   <button class="active" data-view="broadcast">BROADCAST</button>
   <button data-view="tactical">TACTICAL</button>
   <button data-view="low">LOW STADIUM</button>
-  <button data-view="drone">DRONE CAM · DEV</button>
+  <button data-view="drone">DRONE CAM</button>
   <button id="pov">PLAYER POV · WALK</button>
   <button id="tunnel">TUNNEL ENTRY</button>
-  <button id="stadium-editor" title="Open separate Stadium Editor" aria-label="Open stadium editor">✎ EDITOR</button>
   <button id="element-ids" title="Show color-coded element IDs" aria-pressed="false"># IDs</button>
   <button id="day" class="active" data-time="0">DAY</button>
   <button id="sunset" data-time="1">SUNSET</button>
@@ -137,7 +136,7 @@ const pixelRatio=mobile?Math.min(devicePixelRatio||1,.8):Math.min(devicePixelRat
 function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio));canvas.height=Math.max(1,Math.round(innerHeight*pixelRatio));}
 sizeOverlay();
 addEventListener('resize',sizeOverlay);
-const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
+const drone={active:false,position:{x:0,y:52,z:104},yaw:0,pitch:-.32,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
 const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},drag:false,lastX:0,lastY:0};
 let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
 const presets={
@@ -161,12 +160,12 @@ function selectView(name){
  pov.active=false;pov.keys.clear();pov.stick={x:0,y:0};setPovHud(false);
  activeView=name;drone.active=name==='drone';setDroneHud(drone.active);
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
- if(name==='drone'){drone.position={x:0,y:32,z:92};drone.yaw=Math.PI;drone.pitch=-.2;}
+ if(name==='drone'){drone.position={x:0,y:52,z:104};drone.yaw=0;drone.pitch=-.32;}
  render();
 }
 function enterTunnel(){
  pov.active=false;setPovHud(false);
- activeView='drone';drone.active=true;drone.position={x:0,y:2.1,z:31.5};drone.yaw=Math.PI;drone.pitch=-.025;
+ activeView='drone';drone.active=true;drone.position={x:0,y:2.1,z:31.5};drone.yaw=0;drone.pitch=-.08;
  setDroneHud(true);
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view==='drone'));
  render();
@@ -356,7 +355,6 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
  timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
 }));
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
-document.querySelector('#stadium-editor').addEventListener('click',()=>location.href='./stadium-editor.html');
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
