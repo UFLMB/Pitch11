@@ -225,7 +225,13 @@ cv.addEventListener('pointerdown',e=>{
   if(b){gDown(b.id,e.pointerId,e.clientX,e.clientY);}
   else if(!joy.on&&e.clientX<W*0.5){joy.on=true;joy.id=e.pointerId;joy.bx=joy.kx=e.clientX;joy.by=joy.ky=e.clientY;joy.vx=joy.vy=0;}
 });
+let p11HoverIndex=-1;
 cv.addEventListener('pointermove',e=>{
+  if(e.pointerType==='mouse'&&(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs')){
+    const rect=cv.getBoundingClientRect(),px=(e.clientX-rect.left)*(W/Math.max(1,rect.width)),py=(e.clientY-rect.top)*(H/Math.max(1,rect.height));
+    let hit=-1;for(let i=0;i<UI.r.length;i++){const r=UI.r[i];if(px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.h){hit=i;break;}}
+    if(hit!==p11HoverIndex){p11HoverIndex=hit;if(hit>=0)window.P11AudioAssets?.play('uiHover',.28);}
+  }else if(S.mode!=='menu'&&S.mode!=='half'&&S.mode!=='full'&&S.mode!=='subs')p11HoverIndex=-1;
   gMove(e.pointerId,e.clientX,e.clientY);
   if(!joy.on||e.pointerId!==joy.id)return;
   const R=H*0.13,dx=e.clientX-joy.bx,dy=e.clientY-joy.by,m=Math.hypot(dx,dy)||1,k=Math.min(m,R),L=Math.min(1,k/R*1.15);
@@ -4767,7 +4773,11 @@ const _ttA=tryTackle;tryTackle=function(p,c){const r=_ttA(p,c);if(r||p===ctrl)AU
 const _tkA=take;take=function(p,byHand=false){_tkA(p,byHand);if(p.gk&&S.mode==='play')AU.glove();};
 const _apA=airPlay;airPlay=function(p){_apA(p);if(p.jump>0)AU.head();};
 const _kA=kick;kick=function(p,vx,vy,vz,sp,r,tx,ty,m){_kA(p,vx,vy,vz,sp,r,tx,ty,m);};
-const _uiT=uiTap;uiTap=function(x,y){AU.click();_uiT(x,y);};
+const _uiT=uiTap;uiTap=function(x,y){
+  const target=UI.r.find(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h);
+  if(target&&target.kind==='segment')window.P11AudioAssets?.play('uiTransition',.42);else AU.click();
+  p11HoverIndex=-1;_uiT(x,y);
+};
 MS.opt=function(){mt('SOUND & VISUALS');mbk();
   [['TIME OF DAY','tod',['DAY','DUSK','NIGHT']],['SOUND FX','vol',['OFF','LOW','MED','HIGH']],['MUSIC','mus',['OFF','ON']],['CROWD','crowd',['OFF','LOW','FULL']],['SCREEN SHAKE','shk',['OFF','LOW','FULL']],['MINI-MAP','radar',['OFF','SMALL','LARGE']],['GOAL REPLAYS','rep',['OFF','ON']],['COMMENTARY','com',['OFF','ON']],['DOUBLE-TAP SHOT','ftap',['OFF','ON']]]
   .forEach((r,i)=>{const y=H*(.16+i*.085);lbl(r[0],W*.08,y+H*.035);seg(W*.34,y,W*.6,H*.07,r[2],G[r[1]],v=>{G[r[1]]=v;syncDbl();save();AU.init();AU.vol();});});};
@@ -5952,7 +5962,7 @@ function settingsSeg(x,y,w,h,labs,sel,fn){
   ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.stroke();
   labs.forEach((label,i)=>{
     const bx=x+padX+i*cellW+gap/2,by=y+padY,bw=Math.max(1,cellW-gap),bh=innerH;
-    UI.r.push({x:x+padX+i*cellW,y:y+padY,w:cellW,h:innerH,fn:()=>fn(i)});
+    UI.r.push({x:x+padX+i*cellW,y:y+padY,w:cellW,h:innerH,kind:'segment',fn:()=>fn(i)});
     if(i===sel)glass(bx,by,bw,bh,bh*.5,GOLD);
     fit(label,bx+bw/2,by+bh/2,bw*.84,bh*(mobileSwitchLabels?.82:.4),i===sel?'#1b2430':'#e8edf3');
   });
