@@ -116,25 +116,12 @@ const renderer=new THREE.WebGLRenderer({antialias:!mobile,alpha:false,powerPrefe
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile ? 0.85 : 1.25));renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
-scene.add(new THREE.HemisphereLight(0xd5e4ff,0x20291e,1.6));
-const key=new THREE.DirectionalLight(0xffe2bd,1.65);key.position.set(-100,160,100);scene.add(key);
-const fill=new THREE.DirectionalLight(0x8dbbff,.62);fill.position.set(100,80,-120);scene.add(fill);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
 const orbit=new OrbitControls(camera,renderer.domElement);orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=12;orbit.maxDistance=650;orbit.maxPolarAngle=Math.PI*.495;orbit.target.set(0,12,0);
 const transform=new TransformControls(camera,renderer.domElement);transform.setMode('translate');transform.setSpace('world');transform.size=mobile ? 0.85 : 1;scene.add(transform.getHelper());
 const raycaster=new THREE.Raycaster(),pointer=new THREE.Vector2(),clock=new THREE.Clock();
 const root=new THREE.Group();root.name='STADIUM ROOT';scene.add(root);
 const floor=new THREE.Mesh(new THREE.PlaneGeometry(1000,1000),new THREE.MeshStandardMaterial({color:0x18251c,roughness:1}));floor.rotation.x=-Math.PI/2;floor.position.y=-.12;floor.name='EDITOR GROUND · LOCKED';floor.userData.editorLocked=true;scene.add(floor);
-const pitchGroup=new THREE.Group();pitchGroup.name='NON-EDITABLE PLAYING FIELD';pitchGroup.userData.editorLocked=true;
-const pitchSurface=new THREE.Mesh(new THREE.PlaneGeometry(105,68),new THREE.MeshStandardMaterial({color:0x34783e,roughness:.96,metalness:0}));pitchSurface.rotation.x=-Math.PI/2;pitchSurface.position.y=.015;pitchSurface.name='LOCKED PITCH SURFACE';pitchGroup.add(pitchSurface);
-const pitchLineMaterial=new THREE.LineBasicMaterial({color:0xe8eee4,transparent:true,opacity:.88});
-function addPitchLine(points,closed=false){const vertices=points.map(p=>new THREE.Vector3(p[0],.035,p[1]));if(closed&&vertices.length)vertices.push(vertices[0].clone());const geometry=new THREE.BufferGeometry().setFromPoints(vertices);pitchGroup.add(new THREE.Line(geometry,pitchLineMaterial));}
-function pitchRect(x1,z1,x2,z2){addPitchLine([[x1,z1],[x2,z1],[x2,z2],[x1,z2]],true);}
-addPitchLine([[-52.5,-34],[52.5,-34],[52.5,34],[-52.5,34]],true);addPitchLine([[0,-34],[0,34]]);
-const circle=[];for(let i=0;i<=64;i++){const a=i/64*Math.PI*2;circle.push([Math.cos(a)*9.15,Math.sin(a)*9.15]);}addPitchLine(circle);
-pitchRect(-52.5,-20.16,-36,20.16);pitchRect(36,-20.16,52.5,20.16);pitchRect(-52.5,-9.16,-47,9.16);pitchRect(47,-9.16,52.5,9.16);
-for(const x of [-41.5,41.5]){const arc=[];for(let i=0;i<=32;i++){const a=(i/32-.5)*Math.PI;arc.push([x+Math.cos(a)*9.15,Math.sin(a)*9.15]);}addPitchLine(arc);}
-scene.add(pitchGroup);
 const state={ready:false,mode:'view',selected:null,meshes:[],records:[],filter:'all',history:[],historyIndex:-1,restoring:false,dragStart:null,decals:new Map(),model:null,modelScale:1};
 const excludedName=/(^|[^a-z])(pitch|pitch.?surface|turf|grass|field.?mark|touchline|goal.?line)([^a-z]|$)/i;
 const structureName=/(stand|stadium|roof|tier|concourse|facade|concrete|structure|beam|truss|pillar|column|wall|stair|ramp)/i;
@@ -167,7 +154,7 @@ function renderList(){
  for(const o of visible){const b=document.createElement('button');b.className='objectRow'+(state.selected===o?' selected':'');const dot=document.createElement('span');dot.className='dot';const name=document.createElement('span');name.className='objName';name.textContent=safeName(o.name||'Unnamed mesh');const type=document.createElement('span');type.className='objType';type.textContent=objectCategory(o).toUpperCase();b.append(dot,name,type);b.addEventListener('click',()=>selectObject(o));list.append(b);}
 }
 function selectObject(o){
- if(!o||o.userData.editorLocked)return;
+ if(!o||o.userData.editorLocked||o.userData.editorDecal)return;
  state.selected=o;transform.detach();if(state.mode==='edit')transform.attach(o);
  $('selectionHint').textContent=(state.mode==='edit'?'EDIT MODE · ':'VIEW MODE · ')+safeName(o.name||'Unnamed mesh')+' · '+objectCategory(o).toUpperCase();
  updateInspector();renderList();
@@ -227,7 +214,7 @@ function applyConfig(data){
  state.decals=new Map(data.decals||[]);applyAllDecals();renderList();updateInspector();pushHistory();notify('Stadium configuration loaded.');
 }
 async function loadSaved(){try{let raw=null;try{const db=await openConfigDb();raw=await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readonly'),request=tx.objectStore('configs').get('current');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});db.close();}catch(_){raw=localStorage.getItem('p11-stadium-editor-v1');}if(raw)applyConfig(JSON.parse(raw));}catch(e){console.warn('Saved stadium config could not be restored',e);notify('Saved configuration could not be restored.');}}
-function selectByPointer(event){if(state.mode!=='edit'||transform.dragging)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(state.meshes.filter(o=>o.visible),false);if(hits.length)selectObject(hits[0].object);else{state.selected=null;transform.detach();updateInspector();renderList();}}
+function selectByPointer(event){if(state.mode!=='edit'||transform.dragging)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(state.meshes.filter(o=>o.visible),false);if(hits.length){let target=hits[0].object;while(target&&target!==root&&target.userData?.editorLocked)target=target.parent;if(target&&target!==root)selectObject(target);}else{state.selected=null;transform.detach();updateInspector();renderList();}}
 let down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});renderer.domElement.addEventListener('pointerup',e=>{if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);if(moved<5)selectByPointer(e);down=null;});
 transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value){updateInspector();pushHistory();}});
 transform.addEventListener('objectChange',()=>updateInspector());
@@ -255,20 +242,19 @@ window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camer
 function frame(){requestAnimationFrame(frame);clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.render(scene,camera);}
 async function boot(){
  try{
-  const response=await fetch('./assets/football-stadium.glb',{cache:'force-cache'});if(!response.ok)throw new Error('Stadium GLB request failed: HTTP '+response.status);
-  const buffer=await response.arrayBuffer();if(buffer.byteLength<1000000)throw new Error('Stadium GLB is unexpectedly small or incomplete.');
-  const loader=new GLTFLoader();loader.setMeshoptDecoder(MeshoptDecoder);
-  const gltf=await new Promise((resolve,reject)=>loader.parse(buffer,'./assets/',resolve,reject));
-  state.model=gltf.scene;root.add(gltf.scene);
-  const bounds=new THREE.Box3().setFromObject(gltf.scene);if(bounds.isEmpty())throw new Error('Stadium model contains no visible geometry.');
-  const size=bounds.getSize(new THREE.Vector3()),extent=Math.max(size.x,size.z);if(!Number.isFinite(extent)||extent<=0)throw new Error('Stadium model has invalid dimensions.');
-  state.modelScale=Math.min(1,220/extent);gltf.scene.scale.setScalar(state.modelScale);
-  const scaledBounds=new THREE.Box3().setFromObject(gltf.scene);gltf.scene.position.x=-((scaledBounds.min.x+scaledBounds.max.x)/2);gltf.scene.position.y=-scaledBounds.min.y;gltf.scene.position.z=-((scaledBounds.min.z+scaledBounds.max.z)/2);gltf.scene.updateMatrixWorld(true);
+  const bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
+  Object.assign(bridge.style,{position:'fixed',width:'2px',height:'2px',left:'-10px',top:'-10px',opacity:'0',pointerEvents:'none',border:'0'});document.body.appendChild(bridge);
+  const started=performance.now();let live=null;
+  while(performance.now()-started<45000){live=bridge.contentWindow?.P11Stadium;if(live?.ready&&live.scene)break;await new Promise(resolve=>setTimeout(resolve,120));}
+  if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
+  if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
+  live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;root.add(live.scene);state.model=live.scene;state.modelScale=1;
+  const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
   collectMeshes();
-  const finalBounds=new THREE.Box3().setFromObject(gltf.scene),center=finalBounds.getCenter(new THREE.Vector3()),radius=finalBounds.getSize(new THREE.Vector3()).length();
+  const finalBounds=new THREE.Box3().setFromObject(live.scene),center=finalBounds.getCenter(new THREE.Vector3()),radius=finalBounds.getSize(new THREE.Vector3()).length();
   orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(radius*.58,radius*.42,radius*1.12));camera.near=.1;camera.far=Math.max(1200,radius*8);camera.updateProjectionMatrix();orbit.update();
   state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();loading.style.display='none';
-  notify('Loaded '+state.meshes.length+' editable mesh objects.');
+  notify('Connected to live Matchday scene · '+state.meshes.length+' editable mesh objects.');
   frame();
  }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Open Environment Lab first to confirm the stadium asset is available, then retry.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
 }
