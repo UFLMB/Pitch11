@@ -45,6 +45,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
 #ui-toggle{transition:opacity .15s ease}
 #fullscreen-entry{display:none;position:fixed;z-index:13;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);min-width:190px;min-height:48px;border:1px solid #c8ee8b;background:#172713ee;color:#efffd8;font-size:11px;letter-spacing:.1em;box-shadow:0 8px 28px #0009}
 #fullscreen-entry:disabled{opacity:.75;cursor:default}
+#fullscreen-entry[hidden]{display:none!important}
 @media(max-width:700px){#fullscreen-entry{display:block}}
 :fullscreen{width:100%;height:100%;background:#07110c}
 :fullscreen #stadium3d,:fullscreen #c{width:100vw;height:100dvh}
