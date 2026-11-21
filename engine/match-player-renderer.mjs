@@ -363,7 +363,16 @@ export class MatchPlayerRenderer {
         .toLowerCase();
       if (!bones.has(key)) bones.set(key, node);
     });
-    const entry = { group, model, bones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", pendingAnimationState: "", pendingAnimationFrames: 0, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
+    // The simulation owns the player's world transform. Keep the authored
+    // bind-pose translations for the skeleton roots so cyclic locomotion can
+    // animate rotations (the gait) without translating the character away
+    // from its simulation position marker.
+    const locomotionRootBones = ["root", "hips"]
+      .map(name => bones.get(name))
+      .filter(Boolean)
+      .map(node => ({ node, position: node.position.clone() }));
+    const modelBasePosition = model.position.clone();
+    const entry = { group, model, modelBasePosition, bones, locomotionRootBones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", pendingAnimationState: "", pendingAnimationFrames: 0, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
     this.scene.add(group);
     this.players.set(state.id, entry);
     return entry;
@@ -452,6 +461,19 @@ export class MatchPlayerRenderer {
       }
       if (updateAnimations) {
         mixer.update(animationDelta);
+        // Enforce in-place locomotion after the mixer has evaluated the clip.
+        // This is a runtime guard in addition to FBX track sanitization: even
+        // an unexpected Root/Hips translation channel cannot move the model
+        // away from the simulation-owned group position. Bone rotations remain
+        // untouched, preserving the complete running/walking leg cycle.
+        if (["idle", "walk", "run", "sprint", "backward", "strafeLeft", "strafeRight",
+          "forwardDiagonalLeft", "forwardDiagonalRight", "backwardDiagonalLeft",
+          "backwardDiagonalRight"].includes(animationState)) {
+          entry.model.position.copy(entry.modelBasePosition);
+          for (const rootBone of entry.locomotionRootBones) {
+            rootBone.node.position.copy(rootBone.position);
+          }
+        }
         const action = entry.activeAction;
         const activeClip = action?.getClip?.();
         if (activeClip?.userData?.rootMotionExtracted && activeClip.userData.rootMotion) {
