@@ -200,11 +200,11 @@ function removeDecalFor(o){const old=o.children.find(c=>c.userData.editorDecal);
 function applyDecal(o,data,image=null){
  if(data?.imageData&&!image){const restored=new Image();restored.onload=()=>applyDecal(o,data,restored);restored.src=data.imageData;return;}
  removeDecalFor(o);if(!data||(!data.text&&!image)){state.decals.delete(o.userData.editorPath);return;}
- const box=new THREE.Box3().setFromObject(o),size=box.getSize(new THREE.Vector3());o.updateWorldMatrix(true,false);const localBox=new THREE.Box3().setFromObject(o);const localSize=localBox.getSize(new THREE.Vector3());
- const w=Math.max(.35,Math.min(localSize.x||1,localSize.z||1,localSize.y||1)*1.65),h=w*.25;
+ if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const localBox=o.geometry.boundingBox||new THREE.Box3(new THREE.Vector3(-.5,-.5,-.05),new THREE.Vector3(.5,.5,.05));const localSize=localBox.getSize(new THREE.Vector3()),localCenter=localBox.getCenter(new THREE.Vector3());
+ const w=Math.max(.35,Math.abs(localSize.x)*.9),h=Math.max(.18,Math.abs(localSize.y)*.78);
  const texture=makeDecalTexture(data.text,data.color,data.background,data.fontSize,image);
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,transparent:false,side:THREE.DoubleSide,depthWrite:true}));
- mesh.name='EDITOR DECAL · '+(data.text||'IMAGE');mesh.userData.editorDecal=true;mesh.position.set(0,localSize.y*.5+0.015,localSize.z*.5+0.025);o.add(mesh);mesh.renderOrder=5;
+ mesh.name='EDITOR DECAL · '+(data.text||'IMAGE');mesh.userData.editorDecal=true;mesh.position.set(localCenter.x,localCenter.y,localBox.max.z+Math.max(.015,Math.abs(localSize.z)*.025));o.add(mesh);mesh.renderOrder=5;
  state.decals.set(o.userData.editorPath,data);
 }
 function applyAllDecals(){for(const [path,data] of state.decals){const o=state.meshes.find(x=>x.userData.editorPath===path);if(o)applyDecal(o,data);}}
