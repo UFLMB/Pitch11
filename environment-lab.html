@@ -302,7 +302,7 @@ function openStadiumEditor(){
  document.body.appendChild(frame);
 }
 window.addEventListener('message',event=>{
- if(event.origin!==location.origin||event.data?.type!=='P11_STADIUM_EDITOR_CLOSE')return;
+ if(event.origin!==location.origin||event.source!==editorFrame?.contentWindow||event.data?.type!=='P11_STADIUM_EDITOR_CLOSE')return;
  if(editorFrame){editorFrame.remove();editorFrame=null;}
  document.body.classList.remove('editor-open');
  window.P11Stadium?.setEditorMode?.(false);
