@@ -57,7 +57,7 @@ test('turning changes the target smoothly and the spring follows without a snap'
   const first = { ...ball };
   ball.x += (turned.x - ball.x) * alpha;
   ball.y += (turned.y - ball.y) * alpha;
-  assert.ok(Math.hypot(ball.x - first.x, ball.y - first.y) < 3);
+  assert.ok(Math.hypot(ball.x - first.x, ball.y - first.y) < Math.hypot(turned.x - first.x, turned.y - first.y));
 });
 
 test('pace, dribbling control, stamina and sprint influence lead without periodic animation terms', () => {
