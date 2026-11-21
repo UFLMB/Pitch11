@@ -634,7 +634,14 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    const rubber=material(0x202629,.98,0),steel=material(0x596168,.48,.55),darkSteel=material(0x252d33,.62,.42);
    const ceiling=material(0x92958e,.92,.01),homeMat=material(0x526c82,.8,.06),awayMat=material(0x80605b,.8,.06),officialMat=material(0x77715e,.82,.04);
    const white=material(0xe1e1d7,.86,.02),black=material(0x151a1d,.82,.08);
-   const led=new THREE.MeshStandardMaterial({color:0xf1e6c8,emissive:0x8e7850,emissiveIntensity:.24,roughness:.5});
+   const led=new THREE.MeshStandardMaterial({color:0xf1e6c8,emissive:0xffdca0,emissiveIntensity:.72,roughness:.5});
+    // Low-level self-illumination keeps enclosed surfaces readable independently
+    // of the outdoor day/sunset/night lighting preset.
+    for(const mat of [concrete,paint,floor,rubber,steel,darkSteel,ceiling,homeMat,awayMat,officialMat,white,black]){
+     mat.emissive.setHex(mat===floor||mat===rubber||mat===black?0x111820:0x242a2b);
+     mat.emissiveIntensity=mat===floor||mat===rubber||mat===black?.16:.11;
+    }
+    const tunnelPointLights=[];
    const applySurfaceGrain=(mat,seed,bumpScale)=>{
     const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
     ctx.fillStyle='#eeeeea';ctx.fillRect(0,0,256,256);
@@ -661,8 +668,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=320;const g=canvas.getContext('2d');
     g.fillStyle='#252c30';g.fillRect(0,0,1024,320);g.fillStyle='#b7b8ae';g.fillRect(0,0,1024,10);
     g.fillStyle='#'+accent.toString(16).padStart(6,'0');g.fillRect(54,244,916,5);
-    g.textAlign='left';g.textBaseline='middle';g.fillStyle='#f2f1e9';g.font='700 66px Arial';g.fillText(title,68,112);
-    g.fillStyle='#c1c5c2';g.font='500 30px Arial';g.fillText(subtitle,70,190);
+    g.textAlign='center';g.textBaseline='middle';g.fillStyle='#f2f1e9';g.font='700 66px Arial';g.fillText(title,512,112);
+    g.fillStyle='#c1c5c2';g.font='500 30px Arial';g.fillText(subtitle,512,190);
     const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;
     const m=new THREE.Mesh(new THREE.PlaneGeometry(width,1.38),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     m.name=name;m.position.set(x,y,z);m.rotation.y=rotation;root.add(m);return m;
@@ -671,7 +678,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     add('Recessed tunnel light housing',.72,.12,.42,x,y,z,darkSteel);
     const lens=add('Warm white tunnel light lens',.56,.035,.29,x,y-.075,z,led);
     lens.rotation.y=rotation;
-    const point=new THREE.PointLight(0xffe8c2,.48,7,2);point.position.set(x,y-.18,z);root.add(point);
+    const point=new THREE.PointLight(0xffe8c2,2.15,9,1.65);point.position.set(x,y-.18,z);root.add(point);tunnelPointLights.push(point);
    };
    const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
    const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
@@ -832,7 +839,10 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   const clearanceBottom=pitchSurfaceY-1.0,clearanceTop=pitchSurfaceY+4.8;
   const cuts=[
    // Pitch portal and main approach, with vertical clearance above the ceiling.
-   {minX:-3.8,maxX:3.8,minY:clearanceBottom,maxY:clearanceTop,minZ:44.55,maxZ:66.75},
+   // Remove only the narrow obstruction directly in front of the player portal:
+    // the end-stand wall / advertising fascia aligned with the tunnel opening.
+    {minX:-4.35,maxX:4.35,minY:clearanceBottom,maxY:clearanceTop,minZ:34.1,maxZ:45.05},
+    {minX:-3.8,maxX:3.8,minY:clearanceBottom,maxY:clearanceTop,minZ:44.55,maxZ:66.75},
    // Full T-junction crossbar including wall thickness and door returns.
    {minX:-18.0,maxX:18.0,minY:clearanceBottom,maxY:clearanceTop,minZ:63.15,maxZ:69.05},
    // Home and away changing rooms and their side-door thresholds.
@@ -930,7 +940,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    geometry.computeBoundingBox();geometry.computeBoundingSphere();
    mesh.geometry=geometry;meshesChanged++;trianglesClipped+=clipped;trianglesRemoved+=removed;
   });
-  const diagnostics={meshesVisited,meshesChanged,trianglesClipped,trianglesRemoved,fragmentsCreated,cutVolumes:cuts.length,clearanceY:{bottom:+clearanceBottom.toFixed(3),top:+clearanceTop.toFixed(3)},clearanceZones:{mainApproach:[44.55,66.75],tJunction:[63.15,69.05],homeAwayRooms:[59.45,72.75],officialsCorridor:[68.15,80.05],officialsRoom:[78.45,92.25]},scope:'imported-stadium-glb-only',firstStepStartZ:45.5,method:'triangle-box-clipping'};
+  const diagnostics={meshesVisited,meshesChanged,trianglesClipped,trianglesRemoved,fragmentsCreated,cutVolumes:cuts.length,entrancePortalCut:{minX:-4.35,maxX:4.35,minZ:34.1,maxZ:45.05},clearanceY:{bottom:+clearanceBottom.toFixed(3),top:+clearanceTop.toFixed(3)},clearanceZones:{mainApproach:[44.55,66.75],tJunction:[63.15,69.05],homeAwayRooms:[59.45,72.75],officialsCorridor:[68.15,80.05],officialsRoom:[78.45,92.25]},scope:'imported-stadium-glb-only',firstStepStartZ:45.5,method:'triangle-box-clipping'};
   console.info('PITCH 11 Environment Lab precise tunnel clearance:',diagnostics);return diagnostics;
  }
 
