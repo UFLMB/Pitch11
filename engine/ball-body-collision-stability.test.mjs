@@ -68,3 +68,26 @@ test('the same player cannot repeatedly re-trigger body contact during the short
   collide();
   assert.equal(ball.last, tackler);
 });
+
+test('different nearby players cannot alternate body contacts inside the same global contact window', () => {
+  const first = player(1, -100);
+  const second = player(0, 100);
+  const ball = looseBall();
+  const state = { t: 1, so: null, prac: true };
+  const collide = makeBodyCollide({ ball, players: [first, second], state });
+
+  collide();
+  assert.equal(ball.last, first);
+
+  first.out = true;
+  ball.x = 0.2;
+  ball.y = 0;
+  ball.vx = 0;
+  state.t = 1.04;
+  collide();
+  assert.equal(ball.last, first, 'a different player must not immediately reverse the previous contact');
+
+  state.t = 1.13;
+  collide();
+  assert.equal(ball.last, second, 'normal contacts resume after the global separation window');
+});
