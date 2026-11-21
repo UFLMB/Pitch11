@@ -56,3 +56,9 @@ assert.match(html, /id="ui-toggle"/);
 assert.match(html, /function setUiHidden\(hidden\)/);
 assert.match(html, /body\.ui-hidden #pov-stick/);
 assert.match(html, /e\.key\.toLowerCase\(\)==='h'/);
+
+assert.match(html, /id="fullscreen-entry"/);
+assert.match(html, /requestFullscreen\(\{navigationUI:'hide'\}\)/);
+assert.match(html, /screen\.orientation\?\.lock\?\.\('landscape'\)/);
+assert.match(html, /fullscreenchange/);
+assert.match(html, /#fullscreen-entry/);
