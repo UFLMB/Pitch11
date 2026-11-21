@@ -24,6 +24,10 @@ for (const feature of [
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
+assert.ok(html.includes('renderer=live.renderer'), 'Editor must reuse the live Matchday WebGL renderer.');
+assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
+assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
+assert.ok(runtime.includes('editorSelectable=true'), 'Runtime stadium assemblies are missing editor selection metadata.');
 assert.ok(runtime.includes('setEditorMode(active)'), 'Environment runtime does not expose the isolated editor bridge.');
 assert.ok(runtime.includes('if(externalEditorActive)return'), 'Environment runtime does not pause its own renderer while the editor owns the scene.');
 assert.ok(runtime.includes('editorLocked=true'), 'Playing surface lock metadata is missing.');
