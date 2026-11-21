@@ -7,6 +7,18 @@ export function shouldFlattenHorizontalRootMotion(file) {
   return !/^goalkeeper sidestep(?: \(2\))?\.fbx$/i.test(name);
 }
 
+/**
+ * Locomotion cycles must not animate the pelvis vertically: the simulation
+ * owns the player's world transform, so retaining root Y produces a visible
+ * hop on top of the engine's movement. Action clips (jumps, headers, dives)
+ * deliberately keep their vertical animation.
+ */
+export function shouldFlattenVerticalRootMotion(file) {
+  const name = String(file || "").trim();
+  return /^jog (?:forward|backward)(?: diagonal)?(?: \(\d+\))?\.fbx$/i.test(name) ||
+    /^jog strafe (?:left|right)\.fbx$/i.test(name);
+}
+
 const ROOT_TARGETS = new Set(["hips", "mixamorighips", "root", "mixamorigroot"]);
 
 function getRootTarget(track) {
@@ -50,6 +62,26 @@ export function flattenHorizontalRootMotion(clip) {
     adjustedTracks++;
   }
   clip.userData = { ...(clip.userData || {}), rootMotionFlattened: adjustedTracks > 0, rootMotionTracksAdjusted: adjustedTracks };
+  return clip;
+}
+
+export function flattenVerticalRootMotion(clip) {
+  if (!clip || !Array.isArray(clip.tracks)) return clip;
+  let adjustedTracks = 0;
+  for (const track of clip.tracks) {
+    if (!ROOT_TARGETS.has(getRootTarget(track))) continue;
+    const values = track.values;
+    const valueSize = typeof track.getValueSize === "function" ? track.getValueSize() : 3;
+    if (!values || valueSize !== 3 || values.length < 3 || values.length % 3 !== 0) continue;
+    const firstY = values[1];
+    for (let i = 1; i < values.length; i += 3) values[i] = firstY;
+    adjustedTracks++;
+  }
+  clip.userData = {
+    ...(clip.userData || {}),
+    verticalRootMotionFlattened: adjustedTracks > 0,
+    verticalRootMotionTracksAdjusted: adjustedTracks
+  };
   return clip;
 }
 

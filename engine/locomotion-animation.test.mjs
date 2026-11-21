@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
+import { clampRootMotionDeltaToTarget, consumeRootMotionDelta, extractHorizontalRootMotion, flattenHorizontalRootMotion, flattenVerticalRootMotion, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion, shouldFlattenVerticalRootMotion } from "./locomotion-animation.mjs";
 import { isOneShotAnimationState } from "./player-animation-map.mjs";
 import { MIXAMO_ANIMATION_FILES } from "./mixamo-animation-catalog.mjs";
 function vectorTrack(name, values) { return { name, values: new Float32Array(values), getValueSize: () => 3 }; }
@@ -19,6 +19,22 @@ test("flattens every mapped outfield jog clip, including diagonal variants", () 
  for (const file of ["jog forward.fbx","jog backward.fbx","jog forward diagonal.fbx","jog forward diagonal (2).fbx","jog backward diagonal.fbx","jog backward diagonal (2).fbx","jog strafe left.fbx","jog strafe right.fbx"]) {
   assert.equal(shouldFlattenHorizontalRootMotion(file),true,file);
  }
+});
+
+test("flattens vertical pelvis motion only on locomotion cycles", () => {
+ const locomotion = ["jog forward.fbx","jog backward.fbx","jog forward diagonal.fbx","jog forward diagonal (2).fbx","jog backward diagonal.fbx","jog backward diagonal (2).fbx","jog strafe left.fbx","jog strafe right.fbx"];
+ for (const file of locomotion) assert.equal(shouldFlattenVerticalRootMotion(file), true, file);
+ for (const file of ["offensive idle.fbx","header soccerball.fbx","soccer tackle.fbx","soccer penalty kick.fbx","goalkeeper sidestep.fbx","gk_dive-high_shot-left-ball_in_hand.fbx"]) {
+  assert.equal(shouldFlattenVerticalRootMotion(file), false, file);
+ }
+ const hips = vectorTrack("mixamorigHips.position", [1, 0, 2, 4, .2, 6, 8, .4, 10]);
+ const hand = vectorTrack("mixamorigLeftHand.position", [1, 2, 3, 4, 5, 6]);
+ const clip = { tracks: [hips, hand] };
+ assert.equal(flattenVerticalRootMotion(clip), clip);
+ assert.deepEqual(Array.from(hips.values), [1, 0, 2, 4, 0, 6, 8, 0, 10]);
+ assert.deepEqual(Array.from(hand.values), [1, 2, 3, 4, 5, 6]);
+ assert.equal(clip.userData.verticalRootMotionFlattened, true);
+ assert.equal(clip.userData.verticalRootMotionTracksAdjusted, 1);
 });
 test("keeps goalkeeper sidestep clips out of the legacy locomotion-flattening path", () => {
  assert.equal(shouldFlattenHorizontalRootMotion("goalkeeper sidestep.fbx"),false);
