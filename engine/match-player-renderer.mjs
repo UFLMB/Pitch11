@@ -443,10 +443,10 @@ export class MatchPlayerRenderer {
       }
       // Logical locomotion states may share one FBX (walk/run/sprint all use
       // the jog cycle). Track the state without restarting that same action.
-      if (clip) {
-        entry.state = animationState;
-        entry.activeManualClipToken = state.manualClipFile ? state.manualClipToken : -1;
-      }
+      // Persist the stabilized logical state even while its FBX is still
+      // loading; otherwise the debounce window would restart on every frame.
+      entry.state = animationState;
+      if (clip) entry.activeManualClipToken = state.manualClipFile ? state.manualClipToken : -1;
       if (entry.activeAction && ["walk", "run", "sprint"].includes(animationState)) {
         entry.activeAction.timeScale = getLocomotionTimeScale(animationState, state.speed);
       }
