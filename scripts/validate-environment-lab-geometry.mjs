@@ -4,6 +4,11 @@ import fs from 'node:fs';
 const source = fs.readFileSync('stadium-environment-runtime.js', 'utf8');
 
 assert.match(source, /const clearanceBottom=pitchSurfaceY-1\.0,clearanceTop=pitchSurfaceY\+4\.8/);
+assert.match(source, /minX:-4\.35,maxX:4\.35,minY:clearanceBottom,maxY:clearanceTop,minZ:34\.1,maxZ:45\.05/,
+  'The narrow portal cut must clear only the entrance fascia and end-stand obstruction');
+assert.match(source, /g\.textAlign='center'.*g\.fillText\(title,512,112\)/);
+assert.match(source, /new THREE\.PointLight\(0xffe8c2,2\.15,9,1\.65\)/);
+assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.16:\.11/);
 for (const [name, minZ, maxZ] of [
   ['main approach', '44.55', '66.75'],
   ['T-junction', '63.15', '69.05'],
@@ -30,4 +35,4 @@ const wingCenter = opening / 2 + wing / 2;
 assert.equal(wing, 14.4);
 assert.ok(Math.abs((wingCenter - wing / 2) - opening / 2) < 1e-9);
 assert.ok(Math.abs((wingCenter + wing / 2) - branchLength / 2) < 1e-9);
-console.log('Environment Lab stadium clearance and T-junction geometry checks passed.');
+console.log('Environment Lab stadium clearance, portal opening, centered wayfinding and independent tunnel LED lighting checks passed.');
