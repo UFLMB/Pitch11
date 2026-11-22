@@ -135,8 +135,17 @@ const canvas=document.querySelector('#c');
 const status=document.querySelector('#status');
 const loading=document.querySelector('#loading');
 const mobile=matchMedia('(max-width: 700px)').matches;
-const pixelRatio=mobile?Math.min(devicePixelRatio||1,.8):Math.min(devicePixelRatio||1,1.25);
-function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio));canvas.height=Math.max(1,Math.round(innerHeight*pixelRatio));}
+const maxRenderScale=Math.min(devicePixelRatio||1,mobile?1.75:1.25);
+let renderScale=Math.min(maxRenderScale,mobile?1.5:1.25);
+let slowFrames=0,stableFrames=0,qualityCooldown=0;
+function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*renderScale));canvas.height=Math.max(1,Math.round(innerHeight*renderScale));}
+function setRenderScale(next){
+ const value=Math.max(1,Math.min(maxRenderScale,next));
+ if(Math.abs(value-renderScale)<.025)return;
+ renderScale=value;sizeOverlay();
+ window.P11EnvironmentGraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile};
+}
+window.P11EnvironmentGraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile};
 sizeOverlay();
 addEventListener('resize',sizeOverlay);
 const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
@@ -267,7 +276,10 @@ document.querySelector('#element-ids').addEventListener('click',()=>{
 function animate(now){
  requestAnimationFrame(animate);
  if(!ready||now-lastFrame<16)return;
- const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+ const frameMs=now-lastFrame;const dt=Math.min(.05,frameMs/1000);lastFrame=now;
+ if(qualityCooldown>0)qualityCooldown-=dt;
+ if(frameMs>22){stableFrames=0;if(++slowFrames>=90&&qualityCooldown<=0){setRenderScale(renderScale-.1);slowFrames=0;qualityCooldown=2;}}
+ else if(frameMs<18){slowFrames=Math.max(0,slowFrames-2);if(++stableFrames>=360&&qualityCooldown<=0&&renderScale<maxRenderScale-.025){setRenderScale(Math.min(maxRenderScale,renderScale+.05));stableFrames=0;qualityCooldown=5;}}
  updatePov(dt);updateDrone(dt);render();if(elementIdsVisible&&++elementIdFrame%3===0)updateElementIds();
 }
 function showBootFailure(message){
