@@ -230,7 +230,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
  const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending'};
- let playerEntranceTunnel=null,walkColliderMeshes=[];
+ let playerEntranceTunnel=null,walkColliderMeshes=[],walkSurfaceMeshes=[];
  const walkRaycaster=new THREE.Raycaster();
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
@@ -662,9 +662,11 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    applySurfaceGrain(concrete,1901,.018);applySurfaceGrain(paint,1902,.009);
    applySurfaceGrain(floor,1903,.024);applySurfaceGrain(rubber,1904,.012);
    applySurfaceGrain(ceiling,1905,.008);
-   const add=(name,w,h,d,x,y,z,mat,parent=root)=>{
+   const add=(name,w,h,d,x,y,z,mat,parent=root,walkableSurface=false)=>{
     const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
-    mesh.castShadow=false;mesh.receiveShadow=false;parent.add(mesh);return mesh;
+    mesh.castShadow=false;mesh.receiveShadow=false;
+    if(walkableSurface){mesh.userData.p11WalkableSurface=true;mesh.userData.p11WalkBlocker=false;}
+    parent.add(mesh);return mesh;
    };
    const sign=(name,title,subtitle,x,y,z,accent=0xc9b77a,rotation=0,width=4.4)=>{
     const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=320;const g=canvas.getContext('2d');
@@ -694,7 +696,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    ],3));
    apronGeometry.setIndex([0,2,1,1,2,3]);apronGeometry.computeVertexNormals();
    const apron=new THREE.Mesh(apronGeometry,concrete);apron.name='Concrete pitch-side apron';
-   apron.position.set(0,0,40);apron.castShadow=false;apron.receiveShadow=false;root.add(apron);
+   apron.position.set(0,0,40);apron.castShadow=false;apron.receiveShadow=false;
+   apron.userData.p11WalkableSurface=true;apron.userData.p11WalkBlocker=false;root.add(apron);
    add('Rubber threshold strip',5.65,.025,.42,0,.145,45.38,rubber);
    for(let i=0;i<8;i++){
     const z=34.9+i*1.42,surfaceY=((z-34.4)/11.2)*apronRise;
@@ -707,7 +710,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    add('Portal left steel reveal',.075,3.15,.64,-2.77,1.72,front-.035,steel);
    add('Portal right steel reveal',.075,3.15,.64,2.77,1.72,front-.035,steel);
    sign('Players entrance wayfinding','PLAYERS','ACCESS TO THE FIELD',0,3.08,front-.34,0xc9b77a);
-   add('Main corridor floor slab',mainW,.18,mainDepth,0,.08,mainMid,floor);
+   add('Main corridor floor slab',mainW,.18,mainDepth,0,.08,mainMid,floor,root,true);
    add('Main corridor anti-slip runner',4.7,.025,mainDepth-.35,0,.185,mainMid,rubber);
    add('Main corridor left wall',wall,height,mainDepth,-mainW/2+wall/2,height/2+.18,mainMid,paint);
    add('Main corridor right wall',wall,height,mainDepth,mainW/2-wall/2,height/2+.18,mainMid,paint);
@@ -731,7 +734,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    }
    // T-junction: three genuinely separate routes rather than three doors in one hall.
    const branchZ=66.1,branchW=4.8,branchHeight=3.55,branchLength=35,junctionOpening=6.2;
-   add('T-junction floor',branchLength,.18,branchW,0,.08,branchZ,floor);
+   add('T-junction floor',branchLength,.18,branchW,0,.08,branchZ,floor,root,true);
    add('T-junction anti-slip surface',branchLength-.25,.025,branchW-.35,0,.185,branchZ,rubber);
    add('T-junction ceiling',branchLength,.24,branchW,0,branchHeight+.12,branchZ,ceiling);
    // Split both transverse walls around a full-width opening. The old
@@ -757,7 +760,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    // The officials' forward corridor begins beyond the T-junction, avoiding
    // coplanar floor and ceiling overlaps at the three-way intersection.
    const officialsStart=branchZ+branchW/2,officialsLength=roomDoorZ-officialsStart,officialsMid=(officialsStart+roomDoorZ)/2;
-   add('Officials corridor floor',5.8,.16,officialsLength,0,.08,officialsMid,floor);
+   add('Officials corridor floor',5.8,.16,officialsLength,0,.08,officialsMid,floor,root,true);
    add('Officials corridor runner',4.5,.025,officialsLength-.25,0,.17,officialsMid,rubber);
    add('Officials corridor left wall',.22,3.55,officialsLength,-2.9,1.94,officialsMid,paint);
    add('Officials corridor right wall',.22,3.55,officialsLength,2.9,1.94,officialsMid,paint);
@@ -766,7 +769,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    // Dressing-room shells have a single controlled doorway facing their corridor.
    const makeRoom=(id,cx,cz,w,d,accent,accentMat,orientation='front')=>{
     const h=3.55,door=id==='Officials'?4.2:2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
-    add(id+' floor',w,.18,d,cx,.08,cz,floor);
+    add(id+' floor',w,.18,d,cx,.08,cz,floor,root,true);
     add(id+' ceiling',w,.22,d,cx,h+.12,cz,ceiling);
     if(orientation==='front'){
      add(id+' left wall',side,h,d,cx-w/2+side/2,h/2+.18,cz,paint);
@@ -847,51 +850,58 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    scene.add(root);return root;
   }
  function rebuildWalkColliders(stadiumRoot){
-  walkColliderMeshes=[];
-  const addRoot=root=>root?.traverse(object=>{
-   if(object.isMesh&&object.geometry?.attributes?.position&&object.visible){
+   walkColliderMeshes=[];walkSurfaceMeshes=[];
+   const addRoot=(root,isLegacyStadium=false)=>root?.traverse(object=>{
+    if(!object.isMesh||!object.geometry?.attributes?.position||!object.visible)return;
     object.updateWorldMatrix(true,false);
     object.userData.p11WalkBounds=new THREE.Box3().setFromObject(object);
-    walkColliderMeshes.push(object);
-   }
-  });
-  addRoot(stadiumRoot);
-  addRoot(playerEntranceTunnel);
-  console.info('PITCH 11 first-person walk colliders:',walkColliderMeshes.length);
- }
- function movePlayerWalk(position,deltaX,deltaZ){
-  const distance=Math.hypot(deltaX,deltaZ);
-  if(!Number.isFinite(distance)||distance<1e-5||!walkColliderMeshes.length)return position;
-  const steps=Math.max(1,Math.ceil(distance/.16)),stepX=deltaX/steps,stepZ=deltaZ/steps;
-  const direction=new THREE.Vector3(stepX,0,stepZ).normalize();
-  const groundRay=new THREE.Vector3(0,-1,0),current={x:position.x,y:position.y,z:position.z};
-  for(let step=0;step<steps;step++){
-   const nextX=current.x+stepX,nextZ=current.z+stepZ,currentGround=current.y-1.65;
-   // Probe above the current floor so a raised ramp landing is detected
-   // before the player reaches its first edge. Keep a bounded step-up/down
-   // window to avoid snapping through unrelated upper stadium geometry.
-   const nearby=walkColliderMeshes.filter(mesh=>{
-    const b=mesh.userData.p11WalkBounds;
-    return b&&nextX>=b.min.x-1.5&&nextX<=b.max.x+1.5&&nextZ>=b.min.z-1.5&&nextZ<=b.max.z+1.5&&b.max.y>=currentGround-1.25&&b.min.y<=currentGround+7.0;
+    const isWalkSurface=object.userData.p11WalkableSurface===true;
+    // Preserve legacy stadium ground probing. Modular systems explicitly tag floors.
+    if(isWalkSurface||isLegacyStadium)walkSurfaceMeshes.push(object);
+    // Walkable floors are ground probes, not waist/shoulder obstruction meshes.
+    if(object.userData.p11WalkBlocker!==false&&!isWalkSurface)walkColliderMeshes.push(object);
    });
-   if(!nearby.length)break;
-   let blocked=false;
-   for(const height of [.28,.88,1.48]){
-    walkRaycaster.set(new THREE.Vector3(current.x,currentGround+height,current.z),direction);
-    walkRaycaster.near=0;walkRaycaster.far=Math.hypot(stepX,stepZ)+.2;
-    if(walkRaycaster.intersectObjects(nearby,false).some(hit=>hit.distance<walkRaycaster.far-.015)){blocked=true;break;}
-   }
-   if(blocked)break;
-   walkRaycaster.set(new THREE.Vector3(nextX,currentGround+6.5,nextZ),groundRay);
-   walkRaycaster.near=0;walkRaycaster.far=8.0;
-   const floorHit=walkRaycaster.intersectObjects(nearby,false).find(hit=>hit.point.y<=currentGround+1.25&&hit.point.y>=currentGround-1.0);
-   if(!floorHit)break;
-   const nextGround=floorHit.point.y;
-   current.x=nextX;current.z=nextZ;current.y=nextGround+1.65;
+   addRoot(stadiumRoot,true);
+   addRoot(playerEntranceTunnel,false);
+   console.info('PITCH 11 POV navigation meshes:',{blockers:walkColliderMeshes.length,walkableSurfaces:walkSurfaceMeshes.length});
   }
-  return current;
- }
- function carveStadiumForPlayerEntrance(stadium){
+  function movePlayerWalk(position,deltaX,deltaZ){
+   const distance=Math.hypot(deltaX,deltaZ);
+   if(!Number.isFinite(distance)||distance<1e-5||!walkSurfaceMeshes.length)return position;
+   const steps=Math.max(1,Math.ceil(distance/.16)),stepX=deltaX/steps,stepZ=deltaZ/steps;
+   const direction=new THREE.Vector3(stepX,0,stepZ).normalize();
+   const groundRay=new THREE.Vector3(0,-1,0),current={x:position.x,y:position.y,z:position.z};
+   for(let step=0;step<steps;step++){
+    const nextX=current.x+stepX,nextZ=current.z+stepZ,currentGround=current.y-1.65;
+    // Obstructions and ground are queried independently so decorative meshes
+    // cannot be mistaken for a continuous floor.
+    const nearbyBlockers=walkColliderMeshes.filter(mesh=>{
+     const b=mesh.userData.p11WalkBounds;
+     return b&&nextX>=b.min.x-1.5&&nextX<=b.max.x+1.5&&nextZ>=b.min.z-1.5&&nextZ<=b.max.z+1.5&&b.max.y>=currentGround-1.25&&b.min.y<=currentGround+7.0;
+    });
+    let blocked=false;
+    for(const height of [.28,.88,1.48]){
+     if(!nearbyBlockers.length)break;
+     walkRaycaster.set(new THREE.Vector3(current.x,currentGround+height,current.z),direction);
+     walkRaycaster.near=0;walkRaycaster.far=Math.hypot(stepX,stepZ)+.2;
+     if(walkRaycaster.intersectObjects(nearbyBlockers,false).some(hit=>hit.distance<walkRaycaster.far-.015)){blocked=true;break;}
+    }
+    if(blocked)break;
+    const nearbySurfaces=walkSurfaceMeshes.filter(mesh=>{
+     const b=mesh.userData.p11WalkBounds;
+     return b&&nextX>=b.min.x-.05&&nextX<=b.max.x+.05&&nextZ>=b.min.z-.05&&nextZ<=b.max.z+.05&&b.max.y>=currentGround-1.0&&b.min.y<=currentGround+1.25;
+    });
+    if(!nearbySurfaces.length)break;
+    walkRaycaster.set(new THREE.Vector3(nextX,currentGround+6.5,nextZ),groundRay);
+    walkRaycaster.near=0;walkRaycaster.far=8.0;
+    const floorHit=walkRaycaster.intersectObjects(nearbySurfaces,false).find(hit=>hit.point.y<=currentGround+1.25&&hit.point.y>=currentGround-1.0);
+    if(!floorHit)break;
+    const nextGround=floorHit.point.y;
+    current.x=nextX;current.z=nextZ;current.y=nextGround+1.65;
+   }
+   return current;
+  }
+function carveStadiumForPlayerEntrance(stadium){
   // Clip imported GLB triangles against the complete corridor/room clearances.
   // This removes seats, terrace steps and their foundations as real geometry,
   // rather than hiding them behind tunnel walls.
