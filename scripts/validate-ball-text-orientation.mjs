@@ -6,9 +6,9 @@ const pitchy = readFileSync(new URL('../engine/pitchy-v2.mjs', import.meta.url),
 
 assert.match(editor, /function drawFrontFacingText\(text,colour,font,maxWidth,yOffset=0\)/);
 assert.match(editor, /g\.translate\(size\*\.25,size\*\.5\+yOffset\);g\.scale\(-1,1\)/);
-assert.match(editor, /function addText\([^]*?drawFrontFacingText\(text,colour/);
+assert.match(editor, /function addText\(text,colour,sizePx\)\{[^]*?addDecal\(\{type:'text',text,colour,fontSize:sizePx/);
 assert.match(editor, /function addBadge\(\)\{[^]*?g\.translate\(x,y\);g\.rotate\(angle\);g\.scale\(-1,1\)/);
-assert.match(editor, /if\(plan\.decalText\)\{drawFrontFacingText\(plan\.decalText/);
+assert.match(editor, /if\(plan\.decalText\)\{decals\.push\(\{type:'text',text:plan\.decalText/);
 assert.match(pitchy, /decalText:textMatch\?\.\[1\]\|\|''/);
 assert.doesNotMatch(editor, /g\.fillText\(plan\.decalText,size\/2,size\*\.5/);
 assert.doesNotMatch(editor, /g\.fillText\(text,size\/2,size\*\.5/);
