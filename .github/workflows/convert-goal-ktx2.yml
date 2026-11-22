@@ -1,0 +1,66 @@
+name: Convert goalkeeper goal KTX2 textures
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'input/stadium-assets/football-goal/football-goal-v1-lod0.glb'
+      - '.github/workflows/convert-goal-ktx2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Decompress KTX2 textures to PNG
+        run: |
+          npx --yes @gltf-transform/cli ktxdecompress \
+            input/stadium-assets/football-goal/football-goal-v1-lod0.glb \
+            /tmp/football-goal-compatible.glb
+
+      - name: Validate converted GLB
+        run: |
+          npx --yes @gltf-transform/cli validate /tmp/football-goal-compatible.glb
+          npx --yes @gltf-transform/cli inspect /tmp/football-goal-compatible.glb
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const file = fs.readFileSync('/tmp/football-goal-compatible.glb');
+          if (file.toString('ascii', 0, 4) !== 'glTF') throw new Error('Invalid GLB magic');
+          const jsonLength = file.readUInt32LE(12);
+          const json = JSON.parse(file.toString('utf8', 20, 20 + jsonLength).trim());
+          const used = json.extensionsUsed || [];
+          const required = json.extensionsRequired || [];
+          const imageMimes = (json.images || []).map((image) => image.mimeType || '');
+          if (used.includes('KHR_texture_basisu') || required.includes('KHR_texture_basisu')) {
+            throw new Error('KHR_texture_basisu remains in converted GLB');
+          }
+          if (imageMimes.some((mime) => mime === 'image/ktx2')) {
+            throw new Error('KTX2 image remains in converted GLB');
+          }
+          if ((json.meshes || []).length < 1) throw new Error('No mesh found after conversion');
+          console.log(JSON.stringify({
+            meshes: json.meshes.length,
+            materials: (json.materials || []).length,
+            images: imageMimes,
+            extensionsUsed: used,
+            extensionsRequired: required
+          }, null, 2));
+          NODE
+
+      - name: Upload compatible GLB for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: football-goal-compatible-glb
+          path: /tmp/football-goal-compatible.glb
+          if-no-files-found: error
