@@ -684,10 +684,22 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    };
    const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
    const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
-   // Pitch-side apron aligns to the first terrace step and stays open to the pitch.
-   add('Concrete pitch-side apron',7.6,.18,11.2,0,.04,40.0,concrete);
+   // Pitch-side apron starts exactly flush with the playing surface and rises
+   // gently toward the tunnel threshold (17 cm over 11.2 m).
+   const apronGeometry=new THREE.BufferGeometry();
+   const apronHalfDepth=5.6,apronHalfWidth=3.8,apronRise=.17;
+   apronGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
+    -apronHalfWidth,0,-apronHalfDepth, apronHalfWidth,0,-apronHalfDepth,
+    -apronHalfWidth,apronRise,apronHalfDepth, apronHalfWidth,apronRise,apronHalfDepth
+   ],3));
+   apronGeometry.setIndex([0,2,1,1,2,3]);apronGeometry.computeVertexNormals();
+   const apron=new THREE.Mesh(apronGeometry,concrete);apron.name='Concrete pitch-side apron';
+   apron.position.set(0,0,40);apron.castShadow=false;apron.receiveShadow=false;root.add(apron);
    add('Rubber threshold strip',5.65,.025,.42,0,.145,45.38,rubber);
-   for(let i=0;i<8;i++)add('Apron expansion joint '+i,7.3,.012,.025,0,.14,34.9+i*1.42,darkSteel);
+   for(let i=0;i<8;i++){
+    const z=34.9+i*1.42,surfaceY=((z-34.4)/11.2)*apronRise;
+    add('Apron expansion joint '+i,7.3,.012,.025,0,surfaceY+.006,z,darkSteel);
+   }
    // Entrance portal: robust concrete piers, metal lintel, drainage and kick plates.
    add('Portal left concrete pier',.42,height,.5,-3.02,height/2+.16,front,concrete);
    add('Portal right concrete pier',.42,height,.5,3.02,height/2+.16,front,concrete);
