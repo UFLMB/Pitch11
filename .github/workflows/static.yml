@@ -214,6 +214,9 @@ jobs:
         run: node scripts/validate-player-uv-inspector-pages.mjs
       - name: Validate Environment Lab tunnel and stadium clearance geometry
         run: node scripts/validate-environment-lab-geometry.mjs
+
+      - name: Validate adaptive HD environment render scale
+        run: node scripts/validate-environment-graphics-quality.mjs
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
