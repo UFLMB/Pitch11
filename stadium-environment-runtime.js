@@ -230,7 +230,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
  const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending'};
- let playerEntranceTunnel=null,walkColliderMeshes=[],walkSurfaceMeshes=[];
+ let playerEntranceTunnel=null,walkColliderMeshes=[],walkSurfaceMeshes=[],walkNavigationStadiumRoot=null,walkNavigationExtraRoots=[];
  const walkRaycaster=new THREE.Raycaster();
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
@@ -850,6 +850,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    scene.add(root);return root;
   }
  function rebuildWalkColliders(stadiumRoot){
+   if(stadiumRoot)walkNavigationStadiumRoot=stadiumRoot;
    walkColliderMeshes=[];walkSurfaceMeshes=[];
    const addRoot=(root,isLegacyStadium=false)=>root?.traverse(object=>{
     if(!object.isMesh||!object.geometry?.attributes?.position||!object.visible)return;
@@ -861,9 +862,16 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     // Walkable floors are ground probes, not waist/shoulder obstruction meshes.
     if(object.userData.p11WalkBlocker!==false&&!isWalkSurface)walkColliderMeshes.push(object);
    });
-   addRoot(stadiumRoot,true);
+   addRoot(walkNavigationStadiumRoot,true);
    addRoot(playerEntranceTunnel,false);
-   console.info('PITCH 11 POV navigation meshes:',{blockers:walkColliderMeshes.length,walkableSurfaces:walkSurfaceMeshes.length});
+   walkNavigationExtraRoots.forEach(root=>addRoot(root,false));
+   console.info('PITCH 11 POV navigation meshes:',{blockers:walkColliderMeshes.length,walkableSurfaces:walkSurfaceMeshes.length,extraRoots:walkNavigationExtraRoots.length});
+  }
+  function registerWalkNavigationRoot(root){
+   if(!root||typeof root.traverse!=='function')return false;
+   if(!walkNavigationExtraRoots.includes(root))walkNavigationExtraRoots.push(root);
+   if(walkNavigationStadiumRoot)rebuildWalkColliders();
+   return true;
   }
   function movePlayerWalk(position,deltaX,deltaZ){
    const distance=Math.hypot(deltaX,deltaZ);
