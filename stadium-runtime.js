@@ -9,6 +9,9 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  const host=document.getElementById('stadium3d');if(!host)return;
  const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
  boot.state='initializing-renderer';boot.progress=0;boot.error='';
+ const bootStartedAt=performance.now();
+ boot.timings={};
+ const recordBootTiming=name=>{boot.timings[name]=Math.round(performance.now()-bootStartedAt);};
  const mobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
  const uiCanvas=document.getElementById('c');
  let viewportWidth=uiCanvas?.getBoundingClientRect().width||innerWidth;
@@ -42,6 +45,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   return;
  }
  boot.renderer={webgl2:true,powerPreference:mobile?'low-power':'high-performance'};
+ recordBootTiming('rendererReadyMs');
  renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.8:1.25));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
@@ -243,7 +247,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const topCamera=new THREE.OrthographicCamera(-60,60,40,-40,.1,1000);
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
- let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
+ let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading',stadiumTransferCompletedAt=0;
  const optionalAssets={dugout:'pending',cornerFlag:'pending'};
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
@@ -630,19 +634,31 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   stadiumLoadState=state;stadiumLoadError=error;boot.state=state;boot.progress=stadiumLoadProgress;boot.error=error;
  }
  function finishStadiumLoad(gltf){
+  const finishStartedAt=performance.now();
   const stadium=gltf.scene;
+  const traversalStartedAt=performance.now();
   stadium.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(o.material)for(const m of(Array.isArray(o.material)?o.material:[o.material]))if(m.map)m.map.colorSpace=THREE.SRGBColorSpace;}});
+  boot.timings.stadiumSceneTraversalMs=Math.round(performance.now()-traversalStartedAt);
+  const boundsStartedAt=performance.now();
   const bounds=new THREE.Box3().setFromObject(stadium),center=bounds.getCenter(new THREE.Vector3());
   stadium.position.x-=center.x;stadium.position.z-=center.z;stadium.position.y-=bounds.min.y;
+  boot.timings.stadiumBoundsMs=Math.round(performance.now()-boundsStartedAt);
+  const turfStartedAt=performance.now();
   try{enhancePitchGrass(stadium);}catch(e){console.warn('PITCH 11 turf enhancement skipped',e);}
+  boot.timings.turfEnhancementMs=Math.round(performance.now()-turfStartedAt);
   // Place player feet on the actual GLB pitch surface, not at world Y=0.
   playerRenderer.setGroundHeight(pitchSurfaceY + 0.025);
   scene.add(stadium);addFloodlightTowers();pitchMarkingsGroup=addPitchMarkings();pitchDiagnostics.markings={children:pitchMarkingsGroup.children.length,meshes:pitchMarkingsGroup.children.filter(o=>o.isMesh).length,lines:pitchMarkingsGroup.children.filter(o=>o.isLine).length,visible:pitchMarkingsGroup.visible,positionY:pitchMarkingsGroup.position.y,lineY:pitchSurfaceY+.018,lineCount:pitchMarkingsGroup.children.filter(o=>o.isMesh||o.isLine).length,sampleChildren:pitchMarkingsGroup.children.slice(0,6).map(o=>({type:o.type,visible:o.visible,positionY:+o.position.y.toFixed(4),renderOrder:o.renderOrder,material:o.material?{type:o.material.type,depthTest:o.material.depthTest,depthWrite:o.material.depthWrite,transparent:o.material.transparent,opacity:o.material.opacity,side:o.material.side}:null}))};
   previewBall=new THREE.Mesh(new THREE.SphereGeometry(.22,24,16),new THREE.MeshStandardMaterial({color:0xf5f4ec,roughness:.38,metalness:.02}));
   previewBall.position.set(0,.23,0);previewBall.visible=false;scene.add(previewBall);
+  const atmosphereStartedAt=performance.now();
   try{addCrowd();addSecurity();addStaff();}catch(e){console.warn('PITCH 11 matchday atmosphere partially skipped',e);}
+  boot.timings.atmosphereSetupMs=Math.round(performance.now()-atmosphereStartedAt);
+  const stadiumDetailsStartedAt=performance.now();
   board(112,0,-36.5,0);board(112,0,36.5,Math.PI);board(72,-DEFAULT_GOAL_LAYOUT.endBoardX,0,Math.PI/2);board(72,DEFAULT_GOAL_LAYOUT.endBoardX,0,-Math.PI/2);
   setGoalDimensions();addFlags();
+  boot.timings.stadiumDetailsSetupMs=Math.round(performance.now()-stadiumDetailsStartedAt);
+  boot.timings.sceneSetupMs=Math.round(performance.now()-finishStartedAt);
   const details=new GLTFLoader();
   optionalAssets.dugout='loading';boot.optionalAssets=optionalAssets;
   details.load('./assets/team-dugout.glb',asset=>{
@@ -655,16 +671,29 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    catch(e){optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag setup failed',e);}
   },undefined,e=>{optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag asset unavailable',e);});
   ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
+  recordBootTiming('stadiumReadyMs');
   window.dispatchEvent(new CustomEvent('p11stadiumready'));
  }
  function loadStadium(attempt=0){
   stadiumLoadAttempts=attempt+1;stadiumLoadProgress=0;
+  const requestStartedAt=performance.now();
+  boot.timings.stadiumRequestStartedMs=Math.round(requestStartedAt-bootStartedAt);
+  stadiumTransferCompletedAt=0;
   setStadiumLoadState(attempt?'retrying':'loading');
   loader.load(stadiumUrl,gltf=>{
+   const parsedAt=performance.now();
+   boot.timings.stadiumRequestToParseMs=Math.round(parsedAt-requestStartedAt);
+   if(stadiumTransferCompletedAt)boot.timings.stadiumParseAfterTransferMs=Math.round(parsedAt-stadiumTransferCompletedAt);
    try{finishStadiumLoad(gltf);}
    catch(e){console.error('PITCH 11 stadium setup failed',e);setStadiumLoadState('error',e&&e.message?e.message:String(e));}
   },event=>{
    if(event&&event.lengthComputable&&event.total>0){
+    boot.timings.stadiumBytesLoaded=event.loaded;
+    boot.timings.stadiumBytesTotal=event.total;
+    if(event.loaded>=event.total&&!stadiumTransferCompletedAt){
+     stadiumTransferCompletedAt=performance.now();
+     boot.timings.stadiumDownloadMs=Math.round(stadiumTransferCompletedAt-requestStartedAt);
+    }
     stadiumLoadProgress=Math.max(0,Math.min(1,event.loaded/event.total));boot.progress=stadiumLoadProgress;
    }
   },error=>{
@@ -753,7 +782,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
    get playerModelsReady(){return playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;},get playerModelsStatus(){return playerRenderer.status;},
-   get diagnostics(){return{mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,pbrLoad:{...pitchGrassPbrDiagnostics,files:{...pitchGrassPbrDiagnostics.files}},textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},playerModels:{status:playerRenderer.status,assetReady:playerRenderer.ready,ready:playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount,expectedPlayers:playerRenderer.expectedCount,visiblePlayers:playerRenderer.visibleCount,renderedPlayers:playerRenderer.count,animatedCount:playerRenderer.animatedCount,clipCount:playerRenderer.clipCount,trianglesPerModel:playerRenderer.modelTriangleCount,estimatedPlayerTriangles:playerRenderer.triangleCount,animationHz:playerRenderer.animationUpdateRate,materialVariants:playerRenderer.materialVariants.size,error:playerRenderer.error},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   get diagnostics(){return{bootTimings:{...boot.timings},mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,pbrLoad:{...pitchGrassPbrDiagnostics,files:{...pitchGrassPbrDiagnostics.files}},textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},playerModels:{status:playerRenderer.status,assetReady:playerRenderer.ready,ready:playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount,expectedPlayers:playerRenderer.expectedCount,visiblePlayers:playerRenderer.visibleCount,renderedPlayers:playerRenderer.count,animatedCount:playerRenderer.animatedCount,clipCount:playerRenderer.clipCount,trianglesPerModel:playerRenderer.modelTriangleCount,estimatedPlayerTriangles:playerRenderer.triangleCount,animationHz:playerRenderer.animationUpdateRate,materialVariants:playerRenderer.materialVariants.size,error:playerRenderer.error},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
    setPitchSettings(pitch,mowing){
     pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
     activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
