@@ -29,3 +29,18 @@ assert.doesNotMatch(editor, /g\.(?:strokeText|fillText)\('PITCH 11',0,0,size\*\.
 assert.match(editor, /logoApplied=true/);
 assert.match(editor, /OFFICIAL PITCH 11 LOGO EMBEDDED/);
 console.log('PITCH 11 official logo embed checks passed: adaptive contrast, readable wordmark, front placement, scale, position and rotation controls.');
+
+
+assert.match(editor, /type:'text',text,colour,fontSize:sizePx/);
+assert.match(editor, /type:'image',src:reader\.result/);
+assert.match(editor, /id="decalMode"/);
+assert.match(editor, /id="decalScale"/);
+assert.match(editor, /id="decalX"/);
+assert.match(editor, /id="decalY"/);
+assert.match(editor, /id="decalRotation"/);
+assert.match(editor, /function decalAt\(uv\)/);
+assert.match(editor, /draggingDecal=true/);
+assert.match(editor, /id="deleteDecal"/);
+assert.match(editor, /decals:cloneDecals\(\)/);
+assert.match(editor, /decals=Array\.isArray\(p\.decals\)\?p\.decals:\[\]/);
+console.log('Editable decal checks passed: text/image selection, drag, size, position, rotation, delete, undo and profile persistence.');
