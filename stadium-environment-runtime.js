@@ -229,7 +229,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading';
- const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending'};
+ const optionalAssets={dugout:'pending',cornerFlag:'pending',playerEntrance:'pending',testGoal:'pending'};
  let playerEntranceTunnel=null,walkColliderMeshes=[],walkSurfaceMeshes=[],walkNavigationStadiumRoot=null,walkNavigationExtraRoots=[];
  const walkRaycaster=new THREE.Raycaster();
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
@@ -328,6 +328,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   const bootMat=new THREE.MeshStandardMaterial({color:0x080b10,roughness:.9});
   const tops=[0x172331,0x263c50,0x202b27,0xe8e8e1,0x7b2730];
   for(let side of[-1,1])for(let i=0;i<5;i++){
+   // Keep the single north-side access-ramp staff member out of the walking lane.
+   if(side>0&&i===2)continue;
    const actor=new THREE.Group(),topMat=new THREE.MeshStandardMaterial({color:tops[(i+(side>0?2:0))%tops.length],roughness:.88});
    const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.48,4,7),topMat);torso.position.y=1.02;actor.add(torso);
    const neck=new THREE.Mesh(new THREE.CylinderGeometry(.065,.075,.13,6),skinMat);neck.position.y=1.38;actor.add(neck);
@@ -714,18 +716,19 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    // Pitch-side apron starts exactly flush with the playing surface and rises
    // gently toward the tunnel threshold (17 cm over 11.2 m).
    const apronGeometry=new THREE.BufferGeometry();
-   const apronHalfDepth=5.6,apronHalfWidth=3.8,apronRise=.17;
+   const apronHalfDepth=5.8,apronHalfWidth=3.8,apronRise=.17;
    apronGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
     -apronHalfWidth,0,-apronHalfDepth, apronHalfWidth,0,-apronHalfDepth,
     -apronHalfWidth,apronRise,apronHalfDepth, apronHalfWidth,apronRise,apronHalfDepth
    ],3));
    apronGeometry.setIndex([0,2,1,1,2,3]);apronGeometry.computeVertexNormals();
    const apron=new THREE.Mesh(apronGeometry,concrete);apron.name='Concrete pitch-side apron';
-   apron.position.set(0,0,40);apron.castShadow=false;apron.receiveShadow=false;
+   // Extend the ramp back to the pitch edge and overlap the corridor landing.
+   apron.position.set(0,0,39.8);apron.castShadow=false;apron.receiveShadow=false;
    apron.userData.p11WalkableSurface=true;apron.userData.p11WalkBlocker=false;root.add(apron);
    add('Rubber threshold strip',5.65,.025,.42,0,.145,45.38,rubber);
    for(let i=0;i<8;i++){
-    const z=34.9+i*1.42,surfaceY=((z-34.4)/11.2)*apronRise;
+    const z=34.5+i*1.42,surfaceY=((z-34.0)/11.6)*apronRise;
     add('Apron expansion joint '+i,7.3,.012,.025,0,surfaceY+.006,z,darkSteel);
    }
    // Entrance portal: robust concrete piers, metal lintel, drainage and kick plates.
@@ -784,7 +787,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    branch('Away team branch',3.0,17,branchZ,awayMat,0xc99b8f);
    // The officials' forward corridor begins beyond the T-junction, avoiding
    // coplanar floor and ceiling overlaps at the three-way intersection.
-   const officialsStart=branchZ+branchW/2,officialsLength=roomDoorZ-officialsStart,officialsMid=(officialsStart+roomDoorZ)/2;
+   const officialsStart=branchZ+branchW/2,officialsEnd=roomDoorZ+.5,officialsLength=officialsEnd-officialsStart,officialsMid=(officialsStart+officialsEnd)/2;
    add('Officials corridor floor',5.8,.16,officialsLength,0,.08,officialsMid,floor,root,true);
    add('Officials corridor runner',4.5,.025,officialsLength-.25,0,.17,officialsMid,rubber);
    add('Officials corridor left wall',.22,3.55,officialsLength,-2.9,1.94,officialsMid,paint);
@@ -1117,6 +1120,19 @@ function finishStadiumLoad(gltf){
    try{for(const x of[-52.5,52.5])for(const z of[-34,34]){const f=asset.scene.clone(true);f.position.set(x,0,z);scene.add(f);}optionalAssets.cornerFlag='ready';}
    catch(e){optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag setup failed',e);}
   },undefined,e=>{optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag asset unavailable',e);});
+  // Separate imported comparison goal in the Environment Lab; the procedural goal remains untouched.
+  optionalAssets.testGoal='loading';
+  const goalTestLoader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  goalTestLoader.load('./assets/football-goal-test.glb',asset=>{
+   try{
+    const testGoal=new THREE.Group();testGoal.name='PITCH 11 imported football goal test';
+    const model=asset.scene;model.scale.set(7.32/7.56,2.44/2.57968,2.2/2.205);model.rotation.y=-Math.PI/2;
+    testGoal.add(model);testGoal.position.set(55.5,pitchSurfaceY+.019,0);
+    testGoal.userData={testOnly:true,visualComparison:true,doesNotReplaceProceduralGoal:true};
+    model.traverse(object=>{if(object.isMesh){object.castShadow=false;object.receiveShadow=false;}});
+    scene.add(testGoal);optionalAssets.testGoal='ready';
+   }catch(e){optionalAssets.testGoal='error';console.warn('PITCH 11 imported goal test setup failed',e);}
+  },undefined,e=>{optionalAssets.testGoal='error';console.warn('PITCH 11 imported goal test asset unavailable',e);});
   ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
   window.dispatchEvent(new CustomEvent('p11stadiumready'));
  }
