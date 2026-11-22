@@ -20,6 +20,14 @@ assert.doesNotMatch(source, /applySurfaceGrain\(/, 'Per-material grain textures 
 
 assert.match(source, /function rebuildWalkColliders\(stadiumRoot\)/);
 assert.match(source, /function movePlayerWalk\(position,deltaX,deltaZ\)/);
+assert.match(source, /const apronHalfDepth=5\.8,apronHalfWidth=3\.8,apronRise=\.17/, 'The ramp must overlap the pitch edge and corridor landing');
+assert.match(source, /apron\.position\.set\(0,0,39\.8\)/);
+assert.match(source, /officialsEnd=roomDoorZ\+\.5/, 'The officials corridor floor must overlap the dressing-room floor');
+assert.match(source, /optionalAssets\.testGoal='loading'/);
+assert.match(source, /\.\/assets\/football-goal-test\.glb/);
+assert.match(source, /PITCH 11 imported football goal test/);
+assert.match(source, /doesNotReplaceProceduralGoal:true/);
+assert.match(source, /if\(side>0&&i===2\)continue/, 'Only the north-side ramp staff member is removed');
 assert.match(source, /walkSurfaceMeshes=\[\]/, 'Ground surfaces must be tracked independently from obstruction colliders');
 assert.match(source, /walkRaycaster\.intersectObjects\(nearbyBlockers,false\)/, 'Horizontal movement must query obstruction meshes only');
 assert.match(source, /walkRaycaster\.intersectObjects\(nearbySurfaces,false\)/, 'Ground probing must query walkable surfaces only');
@@ -31,6 +39,7 @@ const html = fs.readFileSync('environment-lab.html', 'utf8');
 assert.match(html, /id="pov"/);
 assert.match(html, /id="pov-stick"/);
 assert.match(html, /function enterPov\(\)/);
+assert.match(html, /pov\.yaw=Math\.PI/, 'Player POV must initially face the players entrance ramp');
 assert.match(html, /function updatePov\(dt\)/);
 assert.match(html, /pov\.keys\.add\(k\)/);
 assert.match(html, /povStick\.addEventListener\('pointerdown'/);
