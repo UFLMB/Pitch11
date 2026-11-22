@@ -84,8 +84,9 @@ const cam={x:CX,y:CY,v:410,px:CX,py:CY,pv:410};
 const ORD=P.slice();
 const cv=document.getElementById('c'),ctx=cv.getContext('2d',{alpha:true});
 const graphicsMobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
-const maxRenderScale=Math.min(window.devicePixelRatio||1,graphicsMobile?1.75:1.5);
-let renderScale=Math.min(maxRenderScale,graphicsMobile?1.5:1.25),W=0,H=0,dpr=renderScale;
+// Mobile supersampling: render above CSS resolution for cleaner 3D edges and sharper pitch/player detail.
+const maxRenderScale=Math.min(window.devicePixelRatio||1,graphicsMobile?2.0:1.5);
+let renderScale=Math.min(maxRenderScale,graphicsMobile?1.75:1.25),W=0,H=0,dpr=renderScale;
 function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=renderScale;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
 function setRenderScale(next){const value=clamp(next,1,maxRenderScale);if(Math.abs(value-renderScale)<0.025)return;renderScale=value;resize();window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};}
 window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};
