@@ -714,7 +714,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
    const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
    // Pitch-side apron starts exactly flush with the playing surface and rises
-   // gently toward the tunnel threshold (17 cm over 11.2 m).
+   // gently toward the tunnel threshold (17 cm over 11.6 m).
    const apronGeometry=new THREE.BufferGeometry();
    const apronHalfDepth=5.8,apronHalfWidth=3.8,apronRise=.17;
    apronGeometry.setAttribute('position',new THREE.Float32BufferAttribute([
