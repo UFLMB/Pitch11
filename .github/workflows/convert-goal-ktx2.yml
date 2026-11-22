@@ -1,6 +1,10 @@
 name: Convert goalkeeper goal KTX2 textures
 
 on:
+  pull_request:
+    paths:
+      - 'input/stadium-assets/football-goal/football-goal-v1-lod0.glb'
+      - '.github/workflows/convert-goal-ktx2.yml'
   push:
     branches: [main]
     paths:
@@ -17,6 +21,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install Khronos KTX command-line tools
+        run: |
+          curl --fail --location --retry 3 \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb \
+            --output /tmp/ktx-software.deb
+          sudo apt-get install --yes /tmp/ktx-software.deb
+          command -v ktx
+          ktx --version
 
       - name: Set up Node
         uses: actions/setup-node@v4
