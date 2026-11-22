@@ -1,6 +1,10 @@
 name: Convert goalkeeper goal KTX2 textures
 
 on:
+  pull_request:
+    paths:
+      - 'input/stadium-assets/football-goal/football-goal-v1-lod0.glb'
+      - '.github/workflows/convert-goal-ktx2.yml'
   push:
     branches: [main]
     paths:
