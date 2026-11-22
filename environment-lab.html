@@ -174,7 +174,7 @@ function enterTunnel(){
 function enterPov(){
  drone.active=false;setDroneHud(false);pov.active=true;pov.keys.clear();pov.stick={x:0,y:0};
  const ground=Number(window.P11Stadium?.diagnostics?.pitch?.pitchSurfaceY)||0;
- pov.position={x:0,y:ground+1.65,z:0};pov.yaw=0;pov.pitch=-.025;activeView='pov';setPovHud(true);
+ pov.position={x:0,y:ground+1.65,z:0};pov.yaw=Math.PI;pov.pitch=-.025;activeView='pov';setPovHud(true);
  document.querySelectorAll('[data-view]').forEach(b=>b.classList.remove('active'));
  status.textContent='PLAYER POV · WALK THE STADIUM · WASD / TOUCH JOYSTICK';render();
 }
