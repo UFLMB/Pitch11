@@ -1194,7 +1194,8 @@ function finishStadiumLoad(gltf){
     pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
     activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
    },
-   render,renderTopDown,renderPreview,renderEnvironment,movePlayerWalk,project,setGoalDimensions
+   render,renderTopDown,renderPreview,renderEnvironment,movePlayerWalk,project,setGoalDimensions,
+   registerWalkNavigationRoot,rebuildWalkNavigation:()=>rebuildWalkColliders()
   };
  const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
  addEventListener('resize',resizeStadium);
