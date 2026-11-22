@@ -791,6 +791,20 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    add('Officials corridor right wall',.22,3.55,officialsLength,2.9,1.94,officialsMid,paint);
    add('Officials corridor ceiling',5.8,.22,officialsLength,0,3.67,officialsMid,ceiling);
    light(0,3.62,70);light(0,3.62,75);
+   // One shared low-resolution tactics-board texture and geometry serve all rooms.
+   const boardCanvas=document.createElement('canvas');boardCanvas.width=512;boardCanvas.height=320;
+   const boardContext=boardCanvas.getContext('2d');
+   boardContext.fillStyle='#202b30';boardContext.fillRect(0,0,512,320);
+   boardContext.strokeStyle='#d9e3d8';boardContext.lineWidth=3;boardContext.strokeRect(36,28,440,264);
+   boardContext.beginPath();boardContext.moveTo(256,28);boardContext.lineTo(256,292);boardContext.moveTo(36,160);boardContext.lineTo(476,160);boardContext.stroke();
+   boardContext.beginPath();boardContext.arc(256,160,48,0,Math.PI*2);boardContext.stroke();
+   boardContext.strokeRect(36,94,64,132);boardContext.strokeRect(412,94,64,132);
+   boardContext.fillStyle='#d9e3d8';
+   for(const [x,y] of [[90,120],[145,205],[220,105],[290,205],[350,115],[420,190],[255,160]]){boardContext.beginPath();boardContext.arc(x,y,7,0,Math.PI*2);boardContext.fill();}
+   boardContext.strokeStyle='#d4b36b';boardContext.lineWidth=5;boardContext.beginPath();boardContext.moveTo(90,120);boardContext.lineTo(145,205);boardContext.lineTo(220,105);boardContext.lineTo(290,205);boardContext.stroke();
+   const boardTexture=new THREE.CanvasTexture(boardCanvas);boardTexture.colorSpace=THREE.SRGBColorSpace;
+   const boardMaterial=new THREE.MeshBasicMaterial({map:boardTexture,side:THREE.DoubleSide});
+   const boardGeometry=new THREE.PlaneGeometry(1.8,1.12);
    // Dressing-room shells have a single controlled doorway facing their corridor.
    const makeRoom=(id,cx,cz,w,d,accent,accentMat,orientation='front')=>{
     const h=3.55,door=id==='Officials'?4.2:2.35,side=.22,backZ=cz+d/2,frontZ=cz-d/2;
@@ -858,21 +872,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' changing bench frame',.12,.48,benchW-.25,bx,.28,bz,steel);
      for(let i=0;i<4;i++)add(id+' boot shelf '+i,.48,.12,.55,bx-(orientation==='side-reverse'?-1:1)*.55,.16,bz-benchW/2+.45+i*(benchW-.9)/3,black);
     }
-    // A low-cost magnetic tactics board gives each changing room a practical
-    // team-space focal point without external image assets.
-    const boardCanvas=document.createElement('canvas');boardCanvas.width=512;boardCanvas.height=320;
-    const boardContext=boardCanvas.getContext('2d');
-    boardContext.fillStyle='#202b30';boardContext.fillRect(0,0,512,320);
-    boardContext.strokeStyle='#d9e3d8';boardContext.lineWidth=3;boardContext.strokeRect(36,28,440,264);
-    boardContext.beginPath();boardContext.moveTo(256,28);boardContext.lineTo(256,292);boardContext.moveTo(36,160);boardContext.lineTo(476,160);boardContext.stroke();
-    boardContext.beginPath();boardContext.arc(256,160,48,0,Math.PI*2);boardContext.stroke();
-    boardContext.strokeRect(36,94,64,132);boardContext.strokeRect(412,94,64,132);
-    boardContext.fillStyle='#d9e3d8';
-    for(const [x,y] of [[90,120],[145,205],[220,105],[290,205],[350,115],[420,190],[255,160]]){boardContext.beginPath();boardContext.arc(x,y,7,0,Math.PI*2);boardContext.fill();}
-    boardContext.strokeStyle='#d4b36b';boardContext.lineWidth=5;boardContext.beginPath();boardContext.moveTo(90,120);boardContext.lineTo(145,205);boardContext.lineTo(220,105);boardContext.lineTo(290,205);boardContext.stroke();
-    const boardTexture=new THREE.CanvasTexture(boardCanvas);boardTexture.colorSpace=THREE.SRGBColorSpace;
-    const boardMaterial=new THREE.MeshBasicMaterial({map:boardTexture,side:THREE.DoubleSide});
-    const board=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.12),boardMaterial);
+    // Shared magnetic tactics board: one texture and one geometry for all rooms.
+    const board=new THREE.Mesh(boardGeometry,boardMaterial);
     board.name=id+' tactical board';
     if(orientation==='front'){board.position.set(cx,2.55,backZ-.15);board.rotation.y=Math.PI;}
     else if(orientation==='side-reverse'){board.position.set(cx+w/2-.15,2.55,cz);board.rotation.y=-Math.PI/2;}
