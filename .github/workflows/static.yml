@@ -217,6 +217,8 @@ jobs:
 
       - name: Validate adaptive HD environment render scale
         run: node scripts/validate-environment-graphics-quality.mjs
+      - name: Validate ball branding text orientation
+        run: node scripts/validate-ball-text-orientation.mjs
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
