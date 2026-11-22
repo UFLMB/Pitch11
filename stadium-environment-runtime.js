@@ -644,29 +644,48 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      mat.emissiveIntensity=mat===floor||mat===rubber||mat===black?.42:.34;
     }
     const tunnelPointLights=[];
-   const applySurfaceGrain=(mat,seed,bumpScale)=>{
-    const canvas=document.createElement('canvas');canvas.width=256;canvas.height=256;const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#eeeeea';ctx.fillRect(0,0,256,256);
-    let state=seed>>>0;const rnd=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
-    for(let i=0;i<7200;i++){
-     const x=rnd()*256,y=rnd()*256,r=.25+rnd()*1.25;
-     ctx.fillStyle=rnd()>.48?'rgba(0,0,0,.075)':'rgba(255,255,255,.11)';
-     ctx.fillRect(x,y,r,r);
-    }
-    const colorMap=new THREE.CanvasTexture(canvas);colorMap.colorSpace=THREE.SRGBColorSpace;
-    colorMap.wrapS=colorMap.wrapT=THREE.RepeatWrapping;colorMap.repeat.set(3,3);
-    colorMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
-    const bumpMap=colorMap.clone();bumpMap.colorSpace=THREE.NoColorSpace;bumpMap.needsUpdate=true;
-    mat.map=colorMap;mat.bumpMap=bumpMap;mat.bumpScale=bumpScale;mat.needsUpdate=true;
+   // One shared micro-grain pair serves every tunnel material. Material colors
+   // keep concrete, paint, rubber and flooring distinct without duplicating
+   // canvas textures or bump maps on mobile GPUs.
+   const grainCanvas=document.createElement('canvas');grainCanvas.width=256;grainCanvas.height=256;
+   const grainContext=grainCanvas.getContext('2d');grainContext.fillStyle='#eeeeea';grainContext.fillRect(0,0,256,256);
+   let grainSeed=1901;const grainRandom=()=>{grainSeed=(grainSeed*1664525+1013904223)>>>0;return grainSeed/4294967296;};
+   for(let i=0;i<7200;i++){
+    const x=grainRandom()*256,y=grainRandom()*256,size=.25+grainRandom()*1.25;
+    grainContext.fillStyle=grainRandom()>.48?'rgba(0,0,0,.075)':'rgba(255,255,255,.11)';
+    grainContext.fillRect(x,y,size,size);
+   }
+   const grainMap=new THREE.CanvasTexture(grainCanvas);grainMap.colorSpace=THREE.SRGBColorSpace;
+   grainMap.wrapS=grainMap.wrapT=THREE.RepeatWrapping;grainMap.repeat.set(3,3);
+   grainMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+   const grainBump=grainMap.clone();grainBump.colorSpace=THREE.NoColorSpace;grainBump.needsUpdate=true;
+   for(const [mat,bumpScale] of [[concrete,.018],[paint,.009],[floor,.024],[rubber,.012],[ceiling,.008]]){
+    mat.map=grainMap;mat.bumpMap=grainBump;mat.bumpScale=bumpScale;mat.needsUpdate=true;
+   }
+   const boxGeometryCache=new Map();
+   const boxGeometry=(w,h,d)=>{
+    const key=[w,h,d].map(value=>Number(value).toFixed(4)).join(':');
+    let geometry=boxGeometryCache.get(key);
+    if(!geometry){geometry=new THREE.BoxGeometry(w,h,d);boxGeometryCache.set(key,geometry);}
+    return geometry;
    };
-   applySurfaceGrain(concrete,1901,.018);applySurfaceGrain(paint,1902,.009);
-   applySurfaceGrain(floor,1903,.024);applySurfaceGrain(rubber,1904,.012);
-   applySurfaceGrain(ceiling,1905,.008);
    const add=(name,w,h,d,x,y,z,mat,parent=root,walkableSurface=false)=>{
-    const mesh=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
+    const mesh=new THREE.Mesh(boxGeometry(w,h,d),mat);mesh.name=name;mesh.position.set(x,y,z);
     mesh.castShadow=false;mesh.receiveShadow=false;
     if(walkableSurface){mesh.userData.p11WalkableSurface=true;mesh.userData.p11WalkBlocker=false;}
     parent.add(mesh);return mesh;
+   };
+   const addInstances=(name,w,h,d,mat,placements)=>{
+    if(!placements.length)return null;
+    const mesh=new THREE.InstancedMesh(boxGeometry(w,h,d),mat,placements.length);
+    mesh.name=name;mesh.castShadow=false;mesh.receiveShadow=false;
+    const transform=new THREE.Object3D();
+    placements.forEach((item,index)=>{
+     transform.position.set(item.x,item.y,item.z);
+     transform.rotation.set(0,item.rotation||0,0);
+     transform.updateMatrix();mesh.setMatrixAt(index,transform.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate=true;root.add(mesh);return mesh;
    };
    const sign=(name,title,subtitle,x,y,z,accent=0xc9b77a,rotation=0,width=4.4)=>{
     const canvas=document.createElement('canvas');canvas.width=1024;canvas.height=320;const g=canvas.getContext('2d');
@@ -678,11 +697,17 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const m=new THREE.Mesh(new THREE.PlaneGeometry(width,1.38),new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     m.name=name;m.position.set(x,y,z);m.rotation.y=rotation;root.add(m);return m;
    };
+   let tunnelLightIndex=0;
    const light=(x,y,z,rotation=0)=>{
     add('Recessed tunnel light housing',.72,.12,.42,x,y,z,darkSteel);
     const lens=add('Warm white tunnel light lens',.56,.035,.29,x,y-.075,z,led);
     lens.rotation.y=rotation;
-    const point=new THREE.PointLight(0xffe8c2,4.8,11.5,1.35);point.position.set(x,y-.18,z);root.add(point);tunnelPointLights.push(point);
+    // Emissive lenses provide continuous visual lighting; only selected
+    // fixtures add real point lights to keep the mobile fragment workload low.
+    if(tunnelLightIndex++%(mobile?3:2)===0){
+     const point=new THREE.PointLight(0xffe8c2,4.8,11.5,1.35);
+     point.position.set(x,y-.18,z);root.add(point);tunnelPointLights.push(point);
+    }
    };
    const front=45.5,junction=65.5,roomDoorZ=79.5,roomBack=91.5;
    const mainW=5.8,height=3.65,wall=.24,mainMid=(front+junction)/2,mainDepth=junction-front;
@@ -788,25 +813,39 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' entrance lintel',.26,.38,door,doorX,h-.01,cz,accentMat);
      add(id+' rear wall',.24,h,d,cx-doorSide*w/2,h/2+.18,cz,accentMat);
     }
-    // Locker banks face the room, with individual doors, vents and numbered plates.
+    // Locker banks are instanced by component: the same detailed doors,
+    // handles, number plates and vents render in a handful of draw calls.
     const count=id==='Officials'?4:8,lockerWidth=(orientation==='front'?w:d)-1.2;
-    const unit=lockerWidth/count;
+    const unit=lockerWidth/count,carcasses=[],doors=[],handles=[],plates=[],vents=[];
     for(let i=0;i<count;i++){
      if(orientation==='front'){
       const lx=cx-w/2+.6+unit*(i+.5),lz=backZ-.34;
-      add(id+' locker carcass '+i,unit-.07,2.0,.48,lx,1.22,lz,accentMat);
-      add(id+' locker door '+i,unit-.16,1.78,.035,lx,1.25,lz-.255,steel);
-      add(id+' locker handle '+i,.035,.2,.045,lx+unit*.28,1.18,lz-.29,black);
-      add(id+' locker number plate '+i,unit*.38,.1,.025,lx,1.9,lz-.29,white);
-      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,unit*.45,.018,.02,lx,1.65+vent*.07,lz-.292,black);
+      carcasses.push({x:lx,y:1.22,z:lz});
+      doors.push({x:lx,y:1.25,z:lz-.255});
+      handles.push({x:lx+unit*.28,y:1.18,z:lz-.29});
+      plates.push({x:lx,y:1.9,z:lz-.29});
+      for(let vent=0;vent<4;vent++)vents.push({x:lx,y:1.65+vent*.07,z:lz-.292});
      }else{
       const doorSide=orientation==='side-reverse'?-1:1,lx=cx-doorSide*(w/2-.34),lz=cz-d/2+.6+unit*(i+.5);
-      add(id+' locker carcass '+i,.48,2.0,unit-.07,lx,1.22,lz,accentMat);
-      add(id+' locker door '+i,.035,1.78,unit-.16,lx+doorSide*.255,1.25,lz,steel);
-      add(id+' locker handle '+i,.045,.2,.035,lx+doorSide*.29,1.18,lz+unit*.28,black);
-      add(id+' locker number plate '+i,.025,.1,unit*.38,lx+doorSide*.29,1.9,lz,white);
-      for(let vent=0;vent<4;vent++)add(id+' locker vent '+i+' '+vent,.02,.018,unit*.45,lx+doorSide*.292,1.65+vent*.07,lz,black);
+      carcasses.push({x:lx,y:1.22,z:lz});
+      doors.push({x:lx+doorSide*.255,y:1.25,z:lz});
+      handles.push({x:lx+doorSide*.29,y:1.18,z:lz+unit*.28});
+      plates.push({x:lx+doorSide*.29,y:1.9,z:lz});
+      for(let vent=0;vent<4;vent++)vents.push({x:lx+doorSide*.292,y:1.65+vent*.07,z:lz});
      }
+    }
+    if(orientation==='front'){
+     addInstances(id+' locker carcass instances',unit-.07,2.0,.48,accentMat,carcasses);
+     addInstances(id+' locker door instances',unit-.16,1.78,.035,steel,doors);
+     addInstances(id+' locker handle instances',.035,.2,.045,black,handles);
+     addInstances(id+' locker number plate instances',unit*.38,.1,.025,white,plates);
+     addInstances(id+' locker vent instances',unit*.45,.018,.02,black,vents);
+    }else{
+     addInstances(id+' locker carcass instances',.48,2.0,unit-.07,accentMat,carcasses);
+     addInstances(id+' locker door instances',.035,1.78,unit-.16,steel,doors);
+     addInstances(id+' locker handle instances',.045,.2,.035,black,handles);
+     addInstances(id+' locker number plate instances',.025,.1,unit*.38,white,plates);
+     addInstances(id+' locker vent instances',.02,.018,unit*.45,black,vents);
     }
     const benchW=Math.min((orientation==='front'?w:d)-1.4,orientation==='front'?w-1.4:d-1.4);
     const bx=orientation==='front'?cx:cx-(orientation==='side-reverse'?-1:1)*1.8,bz=orientation==='front'?frontZ+2.0:cz;
@@ -819,6 +858,26 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
      add(id+' changing bench frame',.12,.48,benchW-.25,bx,.28,bz,steel);
      for(let i=0;i<4;i++)add(id+' boot shelf '+i,.48,.12,.55,bx-(orientation==='side-reverse'?-1:1)*.55,.16,bz-benchW/2+.45+i*(benchW-.9)/3,black);
     }
+    // A low-cost magnetic tactics board gives each changing room a practical
+    // team-space focal point without external image assets.
+    const boardCanvas=document.createElement('canvas');boardCanvas.width=512;boardCanvas.height=320;
+    const boardContext=boardCanvas.getContext('2d');
+    boardContext.fillStyle='#202b30';boardContext.fillRect(0,0,512,320);
+    boardContext.strokeStyle='#d9e3d8';boardContext.lineWidth=3;boardContext.strokeRect(36,28,440,264);
+    boardContext.beginPath();boardContext.moveTo(256,28);boardContext.lineTo(256,292);boardContext.moveTo(36,160);boardContext.lineTo(476,160);boardContext.stroke();
+    boardContext.beginPath();boardContext.arc(256,160,48,0,Math.PI*2);boardContext.stroke();
+    boardContext.strokeRect(36,94,64,132);boardContext.strokeRect(412,94,64,132);
+    boardContext.fillStyle='#d9e3d8';
+    for(const [x,y] of [[90,120],[145,205],[220,105],[290,205],[350,115],[420,190],[255,160]]){boardContext.beginPath();boardContext.arc(x,y,7,0,Math.PI*2);boardContext.fill();}
+    boardContext.strokeStyle='#d4b36b';boardContext.lineWidth=5;boardContext.beginPath();boardContext.moveTo(90,120);boardContext.lineTo(145,205);boardContext.lineTo(220,105);boardContext.lineTo(290,205);boardContext.stroke();
+    const boardTexture=new THREE.CanvasTexture(boardCanvas);boardTexture.colorSpace=THREE.SRGBColorSpace;
+    const boardMaterial=new THREE.MeshBasicMaterial({map:boardTexture,side:THREE.DoubleSide});
+    const board=new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.12),boardMaterial);
+    board.name=id+' tactical board';
+    if(orientation==='front'){board.position.set(cx,2.55,backZ-.15);board.rotation.y=Math.PI;}
+    else if(orientation==='side-reverse'){board.position.set(cx+w/2-.15,2.55,cz);board.rotation.y=-Math.PI/2;}
+    else{board.position.set(cx-w/2+.15,2.55,cz);board.rotation.y=Math.PI/2;}
+    root.add(board);
     // Kit rail and hooks sit against the usable wall, not floating in the room.
     if(orientation==='front'){
      const railLength=Math.min(w-2,7.5);
@@ -840,10 +899,12 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    makeRoom('Away',23.0,branchZ,11.0,11.5,0xc99b8f,awayMat,'side-reverse');
    makeRoom('Officials',0,85.6,10.5,11.8,0xc9b77a,officialMat,'front');
    // Fire safety, CCTV and accessible service details in the public-facing corridor.
+   const fireRed=material(0x9b302a,.72,.02),cctvLensGeometry=new THREE.SphereGeometry(.055,10,8);
+   const cctvLensMaterial=new THREE.MeshBasicMaterial({color:0x171d22});
    for(const z of[52,61]){
-    add('Fire extinguisher cabinet',.38,.72,.2,-2.55,1.0,z,material(0x9b302a,.72,.02));
+    add('Fire extinguisher cabinet',.38,.72,.2,-2.55,1.0,z,fireRed);
     add('CCTV camera housing',.28,.18,.22,2.55,3.15,z,darkSteel);
-    const lens=new THREE.Mesh(new THREE.SphereGeometry(.055,10,8),new THREE.MeshBasicMaterial({color:0x171d22}));
+    const lens=new THREE.Mesh(cctvLensGeometry,cctvLensMaterial);
     lens.name='CCTV camera lens';lens.position.set(2.55,3.06,z+.1);root.add(lens);
    }
    root.userData={kind:'player-entrance',frontZ:front,junctionZ:junction,homeRoom:{x:-23,z:branchZ},officialsRoom:{x:0,z:85.6},awayRoom:{x:23,z:branchZ},openPitchEnd:true,threeWayJunction:true};
