@@ -10,6 +10,14 @@ assert.match(source, /g\.textAlign='center'.*g\.fillText\(title,512,112\)/);
 assert.match(source, /new THREE\.PointLight\(0xffe8c2,4\.8,11\.5,1\.35\)/);
 assert.match(source, /mat\.emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.42:\.34/);
 assert.match(source, /renderer\.toneMappingExposure=1\.05/);
+assert.match(source, /const boxGeometryCache=new Map\(\)/, 'Tunnel box geometry must be shared instead of allocated for every prop');
+assert.match(source, /new THREE\.InstancedMesh\(boxGeometry\(w,h,d\),mat,placements\.length\)/, 'Repeated locker parts must use instancing');
+assert.match(source, /tunnelLightIndex\+\+%\(mobile\?3:2\)/, 'Mobile tunnel point lights must be budgeted more sparsely');
+assert.match(source, /const grainMap=new THREE\.CanvasTexture\(grainCanvas\)/, 'Tunnel surface grain must use one shared texture');
+assert.match(source, /const boardTexture=new THREE\.CanvasTexture\(boardCanvas\)/, 'Changing rooms must share a single tactics-board texture');
+assert.match(source, /new THREE\.Mesh\(boardGeometry,boardMaterial\)/, 'Changing rooms must reuse the tactics-board geometry and material');
+assert.doesNotMatch(source, /applySurfaceGrain\(/, 'Per-material grain textures must not be reintroduced');
+
 assert.match(source, /function rebuildWalkColliders\(stadiumRoot\)/);
 assert.match(source, /function movePlayerWalk\(position,deltaX,deltaZ\)/);
 assert.match(source, /walkSurfaceMeshes=\[\]/, 'Ground surfaces must be tracked independently from obstruction colliders');
