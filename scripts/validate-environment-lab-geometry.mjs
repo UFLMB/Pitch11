@@ -43,6 +43,15 @@ assert.match(html, /pov\.yaw=Math\.PI/, 'Player POV must initially face the play
 assert.match(html, /function updatePov\(dt\)/);
 assert.match(html, /pov\.keys\.add\(k\)/);
 assert.match(html, /povStick\.addEventListener\('pointerdown'/);
+assert.match(html, /id="pov-sprint"/, 'Mobile POV must expose a dedicated sprint button');
+assert.match(html, /pov\.sprinting=true/, 'Sprint must activate while the mobile sprint control is held');
+assert.match(html, /pov\.keys\.has\('shift'\)\|\|pov\.sprinting/, 'Keyboard and touch sprint must share the faster walk speed');
+assert.match(html, /querySelectorAll\('#drone-hud button\[data-move\]'\)/, 'Drone altitude controls must receive the same pointer handlers as directional controls');
+assert.match(html, /data-move="up"/);
+assert.match(html, /data-move="down"/);
+assert.match(html, /data-view="broadcast" title="Broadcast camera" aria-label="Broadcast camera">▣/);
+assert.match(html, /id="fullscreen-entry" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶/);
+assert.match(html, /id="ui-toggle" type="button" aria-label="Hide interface"/);
 assert.match(source, /emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat===black\?\.42:\.34/);
 for (const [name, minZ, maxZ] of [
   ['main approach', '44.55', '66.75'],
