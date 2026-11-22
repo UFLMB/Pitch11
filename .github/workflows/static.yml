@@ -29,6 +29,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Validate consolidated player direction test page wiring
+        run: node scripts/validate-player-direction-pages.mjs
+      - name: Build and syntax-check player direction browser bundle
+        run: |
+          mkdir -p /tmp/p11-three vendor node_modules
+          npm pack three@0.170.0 --pack-destination /tmp/p11-three
+          tar -xzf /tmp/p11-three/three-0.170.0.tgz -C vendor
+          mv vendor/package vendor/three
+          ln -s ../vendor/three node_modules/three
+          npx --yes esbuild@0.24.2 player-direction-test.js --bundle --format=esm --target=es2022 --outfile=/tmp/player-direction-test.bundle.js
+          test -s /tmp/player-direction-test.bundle.js
+          grep -q "GLTFLoader" /tmp/player-direction-test.bundle.js
+          node --check /tmp/player-direction-test.bundle.js
       - name: Install FBX inspection tools
         run: |
           sudo apt-get update
