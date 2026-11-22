@@ -197,6 +197,8 @@ jobs:
         run: node scripts/validate-environment-lab-mobile-webgl.mjs
       - name: Validate Environment Lab tunnel and stadium clearance geometry
         run: node scripts/validate-environment-lab-geometry.mjs
+      - name: Validate adaptive HD graphics synchronization
+        run: node scripts/validate-mobile-hd-graphics.mjs
       - name: Check browser simulation module syntax
         run: |
           node --check engine/law-compliance.js
