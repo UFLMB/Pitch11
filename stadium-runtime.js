@@ -305,7 +305,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const v3=new THREE.Vector3(),v4=new THREE.Vector3(),forward=new THREE.Vector3(),up=new THREE.Vector3();
  let ready=false,lastRender=0,ledTextures=[],flagMeshes=[],goalNetMesh=null,crowdFans=[],securityGuards=[],staffActors=[];
  let stadiumLoadState='loading',stadiumLoadProgress=0,stadiumLoadError='',stadiumLoadAttempts=0,previewFailure='loading',stadiumTransferCompletedAt=0;
- const optionalAssets={dugout:'pending',cornerFlag:'pending'};
+ const optionalAssets={dugout:'pending',cornerFlag:'pending',testGoal:'pending'};
  boot.state='loading-stadium';boot.progress=0;boot.optionalAssets=optionalAssets;
  const bodyColors=[0x172c43,0x253b57,0x3d2529,0xb8b9b2,0x1c382d,0x8e3c2d,0xd1b98b,0x34353b,0x657b8c,0x8a9a9a,0x253b34,0x6c2637],skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
  function points(hx,hz,r){const p=[],line=(a,b,c,d)=>{const n=Math.max(2,Math.ceil(Math.hypot(c-a,d-b)/2));for(let i=0;i<n;i++){const t=i/n;p.push([a+(c-a)*t,b+(d-b)*t]);}},arc=(x,z,rad,a0,a1)=>{const n=Math.max(8,Math.ceil(Math.abs(a1-a0)*rad/2));for(let i=0;i<n;i++){const a=a0+(a1-a0)*i/n;p.push([x+Math.cos(a)*rad,z+Math.sin(a)*rad]);}};line(-hx+r,-hz,hx-r,-hz);arc(hx-r,-hz+r,r,-Math.PI/2,0);line(hx,-hz+r,hx,hz-r);arc(hx-r,hz-r,r,0,Math.PI/2);line(hx-r,hz,-hx+r,hz);arc(-hx+r,hz-r,r,Math.PI/2,Math.PI);line(-hx,hz-r,-hx,-hz+r);arc(-hx+r,-hz+r,r,Math.PI,Math.PI*1.5);return p;}
@@ -741,6 +741,33 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    try{for(const x of[-52.5,52.5])for(const z of[-34,34]){const f=asset.scene.clone(true);f.position.set(x,0,z);scene.add(f);}optionalAssets.cornerFlag='ready';}
    catch(e){optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag setup failed',e);}
   },undefined,e=>{optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag asset unavailable',e);});
+  // Imported goal is a visual comparison object only. Keep the existing
+  // procedural match goal untouched and place this model behind the +X goal.
+  optionalAssets.testGoal='loading';
+  const goalTestLoader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+  goalTestLoader.load('./assets/football-goal-test.glb',asset=>{
+   try{
+    const testGoal=new THREE.Group();
+    testGoal.name='PITCH 11 imported football goal test';
+    const model=asset.scene;
+    model.scale.set(7.32/7.56,2.44/2.57968,2.2/2.205);
+    model.rotation.y=-Math.PI/2;
+    testGoal.add(model);
+    testGoal.position.set(55.5,.019,0);
+    testGoal.userData={testOnly:true,visualComparison:true,doesNotReplaceProceduralGoal:true};
+    model.traverse(object=>{
+     if(object.isMesh){object.castShadow=false;object.receiveShadow=false;}
+    });
+    scene.add(testGoal);
+    optionalAssets.testGoal='ready';
+   }catch(e){
+    optionalAssets.testGoal='error';
+    console.warn('PITCH 11 imported goal test setup failed',e);
+   }
+  },undefined,e=>{
+   optionalAssets.testGoal='error';
+   console.warn('PITCH 11 imported goal test asset unavailable',e);
+  });
   ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
   recordBootTiming('stadiumReadyMs');
   scheduleDetailedPitchTexture();
