@@ -46,7 +46,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  }
  boot.renderer={webgl2:true,powerPreference:mobile?'low-power':'high-performance'};
  recordBootTiming('rendererReadyMs');
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.8:1.25));
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.25:1.5));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
   if(!rect||rect.width<1||rect.height<1)return null;
