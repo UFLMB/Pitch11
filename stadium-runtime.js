@@ -46,12 +46,12 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  }
  boot.renderer={webgl2:true,powerPreference:mobile?'low-power':'high-performance'};
  recordBootTiming('rendererReadyMs');
- renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?1.25:1.5));
+ renderer.setPixelRatio(Math.min(devicePixelRatio||1,2.0));
  function syncRendererSize(){
   const rect=uiCanvas&&uiCanvas.getBoundingClientRect();
   if(!rect||rect.width<1||rect.height<1)return null;
   viewportWidth=rect.width;viewportHeight=rect.height;
-  const targetRatio=uiCanvas.width/rect.width;
+  const targetRatio=Math.min(uiCanvas.width/rect.width,devicePixelRatio||1,2.0);
   if(Number.isFinite(targetRatio)&&targetRatio>0&&Math.abs(renderer.getPixelRatio()-targetRatio)>.001)renderer.setPixelRatio(targetRatio);
   const size=renderer.getSize(new THREE.Vector2());
   if(Math.abs(size.x-rect.width)>.5||Math.abs(size.y-rect.height)>.5)renderer.setSize(rect.width,rect.height,false);
