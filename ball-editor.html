@@ -100,8 +100,9 @@ renderer.domElement.addEventListener('pointerdown',e=>{if(!paintEnabled)return;c
 renderer.domElement.addEventListener('pointermove',e=>{if(!painting)return;const uv=uvAt(e);if(!uv)return;const dx=(uv.x-lastUV.x)*size,dy=(uv.y-lastUV.y)*size,dist=Math.hypot(dx,dy),steps=Math.max(1,Math.ceil(dist/8));for(let i=1;i<=steps;i++){const t=i/steps;drawBrush({x:lastUV.x+(uv.x-lastUV.x)*t,y:lastUV.y+(uv.y-lastUV.y)*t},$('brushColour').value,Number($('brushSize').value))}lastUV=uv});
 function stopPaint(){painting=false;lastUV=null}renderer.domElement.addEventListener('pointerup',stopPaint);renderer.domElement.addEventListener('pointercancel',stopPaint);
 function saveDownload(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
-function addText(text,colour,sizePx){if(!text.trim())return;snapshot();g.save();g.fillStyle=colour;g.textAlign='center';g.textBaseline='middle';g.font='900 '+sizePx+'px Inter,Arial,sans-serif';g.shadowColor='#0004';g.shadowBlur=5;g.fillText(text,size/2,size*.5, size*.86);g.restore();refresh()}
-function addBadge(){snapshot();g.save();g.translate(size/2,size/2);g.fillStyle='#a3e635';g.beginPath();g.arc(0,0,180,0,Math.PI*2);g.fill();g.fillStyle='#0b1117';g.font='900 190px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('P11',0,8);g.restore();refresh()}
+function drawFrontFacingText(text,colour,font,maxWidth,yOffset=0){g.save();g.translate(size*.25,size*.5+yOffset);g.scale(-1,1);g.fillStyle=colour;g.textAlign='center';g.textBaseline='middle';g.font=font;g.fillText(text,0,0,maxWidth);g.restore()}
+function addText(text,colour,sizePx){if(!text.trim())return;snapshot();g.save();g.shadowColor='#0004';g.shadowBlur=5;drawFrontFacingText(text,colour,'900 '+sizePx+'px Inter,Arial,sans-serif',size*.86);g.restore();refresh()}
+function addBadge(){snapshot();g.save();g.translate(size*.25,size*.5);g.scale(-1,1);g.fillStyle='#a3e635';g.beginPath();g.arc(0,0,180,0,Math.PI*2);g.fill();g.fillStyle='#0b1117';g.font='900 190px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('P11',0,8);g.restore();refresh()}
 function exportPNG(){textureCanvas.toBlob(b=>b&&saveDownload(b,'pitch11-ball-texture.png'),'image/png')}
 function profile(){return {format:'PITCH11-BALL-1',name:'PITCH 11 Custom Ball',texture:textureCanvas.toDataURL('image/png'),roughness:Number($('roughness').value)/100,metalness:Number($('metalness').value)/100,createdAt:new Date().toISOString(),model:'loaded-uv-ball'}}
 function saveLocal(){try{localStorage.setItem('p11-ball-studio-profile',JSON.stringify(profile()));status.textContent='DESIGN SAVED LOCALLY'}catch(e){status.textContent='STORAGE FULL · EXPORT PNG INSTEAD'}}
@@ -145,7 +146,7 @@ function applyAIBallDesign(plan){
  g.save();g.strokeStyle=plan.seamColor;g.globalAlpha=.48;g.lineWidth=9;
  for(let y=size*.12;y<size;y+=size*.25){g.beginPath();g.moveTo(0,y);g.bezierCurveTo(size*.28,y-size*.12,size*.72,y+size*.12,size,y);g.stroke()}
  g.restore();
- if(plan.decalText){g.save();g.fillStyle=plan.trim?plan.trimColor:'#111820';g.font='900 92px Inter,Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(plan.decalText,size/2,size*.5,size*.82);g.restore()}
+ if(plan.decalText){drawFrontFacingText(plan.decalText,plan.trim?plan.trimColor:'#111820','900 92px Inter,Arial',size*.82)}
  $('baseColour').value=plan.baseColor;$('roughness').value=Math.round(plan.roughness*100);$('metalness').value=Math.round(plan.metalness*100);
  paintMaterials.forEach(m=>{m.roughness=plan.roughness;m.metalness=plan.metalness});
  refresh();saveLocal();status.textContent='PITCHY DESIGN APPLIED · '+plan.designName.toUpperCase();
