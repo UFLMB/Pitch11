@@ -255,7 +255,7 @@ async function boot(){
   if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
   live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
   renderer=live.renderer;if(!renderer)throw new Error('The live Matchday renderer is unavailable.');
-  host.appendChild(renderer.domElement);renderer.setPixelRatio(Math.min(devicePixelRatio||1,mobile?0.85:1.25));renderer.setSize(innerWidth,innerHeight,false);
+  host.appendChild(renderer.domElement);renderer.setSize(innerWidth,innerHeight,false);
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;
   renderer.domElement.style.touchAction='none';root.add(live.scene);state.model=live.scene;state.modelScale=1;
   const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
