@@ -12,7 +12,12 @@ assert.match(source, /mat\.emissiveIntensity=mat===floor\|\|mat===rubber\|\|mat=
 assert.match(source, /renderer\.toneMappingExposure=1\.05/);
 assert.match(source, /function rebuildWalkColliders\(stadiumRoot\)/);
 assert.match(source, /function movePlayerWalk\(position,deltaX,deltaZ\)/);
-assert.match(source, /walkRaycaster\.intersectObjects\(nearby,false\)/);
+assert.match(source, /walkSurfaceMeshes=\[\]/, 'Ground surfaces must be tracked independently from obstruction colliders');
+assert.match(source, /walkRaycaster\.intersectObjects\(nearbyBlockers,false\)/, 'Horizontal movement must query obstruction meshes only');
+assert.match(source, /walkRaycaster\.intersectObjects\(nearbySurfaces,false\)/, 'Ground probing must query walkable surfaces only');
+assert.match(source, /userData\.p11WalkableSurface===true/);
+assert.match(source, /function registerWalkNavigationRoot\(root\)/);
+assert.match(source, /rebuildWalkNavigation:\(\)=>rebuildWalkColliders\(\)/);
 assert.match(source, /movePlayerWalk,project/);
 const html = fs.readFileSync('environment-lab.html', 'utf8');
 assert.match(html, /id="pov"/);
