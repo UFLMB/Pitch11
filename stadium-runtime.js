@@ -890,6 +890,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   };
  const resizeStadium=()=>{const rect=syncRendererSize();if(rect){camera.aspect=rect.width/Math.max(1,rect.height);camera.updateProjectionMatrix();}};
  addEventListener('resize',resizeStadium);
+ addEventListener('p11graphicsqualitychange',resizeStadium);
  addEventListener('orientationchange',resizeStadium);
  if(window.visualViewport)window.visualViewport.addEventListener('resize',resizeStadium);
  if(typeof ResizeObserver!=='undefined'){const viewportObserver=new ResizeObserver(resizeStadium);viewportObserver.observe(uiCanvas);}
