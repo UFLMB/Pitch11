@@ -13,7 +13,8 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
 
 jobs:
   convert:
@@ -77,3 +78,21 @@ jobs:
           name: football-goal-compatible-glb
           path: /tmp/football-goal-compatible.glb
           if-no-files-found: error
+
+      - name: Commit compatible goal model and request Pages deployment
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p assets
+          cp /tmp/football-goal-compatible.glb assets/football-goal-test.glb
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/football-goal-test.glb
+          if git diff --cached --quiet; then
+            echo "Compatible goal asset is already current."
+          else
+            git commit -m "Add converted stadium goal test model"
+            git push origin HEAD:main
+            gh api --method POST repos/UFLMB/Pitch11/actions/workflows/static.yml/dispatches -f ref=main
+          fi
