@@ -181,6 +181,63 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    g.fillRect(x,y,.55+rnd()*1.05,.55+rnd()*1.35);
   }
  }
+ function drawProceduralGrassProgressive(g,width,height,onDone){
+  // Keep the exact high-detail turf recipe, but spread its CPU work over
+  // short tasks so the stadium can become visible before the texture is baked.
+  let seed=110711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+  const base=g.createLinearGradient(0,0,width,height);
+  base.addColorStop(0,'#397d43');base.addColorStop(.48,'#34763d');base.addColorStop(1,'#2d6d37');
+  g.fillStyle=base;g.fillRect(0,0,width,height);
+  let radialIndex=0;
+  const drawRadials=()=>{
+   const end=Math.min(420,radialIndex+70);
+   for(;radialIndex<end;radialIndex++){
+    const x=rnd()*width,y=rnd()*height,r=18+rnd()*95;
+    const shade=rnd()>.52?'rgba(135,174,91,.055)':'rgba(10,43,19,.06)';
+    const grad=g.createRadialGradient(x,y,1,x,y,r);
+    grad.addColorStop(0,shade);grad.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=grad;g.fillRect(x-r,y-r,r*2,r*2);
+   }
+   if(radialIndex<420){setTimeout(drawRadials,0);return;}
+   drawBlades();
+  };
+  const tones=[
+   'rgba(104,157,75,.55)','rgba(145,184,102,.46)','rgba(72,132,62,.62)',
+   'rgba(42,105,48,.62)','rgba(177,190,112,.25)','rgba(24,82,39,.42)',
+   'rgba(119,164,83,.38)','rgba(57,119,55,.5)'
+  ];
+  const paths=tones.map(()=>new Path2D());
+  const bladeCount=mobile?52000:92000;
+  let bladeIndex=0;
+  const drawBlades=()=>{
+   const end=Math.min(bladeCount,bladeIndex+4096);
+   for(;bladeIndex<end;bladeIndex++){
+    const x=rnd()*width,y=rnd()*height;
+    const len=(mobile?2.2:2.8)+rnd()*(mobile?5.2:7.2);
+    const angle=(rnd()-.5)*1.35;
+    const dx=Math.sin(angle)*len,dy=-Math.cos(angle)*len;
+    const bend=(rnd()-.5)*len*.42;
+    const path=paths[Math.floor(rnd()*paths.length)];
+    path.moveTo(x,y);path.quadraticCurveTo(x+bend,y-len*.55,x+dx,y+dy);
+   }
+   if(bladeIndex<bladeCount){setTimeout(drawBlades,0);return;}
+   g.lineCap='round';
+   paths.forEach((path,i)=>{g.beginPath();g.strokeStyle=tones[i];g.lineWidth=.55+(i%3)*.28;g.stroke(path);});
+   drawFlecks();
+  };
+  let fleckIndex=0;const fleckCount=mobile?16000:26000;
+  const drawFlecks=()=>{
+   const end=Math.min(fleckCount,fleckIndex+4096);
+   for(;fleckIndex<end;fleckIndex++){
+    const x=rnd()*width,y=rnd()*height;
+    g.fillStyle=rnd()>.5?'rgba(190,207,133,.23)':'rgba(13,54,25,.24)';
+    g.fillRect(x,y,.55+rnd()*1.05,.55+rnd()*1.35);
+   }
+   if(fleckIndex<fleckCount){setTimeout(drawFlecks,0);return;}
+   onDone?.();
+  };
+  drawRadials();
+ }
  function updatePreviewPitch(pitch,mowing){
   const p=Math.max(0,Math.min(4,pitch|0)),m=Math.max(0,Math.min(3,mowing|0)),key=p+':'+m;
   if(key===activePitchKey||!pitchTextureCanvas||!pitchTexture)return;
@@ -555,7 +612,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   // desktop uses 2048 x 1365. The grass is texture-only, never 3D blades.
   const width=mobile?1536:2048,height=Math.round(width*2/3);
   const baseCanvas=document.createElement('canvas');baseCanvas.width=width;baseCanvas.height=height;
-  const bg=baseCanvas.getContext('2d',{alpha:false});drawProceduralGrass(bg,width,height);
+  const bg=baseCanvas.getContext('2d',{alpha:false});
+  const quickBase=bg.createLinearGradient(0,0,width,height);quickBase.addColorStop(0,'#397d43');quickBase.addColorStop(.48,'#34763d');quickBase.addColorStop(1,'#2d6d37');bg.fillStyle=quickBase;bg.fillRect(0,0,width,height);
   const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
   const g=canvas.getContext('2d',{alpha:false});g.drawImage(baseCanvas,0,0);
   const albedo=new THREE.CanvasTexture(canvas);albedo.colorSpace=THREE.SRGBColorSpace;
@@ -566,7 +624,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchGrassBaseCanvas=textures.baseCanvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);pitchTextureStatus='procedural-hd-local';loadMeshyPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchGrassBaseCanvas=textures.baseCanvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);pitchTextureStatus='procedural-hd-pending';loadMeshyPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
   const largest=[],candidateSamples=[];
   const materialInfo=material=>{
    if(!material)return null;
@@ -624,12 +682,25 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    if(candidateSamples.length<8)candidateSamples.push({...summary,materials:materialSamples});
    o.material=Array.isArray(o.material)?replacements:replacements[0];
   });
-  pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),uvMapping,texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:textures.detail.image?{width:textures.detail.image.width,height:textures.detail.image.height}:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
+  pitchDiagnostics={meshCount,surfaceCandidates,grassMaterialsChanged:changed,pitchSurfaceY:+pitchSurfaceY.toFixed(4),uvMapping,texture:{albedoSize:textures.albedo.image?{width:textures.albedo.image.width,height:textures.albedo.image.height}:null,detailSize:null,anisotropy:textures.albedo.anisotropy,repeat:{x:textures.albedo.repeat.x,y:textures.albedo.repeat.y}},largestMeshes:largest.map(({area,...item})=>item),candidateSamples};
   if(changed)console.info('PITCH 11 realistic turf materials:',changed);
  }
 
  const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
+ function scheduleDetailedPitchTexture(){
+  if(!pitchGrassBaseCanvas||!pitchTexture)return;
+  const startedAt=performance.now();
+  boot.timings.detailedTurfTextureState='building';
+  drawProceduralGrassProgressive(pitchGrassBaseCanvas.getContext('2d',{alpha:false}),pitchGrassBaseCanvas.width,pitchGrassBaseCanvas.height,()=>{
+   activePitchKey='';
+   updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
+   pitchTexture.needsUpdate=true;
+   pitchTextureStatus='procedural-hd-local';
+   boot.timings.detailedTurfTextureMs=Math.round(performance.now()-startedAt);
+   boot.timings.detailedTurfTextureState='ready';
+  });
+ }
  function setStadiumLoadState(state,error=''){
   stadiumLoadState=state;stadiumLoadError=error;boot.state=state;boot.progress=stadiumLoadProgress;boot.error=error;
  }
@@ -672,6 +743,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   },undefined,e=>{optionalAssets.cornerFlag='error';console.warn('PITCH 11 corner-flag asset unavailable',e);});
   ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
   recordBootTiming('stadiumReadyMs');
+  scheduleDetailedPitchTexture();
   window.dispatchEvent(new CustomEvent('p11stadiumready'));
  }
  function loadStadium(attempt=0){
