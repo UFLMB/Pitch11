@@ -867,6 +867,10 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    walkNavigationExtraRoots.forEach(root=>addRoot(root,false));
    console.info('PITCH 11 POV navigation meshes:',{blockers:walkColliderMeshes.length,walkableSurfaces:walkSurfaceMeshes.length,extraRoots:walkNavigationExtraRoots.length});
   }
+  // Future environment systems: tag floor meshes with
+  // userData.p11WalkableSurface=true and userData.p11WalkBlocker=false.
+  // Solid geometry blocks by default; set p11WalkBlocker=false for visual-only meshes.
+  // Add the completed system root to the scene, then register it here.
   function registerWalkNavigationRoot(root){
    if(!root||typeof root.traverse!=='function')return false;
    if(!walkNavigationExtraRoots.includes(root))walkNavigationExtraRoots.push(root);
