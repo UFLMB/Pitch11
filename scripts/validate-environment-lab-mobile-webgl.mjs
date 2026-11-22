@@ -12,6 +12,14 @@ assert.match(runtime, /if\(!renderer\)\s*\{/);
 assert.match(runtime, /boot\.state='error'/);
 assert.match(runtime, /Mobile WebGL startup failed:/);
 assert.match(page, /runtimeImport\.catch\(error=>/);
-assert.match(page, /mobile\?Math\.min\(devicePixelRatio\|\|1,\.8\)/);
 
-console.log('Environment Lab mobile WebGL startup and fallback checks passed.');
+// The Environment Lab now starts mobile rendering at 1.5x (capped at 1.75x
+// and the device pixel ratio), then adapts quality to sustained frame time.
+assert.match(page, /const maxRenderScale=Math\.min\(devicePixelRatio\|\|1,mobile\?1\.75:1\.25\)/);
+assert.match(page, /let renderScale=Math\.min\(maxRenderScale,mobile\?1\.5:1\.25\)/);
+assert.match(page, /function setRenderScale\(next\)/);
+assert.match(page, /slowFrames/);
+assert.match(page, /stableFrames/);
+assert.match(page, /P11EnvironmentGraphicsQuality/);
+
+console.log('Environment Lab mobile WebGL startup, adaptive HD rendering, and fallback checks passed.');
