@@ -34,6 +34,7 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <label class="field">Load a local GLB / FBX model<input id="modelFile" type="file" accept=".glb,.fbx,model/gltf-binary,application/octet-stream"></label>
 <div class="note" id="modelInfo">Default model: input/player-model-candidate/character.fbx</div>
 </div>
+<div class="group"><div class="group-title">Model / Kit compatibility audit</div><div class="note" id="modelAudit" aria-live="polite">Waiting for model inspection…</div><div class="meta">Read-only diagnostics. UV island count is a structural check only; garment placement still requires visual verification.</div></div>
 <div class="group"><div class="group-title">Animation</div>
 <label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
 <div class="row"><button id="playPause" disabled>PLAY</button><button id="stop" disabled>STOP</button></div>
@@ -83,6 +84,43 @@ function frameModel(root){
 }
 function collectMaterials(root){materials.length=0;root.traverse(o=>{if(!o.isMesh)return;(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&!materials.includes(m))materials.push(m)})});applyWireframe()}
 function applyWireframe(){for(const m of materials)m.wireframe=wireframe;$('wireframe').classList.toggle('active',wireframe);$('wireframe').setAttribute('aria-pressed',String(wireframe))}
+function inspectUvIslands(mesh,materialIndex){
+ const geometry=mesh.geometry,uv=geometry?.getAttribute('uv');if(!uv)return null;
+ const index=geometry.index,indexCount=index?index.count:geometry.getAttribute('position')?.count||0;
+ const groups=geometry.groups?.length?geometry.groups.filter(g=>g.materialIndex===materialIndex):[{start:0,count:indexCount,materialIndex:0}];
+ const triangles=[...new Set(groups.flatMap(g=>{const start=Math.max(0,Math.floor(g.start/3)),end=Math.min(Math.ceil(indexCount/3),Math.floor((g.start+g.count)/3));return Array.from({length:Math.max(0,end-start)},(_,i)=>start+i)}))];
+ if(!triangles.length)return 0;
+ const parent=new Map(triangles.map(t=>[t,t]));
+ const find=x=>parent.get(x)===x?x:(parent.set(x,find(parent.get(x))),parent.get(x));
+ const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent.set(b,a)};
+ const point=id=>Math.round(uv.getX(id)*1e5)+','+Math.round(uv.getY(id)*1e5);
+ const edges=new Map();
+ for(const t of triangles){const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);for(let e=0;e<3;e++){const a=point(ids[e]),b=point(ids[(e+1)%3]),key=a<b?a+'|'+b:b+'|'+a;if(edges.has(key))join(t,edges.get(key));else edges.set(key,t)}}
+ return new Set(triangles.map(find)).size;
+}
+function updateModelAudit(root){
+ const lines=[];let meshCount=0,skinnedCount=0,boneCount=0,vertices=0,triangles=0,bodyIslandCount=0,bodyMaterialFound=false,bodyTextureFound=false;
+ root.traverse(o=>{
+  if(o.isBone)boneCount++;
+  if(!o.isMesh)return;
+  meshCount++;if(o.isSkinnedMesh)skinnedCount++;
+  const position=o.geometry?.getAttribute('position');vertices+=position?.count||0;
+  triangles+=o.geometry?.index?Math.floor(o.geometry.index.count/3):Math.floor((position?.count||0)/3);
+  const mats=Array.isArray(o.material)?o.material:[o.material];
+  mats.forEach((mat,index)=>{
+   if(!mat)return;
+   const name=mat.name||'unnamed material',isBody=name.toLowerCase().includes('body');
+   const image=mat.map?.image||mat.map?.source?.data;
+   const width=image?.naturalWidth||image?.videoWidth||image?.width||0,height=image?.naturalHeight||image?.videoHeight||image?.height||0;
+   const textureState=!mat.map?'no base-colour map':(width&&height?'base-colour map '+width+'×'+height:'base-colour map present; image dimensions unavailable');
+   const islands=inspectUvIslands(o,index);
+   if(isBody){bodyMaterialFound=true;if(mat.map)bodyTextureFound=true;if(islands!==null)bodyIslandCount+=islands}
+   lines.push(o.name+' / '+name+' · '+(o.isSkinnedMesh?'skinned':'static')+' · '+(islands===null?'no UV0':islands+' UV island(s)')+' · '+textureState);
+  });
+ });
+ const kitState=!bodyMaterialFound?'BLOCKED · no material name containing “body”':!bodyTextureFound?'BLOCKED · body material has no base-colour texture':bodyIslandCount<27?'NOT READY · body UV has '+bodyIslandCount+' islands; current Kit Studio expects at least 27':'POTENTIAL UV MATCH · '+bodyIslandCount+' body UV islands; exact garment island mapping still needs verification';
+ $('modelAudit').textContent='GEOMETRY · '+meshCount+' meshes · '+skinnedCount+' skinned · '+boneCount+' bones · '+vertices.toLocaleString()+' vertices · '+triangles.toLocaleString()+' triangles\nKIT STUDIO CHECK · '+kitState+'\n'+lines.join('\n');
+}
 function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
 function updateAnimationControls(){const enabled=!!clips.length;$('timeline').disabled=!enabled;$('loop').disabled=!enabled;$('stepBack').disabled=!enabled;$('stepForward').disabled=!enabled}
 function inspectClipCompatibility(clip){
@@ -286,7 +324,7 @@ async function loadModel(url,label,revokeAfter=false){
   const isFbx=/\.fbx(?:$|\?)/i.test(label)||/\.fbx(?:$|\?)/i.test(url);
   const asset=isFbx?await fbxLoader.loadAsync(url):await loader.loadAsync(url);
   if(activeRoot)scene.remove(activeRoot);
-  activeRoot=isFbx?asset:asset.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);
+  activeRoot=isFbx?asset:asset.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);updateModelAudit(activeRoot);
   mixer=new THREE.AnimationMixer(activeRoot);clips=[...(asset.animations||[])];clipSources=[];
   modelInfo.textContent=label+' · '+clips.length+' embedded clip(s)';
   refreshAnimationList('idle');setStatus(isFbx?'MIXAMO FBX MODEL LOADED':'MODEL LOADED');
