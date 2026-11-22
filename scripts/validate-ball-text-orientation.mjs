@@ -14,3 +14,15 @@ assert.doesNotMatch(editor, /g\.fillText\(plan\.decalText,size\/2,size\*\.5/);
 assert.doesNotMatch(editor, /g\.fillText\(text,size\/2,size\*\.5/);
 
 console.log('Ball branding orientation checks passed: front UV placement, horizontal correction, manual decal and Pitchy decal.');
+
+assert.match(editor, /id="addBadge"[^>]*>Add PITCH 11 Logo/);
+assert.match(editor, /id="logoScale"/);
+assert.match(editor, /id="logoX"/);
+assert.match(editor, /id="logoY"/);
+assert.match(editor, /id="logoRotation"/);
+assert.match(editor, /const lightSurface=luminance>=\.48,ink=lightSurface\?'#17212B':'#D8B66A'/);
+assert.match(editor, /g\.strokeText\('PITCH 11'/);
+assert.match(editor, /g\.fillText\('PITCH 11'/);
+assert.match(editor, /logoApplied=true/);
+assert.match(editor, /OFFICIAL PITCH 11 LOGO EMBEDDED/);
+console.log('PITCH 11 official logo embed checks passed: adaptive contrast, readable wordmark, front placement, scale, position and rotation controls.');
