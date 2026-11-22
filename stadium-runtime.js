@@ -217,33 +217,12 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
     const angle=(rnd()-.5)*1.35;
     const dx=Math.sin(angle)*len,dy=-Math.cos(angle)*len;
     const bend=(rnd()-.5)*len*.42;
-    paths[Math.floor(rnd()*paths.length)].quadraticCurveTo(x+bend,y-len*.55,x+dx,y+dy);
+    const path=paths[Math.floor(rnd()*paths.length)];
+    path.moveTo(x,y);path.quadraticCurveTo(x+bend,y-len*.55,x+dx,y+dy);
    }
    if(bladeIndex<bladeCount){setTimeout(drawBlades,0);return;}
-   // Rebuild the same path commands with moveTo origins in deterministic order.
-   // (The path batches are populated by drawBladePaths below.)
-  };
-  // Path2D cannot be resumed with the original moveTo after a sliced batch
-  // unless each blade's start point is retained; use per-tone path buffers.
-  const bladePaths=tones.map(()=>[]);
-  bladeIndex=0;
-  const drawBladePaths=()=>{
-   const end=Math.min(bladeCount,bladeIndex+4096);
-   for(;bladeIndex<end;bladeIndex++){
-    const x=rnd()*width,y=rnd()*height;
-    const len=(mobile?2.2:2.8)+rnd()*(mobile?5.2:7.2);
-    const angle=(rnd()-.5)*1.35;
-    const dx=Math.sin(angle)*len,dy=-Math.cos(angle)*len;
-    const bend=(rnd()-.5)*len*.42;
-    bladePaths[Math.floor(rnd()*bladePaths.length)].push([x,y,x+bend,y-len*.55,x+dx,y+dy]);
-   }
-   if(bladeIndex<bladeCount){setTimeout(drawBladePaths,0);return;}
    g.lineCap='round';
-   for(let i=0;i<bladePaths.length;i++){
-    const path=new Path2D();
-    for(const p of bladePaths[i]){path.moveTo(p[0],p[1]);path.quadraticCurveTo(p[2],p[3],p[4],p[5]);}
-    g.beginPath();g.strokeStyle=tones[i];g.lineWidth=.55+(i%3)*.28;g.stroke(path);
-   }
+   paths.forEach((path,i)=>{g.beginPath();g.strokeStyle=tones[i];g.lineWidth=.55+(i%3)*.28;g.stroke(path);});
    drawFlecks();
   };
   let fleckIndex=0;const fleckCount=mobile?16000:26000;
