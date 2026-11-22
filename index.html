@@ -83,8 +83,12 @@ const parts=[];
 const cam={x:CX,y:CY,v:410,px:CX,py:CY,pv:410};
 const ORD=P.slice();
 const cv=document.getElementById('c'),ctx=cv.getContext('2d',{alpha:true});
-let W=0,H=0,dpr=1,lowRes=false;
-function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=lowRes?1:Math.min(window.devicePixelRatio||1,1.5);cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+const graphicsMobile=matchMedia('(max-width: 800px)').matches||(navigator.deviceMemory||4)<=4||(navigator.hardwareConcurrency||4)<=4;
+const maxRenderScale=Math.min(window.devicePixelRatio||1,graphicsMobile?1.5:1.5);
+let renderScale=Math.min(maxRenderScale,1.25),W=0,H=0,dpr=renderScale;
+function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=renderScale;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+function setRenderScale(next){const value=clamp(next,1,maxRenderScale);if(Math.abs(value-renderScale)<0.025)return;renderScale=value;resize();window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};}
+window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};
 
 /* ===================== 3. INPUT ===================== */
 const I={svar:'',pvar:'',tvar:'',ppow:0,skd:-1,tackle:false,swp:false,mx:0,my:0,sprint:false,spBtn:false,shoot:false,chargeT:0,shootUp:false,pass:false,thru:false,lob:false,sw:false,skill:false};
@@ -1520,12 +1524,16 @@ function update(){
   camUpdate();
   endEdges();
 }
-let last=performance.now(),acc=0,slow=0;
+let last=performance.now(),acc=0,slow=0,stableFrames=0,qualityCooldown=0;
 function frame(now){
   requestAnimationFrame(frame);
   let dt=(now-last)/1000;last=now;
+  const frameMs=dt*1000;
   if(dt>0.1)dt=0.1;if(FX.slow>0){FX.slow-=dt;dt*=0.4;}
-  if(dt>0.022&&dpr>1){if(++slow>120){lowRes=true;resize();slow=0;}}else if(slow>0)slow--;   // low-end phones: drop to 1x resolution
+  qualityCooldown=Math.max(0,qualityCooldown-dt);
+  if(frameMs>22){stableFrames=0;if(++slow>=90&&qualityCooldown<=0){setRenderScale(renderScale-0.1);slow=0;qualityCooldown=2;}}
+  else if(frameMs<18){slow=Math.max(0,slow-2);if(++stableFrames>=360&&qualityCooldown<=0&&renderScale<maxRenderScale-0.025){setRenderScale(Math.min(maxRenderScale,renderScale+0.05));stableFrames=0;qualityCooldown=5;}}
+  else{stableFrames=0;slow=Math.max(0,slow-1);}   // low-end phones: drop to 1x resolution
   acc+=dt;let n=0;
   while(acc>=DT&&n<4){update();acc-=DT;n++;}
   if(n===4)acc=0;
