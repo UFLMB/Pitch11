@@ -16,7 +16,7 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07110c;col
 .brand{display:flex;flex-direction:column;gap:4px;text-shadow:0 2px 14px #000;pointer-events:none}
 .brand strong{font-size:clamp(13px,1.7vw,20px);letter-spacing:.16em;font-weight:900}
 .brand span{font-size:10px;letter-spacing:.2em;color:#a5d9a9}
-.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:75vw}
+.controls{display:flex;gap:7px;pointer-events:auto;flex-wrap:wrap;justify-content:flex-end;max-width:75vw}.controls button{display:grid;place-items:center;width:38px;height:38px;padding:0;font-size:18px;line-height:1;letter-spacing:0}
 button{border:1px solid #ffffff35;background:#07130dcc;color:#f4f7f4;padding:10px 13px;border-radius:9px;font:700 10px Inter,ui-sans-serif,system-ui,sans-serif;letter-spacing:.07em;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #element-id-layer{position:fixed;inset:0;z-index:11;pointer-events:none;overflow:hidden;display:none}
@@ -42,13 +42,14 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #pov-stick{position:absolute;left:20px;bottom:64px;width:132px;height:132px;border:1px solid #ffffff55;border-radius:50%;background:#07130d88;box-shadow:inset 0 0 24px #0008;pointer-events:auto;touch-action:none;display:grid;place-items:center}
 #pov-knob{width:54px;height:54px;border-radius:50%;background:#a3e635bb;border:1px solid #e7ffc2;box-shadow:0 3px 14px #0009;transform:translate(0,0);pointer-events:none}
 #pov-help{position:absolute;right:18px;bottom:64px;max-width:230px;padding:10px 12px;border:1px solid #ffffff30;border-radius:10px;background:#07130dcc;color:#e8eee8;font-size:10px;line-height:1.55;pointer-events:none}
-#ui-toggle{position:fixed;z-index:12;top:12px;right:12px;min-width:116px;min-height:42px}
-body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui-hidden #pov-stick,body.ui-hidden #pov-help,body.ui-hidden #status{opacity:0!important}
-body.editor-open .hud,body.editor-open #drone-hud,body.editor-open #drone-help,body.editor-open #pov-stick,body.editor-open #pov-help,body.editor-open #status,body.editor-open #ui-toggle,body.editor-open #fullscreen-entry{visibility:hidden!important}
+#pov-sprint{position:absolute;right:18px;bottom:184px;width:54px;height:54px;padding:0;border-radius:50%;font-size:23px;pointer-events:auto;touch-action:none;box-shadow:0 4px 18px #0009}#pov-sprint.active{background:#45651acc;border-color:#c8ee8b;color:#efffd8}
+#ui-toggle{position:fixed;z-index:12;top:12px;right:12px;width:42px;height:42px;padding:0;font-size:19px}
+body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui-hidden #pov-stick,body.ui-hidden #pov-help,body.ui-hidden #pov-sprint,body.ui-hidden #status{opacity:0!important}
+body.editor-open .hud,body.editor-open #drone-hud,body.editor-open #drone-help,body.editor-open #pov-stick,body.editor-open #pov-help,body.editor-open #pov-sprint,body.editor-open #status,body.editor-open #ui-toggle,body.editor-open #fullscreen-entry{visibility:hidden!important}
 body.ui-hidden #ui-toggle{opacity:0!important}
-body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick{pointer-events:auto}
+body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick,body.ui-hidden #pov-sprint{pointer-events:auto}
 #ui-toggle{transition:opacity .15s ease}
-#fullscreen-entry{display:none;position:fixed;z-index:13;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);min-width:190px;min-height:48px;border:1px solid #c8ee8b;background:#172713ee;color:#efffd8;font-size:11px;letter-spacing:.1em;box-shadow:0 8px 28px #0009}
+#fullscreen-entry{display:none;position:fixed;z-index:13;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);width:48px;height:48px;padding:0;border:1px solid #c8ee8b;border-radius:14px;background:#172713ee;color:#efffd8;font-size:23px;box-shadow:0 8px 28px #0009}
 #fullscreen-entry:disabled{opacity:.75;cursor:default}
 #fullscreen-entry[hidden]{display:none!important}
 @media(max-width:700px){#fullscreen-entry{display:block}}
@@ -57,7 +58,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
 @media(max-width:700px){html,body{height:100%;height:100dvh}}
 @media(max-width:700px){
  .hud{align-items:flex-start;padding:10px;gap:8px}
- .controls{max-width:66vw;gap:5px}
+ .controls{max-width:66vw;gap:5px}.controls button{width:34px;height:34px;font-size:16px}
  button{padding:8px 9px;font-size:9px}
  .brand span{font-size:8px}
  #drone-hud{left:9px;bottom:48px;gap:6px}
@@ -67,6 +68,7 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
  #pov-stick{left:12px;bottom:54px;width:116px;height:116px}
  #pov-knob{width:48px;height:48px}
  #pov-help{right:10px;bottom:54px;max-width:138px;font-size:9px}
+ #pov-sprint{right:12px;bottom:174px;width:48px;height:48px;font-size:21px}
  #status{bottom:8px;font-size:8px}
 }
 </style>
@@ -86,23 +88,23 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
 <div class="hud">
  <div class="brand"><strong>PITCH 11</strong><span>MATCHDAY ENVIRONMENT LAB · LIVE GAME BUILD</span></div>
  <div class="controls">
-  <button class="active" data-view="broadcast">BROADCAST</button>
-  <button data-view="tactical">TACTICAL</button>
-  <button data-view="low">LOW STADIUM</button>
-  <button data-view="drone">DRONE CAM · DEV</button>
-  <button id="pov">PLAYER POV · WALK</button>
-  <button id="tunnel">TUNNEL ENTRY</button>
-  <button id="stadium-editor" title="Open separate Stadium Editor" aria-label="Open stadium editor">✎ EDITOR</button>
-  <button id="element-ids" title="Show color-coded element IDs" aria-pressed="false"># IDs</button>
-  <button id="day" class="active" data-time="0">DAY</button>
-  <button id="sunset" data-time="1">SUNSET</button>
-  <button id="night" data-time="2">NIGHT</button>
-  <button id="back">BACK TO GAME</button>
+  <button class="active" data-view="broadcast" title="Broadcast camera" aria-label="Broadcast camera">▣</button>
+  <button data-view="tactical" title="Tactical camera" aria-label="Tactical camera">⌗</button>
+  <button data-view="low" title="Low stadium camera" aria-label="Low stadium camera">▱</button>
+  <button data-view="drone" title="Drone camera" aria-label="Drone camera">✥</button>
+  <button id="pov" title="Player POV walk" aria-label="Player POV walk">◉</button>
+  <button id="tunnel" title="Tunnel entry" aria-label="Tunnel entry">⇢</button>
+  <button id="stadium-editor" title="Open separate Stadium Editor" aria-label="Open stadium editor">✎</button>
+  <button id="element-ids" title="Show color-coded element IDs" aria-label="Show element IDs" aria-pressed="false">#</button>
+  <button id="day" class="active" data-time="0" title="Day" aria-label="Day">☀</button>
+  <button id="sunset" data-time="1" title="Sunset" aria-label="Sunset">◒</button>
+  <button id="night" data-time="2" title="Night" aria-label="Night">☾</button>
+  <button id="back" title="Back to game" aria-label="Back to game">↩</button>
  </div>
 </div>
-<button id="ui-toggle" type="button" aria-pressed="false" title="Hide or show interface (H)">HIDE UI ELEMENTS</button>
-<button id="fullscreen-entry" type="button">ENTER FULLSCREEN</button>
-<div id="pov-hud"><div id="pov-stick" aria-label="Player movement joystick"><div id="pov-knob"></div></div><div id="pov-help">PLAYER POV<br>WASD: walk · Shift: run<br>Drag: look around<br>Mobile: joystick + swipe</div></div>
+<button id="ui-toggle" type="button" aria-label="Hide interface" aria-pressed="false" title="Hide or show interface (H)">◉</button>
+<button id="fullscreen-entry" type="button" aria-label="Enter fullscreen" title="Enter fullscreen">⛶</button>
+<div id="pov-hud"><div id="pov-stick" aria-label="Player movement joystick"><div id="pov-knob"></div></div><button id="pov-sprint" type="button" aria-label="Hold to sprint" title="Hold to sprint">⚡</button><div id="pov-help">PLAYER POV<br>WASD: walk · Shift: run<br>Drag: look around<br>Mobile: joystick + hold ⚡ to sprint</div></div>
 <div id="drone-hud">
  <div class="drone-pad">
   <button data-move="forward" aria-label="Move forward">▲</button>
@@ -138,7 +140,7 @@ function sizeOverlay(){canvas.width=Math.max(1,Math.round(innerWidth*pixelRatio)
 sizeOverlay();
 addEventListener('resize',sizeOverlay);
 const drone={active:false,position:{x:0,y:30,z:100},yaw:Math.PI,pitch:-.16,speed:24,keys:new Set(),touch:new Set(),drag:false,lastX:0,lastY:0};
-const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},drag:false,lastX:0,lastY:0};
+const pov={active:false,position:{x:0,y:1.65,z:0},yaw:0,pitch:-.025,keys:new Set(),stick:{x:0,y:0},sprinting:false,drag:false,lastX:0,lastY:0};
 let activeView='broadcast',timeOfDay=0,ready=false,lastFrame=0;
 const presets={
  broadcast:{position:{x:0,y:105,z:220},target:{x:0,y:10,z:0},fov:48},
@@ -147,8 +149,7 @@ const presets={
 };
 function setDroneHud(on){document.querySelector('#drone-hud').classList.toggle('visible',on);document.querySelector('#drone-help').classList.toggle('visible',on);}
 function setPovHud(on){document.querySelector('#pov-hud').classList.toggle('visible',on);}
-function povDirection(){const cp=Math.cos(pov.pitch);return{x:Math.sin(pov.yaw)*cp,y:Math.sin(pov.pitch),z:-Math.cos(pov.yaw)*cp};}
-function lookDirection(){const cp=Math.cos(drone.pitch);return{x:Math.sin(drone.yaw)*cp,y:Math.sin(drone.pitch),z:-Math.cos(drone.yaw)*cp};}
+function povDirection(){const cp=Math.cos(pov.pitch);return{x:Math.sin(pov.yaw)*cp,y:Math.sin(pov.pitch),z:-Math.cos(pov.yaw)*cp};}function lookDirection(){const cp=Math.cos(drone.pitch);return{x:Math.sin(drone.yaw)*cp,y:Math.sin(drone.pitch),z:-Math.cos(drone.yaw)*cp};}
 function render(){
  const api=window.P11Stadium;if(!api?.ready)return;
  let p,t,fov;
@@ -183,7 +184,7 @@ function updatePov(dt){
  const forward=(pov.keys.has('w')||pov.keys.has('arrowup')?1:0)-(pov.keys.has('s')||pov.keys.has('arrowdown')?1:0)-pov.stick.y;
  const strafe=(pov.keys.has('d')||pov.keys.has('arrowright')?1:0)-(pov.keys.has('a')||pov.keys.has('arrowleft')?1:0)+pov.stick.x;
  const length=Math.hypot(forward,strafe);if(length<.04)return;
- const f=forward/Math.max(1,length),r=strafe/Math.max(1,length),speed=(pov.keys.has('shift')?4.4:2.65)*dt;
+ const f=forward/Math.max(1,length),r=strafe/Math.max(1,length),speed=(pov.keys.has('shift')||pov.sprinting?4.4:2.65)*dt;
  const dx=(Math.sin(pov.yaw)*f+Math.cos(pov.yaw)*r)*speed;
  const dz=(-Math.cos(pov.yaw)*f+Math.sin(pov.yaw)*r)*speed;
  const next=window.P11Stadium?.movePlayerWalk(pov.position,dx,dz);if(next)pov.position=next;
@@ -277,7 +278,7 @@ function showBootFailure(message){
  const detail=document.createElement('small');
  detail.textContent=message||'The stadium runtime could not finish loading.';
  const retry=document.createElement('button');
- retry.textContent='RETRY';
+ retry.textContent='↻';retry.setAttribute('aria-label','Retry loading');retry.title='Retry loading';
  retry.addEventListener('click',()=>location.reload());
  panel.append(title,detail,retry);
  loading.replaceChildren(panel);
@@ -319,7 +320,7 @@ window.addEventListener('keyup',e=>{
  const map={w:'forward',arrowup:'forward',s:'back',arrowdown:'back',a:'left',arrowleft:'left',d:'right',arrowright:'right',e:'up',q:'down'};
  if(map[k])drone.keys.delete(map[k]);
 });
-document.querySelectorAll('.drone-pad button').forEach(button=>{
+document.querySelectorAll('#drone-hud button[data-move]').forEach(button=>{
  const move=button.dataset.move;
  const start=e=>{e.preventDefault();drone.touch.add(move);button.setPointerCapture?.(e.pointerId);};
  const stop=e=>{e.preventDefault();drone.touch.delete(move);};
@@ -344,6 +345,14 @@ canvas.addEventListener('wheel',e=>{
 },{passive:false});
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>selectView(b.dataset.view)));
 document.querySelector('#pov').addEventListener('click',enterPov);
+const povSprint=document.querySelector('#pov-sprint');
+let povSprintPointer=null;
+function stopPovSprint(e){if(povSprintPointer!==null&&(!e||e.pointerId===povSprintPointer)){pov.sprinting=false;povSprintPointer=null;povSprint.classList.remove('active');}}
+povSprint.addEventListener('pointerdown',e=>{if(!pov.active)return;e.preventDefault();povSprintPointer=e.pointerId;pov.sprinting=true;povSprint.classList.add('active');povSprint.setPointerCapture(e.pointerId);});
+povSprint.addEventListener('pointerup',stopPovSprint);
+povSprint.addEventListener('pointercancel',stopPovSprint);
+povSprint.addEventListener('lostpointercapture',stopPovSprint);
+window.addEventListener('blur',()=>stopPovSprint());
 const povStick=document.querySelector('#pov-stick'),povKnob=document.querySelector('#pov-knob');
 let povStickPointer=null;
 function updatePovStick(e){const rect=povStick.getBoundingClientRect(),cx=rect.left+rect.width/2,cy=rect.top+rect.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=rect.width*.34,len=Math.hypot(dx,dy),scale=len>max?max/len:1;pov.stick={x:dx*scale/max,y:dy*scale/max};povKnob.style.transform='translate('+dx*scale+'px,'+dy*scale+'px)';}
@@ -362,7 +371,8 @@ const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
  document.body.classList.toggle('ui-hidden',hidden);
  uiToggle.setAttribute('aria-pressed',String(hidden));
- uiToggle.textContent=hidden?'SHOW UI ELEMENTS':'HIDE UI ELEMENTS';
+ uiToggle.textContent=hidden?'◎':'◉';
+ uiToggle.setAttribute('aria-label',hidden?'Show interface':'Hide interface');
  uiToggle.title=hidden?'Show interface (H or tap top-right)':'Hide interface (H)';
 }
 uiToggle.addEventListener('click',()=>setUiHidden(!document.body.classList.contains('ui-hidden')));
@@ -372,24 +382,24 @@ function syncFullscreenEntry(){
  fullscreenEntry.hidden=active;
  if(!active&&matchMedia('(max-width: 700px)').matches){
   fullscreenEntry.hidden=false;
-  fullscreenEntry.textContent='ENTER FULLSCREEN';
+  fullscreenEntry.textContent='⛶';fullscreenEntry.setAttribute('aria-label','Enter fullscreen');fullscreenEntry.title='Enter fullscreen';
  }
 }
 fullscreenEntry.addEventListener('click',async()=>{
  if(document.fullscreenElement){syncFullscreenEntry();return;}
  if(!document.documentElement.requestFullscreen){
-  fullscreenEntry.textContent='FULLSCREEN NOT SUPPORTED';
+  fullscreenEntry.textContent='!';fullscreenEntry.setAttribute('aria-label','Fullscreen not supported');fullscreenEntry.title='Fullscreen not supported';
   fullscreenEntry.disabled=true;
   return;
  }
  fullscreenEntry.disabled=true;
- fullscreenEntry.textContent='ENTERING FULLSCREEN…';
+ fullscreenEntry.textContent='…';fullscreenEntry.setAttribute('aria-label','Entering fullscreen');
  try{
   await document.documentElement.requestFullscreen({navigationUI:'hide'});
   try{await screen.orientation?.lock?.('landscape');}catch(_orientationError){}
   fullscreenEntry.hidden=true;
  }catch(_fullscreenError){
-  fullscreenEntry.textContent='TAP TO TRY FULLSCREEN';
+  fullscreenEntry.textContent='⛶';fullscreenEntry.setAttribute('aria-label','Try fullscreen again');fullscreenEntry.title='Try fullscreen again';
   fullscreenEntry.disabled=false;
  }
 });
