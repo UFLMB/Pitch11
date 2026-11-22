@@ -1531,9 +1531,9 @@ function frame(now){
   const frameMs=dt*1000;
   if(dt>0.1)dt=0.1;if(FX.slow>0){FX.slow-=dt;dt*=0.4;}
   qualityCooldown=Math.max(0,qualityCooldown-dt);
-  if(frameMs>22){stableFrames=0;if(++slow>=90&&qualityCooldown<=0){setRenderScale(renderScale-0.1);slow=0;qualityCooldown=2;}}
+  if(frameMs>100){stableFrames=0;slow=0;}else if(frameMs>22){stableFrames=0;if(++slow>=90&&qualityCooldown<=0){setRenderScale(renderScale-0.1);slow=0;qualityCooldown=2;}}
   else if(frameMs<18){slow=Math.max(0,slow-2);if(++stableFrames>=360&&qualityCooldown<=0&&renderScale<maxRenderScale-0.025){setRenderScale(Math.min(maxRenderScale,renderScale+0.05));stableFrames=0;qualityCooldown=5;}}
-  else{stableFrames=0;slow=Math.max(0,slow-1);}   // low-end phones: drop to 1x resolution
+  else{stableFrames=0;slow=Math.max(0,slow-1);}   // Adaptive render scale: sustained slow frames lower resolution; sustained headroom restores it.
   acc+=dt;let n=0;
   while(acc>=DT&&n<4){update();acc-=DT;n++;}
   if(n===4)acc=0;
