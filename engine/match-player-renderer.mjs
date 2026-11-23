@@ -419,10 +419,7 @@ export class MatchPlayerRenderer {
         for (const layer of layers || []) {
           if (!layer?.blob || !Number.isInteger(Number(layer.materialIndex))) continue;
           const image = await imageFromKitBlob(layer.blob);
-          const texture = new THREE.Texture(image);
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.needsUpdate = true;
-          loadedLayers[part].push({ materialIndex: Number(layer.materialIndex), texture });
+          loadedLayers[part].push({ materialIndex: Number(layer.materialIndex), image });
         }
       }
       if (entry.generatedKitSignature !== signature) return;
@@ -437,8 +434,10 @@ export class MatchPlayerRenderer {
             (sourceMaterials.length === 1 && layers.length === 1 ? layers[0] : null);
           if (!material || !layer) return material;
           const copy = material.clone();
-          const texture = layer.texture.clone();
-          texture.flipY = material.map?.flipY ?? true;
+          const texture = material.map ? material.map.clone() : new THREE.Texture();
+          texture.image = layer.image;
+          texture.colorSpace = THREE.SRGBColorSpace;
+          texture.needsUpdate = true;
           copy.map = texture;
           if (copy.color) copy.color.set(0xffffff);
           copy.needsUpdate = true;
