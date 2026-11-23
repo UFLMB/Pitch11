@@ -256,9 +256,10 @@ $('generateSquadPack').addEventListener('click',async()=>{
    manifest.players.push({name:player.name,number:player.number,teamSlot,role,files:outputFiles});
    $('squadPackStatus').textContent='RENDERING PLAYER '+(playerIndex+1)+' / '+roster.length+' · '+player.name;
   }
-  await replaceGeneratedPlayerKits(teamSlot,role,playerRecords);
   entries.push({name:teamFolder+'/manifest.json',data:JSON.stringify(manifest,null,2)});
-  const zip=await createStoredZip(entries),url=URL.createObjectURL(zip),link=document.createElement('a');
+  const zip=await createStoredZip(entries);
+  await replaceGeneratedPlayerKits(teamSlot,role,playerRecords);
+  const url=URL.createObjectURL(zip),link=document.createElement('a');
   link.href=url;link.download=teamFolder+'-squad-textures.zip';document.body.append(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
   $('squadPackStatus').textContent='COMPLETE · '+roster.length+' PLAYERS SAVED TO MATCH STORAGE · '+entries.length+' ZIP FILES READY';
