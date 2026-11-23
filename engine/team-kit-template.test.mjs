@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseTeamRosterCsv, resolveKitGraphicText, createStoredZip } from "./team-kit-template.mjs";
+import { readFileSync } from "node:fs";
+import { parseTeamRosterCsv, resolveKitGraphicText, createStoredZip, teamKitRecordKey } from "./team-kit-template.mjs";
+
+const renderer = readFileSync(new URL("./match-player-renderer.mjs", import.meta.url), "utf8");
 
 test("parses comma, semicolon and tab separated squad rosters", () => {
   for (const csv of [
@@ -42,4 +45,20 @@ test("creates a valid uncompressed ZIP with a central directory", async () => {
   assert.equal(view.getUint32(0, true), 0x04034b50);
   assert.equal(view.getUint32(bytes.length - 22, true), 0x06054b50);
   assert.ok([...bytes].some((value, index) => value === 0x50 && bytes[index + 1] === 0x4b && bytes[index + 2] === 0x01 && bytes[index + 3] === 0x02));
+});
+
+
+test("generated player kit keys normalize shirt numbers and separate team and goalkeeper kits", () => {
+  assert.equal(teamKitRecordKey(0, "OUTFIELD", "07"), "0:OUTFIELD:7");
+  assert.equal(teamKitRecordKey(1, "OUTFIELD", 7), "1:OUTFIELD:7");
+  assert.equal(teamKitRecordKey(0, "GK", "01"), "0:GK:1");
+});
+
+test("match renderer loads generated kit textures by team, role and shirt number", () => {
+  assert.ok(renderer.includes('import { getGeneratedPlayerKit } from "./team-kit-template.mjs"'));
+  assert.ok(renderer.includes("getGeneratedPlayerKit(teamSlot, role, number)"));
+  assert.ok(renderer.includes("generatedKitPart(node.name)"));
+  assert.ok(renderer.includes("copy.map = texture"));
+  assert.ok(renderer.includes("copy.color.set(0xffffff)"));
+  assert.ok(renderer.includes("this.ensureGeneratedKit(entry, state)"));
 });
