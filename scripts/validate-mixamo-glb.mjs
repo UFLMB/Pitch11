@@ -38,7 +38,7 @@ const images = document.images || [];
 if (images.length < 4) throw new Error(`Expected at least 4 embedded source textures; found ${images.length}`);
 const externalImages = images.filter(image => image.uri && !image.uri.startsWith("data:"));
 if (externalImages.length) throw new Error("GLB contains external image dependencies: " + externalImages.map(image => image.uri).join(", "));
-if (images.some(image => !image.bufferView && !image.uri?.startsWith("data:"))) {
+if (images.some(image => !Number.isInteger(image.bufferView) && !image.uri?.startsWith("data:"))) {
   throw new Error("One or more GLB images are not embedded");
 }
 if ((document.materials || []).length < 2) throw new Error("Expected original material slots/materials to survive conversion");
