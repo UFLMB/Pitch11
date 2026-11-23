@@ -1,4 +1,5 @@
 import * as THREE from "../vendor/three/build/three.module.js";
+import { getGeneratedPlayerKit } from "./team-kit-template.mjs";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
@@ -31,6 +32,30 @@ const TEAM_KITS = [
   { shirt: 0x1f6fff, shorts: 0xffffff, socks: 0xffffff, keeper: 0xf2c200 },
   { shirt: 0xe5342b, shorts: 0x1b1b1b, socks: 0x1b1b1b, keeper: 0x27c46b }
 ];
+
+function generatedKitPart(meshName) {
+  const name = String(meshName || "").toLowerCase();
+  if (/jersey|shirt|kit|top/.test(name)) return "shirt";
+  if (/short/.test(name)) return "shorts";
+  if (/sock/.test(name)) return "socks";
+  if (/shoe|boot/.test(name)) return "shoes";
+  return "";
+}
+
+async function imageFromKitBlob(blob) {
+  if (typeof createImageBitmap === "function") return createImageBitmap(blob);
+  const url = URL.createObjectURL(blob);
+  try {
+    return await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Generated kit texture could not be decoded."));
+      image.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
 
 function kitMaterial(material, meshName, player, cache) {
   const label = (String(meshName || "") + " " + String(material.name || "")).toLowerCase();
@@ -154,6 +179,7 @@ export class MatchPlayerRenderer {
     // Stadium runtime updates player models at 30 Hz on mobile and 60 Hz on desktop.
     this.animationHz = this.mobile ? 30 : 60;
     this.materialVariants = new Map();
+    this.generatedKitTextureCache = new Map();
     this.ringGeometry = new THREE.TorusGeometry(0.62, 0.035, 6, 32);
     this.ringMaterial = new THREE.MeshBasicMaterial({ color: 0xa3e635, transparent: true, opacity: 0.9, depthWrite: false });
     this.modelTriangleCount = 0;
@@ -375,7 +401,58 @@ export class MatchPlayerRenderer {
     const entry = { group, model, modelBasePosition, bones, locomotionRootBones, mixer, ring, activeAction: null, activeClip: null, activeClipName: "", activeManualClipToken: -1, state: "", pendingAnimationState: "", pendingAnimationFrames: 0, rootMotionAction: null, rootMotionLastTime: null, rootMotionPendingDelta: { x: 0, z: 0 }, rootMotionPendingDuration: 0 };
     this.scene.add(group);
     this.players.set(state.id, entry);
+    this.ensureGeneratedKit(entry, state);
     return entry;
+  }
+
+  ensureGeneratedKit(entry, state) {
+    const teamSlot = Number(state.team) === 1 ? 1 : 0;
+    const role = state.role === "GK" ? "GK" : "OUTFIELD";
+    const number = String(state.number ?? 0);
+    const signature = [teamSlot, role, number].join(":");
+    if (entry.generatedKitSignature === signature) return;
+    entry.generatedKitSignature = signature;
+    getGeneratedPlayerKit(teamSlot, role, number).then(async record => {
+      if (!record || entry.generatedKitSignature !== signature) return;
+      const personalizedParts = new Set(record.personalizedParts || []);
+      const meshes = [];
+      entry.model.traverse(node => { if (node.isMesh) meshes.push(node); });
+      for (const node of meshes) {
+        const part = generatedKitPart(node.name);
+        const layers = record.textures?.[part];
+        if (!layers?.length) continue;
+        const sourceMaterials = Array.isArray(node.material) ? node.material : [node.material];
+        const nextMaterials = [];
+        for (let index = 0; index < sourceMaterials.length; index++) {
+          const material = sourceMaterials[index];
+          const layer = layers.find(candidate => candidate.materialIndex === index) ||
+            (sourceMaterials.length === 1 && layers.length === 1 ? layers[0] : null);
+          if (!material || !layer?.blob) {
+            nextMaterials.push(material);
+            continue;
+          }
+          const isPersonalized = personalizedParts.has(part);
+          const cacheKey = [teamSlot, role, part, layer.materialIndex].join(":");
+          let texture = isPersonalized ? null : this.generatedKitTextureCache.get(cacheKey);
+          if (!texture) {
+            const image = await imageFromKitBlob(layer.blob);
+            texture = material.map ? material.map.clone() : new THREE.Texture();
+            texture.source = new THREE.Source(image);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            texture.needsUpdate = true;
+            if (!isPersonalized) this.generatedKitTextureCache.set(cacheKey, texture);
+          }
+          const copy = material.clone();
+          copy.map = texture;
+          if (copy.color) copy.color.set(0xffffff);
+          copy.needsUpdate = true;
+          nextMaterials.push(copy);
+        }
+        node.material = Array.isArray(node.material) ? nextMaterials : nextMaterials[0];
+      }
+    }).catch(() => {
+      // Missing or unavailable browser storage falls back to the built-in team kit.
+    });
   }
 
   setGroundHeight(value) {
@@ -400,6 +477,7 @@ export class MatchPlayerRenderer {
       let entry = this.players.get(state.id);
       if (!entry) entry = this.createPlayer(state);
       if (!entry) continue;
+      this.ensureGeneratedKit(entry, state);
 
       const { group, mixer, ring } = entry;
       group.visible = state.visible;

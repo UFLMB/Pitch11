@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { Script } from "node:vm";
 import { readFileSync } from "node:fs";
 
 const studio = readFileSync(new URL("../mixamo-kit-studio.html", import.meta.url), "utf8");
@@ -129,4 +130,43 @@ test("every textured material slot gets an independent UV-group mask and Pitchy 
   assert.ok(studio.includes("layer.texture.image=layer.canvas"));
   assert.ok(studio.includes("for(const layer of r.layers)"));
   assert.ok(studio.includes("material slot(s)"));
+});
+
+
+test("Mixamo Kit Studio supports reusable team templates and bulk squad texture generation", () => {
+  assert.ok(studio.includes("team-kit-template.mjs"));
+  assert.ok(studio.includes('id="teamTemplateName"'));
+  assert.ok(studio.includes('id="squadCsv"'));
+  assert.ok(studio.includes('id="saveTeamTemplate"'));
+  assert.ok(studio.includes('id="generateSquadPack"'));
+  assert.ok(studio.includes('id="teamSlot"'));
+  assert.ok(studio.includes('id="squadRole"'));
+  assert.ok(studio.includes("replaceGeneratedPlayerKits"));
+  assert.ok(studio.includes("indexedDB.open('pitch11-team-kit-templates',3)"));
+  assert.ok(studio.includes("textures[key].push(runtimeLayer)"));
+  assert.ok(studio.includes("await replaceGeneratedPlayerKits(teamSlot,role,playerRecords,sharedKit)"));
+  assert.ok(studio.includes("const personalizedParts=Object.keys(targets)"));
+  assert.ok(studio.includes("sharedTextures[key].push(runtimeLayer)"));
+  assert.ok(studio.includes("runtimeScale=Math.min(1,1024/Math.max(canvas.width,canvas.height))"));
+  assert.ok(studio.includes("schema:'pitch11-generated-team-kit'"));
+  assert.ok(studio.includes("MATCH STORAGE"));
+  assert.ok(studio.includes("parseTeamRosterCsv(await file.text())"));
+  assert.ok(studio.includes("item.kind==='player-name'"));
+  assert.ok(studio.includes("item.kind==='number'"));
+  assert.ok(studio.includes("renderGraphics(key)"));
+  assert.ok(studio.includes("createStoredZip(entries)"));
+  assert.ok(studio.includes("canvas.toBlob(resolve,'image/png')"));
+  assert.ok(studio.includes("openTeamKitDatabase"));
+  assert.ok(studio.includes("baseTextures[key]=record.layers.map(layer=>layer.canvas.toDataURL('image/png'))"));
+  assert.ok(studio.includes("restoreTemplateBaseTextures(template)"));
+});
+
+
+test("Mixamo Kit Studio inline module script parses as valid JavaScript", () => {
+  const start = studio.indexOf('<script type="module">');
+  const end = studio.lastIndexOf("</script>");
+  assert.ok(start >= 0 && end > start, "Missing Mixamo Kit Studio module script");
+  const source = studio.slice(start + '<script type="module">'.length, end)
+    .split(String.fromCharCode(10)).filter(line => !line.trim().startsWith("import ")).join(String.fromCharCode(10));
+  assert.doesNotThrow(() => new Script(source));
 });

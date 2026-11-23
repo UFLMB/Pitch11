@@ -63,6 +63,15 @@ header{position:fixed;z-index:3;top:12px;left:14px;right:14px;display:flex;justi
 <div class="graphics-grid"><label>Selected element colour<input id="graphicItemColor" type="color" value="#ffffff"></label><label class="tint-toggle"><span>Tint selected image</span><input id="graphicItemTint" type="checkbox"></label></div>
 <div class="graphics-actions"><button class="action" id="duplicateGraphic" type="button">DUPLICATE</button><button class="action" id="deleteGraphic" type="button">DELETE</button></div>
 </div></div></div>
+<div class="section"><div class="section-title">TEAM KIT TEMPLATE · SQUAD GENERATOR</div>
+<p class="help">Design the club kit once. Add one PLAYER NAME and one JERSEY NUMBER element to the shirt, then generate every player's garment textures from a CSV roster.</p>
+<div class="graphics-card">
+<label>Team / club name<input id="teamTemplateName" maxlength="40" placeholder="e.g. PITCH 11 FC"></label>
+<div class="graphics-grid"><label>Match team slot<select id="teamSlot"><option value="0">TEAM 0 · HOME</option><option value="1">TEAM 1 · AWAY</option></select></label><label>Squad role<select id="squadRole"><option value="OUTFIELD">OUTFIELD PLAYERS</option><option value="GK">GOALKEEPERS</option></select></label></div>
+<label>Squad roster CSV<input id="squadCsv" type="file" accept=".csv,text/csv"></label>
+<div class="graphics-actions"><button class="action" id="saveTeamTemplate" type="button">SAVE TEAM TEMPLATE</button><button class="action primary" id="generateSquadPack" type="button">GENERATE SQUAD TEXTURE PACK</button></div>
+<div class="graphics-help" id="squadPackStatus">CSV columns: Name, Number. Generated textures are saved for the match renderer and exported as a full-resolution ZIP backup. Shared shorts, socks and boots are stored once per team; personalized parts are stored per player. Runtime textures are optimized to max 1024 px.</div>
+</div></div>
 <div class="section"><div class="section-title">Texture package</div><button class="action primary" id="exportAll" style="width:100%">EXPORT ALL GARMENT TEXTURES</button><button class="action" id="saveGraphics" style="width:100%;margin-top:7px">SAVE GRAPHICS TO THIS BROWSER</button><p class="help">Exports one PNG per garment mesh. These are standalone base-colour texture files; they do not overwrite the source FBX or its embedded images.</p></div>
 <div class="footer">Non-destructive foundation build · original embedded textures are preserved in memory for reset. Hair, skin, eyelashes and gameplay assets are outside this editor's scope.</div>
 <div class="mesh-meta error" id="error" role="alert"></div>
@@ -74,7 +83,9 @@ import * as THREE from 'three';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mountPitchy} from './engine/pitchy-v2.mjs';
+import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip,replaceGeneratedPlayerKits} from './engine/team-kit-template.mjs';
 const $=id=>document.getElementById(id);
+try{const savedTemplate=JSON.parse(localStorage.getItem('pitch11-team-kit-template-v1')||'null');if(savedTemplate?.schema==='pitch11-team-kit-template'&&savedTemplate.version===1)$('teamTemplateName').value=savedTemplate.teamName||'';}catch{}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;$('stage').appendChild(renderer.domElement);
@@ -106,7 +117,7 @@ async function applyGraphicState(snapshot){restoringGraphicHistory=true;try{for(
 async function undoGraphic(){if(!graphicUndo.length)return;graphicRedo.push(captureGraphicState());const state=graphicUndo.pop();await applyGraphicState(state)}
 async function redoGraphic(){if(!graphicRedo.length)return;graphicUndo.push(captureGraphicState());const state=graphicRedo.pop();await applyGraphicState(state)}
 $('undoGraphic').addEventListener('click',undoGraphic);$('redoGraphic').addEventListener('click',redoGraphic);
-function renderGraphics(key){const r=records.get(key);if(!r)return;const items=[...(garmentGraphics.get(key)||[])];if(pendingGraphic?.garment===key&&!items.some(item=>item.id===pendingGraphic.id))items.push(pendingGraphic);for(const layer of r.layers){const w=layer.canvas.width,h=layer.canvas.height,overlay=document.createElement('canvas');overlay.width=w;overlay.height=h;const o=overlay.getContext('2d');for(const item of items){o.save();o.translate(item.x*w,item.y*h);o.rotate(item.rotation*Math.PI/180);const iw=item.scale*w,ih=item.image?(iw*(item.image.height/item.image.width)):Math.max(24,item.scale*w*.48);if(item.image){if(item.tint){o.drawImage(item.image,-iw/2,-ih/2,iw,ih);o.globalCompositeOperation='source-atop';o.fillStyle=item.color;o.fillRect(-iw/2,-ih/2,iw,ih)}else o.drawImage(item.image,-iw/2,-ih/2,iw,ih)}else{o.fillStyle=item.color;o.textAlign='center';o.textBaseline='middle';o.font='900 '+Math.max(18,ih)+'px Arial, sans-serif';o.shadowColor='#0008';o.shadowBlur=Math.max(1,ih*.04);o.fillText(item.text||'',0,0,iw*2)}o.restore()}o.globalCompositeOperation='destination-in';o.drawImage(layer.mask,0,0);const out=document.createElement('canvas');out.width=w;out.height=h;const ctx=out.getContext('2d');ctx.drawImage(layer.canvas,0,0);ctx.drawImage(overlay,0,0);layer.displayCanvas=out;layer.texture.image=out;layer.texture.needsUpdate=true;}r.canvas=r.layers[0].displayCanvas||r.layers[0].canvas;r.texture=r.layers[0].texture;}
+function renderGraphics(key){const r=records.get(key);if(!r)return;const items=[...(garmentGraphics.get(key)||[])];if(pendingGraphic?.garment===key&&!items.some(item=>item.id===pendingGraphic.id))items.push(pendingGraphic);for(const layer of r.layers){const w=layer.canvas.width,h=layer.canvas.height,overlay=document.createElement('canvas');overlay.width=w;overlay.height=h;const o=overlay.getContext('2d');for(const item of items){o.save();o.translate(item.x*w,item.y*h);o.rotate(item.rotation*Math.PI/180);const iw=item.scale*w,ih=item.image?(iw*(item.image.height/item.image.width)):Math.max(24,item.scale*w*.48);if(item.image){if(item.tint){o.drawImage(item.image,-iw/2,-ih/2,iw,ih);o.globalCompositeOperation='source-atop';o.fillStyle=item.color;o.fillRect(-iw/2,-ih/2,iw,ih)}else o.drawImage(item.image,-iw/2,-ih/2,iw,ih)}else{o.fillStyle=item.color;o.textAlign='center';o.textBaseline='middle';o.font='900 '+Math.max(18,ih)+'px Arial, sans-serif';o.shadowColor='#0008';o.shadowBlur=Math.max(1,ih*.04);o.fillText(resolveKitGraphicText(item,batchPlayer),0,0,iw*2)}o.restore()}o.globalCompositeOperation='destination-in';o.drawImage(layer.mask,0,0);const out=document.createElement('canvas');out.width=w;out.height=h;const ctx=out.getContext('2d');ctx.drawImage(layer.canvas,0,0);ctx.drawImage(overlay,0,0);layer.displayCanvas=out;layer.texture.image=out;layer.texture.needsUpdate=true;}r.canvas=r.layers[0].displayCanvas||r.layers[0].canvas;r.texture=r.layers[0].texture;}
 function refreshGraphicUI(){const key=$('graphicGarment').value,items=garmentGraphics.get(key)||[],list=$('graphicList');$('graphicCount').textContent=String(items.length);list.replaceChildren();if(!items.length){const empty=document.createElement('div');empty.className='graphics-help';empty.textContent='No graphics on this garment yet.';list.append(empty)}for(const item of items){const b=document.createElement('button');b.type='button';b.className='graphic-item'+(item.id===selectedGraphicId?' active':'');b.textContent=(item.kind?item.kind.toUpperCase().replaceAll('-',' ')+' · ':'')+(item.image?'▧ ':'T ')+item.name;const meta=document.createElement('small');meta.textContent=item.image?'IMAGE':'TEXT';b.append(meta);b.addEventListener('click',()=>{selectedGraphicId=item.id;$('graphicPlacementSide').value=item.side||'front';refreshGraphicUI()});list.append(b)}const item=items.find(x=>x.id===selectedGraphicId);$('graphicTransform').hidden=!item;if(item){for(const [id,value] of [['graphicX',Math.round(item.x*100)],['graphicY',Math.round(item.y*100)],['graphicScale',Math.round(item.scale*100)],['graphicRotation',item.rotation]])$(id).value=String(value);$('graphicXValue').textContent=Math.round(item.x*100)+'%';$('graphicYValue').textContent=Math.round(item.y*100)+'%';$('graphicScaleValue').textContent=Math.round(item.scale*100)+'%';$('graphicRotationValue').textContent=item.rotation+'°';$('graphicItemColor').value=item.color||'#ffffff';$('graphicItemTint').checked=!!item.tint;$('graphicItemTint').disabled=!item.image;}}
 function addGraphic(item){const key=$('graphicGarment').value;item.garment=key;item.kind=$('graphicType').value;item.side=$('graphicPlacementSide').value;item.id=++graphicSequence;item.x=.5;item.y=key==='shirt'?.38:key==='shorts'?.53:key==='socks'?.5:.5;item.scale=key==='shirt'?.2:.16;item.rotation=0;pendingGraphic=item;selectedGraphicId=item.id;$('graphicPlacementHelp').textContent='DRAG THE NEW ELEMENT ONTO THE 3D GARMENT · Release to place it. You can drag it again any time.';refreshGraphicUI();renderGraphics(key);selectGarment(key)}
 $('addGraphic').addEventListener('click',async()=>{const file=$('graphicUpload').files?.[0];if(file){if(!/^image\/(png|jpeg|webp)$/.test(file.type)){ $('error').textContent='Unsupported image format. Use PNG, JPG or WebP.';return;}const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{const max=512,scale=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.naturalWidth*scale));canvas.height=Math.max(1,Math.round(img.naturalHeight*scale));canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);const reduced=new Image();reduced.onload=()=>{addGraphic({name:file.name.replace(/\.[^.]+$/,''),image:reduced,color:$('graphicColor').value,tint:$('graphicTint').checked,text:''});URL.revokeObjectURL(url)};reduced.src=canvas.toDataURL('image/png')};img.onerror=()=>{$('error').textContent='The selected image could not be decoded.';URL.revokeObjectURL(url)};img.src=url;return;}const value=$('graphicText').value.trim();if(!value){$('error').textContent='Enter text or select an image first.';return;}addGraphic({name:value.slice(0,22),text:value,image:null,color:$('graphicColor').value,tint:false})});
@@ -148,7 +159,7 @@ function graphicHitAt(event,key){
  const x=hit.uv.x*island.width,y=(1-hit.uv.y)*island.height,point=nearestGraphicPixel(island,x,y);if(!point)return null;
  return{x:point.x/island.width,y:point.y/island.height};
 }
-let graphicDrag=null;
+let batchPlayer=null;let graphicDrag=null;
 function updateGraphicDrag(event){
  if(!graphicDrag)return;const point=graphicHitAt(event,graphicDrag.key);if(!point)return;
  graphicDrag.item.x=point.x;graphicDrag.item.y=point.y;renderGraphics(graphicDrag.key);
@@ -180,7 +191,7 @@ $('graphicPlacementSide').addEventListener('change',()=>{if(pendingGraphic)pendi
 $('graphicGarment').addEventListener('change',()=>{selectedGraphicId=null;if(pendingGraphic)pendingGraphic.garment=$('graphicGarment').value;selectGarment($('graphicGarment').value);refreshGraphicUI()});
 function serializeGraphics(){const result={};for(const [key,items] of garmentGraphics){result[key]=items.map(item=>({id:item.id,name:item.name,kind:item.kind||'text',garment:item.garment||key,text:item.text,color:item.color,x:item.x,y:item.y,scale:item.scale,rotation:item.rotation,side:item.side||'front',tint:!!item.tint,imageData:item.image?(()=>{const c=document.createElement('canvas');c.width=item.image.naturalWidth||item.image.width;c.height=item.image.naturalHeight||item.image.height;c.getContext('2d').drawImage(item.image,0,0);return c.toDataURL('image/png')})():null}));}return result;}
 $('saveGraphics').addEventListener('click',()=>{try{localStorage.setItem('pitch11-mixamo-kit-graphics-v1',JSON.stringify(serializeGraphics()));$('textureMeta').textContent='GRAPHICS SAVED LOCALLY · '+Object.values(serializeGraphics()).reduce((n,a)=>n+a.length,0)+' ELEMENTS';}catch(error){$('error').textContent='Could not save graphics in this browser: '+error.message;}});
-async function restoreGraphics(){let saved;try{saved=JSON.parse(localStorage.getItem('pitch11-mixamo-kit-graphics-v1')||'{}')}catch{return}for(const key of Object.keys(targets)){const entries=Array.isArray(saved[key])?saved[key]:[];for(const data of entries){let img=null;if(data.imageData){img=new Image();await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;img.src=data.imageData});if(!img.naturalWidth)img=null;}garmentGraphics.get(key).push({...data,garment:key,image:img,tint:!!data.tint});graphicSequence=Math.max(graphicSequence,Number(data.id)||0);}renderGraphics(key);}refreshGraphicUI();}
+async function restoreGraphics(){let saved={},template=null;try{saved=JSON.parse(localStorage.getItem('pitch11-mixamo-kit-graphics-v1')||'{}')}catch{}try{template=await readSavedTeamTemplate();if(template?.schema==='pitch11-team-kit-template'&&template.version===1){saved=template.graphics||saved;$('teamTemplateName').value=template.teamName||'';await restoreTemplateBaseTextures(template);}}catch(error){$('squadPackStatus').textContent='SAVED TEMPLATE COULD NOT BE RESTORED · '+error.message;}for(const key of Object.keys(targets)){const entries=Array.isArray(saved[key])?saved[key]:[];for(const data of entries){let img=null;if(data.imageData){img=new Image();await new Promise(resolve=>{img.onload=resolve;img.onerror=resolve;img.src=data.imageData});if(!img.naturalWidth)img=null;}garmentGraphics.get(key).push({...data,garment:key,image:img,tint:!!data.tint});graphicSequence=Math.max(graphicSequence,Number(data.id)||0);}renderGraphics(key);}refreshGraphicUI();}
 
 for(const [id,prop,convert] of [['graphicX','x',v=>v/100],['graphicY','y',v=>v/100],['graphicScale','scale',v=>v/100],['graphicRotation','rotation',v=>v]]){$(id).addEventListener('pointerdown',()=>{if(activeGraphics().some(x=>x.id===selectedGraphicId))pushGraphicHistory()});$(id).addEventListener('input',e=>{const item=activeGraphics().find(x=>x.id===selectedGraphicId);if(!item)return;item[prop]=convert(Number(e.target.value));renderGraphics($('graphicGarment').value);refreshGraphicUI()});}
 $('graphicItemColor').addEventListener('pointerdown',()=>{if(activeGraphics().some(x=>x.id===selectedGraphicId))pushGraphicHistory()});
@@ -189,6 +200,86 @@ $('graphicItemColor').addEventListener('change',()=>{refreshGraphicUI();});
 $('graphicItemTint').addEventListener('change',e=>{const item=activeGraphics().find(x=>x.id===selectedGraphicId);if(!item?.image)return;pushGraphicHistory();item.tint=e.target.checked;renderGraphics($('graphicGarment').value);refreshGraphicUI()});
 $('duplicateGraphic').addEventListener('click',()=>{const items=activeGraphics(),item=items.find(x=>x.id===selectedGraphicId);if(!item)return;pushGraphicHistory();const copy={...item,id:++graphicSequence,name:item.name+' copy',x:Math.min(.95,item.x+.06),y:Math.min(.95,item.y+.06)};items.push(copy);selectedGraphicId=copy.id;renderGraphics($('graphicGarment').value);refreshGraphicUI()});
 $('deleteGraphic').addEventListener('click',()=>{const key=$('graphicGarment').value,items=activeGraphics(),index=items.findIndex(x=>x.id===selectedGraphicId);if(index<0)return;pushGraphicHistory();items.splice(index,1);selectedGraphicId=null;renderGraphics(key);refreshGraphicUI()});
+function safeKitFilename(value){return String(value||'player').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'player'}
+function openTeamKitDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('This browser does not support IndexedDB.'));return;}const request=indexedDB.open('pitch11-team-kit-templates',3);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('templates'))db.createObjectStore('templates');if(!db.objectStoreNames.contains('playerKits'))db.createObjectStore('playerKits');if(!db.objectStoreNames.contains('teamKits'))db.createObjectStore('teamKits')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open team template storage.'))})}
+async function writeSavedTeamTemplate(template){const db=await openTeamKitDatabase();await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readwrite');tx.objectStore('templates').put(template,'active');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Could not save team template.'));tx.onabort=()=>reject(tx.error||new Error('Team template save was cancelled.'))});db.close()}
+async function readSavedTeamTemplate(){const db=await openTeamKitDatabase();const value=await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readonly'),request=tx.objectStore('templates').get('active');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error||new Error('Could not read team template.'))});db.close();return value}
+async function restoreTemplateBaseTextures(template){if(!template?.baseTextures)return;for(const key of Object.keys(targets)){const record=records.get(key),images=template.baseTextures[key]||[];if(!record)continue;for(let index=0;index<Math.min(record.layers.length,images.length);index++){const layer=record.layers[index],image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Could not restore '+key+' base texture.'));image.src=images[index]});const canvas=document.createElement('canvas');canvas.width=layer.width;canvas.height=layer.height;canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);layer.canvas=canvas;layer.texture.image=canvas;layer.texture.needsUpdate=true;layer.material.needsUpdate=true;}renderGraphics(key)}}
+$('saveTeamTemplate').addEventListener('click',async()=>{
+ const button=$('saveTeamTemplate'),teamName=$('teamTemplateName').value.trim()||'PITCH 11 TEAM';
+ const graphics=serializeGraphics(),baseTextures={};
+ for(const key of Object.keys(targets)){const record=records.get(key);if(record)baseTextures[key]=record.layers.map(layer=>layer.canvas.toDataURL('image/png'));}
+ const template={schema:'pitch11-team-kit-template',version:1,teamName,graphics,baseTextures,savedAt:new Date().toISOString()};
+ button.disabled=true;
+ try{
+  await writeSavedTeamTemplate(template);
+  try{localStorage.setItem('pitch11-team-kit-template-v1',JSON.stringify({schema:template.schema,version:1,teamName,savedAt:template.savedAt}));localStorage.setItem('pitch11-mixamo-kit-graphics-v1',JSON.stringify(graphics));}catch{}
+  $('squadPackStatus').textContent='TEAM TEMPLATE + BASE TEXTURES SAVED IN THIS BROWSER · '+teamName;
+ }catch(error){$('error').textContent='Could not save team template: '+error.message;}
+ finally{button.disabled=false;}
+});
+$('generateSquadPack').addEventListener('click',async()=>{
+ const button=$('generateSquadPack'),file=$('squadCsv').files?.[0];
+ if(!file){$('error').textContent='Choose a squad CSV file first.';return;}
+ if(pendingGraphic){$('error').textContent='Finish placing the pending graphic before generating the squad.';return;}
+ const teamName=$('teamTemplateName').value.trim()||'PITCH 11 TEAM';
+ const teamSlot=Number($('teamSlot').value)===1?1:0,role=$('squadRole').value==='GK'?'GK':'OUTFIELD';
+ const graphics=serializeGraphics(),shirtGraphics=graphics.shirt||[];
+ const personalizedParts=Object.keys(targets).filter(key=>(graphics[key]||[]).some(item=>item.kind==='player-name'||item.kind==='number'));
+ const sharedTextures={};
+ if(!shirtGraphics.some(item=>item.kind==='player-name'&&!item.imageData)||!shirtGraphics.some(item=>item.kind==='number'&&!item.imageData)){
+  $('error').textContent='Add one PLAYER NAME and one JERSEY NUMBER graphic to the shirt before generating the squad.';return;
+ }
+ let roster;
+ try{roster=parseTeamRosterCsv(await file.text());}catch(error){$('error').textContent=error.message;return;}
+ button.disabled=true;$('error').textContent='';$('squadPackStatus').textContent='PREPARING '+roster.length+' PLAYER TEXTURE SETS…';
+ const entries=[],playerRecords=[],manifest={schema:'pitch11-generated-kit-pack',version:3,teamName,teamSlot,role,runtimeTextureMax:1024,personalizedParts,generatedAt:new Date().toISOString(),players:[]};
+ try{
+  const teamFolder=safeKitFilename(teamName);
+  for(let playerIndex=0;playerIndex<roster.length;playerIndex++){
+   const player={...roster[playerIndex],teamName};batchPlayer=player;
+   const playerFolder=String(playerIndex+1).padStart(2,'0')+'_'+safeKitFilename(player.name)+'_'+player.number;
+   const outputFiles=[],textures={};
+   for(const key of Object.keys(targets)){
+    const record=records.get(key);if(!record)throw new Error('The '+key+' texture is not loaded.');
+    renderGraphics(key);
+    if(personalizedParts.includes(key))textures[key]=[];
+    if(!personalizedParts.includes(key)&&playerIndex===0)sharedTextures[key]=[];
+    for(let layerIndex=0;layerIndex<record.layers.length;layerIndex++){
+     const layer=record.layers[layerIndex],canvas=layer.displayCanvas||layer.canvas;
+     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+     if(!blob)throw new Error('Could not render '+player.name+' / '+key+' texture.');
+     const runtimeScale=Math.min(1,1024/Math.max(canvas.width,canvas.height));
+     let runtimeBlob=blob;
+     if(runtimeScale<1){
+      const runtimeCanvas=document.createElement('canvas');runtimeCanvas.width=Math.max(1,Math.round(canvas.width*runtimeScale));runtimeCanvas.height=Math.max(1,Math.round(canvas.height*runtimeScale));
+      runtimeCanvas.getContext('2d').drawImage(canvas,0,0,runtimeCanvas.width,runtimeCanvas.height);
+      runtimeBlob=await new Promise(resolve=>runtimeCanvas.toBlob(resolve,'image/png'));
+      if(!runtimeBlob)throw new Error('Could not optimize '+player.name+' / '+key+' runtime texture.');
+     }
+     const runtimeLayer={materialIndex:layer.materialIndex,blob:runtimeBlob};
+     if(personalizedParts.includes(key))textures[key].push(runtimeLayer);
+     else if(playerIndex===0)sharedTextures[key].push(runtimeLayer);
+     const suffix=record.layers.length>1?'-slot-'+(layerIndex+1):'';
+     const path=teamFolder+'/'+playerFolder+'/'+key+suffix+'.png';
+     entries.push({name:path,data:blob});outputFiles.push(path);
+    }
+   }
+   playerRecords.push({schema:'pitch11-generated-player-kit',version:2,teamName,teamSlot,role,name:player.name,number:player.number,personalizedParts,textures,generatedAt:new Date().toISOString()});
+   manifest.players.push({name:player.name,number:player.number,teamSlot,role,files:outputFiles});
+   $('squadPackStatus').textContent='RENDERING PLAYER '+(playerIndex+1)+' / '+roster.length+' · '+player.name;
+  }
+  entries.push({name:teamFolder+'/manifest.json',data:JSON.stringify(manifest,null,2)});
+  const zip=await createStoredZip(entries);
+  const sharedKit={schema:'pitch11-generated-team-kit',version:1,teamName,teamSlot,role,personalizedParts,textures:sharedTextures,generatedAt:new Date().toISOString()};
+  await replaceGeneratedPlayerKits(teamSlot,role,playerRecords,sharedKit);
+  const url=URL.createObjectURL(zip),link=document.createElement('a');
+  link.href=url;link.download=teamFolder+'-squad-textures.zip';document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+  $('squadPackStatus').textContent='COMPLETE · '+roster.length+' PLAYERS SAVED TO MATCH STORAGE · '+entries.length+' ZIP FILES READY';
+ }catch(error){$('error').textContent='Squad texture generation failed: '+error.message;$('squadPackStatus').textContent='GENERATION FAILED';}
+ finally{batchPlayer=null;for(const key of Object.keys(targets))renderGraphics(key);button.disabled=false;}
+});
 function exportOne(key){const r=records.get(key);if(!r)return;r.layers.forEach((layer,index)=>{const canvas=layer.displayCanvas||layer.canvas,a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='pitch11-mixamo-'+key+'-'+(r.layers.length>1?'slot-'+(index+1)+'-':'')+'basecolor.png';a.click()})}
 async function exportAll(){for(const key of Object.keys(targets)){const record=records.get(key);if(!record)continue;exportOne(key);await new Promise(resolve=>setTimeout(resolve,Math.max(350,record.layers.length*250)))}}
 function frameModel(object){object.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(object);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());const sphere=box.getBoundingSphere(new THREE.Sphere());modelCenter.copy(center);radius=Math.max(sphere.radius,.5);distance=radius*3.1;targetY=center.y;controls.minDistance=Math.max(.2,radius*1.15);controls.maxDistance=radius*8;camera.near=Math.max(.005,radius/100);camera.far=radius*100;camera.updateProjectionMatrix();cameraView('front')}
