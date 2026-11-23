@@ -144,4 +144,7 @@ test("Mixamo Kit Studio supports reusable team templates and bulk squad texture 
   assert.ok(studio.includes("renderGraphics(key)"));
   assert.ok(studio.includes("createStoredZip(entries)"));
   assert.ok(studio.includes("canvas.toBlob(resolve,'image/png')"));
+  assert.ok(studio.includes("openTeamKitDatabase"));
+  assert.ok(studio.includes("baseTextures[key]=record.layers.map(layer=>layer.canvas.toDataURL('image/png'))"));
+  assert.ok(studio.includes("restoreTemplateBaseTextures(template)"));
 });
