@@ -10,6 +10,14 @@ on:
       - "scripts/inspect-player-fbx-package.mjs"
       - "scripts/inspect-mixamo-character-uv.mjs"
       - ".github/workflows/audit-player-assets.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "input/player-package/**"
+      - "input/player-model-candidate/**"
+      - "scripts/inspect-player-fbx-package.mjs"
+      - "scripts/inspect-mixamo-character-uv.mjs"
+      - ".github/workflows/audit-player-assets.yml"
 
 permissions:
   contents: read
