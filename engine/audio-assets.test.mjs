@@ -42,7 +42,7 @@ test("menu audio actions are wired to their intended UI and match lifecycle even
   assert.match(game, /AU\.musOn=function\(on,fadeSeconds=0\)\{window\.P11AudioAssets\?\.menuMusic\(!!on,!!G\.mus,window\.P11LoadingMusicRamp\?1:\.32,fadeSeconds\);\};/);
   assert.match(game, /window\.P11LoadingMusicRamp=true/);
   assert.match(game, /this\.musOn\(true,15\)/);
-  assert.match(game, /resolveMenuMusicIntent\?\.\(S\.mode,walkoutFade,!!\(CUT\.t>0\),S\.ret\)/);
+  assert.ok(game.includes("resolveMenuMusicIntent?.(S.mode,walkoutFade,!!(CUT.t>0),S.ret,M.pp==='subs')"));
   assert.match(game, /const go=s=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('menuOpen'/);
   assert.match(game, /back=\(\)=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiBack'/);
   assert.match(game, /function startGame\(\)\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiConfirm'/);
@@ -68,10 +68,11 @@ test("menu music is limited to menu, substitutions, half-time and full-time", ()
   assert.deepEqual(resolveMenuMusicIntent("menu"), on);
   assert.deepEqual(resolveMenuMusicIntent("half"), on);
   assert.deepEqual(resolveMenuMusicIntent("full"), on);
-  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "play"), on);
-  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "half"), on);
-  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "whistle"), off);
-  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "goal"), off);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "play", false), off, "pause hub must stay silent");
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "play", true), on, "actual substitution panel may play music");
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "half", true), on);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "whistle", true), off);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "goal", true), off);
   for (const mode of ["whistle", "goal", "replay", "play", "kickoff"]) {
     assert.deepEqual(resolveMenuMusicIntent(mode), off, mode);
   }
