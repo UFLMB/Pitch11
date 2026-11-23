@@ -112,6 +112,24 @@ jobs:
           }
           console.log('Player Kit Studio module syntax is valid.');
           NODE
+      - name: Check independent Mixamo Kit Studio module syntax
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import { spawnSync } from 'node:child_process';
+          const html = fs.readFileSync('mixamo-kit-studio.html', 'utf8');
+          const startTag = '<script type="module">';
+          const start = html.indexOf(startTag);
+          const end = start < 0 ? -1 : html.indexOf('</script>', start + startTag.length);
+          if (start < 0 || end < 0) throw new Error('Mixamo Kit Studio module script not found');
+          fs.writeFileSync('/tmp/pitch11-mixamo-kit-studio.mjs', html.slice(start + startTag.length, end));
+          const result = spawnSync(process.execPath, ['--check', '/tmp/pitch11-mixamo-kit-studio.mjs'], { encoding: 'utf8' });
+          if (result.status !== 0) {
+            process.stderr.write(result.stderr || result.stdout);
+            process.exit(result.status || 1);
+          }
+          console.log('Mixamo Kit Studio module syntax is valid.');
+          NODE
       - name: Check Ball Studio module syntax
         run: |
           node --input-type=module <<'NODE'
