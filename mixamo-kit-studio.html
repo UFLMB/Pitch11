@@ -198,7 +198,7 @@ $('graphicItemColor').addEventListener('change',()=>{refreshGraphicUI();});
 $('graphicItemTint').addEventListener('change',e=>{const item=activeGraphics().find(x=>x.id===selectedGraphicId);if(!item?.image)return;pushGraphicHistory();item.tint=e.target.checked;renderGraphics($('graphicGarment').value);refreshGraphicUI()});
 $('duplicateGraphic').addEventListener('click',()=>{const items=activeGraphics(),item=items.find(x=>x.id===selectedGraphicId);if(!item)return;pushGraphicHistory();const copy={...item,id:++graphicSequence,name:item.name+' copy',x:Math.min(.95,item.x+.06),y:Math.min(.95,item.y+.06)};items.push(copy);selectedGraphicId=copy.id;renderGraphics($('graphicGarment').value);refreshGraphicUI()});
 $('deleteGraphic').addEventListener('click',()=>{const key=$('graphicGarment').value,items=activeGraphics(),index=items.findIndex(x=>x.id===selectedGraphicId);if(index<0)return;pushGraphicHistory();items.splice(index,1);selectedGraphicId=null;renderGraphics(key);refreshGraphicUI()});
-function safeKitFilename(value){return String(value||'player').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'player'}
+function safeKitFilename(value){return String(value||'player').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'player'}
 $('saveTeamTemplate').addEventListener('click',()=>{
  const teamName=$('teamTemplateName').value.trim()||'PITCH 11 TEAM';
  const graphics=serializeGraphics();
