@@ -130,3 +130,18 @@ test("every textured material slot gets an independent UV-group mask and Pitchy 
   assert.ok(studio.includes("for(const layer of r.layers)"));
   assert.ok(studio.includes("material slot(s)"));
 });
+
+
+test("Mixamo Kit Studio supports reusable team templates and bulk squad texture generation", () => {
+  assert.ok(studio.includes("team-kit-template.mjs"));
+  assert.ok(studio.includes('id="teamTemplateName"'));
+  assert.ok(studio.includes('id="squadCsv"'));
+  assert.ok(studio.includes('id="saveTeamTemplate"'));
+  assert.ok(studio.includes('id="generateSquadPack"'));
+  assert.ok(studio.includes("parseTeamRosterCsv(await file.text())"));
+  assert.ok(studio.includes("item.kind==='player-name'"));
+  assert.ok(studio.includes("item.kind==='number'"));
+  assert.ok(studio.includes("renderGraphics(key)"));
+  assert.ok(studio.includes("createStoredZip(entries)"));
+  assert.ok(studio.includes("canvas.toBlob(resolve,'image/png')"));
+});
