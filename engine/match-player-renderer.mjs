@@ -151,13 +151,15 @@ export class MatchPlayerRenderer {
     mobile = false,
     modelUrl = new URL("../input/player-model-candidate/character.fbx", import.meta.url).href,
     modelLoadTimeoutMs = 0,
-    castShadows = false
+    castShadows = false,
+    onProgress = null
   } = {}) {
     this.scene = scene;
     this.mobile = !!mobile;
     this.groundHeight = 0;
     this.modelUrl = modelUrl;
     this.modelLoadTimeoutMs = Math.max(0, Number(modelLoadTimeoutMs) || 0);
+    this.onProgress = typeof onProgress === 'function' ? onProgress : null;
     this.castShadows = !!castShadows;
     this.fbxLoader = new FBXLoader();
     this.template = null;
@@ -193,7 +195,9 @@ export class MatchPlayerRenderer {
     this.status = "loading-mixamo-model";
     this.error = "";
     try {
-      const fbxRequest = this.fbxLoader.loadAsync(this.modelUrl);
+      const fbxRequest = this.fbxLoader.loadAsync(this.modelUrl, event => {
+        if (this.onProgress) this.onProgress({ loaded: Number(event.loaded) || 0, total: Number(event.total) || 0, lengthComputable: !!event.lengthComputable });
+      });
       let fbx;
       if (this.modelLoadTimeoutMs > 0) {
         let timeoutId;
