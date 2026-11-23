@@ -1,4 +1,4 @@
-name: Player FBX package audit
+name: Player FBX package and Mixamo character audit
 
 on:
   workflow_dispatch:
@@ -6,7 +6,17 @@ on:
     branches: [main]
     paths:
       - "input/player-package/**"
+      - "input/player-model-candidate/**"
       - "scripts/inspect-player-fbx-package.mjs"
+      - "scripts/inspect-mixamo-character-uv.mjs"
+      - ".github/workflows/audit-player-assets.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "input/player-package/**"
+      - "input/player-model-candidate/**"
+      - "scripts/inspect-player-fbx-package.mjs"
+      - "scripts/inspect-mixamo-character-uv.mjs"
       - ".github/workflows/audit-player-assets.yml"
 
 permissions:
@@ -17,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Install Assimp
         run: |
           sudo apt-get update
@@ -24,12 +36,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Inspect FBX files
+      - name: Inspect FBX animation package
         run: node scripts/inspect-player-fbx-package.mjs --compare-model
-      - name: Upload audit report
-        if: always() && hashFiles('player-fbx-audit.json') != ''
+      - name: Inspect Mixamo character geometry, UV channels and textures
+        run: node scripts/inspect-mixamo-character-uv.mjs
+      - name: Upload audit reports
+        if: always() && hashFiles('player-fbx-audit.json', 'mixamo-character-uv-audit.json') != ''
         uses: actions/upload-artifact@v4
         with:
-          name: player-fbx-audit
-          path: player-fbx-audit.json
+          name: pitch11-player-asset-audits
+          path: |
+            player-fbx-audit.json
+            mixamo-character-uv-audit.json
           retention-days: 14
