@@ -76,3 +76,6 @@ test('handles an invalid history store without losing the new entry', async () =
   const { prependPitchyHistory } = await import('./pitchy-v2.mjs');
   assert.deepEqual(prependPitchyHistory(null, { id: 'new' }), [{ id: 'new' }]);
 });
+
+
+test('marks whether a garment was explicitly named so whole-kit designs can target every Mixamo garment', () => {\n  const whole = analysePitchyBrief('Create a black and gold kit with diagonal stripes', 'kit');\n  const single = analysePitchyBrief('Create black and gold shorts with diagonal stripes', 'kit');\n  assert.equal(whole.detected.garmentExplicit, false);\n  assert.equal(single.detected.garmentExplicit, true);\n  assert.equal(single.garment, 'shorts');\n});\n
