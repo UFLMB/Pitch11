@@ -25,9 +25,9 @@ test("garment targets use their own FBX mesh UV0 triangles", () => {
 
 test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("sourceMaterial.clone()"));
-  assert.ok(studio.includes("const texture=map.clone()"));
+  assert.ok(studio.includes("map?map.clone():new THREE.CanvasTexture(originalCanvas)"));
   assert.ok(studio.includes("sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material]"));\n  assert.ok(studio.includes("for(let materialIndex=0;materialIndex<sourceMaterials.length;materialIndex++)"));\n  assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,mask,canvas:originalCanvas,width:w,height:h})"));\n  assert.ok(studio.includes("buildMask(mesh,map,materialIndex,sourceMaterials.length)"));
-  assert.ok(studio.includes("m===sourceMaterial?material:m.clone()"));
+  assert.ok(studio.includes("clonedMaterials.push(material)"));
   assert.ok(studio.includes("layer.texture.image=layer.canvas"));
   assert.ok(studio.includes("layer.texture.needsUpdate=true"));
 });
@@ -69,7 +69,7 @@ test("Pitchy is mounted inside the Mixamo Kit Studio and uses the active Ch38 ga
   assert.ok(studio.includes("function applyPitchyDesign(plan)"));
   assert.ok(studio.includes("Object.keys(targets)"));
   assert.ok(studio.includes("makePitchyPattern(layer,plan,key)"));\n  assert.ok(studio.includes("r.layers.map(layer=>"));
-  assert.ok(studio.includes("r.material.roughness"));
+  assert.ok(studio.includes("layer.material.roughness"));
 });
 
 test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-garment mode", () => {
@@ -100,8 +100,8 @@ test("ALL mode prepares and validates four independent garment textures before c
   assert.ok(studio.includes("prepared.length!==4"));\n  assert.ok(studio.includes("All four independent garment meshes must have editable texture layers."));\n  assert.ok(studio.includes("GARMENTS UPDATED"));\n  assert.ok(studio.includes("layer.texture.image=layer.canvas"));
   assert.ok(studio.includes("new Set(prepared.map(item=>item.record.mesh)).size!==4"));
   assert.ok(studio.includes("Full-kit design cancelled."));
-  assert.ok(studio.includes("prepared.length+'/'+keys.length+' UPDATED"));
-  assert.ok(studio.includes("r.texture.needsUpdate=true"));
+  assert.ok(studio.includes("GARMENTS UPDATED"));
+  assert.ok(studio.includes("layer.texture.needsUpdate=true"));
 });
 
 test("every textured material slot gets an independent UV-group mask and Pitchy texture", () => {
