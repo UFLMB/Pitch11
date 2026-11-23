@@ -42,6 +42,25 @@ function coloursIn(s){
   for(const m of s.matchAll(/#[0-9a-f]{6}/gi))a.push({name:'custom',hex:m[0],index:m.index});
   return a.sort((x,y)=>x.index-y.index).filter((x,i,all)=>all.findIndex(y=>y.hex.toLowerCase()===x.hex.toLowerCase())===i);
 }
+function garmentColoursIn(s){
+  const targets={
+    shirt:/\\b(jersey|shirt|top)\\b|mez|felső/i,
+    shorts:/\\b(shorts?|trunks?)\\b|nadrág|sort/i,
+    socks:/\\b(socks?|stockings?)\\b|sportszár|zokni/i,
+    shoes:/\\b(boots?|cleats?|shoes?)\\b|cipő|stoplis/i
+  };
+  const colours=coloursIn(s),result={};
+  for(const [key,re] of Object.entries(targets)){
+    const matches=[...s.matchAll(new RegExp(re.source,'gi'))].map(m=>({index:m.index,length:m[0].length}));
+    let best=null;
+    for(const garment of matches)for(const colour of colours){
+      const distance=colour.index<garment.index?garment.index-(colour.index+colour.name.length):colour.index-(garment.index+garment.length);
+      if(distance<=42&&(!best||distance<best.distance))best={colour,distance};
+    }
+    if(best)result[key]=best.colour.hex;
+  }
+  return result;
+}
 function pick(re,s,fallback){const m=s.match(re);return m?m[1]||m[0]:fallback;}
 function patternOf(s){
   const noStripes=/\b(no|without|avoid|exclude)\s+(?:any\s+)?(?:stripes?|striping)\b|csíkok? nélkül|ne legyen csíkos/i.test(s);
@@ -108,7 +127,9 @@ function buildPlan(brief,type='kit'){
   const explicitPattern=PATTERNS.some(([,re])=>re.test(s))||/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül|aggressive|dynamic|fast|speed|agresszív|dinamikus|sebesség/i.test(s);
   const explicitStyle=/\b(retro|classic|vintage|stealth|minimal|clean|elegant|aggressive|bold|dynamic|speed|futuristic|cyber|neon|luxury|premium|elite)\b|retró|retro|klasszikus|régi iskola|letisztult|elegáns|visszafogott|agresszív|dinamikus|gyors|erőteljes|futurisztikus|neon|jövő|luxus|prémium|elit/i.test(s);
   const explicitMaterial=/\b(glossy|shiny|polished|matte|metallic|chrome|soft.?touch|rubberized)\b|fényes|csillogó|matt|fémes|króm|gumírozott|puha tapintás/i.test(s);
-  const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
+  const explicitGarment=/\\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
+  const singleGarmentIntent=/\\b(only|just|change only|edit only|this garment only)\\b|\\b(csak|kizárólag)\\s+(?:a\\s+)?(?:mezt|felsőt|nadrágot|sortot|sportszárat|zoknit|cipőt|stoplist)\\b|(?:csak|kizárólag)\\s+(?:ezt\\s+)?(?:a\\s+)?ruhadarabot/i.test(s);
+  const garmentColors=garmentColoursIn(s);
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
   if(!explicitPattern)questions.push(hu?'A mintát még nem határoztad meg; alapértelmezett mintát választottam.':'The pattern is unspecified; I selected a default pattern.');
   for(const conflict of conflicts)questions.push(hu?conflict.field==='pattern'?'Több, egymást kizáró mintát adtál meg. Melyiket részesíted előnyben?':'Több, egymásnak ellentmondó anyaghatást adtál meg. Melyiket válasszam?':conflict.field==='pattern'?'You specified multiple primary patterns. Which one should take priority?':'You specified conflicting material finishes. Which one should take priority?');
@@ -118,11 +139,11 @@ function buildPlan(brief,type='kit'){
   return {
     creativeDirections:creativeDirections(draft),
     designName:name.slice(0,64),summary:hu?'A kérésből szín-, minta-, stílus- és anyagprofilt állítottam össze.':'Built an editable colour, pattern, style and material profile from your brief.',
-    garment,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
+    garment,garmentColors,baseColor,accentColor,pattern,stripeWidth:width,stripeSpacing:spacing,trim,trimColor:cs[2]?.hex||accentColor,
     seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
     roughness:material==='glossy'?.26:material==='matte'?.9:material==='soft-touch'?.82:.58,
     metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,conflicts,needsClarification:conflicts.length>0||confidence<.55,
-    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,garmentExplicit:explicitGarment,signals:signalCount}
+    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,garmentExplicit:singleGarmentIntent,garmentColors,signals:signalCount}
   };
 }
 export function prependPitchyHistory(items,entry,limit=8){
