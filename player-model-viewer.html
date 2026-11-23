@@ -99,11 +99,12 @@ function inspectUvIslands(mesh,materialIndex){
  return new Set(triangles.map(find)).size;
 }
 function updateModelAudit(root){
- const lines=[];let meshCount=0,skinnedCount=0,boneCount=0,vertices=0,triangles=0,bodyIslandCount=0,bodyMaterialFound=false,bodyTextureFound=false;
+ const lines=[];let meshCount=0,skinnedCount=0,sceneBoneNodes=0,vertices=0,triangles=0,bodyIslandCount=0,bodyMaterialFound=false,bodyTextureFound=false;
+ const skeletons=new Set(),uniqueSkinnedJoints=new Set();let skinnedBoneReferences=0;
  root.traverse(o=>{
-  if(o.isBone)boneCount++;
+  if(o.isBone)sceneBoneNodes++;
   if(!o.isMesh)return;
-  meshCount++;if(o.isSkinnedMesh)skinnedCount++;
+  meshCount++;if(o.isSkinnedMesh){skinnedCount++;const skeleton=o.skeleton;if(skeleton){skeletons.add(skeleton);const bones=skeleton.bones||[];skinnedBoneReferences+=bones.length;for(const bone of bones)if(bone)uniqueSkinnedJoints.add(bone);lines.push('SKELETON · '+(o.name||'unnamed mesh')+' → '+bones.length+' bone references');}}
   const position=o.geometry?.getAttribute('position');vertices+=position?.count||0;
   triangles+=o.geometry?.index?Math.floor(o.geometry.index.count/3):Math.floor((position?.count||0)/3);
   const mats=Array.isArray(o.material)?o.material:[o.material];
@@ -119,7 +120,8 @@ function updateModelAudit(root){
   });
  });
  const kitState=!bodyMaterialFound?'BLOCKED · no material name containing “body”':!bodyTextureFound?'BLOCKED · body material has no base-colour texture':bodyIslandCount<27?'NOT READY · body UV has '+bodyIslandCount+' islands; current Kit Studio expects at least 27':'POTENTIAL UV MATCH · '+bodyIslandCount+' body UV islands; exact garment island mapping still needs verification';
- $('modelAudit').textContent='GEOMETRY · '+meshCount+' meshes · '+skinnedCount+' skinned · '+boneCount+' bones · '+vertices.toLocaleString()+' vertices · '+triangles.toLocaleString()+' triangles\nKIT STUDIO CHECK · '+kitState+'\n'+lines.join('\n');
+ const rigLines=['RIG COUNTS · '+sceneBoneNodes+' scene-graph bone nodes · '+skeletons.size+' skeleton object(s) · '+skinnedBoneReferences+' skinned bone references · '+uniqueSkinnedJoints.size+' unique skinned joints'];
+ $('modelAudit').textContent='GEOMETRY · '+meshCount+' meshes · '+skinnedCount+' skinned · '+vertices.toLocaleString()+' vertices · '+triangles.toLocaleString()+' triangles\n'+rigLines.join('\n')+'\nKIT STUDIO CHECK · '+kitState+'\n'+lines.join('\n');
 }
 function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
 function updateAnimationControls(){const enabled=!!clips.length;$('timeline').disabled=!enabled;$('loop').disabled=!enabled;$('stepBack').disabled=!enabled;$('stepForward').disabled=!enabled}

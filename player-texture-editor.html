@@ -36,6 +36,7 @@ svg{display:block}@media(max-width:900px), (max-height:600px){header{top:9px;lef
 #panel .kit-intro-heading .heading{display:block;margin:3px 0 0;font-size:16px}
 #panel .kit-intro .kit-intro-content{padding:0}
 #panel .kit-intro .intro{margin:8px 0 0}
+.model-source-warning{margin:0 0 13px;padding:11px 12px;border:1px solid #8a6b3e;border-radius:10px;background:#282218;color:#ead6b2;font-size:10px;line-height:1.55}.model-source-warning strong{display:block;margin-bottom:4px;color:#f0d49e;font-size:10px;letter-spacing:.08em}.model-source-warning a{color:#f3d7a6;font-weight:800;text-decoration:underline;text-underline-offset:2px}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
 </head>
@@ -45,7 +46,7 @@ svg{display:block}@media(max-width:900px), (max-height:600px){header{top:9px;lef
 <nav id="previewTools" aria-label="3D preview camera controls"><button class="view-btn active" data-view="front" type="button">FRONT</button><button class="view-btn" data-view="back" type="button">BACK</button><button class="view-btn" data-view="left" type="button">LEFT</button><button class="view-btn" data-view="right" type="button">RIGHT</button><button class="view-btn" id="zoomOut" type="button" aria-label="Zoom out">−</button><button class="view-btn" id="zoomIn" type="button" aria-label="Zoom in">+</button><button class="view-btn" id="resetView" type="button">RESET VIEW</button><button class="view-btn" id="autoRotate" type="button" aria-pressed="false">AUTO ROTATE</button></nav>
 <aside id="panel">
  <button id="panelToggle" type="button" aria-expanded="true" aria-controls="panelContent"><span class="panel-toggle-title">PLAYER KIT STUDIO</span><span class="panel-toggle-icon" aria-hidden="true">−</span></button>
- <div id="panelContent">
+ <div id="panelContent"><div class="model-source-warning"><strong>MODEL SOURCE NOTICE</strong>This editor currently loads the legacy <code>assets/players/player.glb</code>. The live match renderer uses the Mixamo FBX character instead. Kit edits made here do not currently change the in-game Mixamo model. Use the <a href="./player-model-viewer.html">read-only Model Viewer</a> to inspect the Mixamo FBX while its UV layout is being verified.</div>
  <div class="kit-intro">
   <div class="kit-intro-heading"><span class="eyebrow">Appearance editor / 01</span><span class="heading">Player Kit Studio</span></div>
   <div class="kit-intro-content"><p class="intro">Select a kit component and choose a colour. Every colour change is applied immediately to the complete mapped garment. Skin and non-clothing surfaces are protected. The jersey mask includes the torso and all four mapped sleeve panels. Football boots have a separate footwear mask. UVs are projected in the accepted stored orientation (x = u × 1023, y = v × 1024), with no mirroring or rotation. Colour edits do not alter UV coordinates.</p></div>
