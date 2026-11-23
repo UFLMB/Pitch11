@@ -61,6 +61,7 @@ test("match renderer loads generated kit textures by team, role and shirt number
   assert.ok(renderer.includes("getGeneratedPlayerKit(teamSlot, role, number)"));
   assert.ok(renderer.includes("generatedKitPart(node.name)"));
   assert.ok(renderer.includes("copy.map = texture"));
+  assert.ok(renderer.includes("texture.source = new THREE.Source(image)"));
   assert.ok(renderer.includes("copy.color.set(0xffffff)"));
   assert.ok(renderer.includes("this.generatedKitTextureCache = new Map()"));
   assert.ok(renderer.includes("personalizedParts.has(part)"));
