@@ -138,7 +138,7 @@ function getGraphicIslands(key){
 function nearestGraphicPixel(island,x,y){
  const ix=Math.max(0,Math.min(island.width-1,Math.round(x))),iy=Math.max(0,Math.min(island.height-1,Math.round(y))),at=(px,py)=>island.mask[py*island.width+px]>0;
  if(at(ix,iy))return{x:ix,y:iy};
- for(let r=2;r<=Math.max(island.width,island.height)&&r<=96;r+=2){for(let dy=-r;dy<=r;dy+=2){for(let dx=-r;dx<=r;dx+=2){if(Math.abs(dx)!==r&&Math.abs(dy)!==r)continue;const px=ix+dx,py=iy+dy;if(px>=0&&px<island.width&&py>=0&&py<island.height&&at(px,py))return{x:px,y:py}}}}
+ for(let r=1;r<=Math.max(island.width,island.height)&&r<=96;r++){for(let dy=-r;dy<=r;dy++){for(let dx=-r;dx<=r;dx++){if(Math.abs(dx)!==r&&Math.abs(dy)!==r)continue;const px=ix+dx,py=iy+dy;if(px>=0&&px<island.width&&py>=0&&py<island.height&&at(px,py))return{x:px,y:py}}}}
  return null;
 }
 function smartGraphicPoint(key,item){
