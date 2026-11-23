@@ -7,7 +7,9 @@ const viewer = readFileSync(new URL("../player-model-viewer.html", import.meta.u
 
 test("Mixamo Kit Studio loads the active Ch38 FBX independently", () => {
   assert.ok(studio.includes("./input/player-model-candidate/character.fbx"));
-  assert.ok(studio.includes("new FBXLoader()"));
+  assert.ok(studio.includes("new FBXLoader(textureManager)"));
+  assert.ok(studio.includes("await textureLoadsFinished"));
+  assert.ok(studio.includes("textureManager.onLoad=resolveTextureLoads"));
   assert.ok(!studio.includes("GLTFLoader"));
   assert.ok(!studio.includes("assets/players/player.glb"));
 });
@@ -24,6 +26,8 @@ test("garment targets use their own FBX mesh UV0 triangles", () => {
 test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("sourceMaterial.clone()"));
   assert.ok(studio.includes("const texture=map.clone()"));
+  assert.ok(studio.includes("materials.find(material=>material?.map)"));
+  assert.ok(studio.includes("m===sourceMaterial?material:m.clone()"));
   assert.ok(studio.includes("r.texture.image=r.canvas"));
   assert.ok(studio.includes("r.texture.needsUpdate=true"));
 });
