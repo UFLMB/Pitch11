@@ -44,10 +44,10 @@ function coloursIn(s){
 }
 function garmentColoursIn(s){
   const targets={
-    shirt:/\\b(jersey|shirt|top)\\b|mez|felső/i,
-    shorts:/\\b(shorts?|trunks?)\\b|nadrág|sort/i,
-    socks:/\\b(socks?|stockings?)\\b|sportszár|zokni/i,
-    shoes:/\\b(boots?|cleats?|shoes?)\\b|cipő|stoplis/i
+    shirt:/\b(jersey|shirt|top)\b|mez|felső/i,
+    shorts:/\b(shorts?|trunks?)\b|nadrág|sort/i,
+    socks:/\b(socks?|stockings?)\b|sportszár|zokni/i,
+    shoes:/\b(boots?|cleats?|shoes?)\b|cipő|stoplis/i
   };
   const colours=coloursIn(s),result={};
   for(const [key,re] of Object.entries(targets)){
@@ -127,8 +127,8 @@ function buildPlan(brief,type='kit'){
   const explicitPattern=PATTERNS.some(([,re])=>re.test(s))||/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül|aggressive|dynamic|fast|speed|agresszív|dinamikus|sebesség/i.test(s);
   const explicitStyle=/\b(retro|classic|vintage|stealth|minimal|clean|elegant|aggressive|bold|dynamic|speed|futuristic|cyber|neon|luxury|premium|elite)\b|retró|retro|klasszikus|régi iskola|letisztult|elegáns|visszafogott|agresszív|dinamikus|gyors|erőteljes|futurisztikus|neon|jövő|luxus|prémium|elit/i.test(s);
   const explicitMaterial=/\b(glossy|shiny|polished|matte|metallic|chrome|soft.?touch|rubberized)\b|fényes|csillogó|matt|fémes|króm|gumírozott|puha tapintás/i.test(s);
-  const explicitGarment=/\\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
-  const singleGarmentIntent=/\\b(only|just|change only|edit only|this garment only)\\b|\\b(csak|kizárólag)\\s+(?:a\\s+)?(?:mezt|felsőt|nadrágot|sortot|sportszárat|zoknit|cipőt|stoplist)\\b|(?:csak|kizárólag)\\s+(?:ezt\\s+)?(?:a\\s+)?ruhadarabot/i.test(s);
+  const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
+  const singleGarmentIntent=/\b(only|just|change only|edit only|this garment only)\b|\b(csak|kizárólag)\\s+(?:a\\s+)?(?:mezt|felsőt|nadrágot|sortot|sportszárat|zoknit|cipőt|stoplist)\b|(?:csak|kizárólag)\\s+(?:ezt\\s+)?(?:a\\s+)?ruhadarabot/i.test(s);
   const garmentColors=garmentColoursIn(s);
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
   if(!explicitPattern)questions.push(hu?'A mintát még nem határoztad meg; alapértelmezett mintát választottam.':'The pattern is unspecified; I selected a default pattern.');
