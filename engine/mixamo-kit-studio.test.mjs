@@ -144,7 +144,7 @@ test("Mixamo Kit Studio supports reusable team templates and bulk squad texture 
   assert.ok(studio.includes("replaceGeneratedPlayerKits"));
   assert.ok(studio.includes("indexedDB.open('pitch11-team-kit-templates',2)"));
   assert.ok(studio.includes("textures[key].push({materialIndex:layer.materialIndex,blob})"));
-  assert.ok(studio.includes("await replaceGeneratedPlayerKits(teamSlot,role,playerRecords); // generated records are committed atomically
+  assert.ok(studio.includes("await replaceGeneratedPlayerKits(teamSlot,role,playerRecords)"));
   playerRecords.push({schema:'pitch11-generated-player-kit'"));
   assert.ok(studio.includes("MATCH STORAGE"));
   assert.ok(studio.includes("parseTeamRosterCsv(await file.text())"));
