@@ -53,7 +53,7 @@ export function parseTeamRosterCsv(source) {
     const rawNumber = String(rows[i][numberColumn] || "").trim();
     if (!name && !rawNumber) continue;
     if (!name) throw new Error("Missing player name on CSV row " + (i + 1) + ".");
-    if (!/^\d{1,2}$/.test(rawNumber)) throw new Error("Invalid shirt number for " + name + " on CSV row " + (i + 1) + ".");
+    if (!/^\d+$/.test(rawNumber)) throw new Error("Invalid shirt number for " + name + " on CSV row " + (i + 1) + ".");
     const number = Number(rawNumber);
     if (number < 0 || number > 99) throw new Error("Shirt number must be between 0 and 99 for " + name + ".");
     if (seenNumbers.has(number)) throw new Error("Duplicate shirt number: " + number + ".");
