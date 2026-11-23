@@ -49,13 +49,17 @@ function garmentColoursIn(s){
     socks:/\b(socks?|stockings?)\b|sportszár|zokni/i,
     shoes:/\b(boots?|cleats?|shoes?)\b|cipő|stoplis/i
   };
-  const colours=coloursIn(s),result={};
+  const colours=[];
+  for(const [name,hex,re] of COLOURS){for(const m of s.matchAll(new RegExp(re.source,'gi')))colours.push({name,hex,index:m.index,length:m[0].length});}
+  for(const m of s.matchAll(/#[0-9a-f]{6}/gi))colours.push({name:'custom',hex:m[0],index:m.index,length:m[0].length});
+  colours.sort((a,b)=>a.index-b.index);
+  const result={};
   for(const [key,re] of Object.entries(targets)){
     const matches=[...s.matchAll(new RegExp(re.source,'gi'))].map(m=>({index:m.index,length:m[0].length}));
     let best=null;
     for(const garment of matches)for(const colour of colours){
       const colourBefore=colour.index<garment.index;
-      const between=colourBefore?s.slice(colour.index+colour.name.length,garment.index):s.slice(garment.index+garment.length,colour.index);
+      const between=colourBefore?s.slice(colour.index+colour.length,garment.index):s.slice(garment.index+garment.length,colour.index);
       const decorative=/\b(details?|trim|piping|accents?|stripes?|pattern)\b|szegély|részlet|díszítés/i.test(between);
       const distance=colourBefore?garment.index-(colour.index+colour.name.length):colour.index-(garment.index+garment.length);
       if(distance<=42&&!decorative&&(!best||distance<best.distance))best={colour,distance};
