@@ -39,7 +39,7 @@ test("resolves player name and shirt number placeholders without changing static
 });
 
 test("creates a valid uncompressed ZIP with a central directory", async () => {
-  const blob = createStoredZip([{ name: "team/hello.txt", data: "PITCH 11" }]);
+  const blob = await createStoredZip([{ name: "team/hello.txt", data: "PITCH 11" }]);
   const bytes = new Uint8Array(await blob.arrayBuffer());
   const view = new DataView(bytes.buffer);
   assert.equal(view.getUint32(0, true), 0x04034b50);
