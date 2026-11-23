@@ -156,6 +156,6 @@ test("Mixamo Kit Studio inline module script parses as valid JavaScript", () => 
   const end = studio.lastIndexOf("</script>");
   assert.ok(start >= 0 && end > start, "Missing Mixamo Kit Studio module script");
   const source = studio.slice(start + '<script type="module">'.length, end)
-    .split("\\n").filter(line => !line.trim().startsWith("import ")).join("\\n");
+    .split(String.fromCharCode(10)).filter(line => !line.trim().startsWith("import ")).join(String.fromCharCode(10));
   assert.doesNotThrow(() => new Script(source));
 });
