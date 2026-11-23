@@ -83,7 +83,7 @@ import * as THREE from 'three';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mountPitchy} from './engine/pitchy-v2.mjs';
-import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip,saveGeneratedPlayerKit} from './engine/team-kit-template.mjs';
+import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip,replaceGeneratedPlayerKits} from './engine/team-kit-template.mjs';
 const $=id=>document.getElementById(id);
 try{const savedTemplate=JSON.parse(localStorage.getItem('pitch11-team-kit-template-v1')||'null');if(savedTemplate?.schema==='pitch11-team-kit-template'&&savedTemplate.version===1)$('teamTemplateName').value=savedTemplate.teamName||'';}catch{}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
@@ -231,7 +231,7 @@ $('generateSquadPack').addEventListener('click',async()=>{
  let roster;
  try{roster=parseTeamRosterCsv(await file.text());}catch(error){$('error').textContent=error.message;return;}
  button.disabled=true;$('error').textContent='';$('squadPackStatus').textContent='PREPARING '+roster.length+' PLAYER TEXTURE SETS…';
- const entries=[],manifest={schema:'pitch11-generated-kit-pack',version:2,teamName,teamSlot,role,generatedAt:new Date().toISOString(),players:[]};
+ const entries=[],playerRecords=[],manifest={schema:'pitch11-generated-kit-pack',version:2,teamName,teamSlot,role,generatedAt:new Date().toISOString(),players:[]};
  try{
   const teamFolder=safeKitFilename(teamName);
   for(let playerIndex=0;playerIndex<roster.length;playerIndex++){
@@ -249,15 +249,16 @@ $('generateSquadPack').addEventListener('click',async()=>{
      textures[key].push({materialIndex:layer.materialIndex,blob});
      const suffix=record.layers.length>1?'-slot-'+(layerIndex+1):'';
      const path=teamFolder+'/'+playerFolder+'/'+key+suffix+'.png';
-     entries.push({name:path,data:new Uint8Array(await blob.arrayBuffer())});outputFiles.push(path);
+     entries.push({name:path,data:blob});outputFiles.push(path);
     }
    }
-   await saveGeneratedPlayerKit({schema:'pitch11-generated-player-kit',version:1,teamName,teamSlot,role,name:player.name,number:player.number,textures,generatedAt:new Date().toISOString()});
+   playerRecords.push({schema:'pitch11-generated-player-kit',version:1,teamName,teamSlot,role,name:player.name,number:player.number,textures,generatedAt:new Date().toISOString()});
    manifest.players.push({name:player.name,number:player.number,teamSlot,role,files:outputFiles});
    $('squadPackStatus').textContent='RENDERING PLAYER '+(playerIndex+1)+' / '+roster.length+' · '+player.name;
   }
+  await replaceGeneratedPlayerKits(teamSlot,role,playerRecords);
   entries.push({name:teamFolder+'/manifest.json',data:JSON.stringify(manifest,null,2)});
-  const zip=createStoredZip(entries),url=URL.createObjectURL(zip),link=document.createElement('a');
+  const zip=await createStoredZip(entries),url=URL.createObjectURL(zip),link=document.createElement('a');
   link.href=url;link.download=teamFolder+'-squad-textures.zip';document.body.append(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
   $('squadPackStatus').textContent='COMPLETE · '+roster.length+' PLAYERS SAVED TO MATCH STORAGE · '+entries.length+' ZIP FILES READY';
