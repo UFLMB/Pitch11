@@ -54,6 +54,11 @@ test("Mixamo Kit Studio uses the same centered, distance-based model framing as 
   assert.ok(studio.includes("getBoundingSphere(new THREE.Sphere())"));
   assert.ok(studio.includes("distance=radius*3.1"));
   assert.ok(studio.includes("targetY=size.y*.5"));
-  assert.ok(studio.includes("const target=controls.target.clone(),d=distance"));
+  assert.ok(studio.includes("object.updateMatrixWorld(true)"));
+  assert.ok(studio.includes("const positions={front:[0,y,d],back:[0,y,-d],left:[-d,y,0],right:[d,y,0]}"));
+  assert.ok(studio.includes("camera.up.set(0,1,0)"));
+  assert.ok(studio.includes("controls.target.set(0,y,0)"));
+  assert.ok(studio.includes("camera.position.set(...p)"));
+  assert.ok(studio.includes("cameraView('front')"));
   assert.ok(viewer.includes("distance=radius*3.1"));
 });
