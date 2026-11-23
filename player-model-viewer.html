@@ -170,7 +170,7 @@ function updateUvInspector(root){
   source.parent.add(overlay);
  };
  const draw=()=>{
-  clearOverlay();activeIsland=-1;
+  clearOverlay();activeIsland=-1;lastHit=null;lastHitIndex=-1;
   const entry=entries[Number(select.value)]||entries[0];activeEntry=entry;
   const geometry=entry.mesh.geometry,uv=geometry.getAttribute('uv'),index=geometry.index;
   const width=canvas.width,height=canvas.height,pad=18,inner=width-pad*2;
