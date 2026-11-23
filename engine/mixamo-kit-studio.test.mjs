@@ -46,3 +46,14 @@ test("Mixamo Kit Studio provides explicit camera zoom and a collapsible control 
   assert.ok(studio.includes("classList.toggle('collapsed')"));
   assert.ok(studio.includes("aria-expanded"));
 });
+
+
+test("Mixamo Kit Studio uses the same centered, distance-based model framing as the main viewer", () => {
+  assert.ok(studio.includes("object.position.sub(center)"));
+  assert.ok(studio.includes("object.position.y+=size.y/2"));
+  assert.ok(studio.includes("getBoundingSphere(new THREE.Sphere())"));
+  assert.ok(studio.includes("distance=radius*3.1"));
+  assert.ok(studio.includes("targetY=size.y*.5"));
+  assert.ok(studio.includes("const target=controls.target.clone(),d=distance"));
+  assert.ok(viewer.includes("distance=radius*3.1"));
+});
