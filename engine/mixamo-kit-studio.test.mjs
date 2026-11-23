@@ -90,14 +90,21 @@ test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-g
   assert.ok(studio.includes('.garment-selection[aria-disabled="true"]{opacity:.38;pointer-events:none}'));
 });
 
-test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
-  assert.ok(studio.includes("ctx.drawImage(layer.mask,0,0)"));
+test("Mixamo Kit Studio supports CLEAN REPLACE and PRESERVE DETAIL texture treatments", () => {
+  assert.ok(studio.includes('data-texture-treatment="clean"'));
+  assert.ok(studio.includes('data-texture-treatment="preserve"'));
+  assert.ok(studio.includes("let textureTreatment='clean'"));
+  assert.ok(studio.includes("if(textureTreatment==='preserve')"));
+  assert.ok(studio.includes("function applyLayerTreatment(layer)"));
+  assert.ok(studio.includes("layer.material.normalMap=textureTreatment==='clean'?null:layer.originalNormalMap"));
+  assert.ok(studio.includes("layer.material.bumpMap=textureTreatment==='clean'?null:layer.originalBumpMap"));
+  assert.ok(studio.includes("layer.material.displacementMap=textureTreatment==='clean'?null:layer.originalDisplacementMap"));
+  assert.ok(studio.includes("originalNormalMap:material.normalMap"));
+  assert.ok(studio.includes("layer.material.normalMap=layer.originalNormalMap"));
   assert.ok(studio.includes("o.globalCompositeOperation='soft-light'"));
-  assert.ok(studio.includes('o.globalAlpha=.22'));
   assert.ok(studio.includes("o.drawImage(layer.originalAlpha,0,0)"));
   assert.ok(studio.includes("plan.pattern"));
 });
-
 test("ALL mode prepares and validates four independent garment textures before committing", () => {
   assert.ok(studio.includes("const missing=keys.filter(key=>!records.has(key))"));
   assert.ok(studio.includes("const prepared=keys.map(key=>"));
