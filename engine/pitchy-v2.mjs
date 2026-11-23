@@ -122,7 +122,7 @@ function buildPlan(brief,type='kit'){
     seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
     roughness:material==='glossy'?.26:material==='matte'?.9:material==='soft-touch'?.82:.58,
     metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,conflicts,needsClarification:conflicts.length>0||confidence<.55,
-    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,signals:signalCount}
+    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,garmentExplicit:explicitGarment,signals:signalCount}
   };
 }
 export function prependPitchyHistory(items,entry,limit=8){
@@ -130,8 +130,8 @@ export function prependPitchyHistory(items,entry,limit=8){
   return [entry,...(Array.isArray(items)?items:[])].filter(Boolean).slice(0,safeLimit);
 }
 export function analysePitchyBrief(brief,type='kit'){return buildPlan(brief,type);}
-export function mountPitchy({type='kit',onApply}={}){
-  const host=document.querySelector('#panelContent')||document.querySelector('#panel');
+export function mountPitchy({type='kit',onApply,host:hostOverride}={}){
+  const host=hostOverride||document.querySelector('#panelContent')||document.querySelector('#panel');
   if(!host||typeof onApply!=='function')return null;
   if(host.querySelector('.p11-pitchy-card'))return null;
   const style=document.createElement('style');
