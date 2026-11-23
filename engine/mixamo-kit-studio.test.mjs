@@ -35,3 +35,14 @@ test("garment material edits are isolated from shared source materials", () => {
 test("the model viewer exposes a separate Mixamo Kit Studio route", () => {
   assert.ok(viewer.includes('href="./mixamo-kit-studio.html"'));
 });
+
+
+test("Mixamo Kit Studio provides explicit camera zoom and a collapsible control panel", () => {
+  assert.ok(studio.includes('id="zoomIn"'));
+  assert.ok(studio.includes('id="zoomOut"'));
+  assert.ok(studio.includes("controls.dollyIn(1.25)"));
+  assert.ok(studio.includes("controls.dollyOut(1.25)"));
+  assert.ok(studio.includes('id="togglePanel"'));
+  assert.ok(studio.includes("classList.toggle('collapsed')"));
+  assert.ok(studio.includes("aria-expanded"));
+});
