@@ -67,9 +67,10 @@ header{position:fixed;z-index:3;top:12px;left:14px;right:14px;display:flex;justi
 <p class="help">Design the club kit once. Add one PLAYER NAME and one JERSEY NUMBER element to the shirt, then generate every player's garment textures from a CSV roster.</p>
 <div class="graphics-card">
 <label>Team / club name<input id="teamTemplateName" maxlength="40" placeholder="e.g. PITCH 11 FC"></label>
+<div class="graphics-grid"><label>Match team slot<select id="teamSlot"><option value="0">TEAM 0 · HOME</option><option value="1">TEAM 1 · AWAY</option></select></label><label>Squad role<select id="squadRole"><option value="OUTFIELD">OUTFIELD PLAYERS</option><option value="GK">GOALKEEPERS</option></select></label></div>
 <label>Squad roster CSV<input id="squadCsv" type="file" accept=".csv,text/csv"></label>
 <div class="graphics-actions"><button class="action" id="saveTeamTemplate" type="button">SAVE TEAM TEMPLATE</button><button class="action primary" id="generateSquadPack" type="button">GENERATE SQUAD TEXTURE PACK</button></div>
-<div class="graphics-help" id="squadPackStatus">CSV columns: Name, Number. Supports comma, semicolon or tab separators. Exports a ZIP with each player's shirt, shorts, socks and boots textures.</div>
+<div class="graphics-help" id="squadPackStatus">CSV columns: Name, Number. Generated PNG textures are saved to shared browser storage for the match renderer and also exported as a ZIP backup. Generate outfield and goalkeeper kits separately.</div>
 </div></div>
 <div class="section"><div class="section-title">Texture package</div><button class="action primary" id="exportAll" style="width:100%">EXPORT ALL GARMENT TEXTURES</button><button class="action" id="saveGraphics" style="width:100%;margin-top:7px">SAVE GRAPHICS TO THIS BROWSER</button><p class="help">Exports one PNG per garment mesh. These are standalone base-colour texture files; they do not overwrite the source FBX or its embedded images.</p></div>
 <div class="footer">Non-destructive foundation build · original embedded textures are preserved in memory for reset. Hair, skin, eyelashes and gameplay assets are outside this editor's scope.</div>
@@ -82,7 +83,7 @@ import * as THREE from 'three';
 import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mountPitchy} from './engine/pitchy-v2.mjs';
-import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip} from './engine/team-kit-template.mjs';
+import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip,saveGeneratedPlayerKit} from './engine/team-kit-template.mjs';
 const $=id=>document.getElementById(id);
 try{const savedTemplate=JSON.parse(localStorage.getItem('pitch11-team-kit-template-v1')||'null');if(savedTemplate?.schema==='pitch11-team-kit-template'&&savedTemplate.version===1)$('teamTemplateName').value=savedTemplate.teamName||'';}catch{}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
@@ -200,7 +201,7 @@ $('graphicItemTint').addEventListener('change',e=>{const item=activeGraphics().f
 $('duplicateGraphic').addEventListener('click',()=>{const items=activeGraphics(),item=items.find(x=>x.id===selectedGraphicId);if(!item)return;pushGraphicHistory();const copy={...item,id:++graphicSequence,name:item.name+' copy',x:Math.min(.95,item.x+.06),y:Math.min(.95,item.y+.06)};items.push(copy);selectedGraphicId=copy.id;renderGraphics($('graphicGarment').value);refreshGraphicUI()});
 $('deleteGraphic').addEventListener('click',()=>{const key=$('graphicGarment').value,items=activeGraphics(),index=items.findIndex(x=>x.id===selectedGraphicId);if(index<0)return;pushGraphicHistory();items.splice(index,1);selectedGraphicId=null;renderGraphics(key);refreshGraphicUI()});
 function safeKitFilename(value){return String(value||'player').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'player'}
-function openTeamKitDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('This browser does not support IndexedDB.'));return;}const request=indexedDB.open('pitch11-team-kit-templates',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('templates'))request.result.createObjectStore('templates')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open team template storage.'))})}
+function openTeamKitDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('This browser does not support IndexedDB.'));return;}const request=indexedDB.open('pitch11-team-kit-templates',2);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('templates'))db.createObjectStore('templates');if(!db.objectStoreNames.contains('playerKits'))db.createObjectStore('playerKits')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open team template storage.'))})}
 async function writeSavedTeamTemplate(template){const db=await openTeamKitDatabase();await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readwrite');tx.objectStore('templates').put(template,'active');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Could not save team template.'));tx.onabort=()=>reject(tx.error||new Error('Team template save was cancelled.'))});db.close()}
 async function readSavedTeamTemplate(){const db=await openTeamKitDatabase();const value=await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readonly'),request=tx.objectStore('templates').get('active');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error||new Error('Could not read team template.'))});db.close();return value}
 async function restoreTemplateBaseTextures(template){if(!template?.baseTextures)return;for(const key of Object.keys(targets)){const record=records.get(key),images=template.baseTextures[key]||[];if(!record)continue;for(let index=0;index<Math.min(record.layers.length,images.length);index++){const layer=record.layers[index],image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Could not restore '+key+' base texture.'));image.src=images[index]});const canvas=document.createElement('canvas');canvas.width=layer.width;canvas.height=layer.height;canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);layer.canvas=canvas;layer.texture.image=canvas;layer.texture.needsUpdate=true;layer.material.needsUpdate=true;}renderGraphics(key)}}
@@ -222,6 +223,7 @@ $('generateSquadPack').addEventListener('click',async()=>{
  if(!file){$('error').textContent='Choose a squad CSV file first.';return;}
  if(pendingGraphic){$('error').textContent='Finish placing the pending graphic before generating the squad.';return;}
  const teamName=$('teamTemplateName').value.trim()||'PITCH 11 TEAM';
+ const teamSlot=Number($('teamSlot').value)===1?1:0,role=$('squadRole').value==='GK'?'GK':'OUTFIELD';
  const graphics=serializeGraphics(),shirtGraphics=graphics.shirt||[];
  if(!shirtGraphics.some(item=>item.kind==='player-name'&&!item.imageData)||!shirtGraphics.some(item=>item.kind==='number'&&!item.imageData)){
   $('error').textContent='Add one PLAYER NAME and one JERSEY NUMBER graphic to the shirt before generating the squad.';return;
@@ -229,33 +231,36 @@ $('generateSquadPack').addEventListener('click',async()=>{
  let roster;
  try{roster=parseTeamRosterCsv(await file.text());}catch(error){$('error').textContent=error.message;return;}
  button.disabled=true;$('error').textContent='';$('squadPackStatus').textContent='PREPARING '+roster.length+' PLAYER TEXTURE SETS…';
- const entries=[],manifest={schema:'pitch11-generated-kit-pack',version:1,teamName,generatedAt:new Date().toISOString(),players:[]};
+ const entries=[],manifest={schema:'pitch11-generated-kit-pack',version:2,teamName,teamSlot,role,generatedAt:new Date().toISOString(),players:[]};
  try{
   const teamFolder=safeKitFilename(teamName);
   for(let playerIndex=0;playerIndex<roster.length;playerIndex++){
    const player={...roster[playerIndex],teamName};batchPlayer=player;
    const playerFolder=String(playerIndex+1).padStart(2,'0')+'_'+safeKitFilename(player.name)+'_'+player.number;
-   const outputFiles=[];
+   const outputFiles=[],textures={};
    for(const key of Object.keys(targets)){
     const record=records.get(key);if(!record)throw new Error('The '+key+' texture is not loaded.');
     renderGraphics(key);
+    textures[key]=[];
     for(let layerIndex=0;layerIndex<record.layers.length;layerIndex++){
      const layer=record.layers[layerIndex],canvas=layer.displayCanvas||layer.canvas;
      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
      if(!blob)throw new Error('Could not render '+player.name+' / '+key+' texture.');
+     textures[key].push(blob);
      const suffix=record.layers.length>1?'-slot-'+(layerIndex+1):'';
      const path=teamFolder+'/'+playerFolder+'/'+key+suffix+'.png';
      entries.push({name:path,data:new Uint8Array(await blob.arrayBuffer())});outputFiles.push(path);
     }
    }
-   manifest.players.push({name:player.name,number:player.number,files:outputFiles});
+   await saveGeneratedPlayerKit({schema:'pitch11-generated-player-kit',version:1,teamName,teamSlot,role,name:player.name,number:player.number,textures,generatedAt:new Date().toISOString()});
+   manifest.players.push({name:player.name,number:player.number,teamSlot,role,files:outputFiles});
    $('squadPackStatus').textContent='RENDERING PLAYER '+(playerIndex+1)+' / '+roster.length+' · '+player.name;
   }
   entries.push({name:teamFolder+'/manifest.json',data:JSON.stringify(manifest,null,2)});
   const zip=createStoredZip(entries),url=URL.createObjectURL(zip),link=document.createElement('a');
   link.href=url;link.download=teamFolder+'-squad-textures.zip';document.body.append(link);link.click();link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),30000);
-  $('squadPackStatus').textContent='COMPLETE · '+roster.length+' PLAYERS · '+entries.length+' FILES · ZIP READY';
+  $('squadPackStatus').textContent='COMPLETE · '+roster.length+' PLAYERS SAVED TO MATCH STORAGE · '+entries.length+' ZIP FILES READY';
  }catch(error){$('error').textContent='Squad texture generation failed: '+error.message;$('squadPackStatus').textContent='GENERATION FAILED';}
  finally{batchPlayer=null;for(const key of Object.keys(targets))renderGraphics(key);button.disabled=false;}
 });
