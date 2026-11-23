@@ -139,8 +139,8 @@ function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME, fadeSe
 
 function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false, subsReturnMode = "play") {
   // Cutscenes and the walkout are not musical stoppages; fade out during the walkout.
-  if (cutsceneActive) return { active: false, fadeSeconds: 0 };
   if (walkoutActive) return { active: false, fadeSeconds: 3.25 };
+  if (cutsceneActive) return { active: false, fadeSeconds: 0 };
   // Only the main menu, half-time, full-time, and an actual substitution screen qualify.
   if (mode === "menu" || mode === "half" || mode === "full") {
     return { active: true, fadeSeconds: 0 };
