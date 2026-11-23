@@ -149,7 +149,7 @@ export function openTeamKitDatabase() {
 export function teamKitRecordKey(teamSlot, role, number) {
   const team = Number(teamSlot) === 1 ? 1 : 0;
   const normalizedRole = String(role || "OUTFIELD").toUpperCase() === "GK" ? "GK" : "OUTFIELD";
-  const shirtNumber = String(number ?? "").replace(/^0+(?=\\d)/, "");
+  const shirtNumber = String(number ?? "").replace(/^0+(?=\d)/, "");
   return [team, normalizedRole, shirtNumber || "0"].join(":");
 }
 
