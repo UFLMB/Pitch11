@@ -108,7 +108,7 @@ function buildPlan(brief,type='kit'){
   const explicitPattern=PATTERNS.some(([,re])=>re.test(s))||/\b(clean|minimal|plain|solid|simple)\b|egyszerű|letisztult|egyszínű|minta nélkül|aggressive|dynamic|fast|speed|agresszív|dinamikus|sebesség/i.test(s);
   const explicitStyle=/\b(retro|classic|vintage|stealth|minimal|clean|elegant|aggressive|bold|dynamic|speed|futuristic|cyber|neon|luxury|premium|elite)\b|retró|retro|klasszikus|régi iskola|letisztult|elegáns|visszafogott|agresszív|dinamikus|gyors|erőteljes|futurisztikus|neon|jövő|luxus|prémium|elit/i.test(s);
   const explicitMaterial=/\b(glossy|shiny|polished|matte|metallic|chrome|soft.?touch|rubberized)\b|fényes|csillogó|matt|fémes|króm|gumírozott|puha tapintás/i.test(s);
-  const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt|kit)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
+  const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
   if(!explicitPattern)questions.push(hu?'A mintát még nem határoztad meg; alapértelmezett mintát választottam.':'The pattern is unspecified; I selected a default pattern.');
   for(const conflict of conflicts)questions.push(hu?conflict.field==='pattern'?'Több, egymást kizáró mintát adtál meg. Melyiket részesíted előnyben?':'Több, egymásnak ellentmondó anyaghatást adtál meg. Melyiket válasszam?':conflict.field==='pattern'?'You specified multiple primary patterns. Which one should take priority?':'You specified conflicting material finishes. Which one should take priority?');
@@ -122,7 +122,7 @@ function buildPlan(brief,type='kit'){
     seamColor:/\b(black seams?|dark seams?)\b|fekete varrás|sötét varrás/i.test(s)?'#17191d':accentColor,
     roughness:material==='glossy'?.26:material==='matte'?.9:material==='soft-touch'?.82:.58,
     metalness:metallic?.22:.02,decalText:textMatch?.[1]||'',style,material,confidence,questions,conflicts,needsClarification:conflicts.length>0||confidence<.55,
-    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,signals:signalCount}
+    detected:{language:hu?'hu':'en',colours:cs.map(c=>c.hex),pattern,style,material,garment,garmentExplicit:explicitGarment,signals:signalCount}
   };
 }
 export function prependPitchyHistory(items,entry,limit=8){
@@ -130,8 +130,8 @@ export function prependPitchyHistory(items,entry,limit=8){
   return [entry,...(Array.isArray(items)?items:[])].filter(Boolean).slice(0,safeLimit);
 }
 export function analysePitchyBrief(brief,type='kit'){return buildPlan(brief,type);}
-export function mountPitchy({type='kit',onApply}={}){
-  const host=document.querySelector('#panelContent')||document.querySelector('#panel');
+export function mountPitchy({type='kit',onApply,host:hostOverride}={}){
+  const host=hostOverride||document.querySelector('#panelContent')||document.querySelector('#panel');
   if(!host||typeof onApply!=='function')return null;
   if(host.querySelector('.p11-pitchy-card'))return null;
   const style=document.createElement('style');

@@ -60,3 +60,21 @@ test("Mixamo Kit Studio frames the camera in world space without mutating the FB
   assert.ok(!studio.includes("object.position.y+=size.y/2"));
   assert.ok(studio.includes("object.updateMatrixWorld(true)"));
 });
+
+
+test("Pitchy is mounted inside the Mixamo Kit Studio and uses the active Ch38 garment records", () => {
+  assert.ok(studio.includes("import {mountPitchy} from './engine/pitchy-v2.mjs'"));
+  assert.ok(studio.includes('id="pitchyMount"'));
+  assert.ok(studio.includes("mountPitchy({type:'kit',host:$('pitchyMount'),onApply:applyPitchyDesign})"));
+  assert.ok(studio.includes("function applyPitchyDesign(plan)"));
+  assert.ok(studio.includes("Object.keys(targets)"));
+  assert.ok(studio.includes("makePitchyPattern(r,plan)"));
+  assert.ok(studio.includes("r.material.roughness"));
+});
+
+test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
+  assert.ok(studio.includes("ctx.drawImage(record.mask,0,0)"));
+  assert.ok(studio.includes("o.globalCompositeOperation='multiply'"));
+  assert.ok(studio.includes("o.drawImage(record.originalAlpha,0,0)"));
+  assert.ok(studio.includes("plan.pattern"));
+});
