@@ -95,9 +95,10 @@ function inspectUvIslands(mesh,materialIndex){
  const parent=new Map(triangles.map(t=>[t,t]));
  const find=x=>parent.get(x)===x?x:(parent.set(x,find(parent.get(x))),parent.get(x));
  const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent.set(b,a)};
- const point=id=>Math.round(uv.getX(id)*1e5)+','+Math.round(uv.getY(id)*1e5);
+ const position=geometry.getAttribute('position');
+ const vertexKey=id=>[position.getX(id),position.getY(id),position.getZ(id),uv.getX(id),uv.getY(id)].map(v=>Math.round(v*1e5)).join(',');
  const edges=new Map();
- for(const t of triangles){const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);for(let e=0;e<3;e++){const a=point(ids[e]),b=point(ids[(e+1)%3]),key=a<b?a+'|'+b:b+'|'+a;if(edges.has(key))join(t,edges.get(key));else edges.set(key,t)}}
+ for(const t of triangles){const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);for(let e=0;e<3;e++){const a=vertexKey(ids[e]),b=vertexKey(ids[(e+1)%3]),key=a<b?a+'|'+b:b+'|'+a;if(edges.has(key))join(t,edges.get(key));else edges.set(key,t)}}
  return new Set(triangles.map(find)).size;
 }
 function updateModelAudit(root){
@@ -127,7 +128,7 @@ function updateModelAudit(root){
 }
 function updateUvInspector(root){
  const select=$('uvTarget'),canvas=$('uvAtlas'),ctx=canvas.getContext('2d');
- let overlay=null,activeEntry=null,activeIsland=-1,drawState=null;
+ let overlay=null,activeEntry=null,activeIsland=-1,drawState=null,lastHit=null,lastHitIndex=-1;
  const clearOverlay=()=>{if(!overlay)return;overlay.parent?.remove(overlay);overlay.geometry?.dispose();overlay.material?.dispose();overlay=null};
  const entries=[];
  root.traverse(mesh=>{
@@ -169,7 +170,7 @@ function updateUvInspector(root){
   source.parent.add(overlay);
  };
  const draw=()=>{
-  clearOverlay();activeIsland=-1;
+  clearOverlay();activeIsland=-1;lastHit=null;lastHitIndex=-1;
   const entry=entries[Number(select.value)]||entries[0];activeEntry=entry;
   const geometry=entry.mesh.geometry,uv=geometry.getAttribute('uv'),index=geometry.index;
   const width=canvas.width,height=canvas.height,pad=18,inner=width-pad*2;
@@ -179,20 +180,22 @@ function updateUvInspector(root){
   if(image&&image.width&&image.height){const scale=Math.min(inner/image.width,inner/image.height),w=image.width*scale,h=image.height*scale,x=(width-w)/2,y=(height-h)/2;ctx.save();ctx.globalAlpha=.82;ctx.drawImage(image,x,y,w,h);ctx.restore();textureDrawn=true}
   const mapImage=image&&image.width&&image.height?image:null,scale=mapImage?Math.min(inner/mapImage.width,inner/mapImage.height):inner;
   const drawW=mapImage?mapImage.width*scale:inner,drawH=mapImage?mapImage.height*scale:inner,ox=(width-drawW)/2,oy=(height-drawH)/2;
-  const triangles=[],edgeCounts=new Map(),edgePoints=new Map();
+  const triangles=[],edgeCounts=new Map(),edgePoints=new Map(),edgeOwners=new Map();
+  const position=geometry.getAttribute('position');
+  const vertexKey=id=>[position.getX(id),position.getY(id),position.getZ(id),uv.getX(id),uv.getY(id)].map(v=>Math.round(v*1e5)).join(',');
+  const edgeKey=(a,b)=>a<b?a+'|'+b:b+'|'+a;
   for(const group of entry.groups){
    const start=Math.max(0,Math.floor(group.start/3)),end=Math.floor((group.start+group.count)/3);
    for(let t=start;t<end;t++){
-    const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);if(ids.some(id=>id>=uv.count))continue;
+    const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);if(ids.some(id=>id>=uv.count||id>=position.count))continue;
     const points=ids.map(id=>[uv.getX(id),uv.getY(id)]);triangles.push({index:t,ids,points});
-    for(let e=0;e<3;e++){const a=points[e],b=points[(e+1)%3],ka=a.map(v=>Math.round(v*1e5)).join(','),kb=b.map(v=>Math.round(v*1e5)).join(','),key=ka<kb?ka+'|'+kb:kb+'|'+ka;edgeCounts.set(key,(edgeCounts.get(key)||0)+1);if(!edgePoints.has(key))edgePoints.set(key,[a,b])}
+    for(let e=0;e<3;e++){const a=points[e],b=points[(e+1)%3],key=edgeKey(vertexKey(ids[e]),vertexKey(ids[(e+1)%3]));edgeCounts.set(key,(edgeCounts.get(key)||0)+1);if(!edgePoints.has(key))edgePoints.set(key,[a,b]);if(!edgeOwners.has(key))edgeOwners.set(key,[]);edgeOwners.get(key).push(t)}
    }
   }
   const parent=new Map(triangles.map(t=>[t.index,t.index]));
   const find=x=>parent.get(x)===x?x:(parent.set(x,find(parent.get(x))),parent.get(x));
   const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent.set(b,a)};
-  const edgeOwners=new Map();
-  for(const tri of triangles){for(let e=0;e<3;e++){const a=tri.points[e].map(v=>Math.round(v*1e5)).join(','),b=tri.points[(e+1)%3].map(v=>Math.round(v*1e5)).join(','),key=a<b?a+'|'+b:b+'|'+a;if(edgeOwners.has(key))join(tri.index,edgeOwners.get(key));else edgeOwners.set(key,tri.index)}}
+  for(const owners of edgeOwners.values())for(let i=1;i<owners.length;i++)join(owners[0],owners[i]);
   const islandMap=new Map();
   for(const tri of triangles){const id=find(tri.index);if(!islandMap.has(id))islandMap.set(id,{triangles:[],number:islandMap.size+1});islandMap.get(id).triangles.push(tri)}
   const islands=[...islandMap.values()];
@@ -207,13 +210,14 @@ function updateUvInspector(root){
    const rect=canvas.getBoundingClientRect(),x=(event.clientX-rect.left)*canvas.width/rect.width,y=(event.clientY-rect.top)*canvas.height/rect.height;
    if(x<ox||x>ox+drawW||y<oy||y>oy+drawH)return;
    const u=(x-ox)/drawW,v=map?.flipY?(y-oy)/drawH:1-(y-oy)/drawH;
-   let chosen=null;
-   for(const island of islands){for(const tri of island.triangles){if(pointInTriangle([u,v],...tri.points)){chosen=island;break}}if(chosen)break}
-   if(!chosen){clearOverlay();activeIsland=-1;drawBoundaries();$('uvInfo').textContent=entry.label+' · '+islands.length+' UV islands · Click inside an island to highlight its matching surface on the 3D model.';return}
-   activeIsland=chosen.number;buildOverlay(entry,chosen);
+   const hits=islands.filter(island=>island.triangles.some(tri=>pointInTriangle([u,v],...tri.points)));
+   if(!hits.length){clearOverlay();activeIsland=-1;drawBoundaries();$('uvInfo').textContent=entry.label+' · '+islands.length+' UV islands · Click inside an island to highlight its matching surface on the 3D model.';lastHit=null;lastHitIndex=-1;return}
+   const hitKey=Math.round(u*1e4)+','+Math.round(v*1e4);
+   if(hitKey===lastHit)lastHitIndex=(lastHitIndex+1)%hits.length;else{lastHit=hitKey;lastHitIndex=0}
+   const chosen=hits[lastHitIndex];activeIsland=chosen.number;buildOverlay(entry,chosen);
    drawBoundaries();
    for(const tri of chosen.triangles){ctx.beginPath();const p=tri.points.map(mapPoint);ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath();ctx.fillStyle='rgba(34,230,207,.22)';ctx.fill();ctx.strokeStyle='#f5d76e';ctx.lineWidth=1.5;ctx.stroke()}
-   $('uvInfo').textContent=entry.label+' · UV island '+chosen.number+'/'+islands.length+' · '+chosen.triangles.length+' triangles highlighted on the 3D model. Rotate the model to identify the corresponding body surface.';
+   $('uvInfo').textContent=entry.label+' · UV island '+chosen.number+'/'+islands.length+(hits.length>1?' · OVERLAP '+(lastHitIndex+1)+'/'+hits.length+' — tap same spot again to cycle overlapping islands':'')+' · '+chosen.triangles.length+' triangles highlighted on the 3D model. Rotate the model to identify the corresponding body surface.';
   };
   $('uvInfo').textContent=entry.label+' · '+islands.length+' UV island(s) · '+triangles.length.toLocaleString()+' triangles · '+(textureDrawn?'base-colour texture displayed':'no base-colour texture; showing UV layout on grid')+' · Click an island to highlight its matching 3D surface.';
  };
