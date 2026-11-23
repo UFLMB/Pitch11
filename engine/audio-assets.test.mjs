@@ -39,8 +39,10 @@ test("menu audio actions are wired to their intended UI and match lifecycle even
   assert.match(audioModule, /uiBack:\s*new URL\("\.\.\/Audio\/sounds\/ui\/back\/back\.wav"/);
   assert.match(audioModule, /uiConfirm:\s*new URL\("\.\.\/Audio\/sounds\/ui\/confirm\/confirm\.wav"/);
   assert.match(audioModule, /matchStart:\s*new URL\("\.\.\/Audio\/sounds\/ui\/match-start\/match-start\.wav"/);
-  assert.match(game, /AU\.musOn=function\(on,fadeSeconds=0\)\{window\.P11AudioAssets\?\.menuMusic\(!!on,!!G\.mus,\.32,fadeSeconds\);\};/);
-  assert.match(game, /resolveMenuMusicIntent\?\.\(S\.mode,walkoutFade,!!\(CUT\.t>0\)\)/);
+  assert.match(game, /AU\.musOn=function\(on,fadeSeconds=0\)\{window\.P11AudioAssets\?\.menuMusic\(!!on,!!G\.mus,window\.P11LoadingMusicRamp\?1:\.32,fadeSeconds\);\};/);
+  assert.match(game, /window\.P11LoadingMusicRamp=true/);
+  assert.match(game, /this\.musOn\(true,15\)/);
+  assert.match(game, /resolveMenuMusicIntent\?\.\(S\.mode,walkoutFade,!!\(CUT\.t>0\),S\.ret\)/);
   assert.match(game, /const go=s=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('menuOpen'/);
   assert.match(game, /back=\(\)=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiBack'/);
   assert.match(game, /function startGame\(\)\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiConfirm'/);
@@ -60,13 +62,19 @@ test("audio bridge keeps unsupported gameplay events unmapped instead of playing
 });
 
 
-test("menu music follows match interruptions and fades out only for the initial walkout", () => {
-  assert.deepEqual(resolveMenuMusicIntent("menu"), { active: true, fadeSeconds: 0 });
-  assert.deepEqual(resolveMenuMusicIntent("kickoff", true), { active: false, fadeSeconds: 3.25 });
-  for (const mode of ["half", "full", "subs", "whistle", "goal", "replay"]) {
-    assert.deepEqual(resolveMenuMusicIntent(mode), { active: true, fadeSeconds: 0 }, mode);
+test("menu music is limited to menu, substitutions, half-time and full-time", () => {
+  const on = { active: true, fadeSeconds: 0 };
+  const off = { active: false, fadeSeconds: 0 };
+  assert.deepEqual(resolveMenuMusicIntent("menu"), on);
+  assert.deepEqual(resolveMenuMusicIntent("half"), on);
+  assert.deepEqual(resolveMenuMusicIntent("full"), on);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "play"), on);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "half"), on);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "whistle"), off);
+  assert.deepEqual(resolveMenuMusicIntent("subs", false, false, "goal"), off);
+  for (const mode of ["whistle", "goal", "replay", "play", "kickoff"]) {
+    assert.deepEqual(resolveMenuMusicIntent(mode), off, mode);
   }
-  assert.deepEqual(resolveMenuMusicIntent("play", false, true), { active: true, fadeSeconds: 0 });
-  assert.deepEqual(resolveMenuMusicIntent("play"), { active: false, fadeSeconds: 0 });
-  assert.deepEqual(resolveMenuMusicIntent("kickoff"), { active: false, fadeSeconds: 0 });
+  assert.deepEqual(resolveMenuMusicIntent("play", false, true), off);
+  assert.deepEqual(resolveMenuMusicIntent("kickoff", true), { active: false, fadeSeconds: 3.25 });
 });
