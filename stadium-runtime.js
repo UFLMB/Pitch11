@@ -60,11 +60,14 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
  syncRendererSize();
  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.08;renderer.shadowMap.enabled=false;host.appendChild(renderer.domElement);
  const scene=new THREE.Scene();
- const playerRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:mobile?90000:120000});
+ const playerRenderer=new MatchPlayerRenderer(scene,{mobile,modelLoadTimeoutMs:mobile?90000:120000,onProgress:event=>{
+  const total=event.total||0,loaded=event.loaded||0;
+  boot.playerModel={...(boot.playerModel||{}),state:'loading',loaded,total,progress:total>0?Math.min(1,loaded/total):0};
+ }});
  playerRenderer.load().then(()=>{
-  boot.playerModel={state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',error:playerRenderer.error||''};
+  boot.playerModel={...(boot.playerModel||{}),state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',error:playerRenderer.error||'',progress:playerRenderer.status==='ready'?1:(boot.playerModel?.progress||0)};
  }).catch(error=>{
-  boot.playerModel={state:'error',error:error&&error.message?error.message:String(error)};
+  boot.playerModel={...(boot.playerModel||{}),state:'error',error:error&&error.message?error.message:String(error)};
  });
  function createMatchBallTexture(){
   const canvas=document.createElement('canvas');canvas.width=512;canvas.height=256;
