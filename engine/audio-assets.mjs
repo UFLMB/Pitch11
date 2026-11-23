@@ -137,12 +137,17 @@ function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME, fadeSe
   return true;
 }
 
-const INTERRUPTION_MODES = new Set(["half", "full", "subs", "whistle", "goal", "replay"]);
-function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false) {
-  if (mode === "menu" || INTERRUPTION_MODES.has(mode) || cutsceneActive) {
+function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false, subsReturnMode = "play") {
+  // Cutscenes and the walkout are not musical stoppages; fade out during the walkout.
+  if (walkoutActive) return { active: false, fadeSeconds: 3.25 };
+  if (cutsceneActive) return { active: false, fadeSeconds: 0 };
+  // Only the main menu, half-time, full-time, and an actual substitution screen qualify.
+  if (mode === "menu" || mode === "half" || mode === "full") {
     return { active: true, fadeSeconds: 0 };
   }
-  if (walkoutActive) return { active: false, fadeSeconds: 3.25 };
+  if (mode === "subs" && ["play", "half", "full"].includes(subsReturnMode)) {
+    return { active: true, fadeSeconds: 0 };
+  }
   return { active: false, fadeSeconds: 0 };
 }
 
