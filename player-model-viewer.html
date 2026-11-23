@@ -157,7 +157,7 @@ function updateUvInspector(root){
   const drawW=mapImage?mapImage.width*scale:inner,drawH=mapImage?mapImage.height*scale:inner;
   const ox=(width-drawW)/2,oy=(height-drawH)/2;
   ctx.strokeStyle=textureDrawn?'rgba(40,225,210,.88)':'rgba(220,230,240,.82)';ctx.lineWidth=1.25;
-  const edgeCounts=new Map(),edgePoints=new Map(),triangleCount=0;
+  const edgeCounts=new Map(),edgePoints=new Map();let triangleCount=0;
   for(const group of entry.groups){
    const start=Math.max(0,Math.floor(group.start/3)),count=Math.max(0,Math.floor(group.count/3));
    for(let t=start;t<start+count;t++){
