@@ -89,15 +89,18 @@ function dosDateTime(date) {
   };
 }
 
-export function createStoredZip(entries) {
+export async function createStoredZip(entries) {
   const encoder = new TextEncoder();
   const localParts = [], centralParts = [];
   let offset = 0;
   const stamp = dosDateTime(new Date());
   for (const entry of entries) {
     const name = encoder.encode(String(entry.name).replace(/\\/g, "/"));
-    const data = typeof entry.data === "string" ? encoder.encode(entry.data) : entry.data;
-    if (!(data instanceof Uint8Array)) throw new Error("ZIP entry data must be text or Uint8Array.");
+    const source = entry.data;
+    const isBlob = typeof Blob !== "undefined" && source instanceof Blob;
+    const data = typeof source === "string" ? encoder.encode(source) :
+      isBlob ? new Uint8Array(await source.arrayBuffer()) : source;
+    if (!(data instanceof Uint8Array)) throw new Error("ZIP entry data must be text, Blob or Uint8Array.");
     if (name.length > 65535 || data.length > 0xffffffff || offset > 0xffffffff) throw new Error("The generated texture pack is too large for ZIP32.");
     const crc = crc32(data);
     const local = new Uint8Array(30 + name.length);
@@ -106,7 +109,7 @@ export function createStoredZip(entries) {
     lv.setUint16(8, 0, true); lv.setUint16(10, stamp.time, true); lv.setUint16(12, stamp.date, true);
     lv.setUint32(14, crc, true); lv.setUint32(18, data.length, true); lv.setUint32(22, data.length, true);
     lv.setUint16(26, name.length, true); lv.setUint16(28, 0, true); local.set(name, 30);
-    localParts.push(local, data);
+    localParts.push(local, isBlob ? source : data);
     const central = new Uint8Array(46 + name.length);
     const cv = new DataView(central.buffer);
     cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
@@ -199,6 +202,37 @@ export async function deleteGeneratedPlayerKits(teamSlot) {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error || new Error("Could not clear generated player kits."));
       tx.onabort = () => reject(tx.error || new Error("Generated player kit cleanup was cancelled."));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+
+export async function replaceGeneratedPlayerKits(teamSlot, role, records) {
+  const db = await openTeamKitDatabase();
+  const normalizedTeam = Number(teamSlot) === 1 ? 1 : 0;
+  const normalizedRole = String(role || "OUTFIELD").toUpperCase() === "GK" ? "GK" : "OUTFIELD";
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("playerKits", "readwrite");
+      const store = tx.objectStore("playerKits");
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor) {
+          if (Number(cursor.value?.teamSlot) === normalizedTeam &&
+              String(cursor.value?.role || "OUTFIELD").toUpperCase() === normalizedRole) cursor.delete();
+          cursor.continue();
+          return;
+        }
+        for (const record of records || []) {
+          store.put(record, teamKitRecordKey(normalizedTeam, normalizedRole, record.number));
+        }
+      };
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Could not replace generated player kits."));
+      tx.onabort = () => reject(tx.error || new Error("Generated player kit replacement was cancelled."));
     });
   } finally {
     db.close();
