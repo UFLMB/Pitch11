@@ -60,7 +60,7 @@ function garmentColoursIn(s){
     for(const garment of matches)for(const colour of colours){
       const colourBefore=colour.index<garment.index;
       const between=colourBefore?s.slice(colour.index+colour.length,garment.index):s.slice(garment.index+garment.length,colour.index);
-      const decorative=/\b(details?|trim|piping|accents?|stripes?|pattern)\b|szegély|részlet|díszítés/i.test(between);
+      const decorative=/\b(details?|trim|piping|accents?|stripes?|pattern)\b|szegély|részlet|díszítés/i.test(between+' '+s.slice(colour.index+colour.length,colour.index+colour.length+28));
       const distance=colourBefore?garment.index-(colour.index+colour.length):colour.index-(garment.index+garment.length);
       if(distance<=42&&!decorative&&(!best||distance<best.distance))best={colour,distance};
     }
