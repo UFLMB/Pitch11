@@ -130,7 +130,7 @@ export async function createStoredZip(entries) {
 
 
 const TEAM_KIT_DB_NAME = "pitch11-team-kit-templates";
-const TEAM_KIT_DB_VERSION = 2;
+const TEAM_KIT_DB_VERSION = 3;
 
 export function openTeamKitDatabase() {
   return new Promise((resolve, reject) => {
@@ -143,6 +143,7 @@ export function openTeamKitDatabase() {
       const db = request.result;
       if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates");
       if (!db.objectStoreNames.contains("playerKits")) db.createObjectStore("playerKits");
+      if (!db.objectStoreNames.contains("teamKits")) db.createObjectStore("teamKits");
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error || new Error("Could not open team kit database."));
@@ -172,14 +173,33 @@ export async function saveGeneratedPlayerKit(record) {
   }
 }
 
+export function teamKitGroupKey(teamSlot, role) {
+  const team = Number(teamSlot) === 1 ? 1 : 0;
+  const normalizedRole = String(role || "OUTFIELD").toUpperCase() === "GK" ? "GK" : "OUTFIELD";
+  return [team, normalizedRole].join(":");
+}
+
 export async function getGeneratedPlayerKit(teamSlot, role, number) {
   const db = await openTeamKitDatabase();
   try {
     return await new Promise((resolve, reject) => {
-      const tx = db.transaction("playerKits", "readonly");
-      const request = tx.objectStore("playerKits").get(teamKitRecordKey(teamSlot, role, number));
-      request.onsuccess = () => resolve(request.result || null);
-      request.onerror = () => reject(request.error || new Error("Could not read generated player kit."));
+      const tx = db.transaction(["teamKits", "playerKits"], "readonly");
+      const teamRequest = tx.objectStore("teamKits").get(teamKitGroupKey(teamSlot, role));
+      const playerRequest = tx.objectStore("playerKits").get(teamKitRecordKey(teamSlot, role, number));
+      let teamKit, playerKit, teamReady = false, playerReady = false;
+      const finish = () => {
+        if (!teamReady || !playerReady) return;
+        if (!playerKit) { resolve(null); return; }
+        resolve({
+          ...playerKit,
+          personalizedParts: teamKit?.personalizedParts || playerKit.personalizedParts || [],
+          textures: { ...(teamKit?.textures || {}), ...(playerKit.textures || {}) }
+        });
+      };
+      teamRequest.onsuccess = () => { teamKit = teamRequest.result || null; teamReady = true; finish(); };
+      playerRequest.onsuccess = () => { playerKit = playerRequest.result || null; playerReady = true; finish(); };
+      teamRequest.onerror = () => reject(teamRequest.error || new Error("Could not read shared team kit."));
+      playerRequest.onerror = () => reject(playerRequest.error || new Error("Could not read generated player kit."));
     });
   } finally {
     db.close();
@@ -209,15 +229,16 @@ export async function deleteGeneratedPlayerKits(teamSlot) {
 }
 
 
-export async function replaceGeneratedPlayerKits(teamSlot, role, records) {
+export async function replaceGeneratedPlayerKits(teamSlot, role, records, sharedKit) {
   const db = await openTeamKitDatabase();
   const normalizedTeam = Number(teamSlot) === 1 ? 1 : 0;
   const normalizedRole = String(role || "OUTFIELD").toUpperCase() === "GK" ? "GK" : "OUTFIELD";
   try {
     await new Promise((resolve, reject) => {
-      const tx = db.transaction("playerKits", "readwrite");
-      const store = tx.objectStore("playerKits");
-      const request = store.openCursor();
+      const tx = db.transaction(["playerKits", "teamKits"], "readwrite");
+      const playerStore = tx.objectStore("playerKits");
+      const teamStore = tx.objectStore("teamKits");
+      const request = playerStore.openCursor();
       request.onsuccess = () => {
         const cursor = request.result;
         if (cursor) {
@@ -227,8 +248,10 @@ export async function replaceGeneratedPlayerKits(teamSlot, role, records) {
           return;
         }
         for (const record of records || []) {
-          store.put(record, teamKitRecordKey(normalizedTeam, normalizedRole, record.number));
+          playerStore.put(record, teamKitRecordKey(normalizedTeam, normalizedRole, record.number));
         }
+        if (sharedKit) teamStore.put(sharedKit, teamKitGroupKey(normalizedTeam, normalizedRole));
+        else teamStore.delete(teamKitGroupKey(normalizedTeam, normalizedRole));
       };
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error || new Error("Could not replace generated player kits."));
