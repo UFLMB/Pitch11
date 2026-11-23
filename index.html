@@ -46,7 +46,6 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <body>
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <div id="p11-version" aria-label="Game version">v0.1.2</div>
-<script>window.P11LoadingMusicRamp=true;</script>
 <div id="p11-loading-screen" role="status" aria-live="polite" aria-label="Preparing the match">
 <div class="p11-loading-content"><div class="p11-loading-brand">PITCH 11</div><div class="p11-loading-rule"></div>
 <div class="p11-loading-tagline">EVERY MATCH BEGINS WITH A MOMENT.</div>
@@ -58,6 +57,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 </script>
 <script>
 'use strict';
+window.P11LoadingMusicRamp=true;
 /* =====================================================================
    PITCH 11 - stage 26 (more scenes: corner + free-kick intros, players jog back after goals, teams run out for the 2nd half, winners celebrate at full time; fix: throw-in flicker / endless re-throw; match-day cutscenes: kick-off sweep, goal lower-third, foul appeals, penalty angle, offside line, injury orbit, half-time walk-off). Stage 25 (4-way swipes only, redesigned buttons + icons). Stage 24 (goal celebration camera, more shake, bigger sound system). Stage 22 (clean gameplay HUD). Stage 21 (real clubs + players from the CSV, no duplicates, custom club builder). Stage 20 (FC Mobile passing: assist levels, smart targets, live preview, first-time pass, pass-and-go, pressure). Stage 19 (stamina ring + name tag, card zoom, VAR overturns, lineup walk-on, full-time handshake, tackle/key-pass/save ratings, kick power+accuracy meter, tap-to-skip, pill HUD). Stage 18 (FC Mobile HUD, referee cutscenes: cards / subs / VAR, assist ratings). Stage 9c (shots always aim at the opponent goal). Stage 9b (receivers auto-run onto passes and take them). Stage 9 (defending gestures: sprint+tackle, switch, slide, 2nd press, keeper charge). Stage 8: attacking gesture variants. Stage 7: 4-button gesture diamond. Stage 6 (shooting, keepers, tackles tuned). Stage 5: goal replays, radar, match stats, commentary, WebAudio, day/night, settings. Stage 4: menus, clubs, formations, tactics, difficulty, cup, league, save, side cameras. One file, no libraries, works offline.
    Sections: 1 CONFIG | 2 STATE | 3 INPUT | 4 ACTIONS | 5 PHYSICS
