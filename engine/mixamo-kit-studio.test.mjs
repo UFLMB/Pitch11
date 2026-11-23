@@ -68,7 +68,7 @@ test("Pitchy is mounted inside the Mixamo Kit Studio and uses the active Ch38 ga
   assert.ok(studio.includes("mountPitchy({type:'kit',host:$('pitchyMount'),onApply:applyPitchyDesign})"));
   assert.ok(studio.includes("function applyPitchyDesign(plan)"));
   assert.ok(studio.includes("Object.keys(targets)"));
-  assert.ok(studio.includes("makePitchyPattern(r,plan)"));
+  assert.ok(studio.includes("makePitchyPattern(r,plan,key)"));
   assert.ok(studio.includes("r.material.roughness"));
 });
 

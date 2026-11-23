@@ -78,10 +78,28 @@ test('handles an invalid history store without losing the new entry', async () =
 });
 
 
-test('marks whether a garment was explicitly named so whole-kit designs can target every Mixamo garment', () => {
-  const whole = analysePitchyBrief('Create a black and gold kit with diagonal stripes', 'kit');
-  const single = analysePitchyBrief('Create black and gold shorts with diagonal stripes', 'kit');
+test('applies role and full-kit briefs to all garments even when garment names are mentioned', () => {
+  const whole = analysePitchyBrief('Create a referee kit: black shirt, black shorts, black socks and black boots with white details', 'kit');
   assert.equal(whole.detected.garmentExplicit, false);
+  assert.equal(whole.garmentColors.shirt, '#101318');
+  assert.equal(whole.garmentColors.shorts, '#101318');
+  assert.equal(whole.garmentColors.socks, '#101318');
+  assert.equal(whole.garmentColors.shoes, '#101318');
+});
+
+test('supports a different requested colour for each garment', () => {
+  const plan = analysePitchyBrief('Create a kit with a red shirt, white shorts, blue socks and black boots', 'kit');
+  assert.deepEqual(plan.garmentColors, {
+    shirt: '#d62935',
+    shorts: '#f4f3ed',
+    socks: '#1769aa',
+    shoes: '#101318'
+  });
+  assert.equal(plan.detected.garmentExplicit, false);
+});
+
+test('keeps single-garment editing when the prompt explicitly says only', () => {
+  const single = analysePitchyBrief('Change only the shorts to black with gold side panels', 'kit');
   assert.equal(single.detected.garmentExplicit, true);
   assert.equal(single.garment, 'shorts');
 });
