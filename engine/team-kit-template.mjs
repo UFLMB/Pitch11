@@ -124,3 +124,83 @@ export function createStoredZip(entries) {
   ev.setUint32(12, centralSize, true); ev.setUint32(16, offset, true);
   return new Blob([...localParts, ...centralParts, end], { type: "application/zip" });
 }
+
+
+const TEAM_KIT_DB_NAME = "pitch11-team-kit-templates";
+const TEAM_KIT_DB_VERSION = 2;
+
+export function openTeamKitDatabase() {
+  return new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      reject(new Error("IndexedDB is not available in this browser."));
+      return;
+    }
+    const request = indexedDB.open(TEAM_KIT_DB_NAME, TEAM_KIT_DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("templates")) db.createObjectStore("templates");
+      if (!db.objectStoreNames.contains("playerKits")) db.createObjectStore("playerKits");
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Could not open team kit database."));
+  });
+}
+
+export function teamKitRecordKey(teamSlot, role, number) {
+  const team = Number(teamSlot) === 1 ? 1 : 0;
+  const normalizedRole = String(role || "OUTFIELD").toUpperCase() === "GK" ? "GK" : "OUTFIELD";
+  const shirtNumber = String(number ?? "").replace(/^0+(?=\\d)/, "");
+  return [team, normalizedRole, shirtNumber || "0"].join(":");
+}
+
+export async function saveGeneratedPlayerKit(record) {
+  if (!record || !record.textures) throw new Error("Generated player kit record is incomplete.");
+  const db = await openTeamKitDatabase();
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("playerKits", "readwrite");
+      tx.objectStore("playerKits").put(record, teamKitRecordKey(record.teamSlot, record.role, record.number));
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Could not save generated player kit."));
+      tx.onabort = () => reject(tx.error || new Error("Generated player kit save was cancelled."));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function getGeneratedPlayerKit(teamSlot, role, number) {
+  const db = await openTeamKitDatabase();
+  try {
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction("playerKits", "readonly");
+      const request = tx.objectStore("playerKits").get(teamKitRecordKey(teamSlot, role, number));
+      request.onsuccess = () => resolve(request.result || null);
+      request.onerror = () => reject(request.error || new Error("Could not read generated player kit."));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function deleteGeneratedPlayerKits(teamSlot) {
+  const db = await openTeamKitDatabase();
+  try {
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction("playerKits", "readwrite");
+      const store = tx.objectStore("playerKits");
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        if (Number(cursor.value?.teamSlot) === Number(teamSlot)) cursor.delete();
+        cursor.continue();
+      };
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error || new Error("Could not clear generated player kits."));
+      tx.onabort = () => reject(tx.error || new Error("Generated player kit cleanup was cancelled."));
+    });
+  } finally {
+    db.close();
+  }
+}
