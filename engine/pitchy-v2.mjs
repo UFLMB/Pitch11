@@ -80,6 +80,14 @@ function findConflicts(s){
 const HU_PATTERN={'vertical-stripes':'függőleges csíkos','horizontal-stripes':'vízszintes csíkos','diagonal-stripes':'átlós csíkos',chevron:'cikkcakk',checkerboard:'kockás',dots:'pöttyös','side-panels':'oldalpaneles',split:'két tónusú',geometric:'geometrikus',rings:'gyűrűs','panel-graphics':'panelgrafikás',solid:'letisztult'};
 const HU_COLOUR={black:'fekete',white:'fehér',red:'piros',blue:'kék',navy:'sötétkék','sky blue':'világoskék',green:'zöld',lime:'lime',yellow:'sárga',gold:'arany',orange:'narancssárga',purple:'lila',pink:'rózsaszín',grey:'szürke',brown:'barna',custom:'egyedi'};
 const STYLE_ACCENTS={retro:['#c5a46d','#8c3b32'],minimal:['#a3aab4','#d8dce2'],performance:['#a3e635','#f2d22e'],futuristic:['#36d7ff','#a855f7'],premium:['#c5a46d','#f0dfb5'],pro:['#a3e635','#c5a46d']};
+export const PITCHY_ROLE_PRESETS = {
+  player: { label: 'PLAYER', brief: 'Create a professional football player kit in deep navy and white with clean vertical stripes and matte performance fabric.' },
+  referee: { label: 'REFEREE', brief: 'Create a professional referee uniform in black and bright yellow with clean side panels and matte performance fabric.' },
+  assistant: { label: 'ASSISTANT', brief: 'Create an assistant referee uniform in bright yellow and black with subtle diagonal stripes and matte performance fabric.' },
+  coach: { label: 'COACH', brief: 'Create a sideline coach outfit in dark navy and grey with minimal clean panels and matte fabric.' },
+  staff: { label: 'STAFF', brief: 'Create a team staff outfit in charcoal grey and lime with restrained side panels and matte fabric.' },
+  supporter: { label: 'SUPPORTER', brief: 'Create a football supporter outfit in red and white with bold horizontal stripes and a classic style.' }
+};
 function creativeDirections(plan){
   const accents=STYLE_ACCENTS[plan.style]||STYLE_ACCENTS.pro;
   const contrast=luminance(plan.baseColor)<.22?'dark-base':'light-base';
@@ -137,10 +145,18 @@ export function mountPitchy({type='kit',onApply,host:hostOverride}={}){
   const style=document.createElement('style');
   style.textContent='.p11-pitchy-card{margin-top:14px;padding:12px;border:1px solid #8b744d66;border-radius:12px;background:linear-gradient(145deg,#1b2025,#111820);display:grid;gap:8px}.p11-pitchy-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.p11-pitchy-title{font-size:10px;font-weight:850;letter-spacing:.15em;color:#e0c18a}.p11-pitchy-tag{font-size:8px;color:#a3e635}.p11-pitchy-prompt{width:100%;min-height:82px;resize:vertical;padding:10px;border:1px solid #354457;border-radius:9px;background:#0b1119;color:#edf3f8;font:inherit;font-size:11px;line-height:1.5}.p11-pitchy-button{min-height:39px;padding:8px 11px;border:1px solid #b9975c;border-radius:9px;background:linear-gradient(135deg,#c5a46d,#8c6c3c);color:#111;font-size:10px;font-weight:850;cursor:pointer}.p11-pitchy-button:disabled{opacity:.6}.p11-pitchy-status,.p11-pitchy-note{font-size:9px;line-height:1.5;color:#aebbc9}.p11-pitchy-status[data-state=error]{color:#fca5a5}.p11-pitchy-status[data-state=success]{color:#a3e635}.p11-pitchy-chips{display:flex;flex-wrap:wrap;gap:6px}.p11-pitchy-chip{border:1px solid #354457;border-radius:20px;padding:6px 9px;background:#111b26;color:#cbd5e1;font-size:9px}';
   document.head.appendChild(style);
+  style.textContent += '.p11-pitchy-roles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.p11-pitchy-role{min-height:31px;padding:6px 4px;border:1px solid #46576a;border-radius:8px;background:#14202c;color:#dce5ee;font-size:8px;font-weight:850;letter-spacing:.05em}.p11-pitchy-role:active{border-color:#c5a46d;color:#f0d7a5}';
   const card=document.createElement('section');card.className='p11-pitchy-card';
   card.innerHTML='<div class="p11-pitchy-head"><span class="p11-pitchy-title">🤖 PITCHY DESIGN ROBOT</span><span class="p11-pitchy-tag">LOCAL · OFFLINE</span></div><textarea class="p11-pitchy-prompt" maxlength="700" placeholder="'+(type==='ball'?'Describe your match ball design…':'Describe your kit design…')+'"></textarea><div class="p11-pitchy-chips"><button class="p11-pitchy-chip" type="button">Premium</button><button class="p11-pitchy-chip" type="button">Retro</button><button class="p11-pitchy-chip" type="button">Futuristic</button><button class="p11-pitchy-chip" type="button">Performance</button></div><button class="p11-pitchy-button" type="button">Ask PITCHY</button><div class="p11-pitchy-status" aria-live="polite">Ready · English interface</div><div class="p11-pitchy-note">No API · No network · No subscription. Hungarian understanding stays hidden.</div>';
   host.appendChild(card);
   const prompt=card.querySelector('.p11-pitchy-prompt'),button=card.querySelector('.p11-pitchy-button'),status=card.querySelector('.p11-pitchy-status');
+  const rolePicker=document.createElement('div');rolePicker.className='p11-pitchy-roles';rolePicker.setAttribute('aria-label','Character role presets');
+  for(const [id,preset] of Object.entries(PITCHY_ROLE_PRESETS)){
+    const roleButton=document.createElement('button');roleButton.type='button';roleButton.className='p11-pitchy-role';roleButton.dataset.rolePreset=id;roleButton.textContent=preset.label;
+    roleButton.addEventListener('click',()=>{prompt.value=preset.brief;button.click();});
+    rolePicker.appendChild(roleButton);
+  }
+  card.insertBefore(rolePicker,prompt);
   const controls=document.createElement('div');controls.className='p11-pitchy-history-controls';
   controls.innerHTML='<button class="p11-pitchy-chip" type="button" data-action="history">Design history</button><button class="p11-pitchy-chip" type="button" data-action="undo" disabled>Undo last</button>';
   const historyPanel=document.createElement('div');historyPanel.className='p11-pitchy-history';historyPanel.hidden=true;
