@@ -1,0 +1,40 @@
+{
+  "file": "input/player-model-candidate/character.glb",
+  "bytes": 41702024,
+  "meshes": 7,
+  "primitives": 7,
+  "uv0Primitives": 7,
+  "materials": 2,
+  "images": 4,
+  "skins": 1,
+  "joints": 65,
+  "skinnedMeshNodes": 7,
+  "garmentNames": [
+    {
+      "name": "Ch38_Shirt",
+      "node": true,
+      "mesh": true
+    },
+    {
+      "name": "Ch38_Shorts",
+      "node": true,
+      "mesh": true
+    },
+    {
+      "name": "Ch38_Socks",
+      "node": true,
+      "mesh": true
+    },
+    {
+      "name": "Ch38_Shoes",
+      "node": true,
+      "mesh": true
+    }
+  ],
+  "extensionsUsed": [
+    "KHR_materials_specular",
+    "KHR_materials_volume",
+    "FB_ngon_encoding"
+  ],
+  "extensionsRequired": []
+}
