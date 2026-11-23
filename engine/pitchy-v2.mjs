@@ -54,8 +54,11 @@ function garmentColoursIn(s){
     const matches=[...s.matchAll(new RegExp(re.source,'gi'))].map(m=>({index:m.index,length:m[0].length}));
     let best=null;
     for(const garment of matches)for(const colour of colours){
-      const distance=colour.index<garment.index?garment.index-(colour.index+colour.name.length):colour.index-(garment.index+garment.length);
-      if(distance<=42&&(!best||distance<best.distance))best={colour,distance};
+      const colourBefore=colour.index<garment.index;
+      const between=colourBefore?s.slice(colour.index+colour.name.length,garment.index):s.slice(garment.index+garment.length,colour.index);
+      const decorative=/\\b(details?|trim|piping|accents?|stripes?|pattern)\\b|szegély|részlet|díszítés/i.test(between);
+      const distance=colourBefore?garment.index-(colour.index+colour.name.length):colour.index-(garment.index+garment.length);
+      if(distance<=42&&!decorative&&(!best||distance<best.distance))best={colour,distance};
     }
     if(best)result[key]=best.colour.hex;
   }
