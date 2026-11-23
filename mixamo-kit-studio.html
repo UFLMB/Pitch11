@@ -84,6 +84,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import {mountPitchy} from './engine/pitchy-v2.mjs';
 import {parseTeamRosterCsv,resolveKitGraphicText,createStoredZip} from './engine/team-kit-template.mjs';
 const $=id=>document.getElementById(id);
+try{const savedTemplate=JSON.parse(localStorage.getItem('pitch11-team-kit-template-v1')||'null');if(savedTemplate?.schema==='pitch11-team-kit-template'&&savedTemplate.version===1)$('teamTemplateName').value=savedTemplate.teamName||'';}catch{}
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
 const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.01,1000);
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;$('stage').appendChild(renderer.domElement);
@@ -216,7 +217,7 @@ $('generateSquadPack').addEventListener('click',async()=>{
  if(pendingGraphic){$('error').textContent='Finish placing the pending graphic before generating the squad.';return;}
  const teamName=$('teamTemplateName').value.trim()||'PITCH 11 TEAM';
  const graphics=serializeGraphics(),shirtGraphics=graphics.shirt||[];
- if(!shirtGraphics.some(item=>item.kind==='player-name')||!shirtGraphics.some(item=>item.kind==='number')){
+ if(!shirtGraphics.some(item=>item.kind==='player-name'&&!item.imageData)||!shirtGraphics.some(item=>item.kind==='number'&&!item.imageData)){
   $('error').textContent='Add one PLAYER NAME and one JERSEY NUMBER graphic to the shirt before generating the squad.';return;
  }
  let roster;
