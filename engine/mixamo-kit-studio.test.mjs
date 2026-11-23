@@ -99,6 +99,7 @@ test("Mixamo Kit Studio supports CLEAN REPLACE and PRESERVE DETAIL texture treat
   assert.ok(studio.includes("layer.material.normalMap=textureTreatment==='clean'?null:layer.originalNormalMap"));
   assert.ok(studio.includes("layer.material.bumpMap=textureTreatment==='clean'?null:layer.originalBumpMap"));
   assert.ok(studio.includes("layer.material.displacementMap=textureTreatment==='clean'?null:layer.originalDisplacementMap"));
+  assert.ok(studio.includes("layer.material.specularMap=textureTreatment==='clean'?null:layer.originalSpecularMap"));
   assert.ok(studio.includes("originalNormalMap:material.normalMap"));
   assert.ok(studio.includes("layer.material.normalMap=layer.originalNormalMap"));
   assert.ok(studio.includes("o.globalCompositeOperation='soft-light'"));
