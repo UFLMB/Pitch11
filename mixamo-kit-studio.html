@@ -246,7 +246,7 @@ $('generateSquadPack').addEventListener('click',async()=>{
      const layer=record.layers[layerIndex],canvas=layer.displayCanvas||layer.canvas;
      const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
      if(!blob)throw new Error('Could not render '+player.name+' / '+key+' texture.');
-     textures[key].push(blob);
+     textures[key].push({materialIndex:layer.materialIndex,blob});
      const suffix=record.layers.length>1?'-slot-'+(layerIndex+1):'';
      const path=teamFolder+'/'+playerFolder+'/'+key+suffix+'.png';
      entries.push({name:path,data:new Uint8Array(await blob.arrayBuffer())});outputFiles.push(path);
