@@ -42,7 +42,7 @@ test("menu audio actions are wired to their intended UI and match lifecycle even
   assert.match(game, /AU\.musOn=function\(on,fadeSeconds=0\)\{window\.P11AudioAssets\?\.menuMusic\(!!on,!!G\.mus,window\.P11LoadingMusicRamp\?1:\.32,fadeSeconds\);\};/);
   assert.match(game, /window\.P11LoadingMusicRamp=true/);
   assert.match(game, /this\.musOn\(true,15\)/);
-  assert.ok(game.includes("resolveMenuMusicIntent?.(S.mode,walkoutFade,!!(CUT.t>0),S.ret,M.pp==='subs')"));
+  assert.ok(game.includes("resolveMenuMusicIntent?.(S.mode,walkoutFade,!!(CUT.t>0),S.ret,M.pp==='subs',M.pp==='hub'&&S.ret==='play')"));
   assert.match(game, /const go=s=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('menuOpen'/);
   assert.match(game, /back=\(\)=>\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiBack'/);
   assert.match(game, /function startGame\(\)\{p11UiSemanticSound=true;window\.P11AudioAssets\?\.play\('uiConfirm'/);
