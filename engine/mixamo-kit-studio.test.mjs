@@ -28,7 +28,7 @@ test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("map?map.clone():new THREE.CanvasTexture(originalCanvas)"));
   assert.ok(studio.includes("sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material]"));
   assert.ok(studio.includes("for(let materialIndex=0;materialIndex<sourceMaterials.length;materialIndex++)"));
-  assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,mask,canvas:originalCanvas,width:w,height:h})"));
+  assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,originalNormalMap:material.normalMap,originalBumpMap:material.bumpMap,originalDisplacementMap:material.displacementMap,originalSpecularMap:material.specularMap,mask,canvas:originalCanvas,width:w,height:h})"));
   assert.ok(studio.includes("buildMask(mesh,{image:originalCanvas},materialIndex,sourceMaterials.length)"));
   assert.ok(studio.includes("clonedMaterials.push(material)"));
   assert.ok(studio.includes("layer.texture.image=layer.canvas"));
