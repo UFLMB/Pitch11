@@ -6565,23 +6565,37 @@ take=function(p,byHand=false){
 
 
 <script>
-/* Matchday loading: measured progress, held at 85% until every boot dependency is ready. */
+/* Matchday loading: a 15-second pre-match sequence, with real boot readiness as the final gate. */
 (()=>{const screen=document.getElementById('p11-loading-screen');if(!screen)return;
 const fill=document.getElementById('p11-loading-fill'),percent=document.getElementById('p11-loading-percent'),status=document.getElementById('p11-loading-status'),button=document.getElementById('p11-loading-continue');
-const started=performance.now(),messages=['THE STAGE IS SET','UNDER THE LIGHTS','THE CROWD IS WAITING','EVERY SECOND COUNTS','MATCHDAY IS HERE'];
-let finished=false,lastMessage=-1,readyAt=0;
+const started=performance.now(),DURATION=15000,FINAL_PHASE=2000;
+const scenes=[
+{at:0,text:'THE FLOODLIGHTS COME ALIVE'},
+{at:2100,text:'THE PITCH GETS ITS FINAL CHECK'},
+{at:4200,text:'THE STANDS ARE FILLING UP'},
+{at:6300,text:'BOTH TEAMS ARE IN THE TUNNEL'},
+{at:8400,text:'THE PLAYERS WALK OUT'},
+{at:10500,text:'CAPTAINS MEET THE OFFICIALS'},
+{at:12600,text:'KICK-OFF IS JUST MOMENTS AWAY'}
+];
+let finished=false,lastScene=-1;
 const hide=()=>{if(finished)return;finished=true;screen.classList.add('is-hidden');window.setTimeout(()=>screen.remove(),720);};
 button.addEventListener('click',hide);
 const tick=now=>{if(finished)return;const b=window.P11StadiumBoot||{},model=b.playerModel||{};
-const stadiumReady=b.state==='ready',modelReady=model.state==='ready',allReady=stadiumReady&&modelReady;
+const elapsed=now-started,stadiumReady=b.state==='ready',modelReady=model.state==='ready',allReady=stadiumReady&&modelReady;
 const failed=['error','runtime-error'].includes(b.state)||['error','asset-error'].includes(model.state);
 const sp=stadiumReady?1:Math.max(0,Math.min(1,Number(b.progress)||0)),mp=modelReady?1:Math.max(0,Math.min(1,Number(model.progress)||0));
 const measured=(sp*.14+mp*.86)*100;
-const value=allReady?100:Math.min(85,Math.round(measured));
-fill.style.width=value+'%';percent.textContent=value+'%';
-if(allReady){if(!readyAt)readyAt=now;status.textContent='READY FOR KICK-OFF';if(now-readyAt>=420&&now-started>=650)hide();}
-else if(failed){screen.classList.add('has-error');status.textContent='MATCHDAY — READY WHEN YOU ARE';percent.textContent='—';}
-else{const messageIndex=Math.floor((now-started)/2300)%messages.length;if(messageIndex!==lastMessage){lastMessage=messageIndex;status.textContent=messages[messageIndex];}}
+let value=Math.min(85,Math.round(measured));
+if(allReady&&elapsed>=DURATION-FINAL_PHASE)value=Math.min(100,85+Math.round(15*Math.min(1,(elapsed-(DURATION-FINAL_PHASE))/FINAL_PHASE)));
+if(allReady&&elapsed>=DURATION)value=100;
+fill.style.width=value+'%';percent.textContent=failed?'—':value+'%';
+if(failed){screen.classList.add('has-error');status.textContent='MATCHDAY — READY WHEN YOU ARE';}
+else{
+const sceneIndex=scenes.reduce((found,scene,i)=>elapsed>=scene.at?i:found,0);
+if(sceneIndex!==lastScene){lastScene=sceneIndex;status.textContent=scenes[sceneIndex].text;}
+if(allReady&&elapsed>=DURATION){status.textContent='READY FOR KICK-OFF';hide();}
+}
 if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
 </script>
 </body>
