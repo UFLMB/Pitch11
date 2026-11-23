@@ -41,7 +41,7 @@ jobs:
       - name: Convert FBX to glTF 2.0 binary
         run: |
           mkdir -p input/player-model-candidate
-          assimp export input/player-model-candidate/character.fbx input/player-model-candidate/character.glb glb2
+          assimp export input/player-model-candidate/character.fbx input/player-model-candidate/character.glb glb2 -embtex
           test -s input/player-model-candidate/character.glb
           stat -c "Converted GLB: %s bytes" input/player-model-candidate/character.glb
 
