@@ -4795,7 +4795,7 @@ const _rs24=resetSave;resetSave=function(){_rs24();G.cl24=1;applyPreset('classic
 
 /* ===================== 32. PAUSE HUB, MATCH SETTINGS, HALF-TIME / FULL-TIME SCREENS ===================== */
 function tile(x,y,w,h,t,sub,c,fn){UI.r.push({x,y,w,h,fn});glass(x,y,w,h,H*.045,{});orb(x+w/2,y+h*.27,h*.11,c);fit(t,x+w/2,y+h*.58,w*.86,H*.043);fit(sub,x+w/2,y+h*.8,w*.88,H*.027,'rgba(210,222,240,.75)');}
-const _oS=openSubs;openSubs=function(r){_oS(r);M.pp=(r==='half'||r==='full')?'subs':'hub';M.cf2=0;M.st=0;};
+const _oS=openSubs;openSubs=function(r,manualPause=false){_oS(r,manualPause);M.pp=(r==='half'||r==='full')?'subs':'hub';M.cf2=0;M.st=0;};
 const _dS=drawSubs;
 function matchSettings(back){
   ctx.fillStyle='rgba(4,8,16,.84)';ctx.fillRect(0,0,W,H);mtHead('MATCH SETTINGS');ubtn(W*.02,H*.03,W*.14,H*.09,'\u2039 BACK',back);
