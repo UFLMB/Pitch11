@@ -17,7 +17,7 @@ test("garment targets use their own FBX mesh UV0 triangles", () => {
     assert.ok(studio.includes(name), "Missing garment mesh target: " + name);
   }
   assert.ok(studio.includes("mesh.geometry.getAttribute('uv')"));
-  assert.ok(studio.includes("texture.flipY?uv.getY(id):1-uv.getY(id)"));
+  assert.ok(studio.includes("(1-uv.getY(id))*h"));
   assert.ok(studio.includes("ctx.fill()"));
 });
 
