@@ -137,11 +137,39 @@ test('player-opened pause is excluded from Law 7 added-time stoppage accounting'
   assert.equal(law.manualPauseExcludesAddedTime({ mode: 'half', manualPause: true }), false);
 });
 
-test('production clock wrapper excludes only manually opened pause time', async () => {
+test('production pause wrapper forwards the manual-pause flag into the state setter', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /function openSubs\(ret,manualPause=false\)/);
   assert.match(html, /openSubs\(S\.mode,true\)/);
   assert.match(html, /manualPauseExcludesAddedTime\(\{mode:priorMode,manualPause:S\.manualPause\}\)/);
+
+  const wrapper = html.match(/const _oS=openSubs;openSubs=function\(r(?:,manualPause=false)?\)\{[^\n]+\};/);
+  assert.ok(wrapper, 'the production openSubs wrapper must be present');
+  const state = { manualPause: false, ret: null, mode: null };
+  const M = { pp: '', cf2: 9, st: 9 };
+  const context = {
+    S: state, M,
+    openSubs(ret, manualPause = false) {
+      state.ret = ret;
+      state.manualPause = manualPause === true;
+      state.mode = 'subs';
+    }
+  };
+  vm.runInNewContext(wrapper[0], context);
+
+  context.openSubs('play', true);
+  assert.equal(state.manualPause, true, 'manual pause must survive the production wrapper');
+  assert.equal(state.ret, 'play');
+  assert.equal(M.pp, 'hub');
+
+  context.openSubs('whistle');
+  assert.equal(state.manualPause, false, 'automatic interruptions must retain the default false flag');
+  assert.equal(state.ret, 'whistle');
+  assert.equal(M.pp, 'hub');
+
+  context.openSubs('half');
+  assert.equal(state.manualPause, false);
+  assert.equal(M.pp, 'subs');
 });
 
 test('goalkeeper hand control expires only after eight full seconds', () => {
