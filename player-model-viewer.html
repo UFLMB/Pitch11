@@ -36,7 +36,7 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <div class="note" id="modelInfo">Default model: input/player-model-candidate/character.fbx</div>
 </div>
 <div class="group"><div class="group-title">Model / Kit compatibility audit</div><div class="note" id="modelAudit" aria-live="polite">Waiting for model inspection…</div><div class="meta">Read-only diagnostics. UV island count is a structural check only; garment placement still requires visual verification.</div></div>
-<div class="group"><div class="group-title">UV map inspection</div><label class="field">Mesh / material<select id="uvTarget" disabled><option value="">Waiting for model…</option></select></label><canvas id="uvAtlas" width="768" height="768" aria-label="Selected mesh UV layout"></canvas><div class="uv-meta" id="uvInfo">Select a mesh and material to inspect its UV layout. Texture image is shown underneath the UV boundaries when available.</div><div class="meta">Read-only UV diagnostic · No UV coordinates or textures are modified. Garment identity must be confirmed against the 3D surface; UV island counts alone are not proof.</div></div>
+<div class="group"><div class="group-title">UV ↔ 3D triangle mapping</div><label class="field">Mesh / material<select id="uvTarget" disabled><option value="">Waiting for model…</option></select></label><canvas id="uvAtlas" width="768" height="768" aria-label="Selected mesh UV layout"></canvas><div class="uv-meta" id="uvInfo">Select a mesh and material. Click one UV triangle to highlight that exact triangle on the 3D character; click the 3D surface to locate its exact UV triangle. Overlaps can be cycled.</div><div class="meta">Read-only triangle-level diagnostic · Selection uses the source geometry face index and its three UV coordinates. No anatomy is inferred; no UV coordinates, textures, model data or gameplay are modified.</div></div>
 <div class="group"><div class="group-title">Animation</div>
 <label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
 <div class="row"><button id="playPause" disabled>PLAY</button><button id="stop" disabled>STOP</button></div>
@@ -128,7 +128,7 @@ function updateModelAudit(root){
 }
 function updateUvInspector(root){
  const select=$('uvTarget'),canvas=$('uvAtlas'),ctx=canvas.getContext('2d');
- let overlay=null,activeEntry=null,activeIsland=-1,drawState=null,lastHit=null,lastHitIndex=-1;
+ let overlay=null,activeEntry=null,activeIsland=-1,activeTriangle=-1,drawState=null,lastHit=null,lastHitIndex=-1,selectTriangle=()=>{};
  const clearOverlay=()=>{if(!overlay)return;overlay.parent?.remove(overlay);overlay.geometry?.dispose();overlay.material?.dispose();overlay=null};
  const entries=[];
  root.traverse(mesh=>{
@@ -151,10 +151,10 @@ function updateUvInspector(root){
   const u=(dot(v1,v1)*dot(v2,v0)-dot(v0,v1)*dot(v2,v1))/den,v=(dot(v0,v0)*dot(v2,v1)-dot(v0,v1)*dot(v2,v0))/den;
   return u>=-1e-5&&v>=-1e-5&&u+v<=1.00001;
  };
- const buildOverlay=(entry,island)=>{
+ const buildOverlay=(entry,triangleIndices)=>{
   clearOverlay();
   const source=entry.mesh,sourceGeometry=source.geometry,position=sourceGeometry.getAttribute('position'),indices=[];
-  for(const triangle of island.triangles)for(let k=0;k<3;k++)indices.push(sourceGeometry.index?sourceGeometry.index.getX(triangle*3+k):triangle*3+k);
+  for(const triangle of triangleIndices)for(let k=0;k<3;k++)indices.push(sourceGeometry.index?sourceGeometry.index.getX(triangle*3+k):triangle*3+k);
   const geometry=new THREE.BufferGeometry();
   for(const [name,attribute] of Object.entries(sourceGeometry.attributes)){
    const array=new attribute.array.constructor(indices.length*attribute.itemSize);
@@ -170,7 +170,7 @@ function updateUvInspector(root){
   source.parent.add(overlay);
  };
  const draw=()=>{
-  clearOverlay();activeIsland=-1;lastHit=null;lastHitIndex=-1;
+  clearOverlay();activeIsland=-1;activeTriangle=-1;lastHit=null;lastHitIndex=-1;
   const entry=entries[Number(select.value)]||entries[0];activeEntry=entry;
   const geometry=entry.mesh.geometry,uv=geometry.getAttribute('uv'),index=geometry.index;
   const width=canvas.width,height=canvas.height,pad=18,inner=width-pad*2;
@@ -206,22 +206,34 @@ function updateUvInspector(root){
   };
   drawBoundaries();
   drawState={entry,islands,ox,oy,drawW,drawH,map,triangles};
+  selectTriangle=(tri,source,overlapCount=1,overlapIndex=0)=>{
+   activeTriangle=tri.index;activeIsland=-1;buildOverlay(entry,[tri.index]);drawBoundaries();
+   const p=tri.points.map(mapPoint);ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath();ctx.fillStyle="rgba(34,230,207,.34)";ctx.fill();ctx.strokeStyle="#f5d76e";ctx.lineWidth=2.2;ctx.stroke();
+   const uv=tri.points.map(p=>"("+p[0].toFixed(5)+", "+p[1].toFixed(5)+")").join(" · ");
+   $("uvInfo").textContent=entry.label+" · TRIANGLE #"+(tri.index+1)+" · VERTEX UVs "+uv+" · "+source+" → exact matching 3D face highlighted"+(overlapCount>1?" · OVERLAP "+(overlapIndex+1)+"/"+overlapCount+" — tap same UV point again to cycle":"");
+  };
   canvas.onclick=event=>{
    const rect=canvas.getBoundingClientRect(),x=(event.clientX-rect.left)*canvas.width/rect.width,y=(event.clientY-rect.top)*canvas.height/rect.height;
    if(x<ox||x>ox+drawW||y<oy||y>oy+drawH)return;
    const u=(x-ox)/drawW,v=map?.flipY?(y-oy)/drawH:1-(y-oy)/drawH;
-   const hits=islands.filter(island=>island.triangles.some(tri=>pointInTriangle([u,v],...tri.points)));
-   if(!hits.length){clearOverlay();activeIsland=-1;drawBoundaries();$('uvInfo').textContent=entry.label+' · '+islands.length+' UV islands · Click inside an island to highlight its matching surface on the 3D model.';lastHit=null;lastHitIndex=-1;return}
+   const hits=triangles.filter(tri=>pointInTriangle([u,v],...tri.points));
+   if(!hits.length){clearOverlay();activeIsland=-1;activeTriangle=-1;drawBoundaries();$('uvInfo').textContent=entry.label+' · '+islands.length+' UV islands · No triangle at this UV coordinate.';lastHit=null;lastHitIndex=-1;return}
    const hitKey=Math.round(u*1e4)+','+Math.round(v*1e4);
    if(hitKey===lastHit)lastHitIndex=(lastHitIndex+1)%hits.length;else{lastHit=hitKey;lastHitIndex=0}
-   const chosen=hits[lastHitIndex];activeIsland=chosen.number;buildOverlay(entry,chosen);
-   drawBoundaries();
-   for(const tri of chosen.triangles){ctx.beginPath();const p=tri.points.map(mapPoint);ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath();ctx.fillStyle='rgba(34,230,207,.22)';ctx.fill();ctx.strokeStyle='#f5d76e';ctx.lineWidth=1.5;ctx.stroke()}
-   $('uvInfo').textContent=entry.label+' · UV island '+chosen.number+'/'+islands.length+(hits.length>1?' · OVERLAP '+(lastHitIndex+1)+'/'+hits.length+' — tap same spot again to cycle overlapping islands':'')+' · '+chosen.triangles.length+' triangles highlighted on the 3D model. Rotate the model to identify the corresponding body surface.';
+   const chosen=hits[lastHitIndex];selectTriangle(chosen,'UV ATLAS',hits.length,lastHitIndex);
   };
-  $('uvInfo').textContent=entry.label+' · '+islands.length+' UV island(s) · '+triangles.length.toLocaleString()+' triangles · '+(textureDrawn?'base-colour texture displayed':'no base-colour texture; showing UV layout on grid')+' · Click an island to highlight its matching 3D surface.';
+  $('uvInfo').textContent=entry.label+' · '+islands.length+' UV island(s) · '+triangles.length.toLocaleString()+' triangles · '+(textureDrawn?'base-colour texture displayed':'no base-colour texture; showing UV layout on grid')+' · Click an individual triangle for exact 3D correspondence.';
  };
  select.onchange=draw;draw();
+ const modelRaycaster=new THREE.Raycaster(),modelPointer=new THREE.Vector2();let pointerStart=null;
+ renderer.domElement.onpointerdown=event=>{pointerStart={x:event.clientX,y:event.clientY};};
+ renderer.domElement.onpointerup=event=>{
+  if(!pointerStart||Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>6){pointerStart=null;return;}
+  pointerStart=null;if(!activeEntry||!drawState)return;
+  const rect=renderer.domElement.getBoundingClientRect();modelPointer.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);modelRaycaster.setFromCamera(modelPointer,camera);
+  const hit=modelRaycaster.intersectObject(activeEntry.mesh,false).find(item=>item.faceIndex!==undefined&&(item.face?.materialIndex??0)===activeEntry.materialIndex);
+  if(!hit)return;const tri=drawState.triangles.find(item=>item.index===hit.faceIndex);if(tri)selectTriangle(tri,'3D SURFACE');
+ };
 }
 
 function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
