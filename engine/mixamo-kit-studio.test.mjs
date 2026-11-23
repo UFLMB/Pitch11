@@ -48,17 +48,15 @@ test("Mixamo Kit Studio provides explicit camera zoom and a collapsible control 
 });
 
 
-test("Mixamo Kit Studio uses the same centered, distance-based model framing as the main viewer", () => {
-  assert.ok(studio.includes("object.position.sub(center)"));
-  assert.ok(studio.includes("object.position.y+=size.y/2"));
-  assert.ok(studio.includes("getBoundingSphere(new THREE.Sphere())"));
+test("Mixamo Kit Studio frames the camera in world space without mutating the FBX root transform", () => {
+  assert.ok(studio.includes("const box=new THREE.Box3().setFromObject(object)"));
+  assert.ok(studio.includes("const center=box.getCenter(new THREE.Vector3())"));
+  assert.ok(studio.includes("const sphere=box.getBoundingSphere(new THREE.Sphere())"));
+  assert.ok(studio.includes("modelCenter.copy(center)"));
+  assert.ok(studio.includes("controls.target.copy(modelCenter)"));
+  assert.ok(studio.includes("camera.position.copy(modelCenter).add(new THREE.Vector3(...offset))"));
   assert.ok(studio.includes("distance=radius*3.1"));
-  assert.ok(studio.includes("targetY=size.y*.5"));
+  assert.ok(!studio.includes("object.position.sub(center)"));
+  assert.ok(!studio.includes("object.position.y+=size.y/2"));
   assert.ok(studio.includes("object.updateMatrixWorld(true)"));
-  assert.ok(studio.includes("const positions={front:[0,y,d],back:[0,y,-d],left:[-d,y,0],right:[d,y,0]}"));
-  assert.ok(studio.includes("camera.up.set(0,1,0)"));
-  assert.ok(studio.includes("controls.target.set(0,y,0)"));
-  assert.ok(studio.includes("camera.position.set(...p)"));
-  assert.ok(studio.includes("cameraView('front')"));
-  assert.ok(viewer.includes("distance=radius*3.1"));
 });
