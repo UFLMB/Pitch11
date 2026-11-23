@@ -62,3 +62,13 @@ test("match renderer loads generated kit textures by team, role and shirt number
   assert.ok(renderer.includes("copy.color.set(0xffffff)"));
   assert.ok(renderer.includes("this.ensureGeneratedKit(entry, state)"));
 });
+
+
+test("creates a ZIP entry directly from a Blob without changing its bytes", async () => {
+  const source = new Blob(["PITCH 11 PNG DATA"], { type: "image/png" });
+  const blob = await createStoredZip([{ name: "team/shirt.png", data: source }]);
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const text = new TextDecoder().decode(bytes);
+  assert.ok(text.includes("team/shirt.png"));
+  assert.ok(text.includes("PITCH 11 PNG DATA"));
+});
