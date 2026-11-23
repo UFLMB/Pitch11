@@ -1,0 +1,80 @@
+name: Build and audit Mixamo character GLB
+
+on:
+  push:
+    branches: [main, build/mixamo-character-glb]
+    paths:
+      - "scripts/validate-mixamo-glb.mjs"
+      - ".github/workflows/build-mixamo-character-glb.yml"
+      - "input/player-model-candidate/character.fbx"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source FBX from Git LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Verify source asset
+        run: |
+          test -s input/player-model-candidate/character.fbx
+          if grep -q "version https://git-lfs.github.com/spec/v1" input/player-model-candidate/character.fbx; then
+            echo "Git LFS pointer was checked out instead of the FBX binary."
+            exit 1
+          fi
+          stat -c "Source FBX: %s bytes" input/player-model-candidate/character.fbx
+
+      - name: Install Assimp
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes assimp-utils
+          assimp version
+
+      - name: Convert FBX to glTF 2.0 binary
+        run: |
+          mkdir -p input/player-model-candidate
+          assimp export input/player-model-candidate/character.fbx input/player-model-candidate/character.glb glb2 -embtex
+          test -s input/player-model-candidate/character.glb
+          stat -c "Converted GLB: %s bytes" input/player-model-candidate/character.glb
+
+      - name: Validate GLB structure and Mixamo editor requirements
+        run: node scripts/validate-mixamo-glb.mjs
+
+      - name: Upload conversion and audit reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: mixamo-character-glb-conversion
+          path: |
+            input/player-model-candidate/character.glb
+            mixamo-character-glb-audit.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Create isolated GLB candidate branch and pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          git fetch origin main
+          candidate_branch="build/mixamo-character-glb-candidate-${RUN_ID}"
+          git checkout -b "${candidate_branch}" origin/main
+          git lfs install
+          git lfs track "input/player-model-candidate/character.glb"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .gitattributes input/player-model-candidate/character.glb mixamo-character-glb-audit.json
+          git commit -m "Add validated Mixamo character GLB candidate"
+          git push origin "${candidate_branch}"
+          gh pr create \
+            --base main \
+            --head "${candidate_branch}" \
+            --title "Add validated Mixamo character GLB candidate" \
+            --body "Generated from the unchanged source FBX. Structural validation confirms the four required garment targets, UV0, embedded textures, materials, and skinned humanoid rig. This PR only adds the isolated candidate; it does not change the Kit Studio or match renderer."
