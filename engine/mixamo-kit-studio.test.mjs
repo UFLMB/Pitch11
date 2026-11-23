@@ -72,6 +72,16 @@ test("Pitchy is mounted inside the Mixamo Kit Studio and uses the active Ch38 ga
   assert.ok(studio.includes("r.material.roughness"));
 });
 
+test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-garment mode", () => {
+  assert.ok(studio.includes('data-target-mode="all"'));
+  assert.ok(studio.includes('data-target-mode="set"'));
+  assert.ok(studio.includes('let garmentTargetMode=\'all\''));
+  assert.ok(studio.includes("garmentTargetMode==='all'?Object.keys(targets):[active]"));
+  assert.ok(studio.includes("setGarmentTargetMode(b.dataset.targetMode)"));
+  assert.ok(studio.includes("ALL mode applies the Pitchy design to all four garment meshes."));
+  assert.ok(studio.includes("SET mode applies the Pitchy design only to the garment selected below."));
+});
+
 test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
   assert.ok(studio.includes("ctx.drawImage(record.mask,0,0)"));
   assert.ok(studio.includes("o.globalCompositeOperation='multiply'"));
