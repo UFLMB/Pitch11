@@ -152,8 +152,10 @@ test("Mixamo Kit Studio supports reusable team templates and bulk squad texture 
 
 
 test("Mixamo Kit Studio inline module script parses as valid JavaScript", () => {
-  const match = studio.match(/<script type="module">([\\s\\S]*?)<\\/script>/);
-  assert.ok(match, "Missing Mixamo Kit Studio module script");
-  const source = match[1].replace(/^import .*?;\\s*$/gm, "");
+  const start = studio.indexOf('<script type="module">');
+  const end = studio.lastIndexOf("</script>");
+  assert.ok(start >= 0 && end > start, "Missing Mixamo Kit Studio module script");
+  const source = studio.slice(start + '<script type="module">'.length, end)
+    .split("\\n").filter(line => !line.trim().startsWith("import ")).join("\\n");
   assert.doesNotThrow(() => new Script(source));
 });
