@@ -25,7 +25,7 @@ test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("sourceMaterial.clone()"));
   assert.ok(studio.includes("const texture=map.clone()"));
   assert.ok(studio.includes("r.texture.image=r.canvas"));
-  assert.ok(studio.includes("r.texture.image=r.canvas"));
+  assert.ok(studio.includes("r.texture.needsUpdate=true"));
 });
 
 test("the model viewer exposes a separate Mixamo Kit Studio route", () => {
