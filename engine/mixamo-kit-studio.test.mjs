@@ -88,7 +88,18 @@ test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-g
 
 test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
   assert.ok(studio.includes("ctx.drawImage(record.mask,0,0)"));
-  assert.ok(studio.includes("o.globalCompositeOperation='multiply'"));
+  assert.ok(studio.includes("o.globalCompositeOperation='soft-light'"));
+  assert.ok(studio.includes('o.globalAlpha=.22'));
   assert.ok(studio.includes("o.drawImage(record.originalAlpha,0,0)"));
   assert.ok(studio.includes("plan.pattern"));
+});
+
+test("ALL mode prepares and validates four independent garment textures before committing", () => {
+  assert.ok(studio.includes("const missing=keys.filter(key=>!records.has(key))"));
+  assert.ok(studio.includes("const prepared=keys.map(key=>"));
+  assert.ok(studio.includes("prepared.length!==4"));
+  assert.ok(studio.includes("new Set(prepared.map(item=>item.record.texture)).size!==4"));
+  assert.ok(studio.includes("Full-kit design cancelled."));
+  assert.ok(studio.includes("prepared.length+'/'+keys.length+' UPDATED"));
+  assert.ok(studio.includes("r.texture.needsUpdate=true"));
 });
