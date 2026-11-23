@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { Script } from "node:vm";
 import { readFileSync } from "node:fs";
 
 const studio = readFileSync(new URL("../mixamo-kit-studio.html", import.meta.url), "utf8");
@@ -147,4 +148,12 @@ test("Mixamo Kit Studio supports reusable team templates and bulk squad texture 
   assert.ok(studio.includes("openTeamKitDatabase"));
   assert.ok(studio.includes("baseTextures[key]=record.layers.map(layer=>layer.canvas.toDataURL('image/png'))"));
   assert.ok(studio.includes("restoreTemplateBaseTextures(template)"));
+});
+
+
+test("Mixamo Kit Studio inline module script parses as valid JavaScript", () => {
+  const match = studio.match(/<script type="module">([\\s\\S]*?)<\\/script>/);
+  assert.ok(match, "Missing Mixamo Kit Studio module script");
+  const source = match[1].replace(/^import .*?;\\s*$/gm, "");
+  assert.doesNotThrow(() => new Script(source));
 });
