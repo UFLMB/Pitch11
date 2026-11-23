@@ -437,7 +437,7 @@ export class MatchPlayerRenderer {
           if (!texture) {
             const image = await imageFromKitBlob(layer.blob);
             texture = material.map ? material.map.clone() : new THREE.Texture();
-            texture.image = image;
+            texture.source = new THREE.Source(image);
             texture.colorSpace = THREE.SRGBColorSpace;
             texture.needsUpdate = true;
             if (!isPersonalized) this.generatedKitTextureCache.set(cacheKey, texture);
