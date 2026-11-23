@@ -68,6 +68,7 @@ export function parseTeamRosterCsv(source) {
 export function resolveKitGraphicText(item, player) {
   if (item?.kind === "player-name") return String(player?.name || item.text || "");
   if (item?.kind === "number") return String(player?.number ?? item.text ?? "");
+  if (item?.kind === "team-name") return String(player?.teamName || item.text || "");
   return String(item?.text || "");
 }
 
