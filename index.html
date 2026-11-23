@@ -99,7 +99,7 @@ const ovr=s=>Math.round(STK.reduce((a,k)=>a+s[k],0)/7*100);
 
 /* ===================== 2. STATE ===================== */
 const S={mode:'menu',t:0,half:1,clock:0,lostTime:0,addedTime:0,addedTimeAnnounced:0,score:[0,0],kick:0,swCd:0,scorer:null,goalTeam:0,
-  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',so:null,sel:null,pv:null,brk:null,subExits:[],subExitRunners:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
+  ko:true,subs:[0,0],subWindows:[0,0],subWindowUsed:[false,false],reds:[0,0],rs:null,adv:null,msg:null,card:null,wt:0,after:null,inj:null,ret:'play',manualPause:false,so:null,sel:null,pv:null,brk:null,subExits:[],subExitRunners:[],pendingSubs:[],pendingPeriodAction:null,pendingSubsResume:false};
 const ball={x:CX,y:CY,z:0,vx:0,vy:0,vz:0,spin:0,rot:0,owner:null,last:null,receiver:null,tx:0,ty:0,pmode:'',shotId:0,protect:0,hcd:0,contactPickupTicks:0,gkHold:0,gkHoldActive:false,gkHoldWarned:false,gkNoHands:null,gkNoHandsFrom:null,gkReleasedBy:null,restartDoubleTouchPending:null,px:CX,py:CY,pz:0};
 function standardPlayerEquipment(){return{shirtWithSleeves:true,shorts:true,socks:true,shinguards:true,shinguardsCovered:true,footwear:true,dangerousEquipment:false,uncoveredAccessories:false,playerElectronicCommunicationEquipment:false,approvedEPTS:false,inspected:false};}
 const P=[];
@@ -259,7 +259,7 @@ cv.addEventListener('pointerdown',e=>{
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
   if(S.mode==='replay'){RP.skip=1;return;}
   if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){uiTap(e.clientX,e.clientY);return;}
-  if(Math.hypot(e.clientX-pauseBtn.x,e.clientY-pauseBtn.y)<pauseBtn.r*1.4){openSubs(S.mode);return;}
+  if(Math.hypot(e.clientX-pauseBtn.x,e.clientY-pauseBtn.y)<pauseBtn.r*1.4){openSubs(S.mode,true);return;}
   if(Math.hypot(e.clientX-camBtn.x,e.clientY-camBtn.y)<camBtn.r*1.4){cycleCam();return;}
   const b=btnAt(e.clientX,e.clientY);
   if(b){gDown(b.id,e.pointerId,e.clientX,e.clientY);}
@@ -289,7 +289,7 @@ addEventListener('keydown',e=>{
   if(keys[e.code])return;keys[e.code]=true;if(S.mode==='replay'){RP.skip=1;return;}
   if(e.code in KEYACT||e.code.startsWith('Arrow')||e.code==='Enter'||e.code==='KeyU'||e.code==='KeyG')e.preventDefault();
   if(S.mode==='menu'||S.mode==='half'||S.mode==='full'||S.mode==='subs'){if((e.code==='Enter'||e.code==='Space')&&UI.def)UI.def();else if(e.code==='Escape'&&S.mode==='menu')back();return;}
-  if(e.code==='KeyP'){openSubs(S.mode);return;}
+  if(e.code==='KeyP'){openSubs(S.mode,true);return;}
   if(e.code==='KeyC'){cycleCam();return;}
   if(e.code==='KeyG'){gkCharge(0,false);return;}
   if(e.code==='KeyU'){I.skill=true;I.skd=8;return;}
@@ -1412,8 +1412,8 @@ function injured(q){                                       // after the stoppage
   if(t===1){aiSubs(1,1,q);if(q.inj&&!q.out)sendOffForAssessment(q);return false;}
   S.sel=q;openSubs('whistle');return true;
 }
-function openSubs(ret){S.ret=ret;S.mode='subs';M.conf=0;}
-function resumeSubs(){M.instr=0;for(const p of P)if(p.inj&&!p.out){p.limp=true;sendOffForAssessment(p);}S.sel=null;S.pv=null;if(S.subExits.length){S.pendingSubsResume=true;return;}S.mode=S.ret;}
+function openSubs(ret,manualPause=false){S.ret=ret;S.manualPause=manualPause===true;S.mode='subs';M.conf=0;}
+function resumeSubs(){S.manualPause=false;M.instr=0;for(const p of P)if(p.inj&&!p.out){p.limp=true;sendOffForAssessment(p);}S.sel=null;S.pv=null;if(S.subExits.length){S.pendingSubsResume=true;return;}S.mode=S.ret;}
 function rules(){
   const b=ball;
   if(b.restartDoubleTouchPending){
@@ -4835,7 +4835,7 @@ function endScreen(full){
   [['POSSESSION',a,100-a,'%'],['SHOTS',ST.sh[0],ST.sh[1],''],['ON TARGET',ST.sot[0],ST.sot[1],'']].forEach((r,i)=>{const y=H*(.43+i*.062),tot=r[1]+r[2]||1;
     txt(r[1]+r[3],W*.2,y,H*.04,'#fff',800);txt(r[2]+r[3],W*.8,y,H*.04,'#fff',800);txt(r[0],W/2,y,H*.028,'#9fb0c0',700);
     ctx.fillStyle='rgba(0,0,0,.3)';rr(W*.3,y+H*.027,W*.4,H*.009,H*.0045);ctx.fill();ctx.fillStyle=KIT[1].shirt;rr(W*.3,y+H*.027,W*.4,H*.009,H*.0045);ctx.fill();ctx.fillStyle=KIT[0].shirt;rr(W*.3,y+H*.027,W*.4*(r[1]/tot),H*.009,H*.0045);ctx.fill();});
-  const more=()=>{openSubs(S.mode);},cl=M.kind==='cup'||M.kind==='league';
+  const more=()=>{openSubs(S.mode,true);},cl=M.kind==='cup'||M.kind==='league';
   const row=full?[['STATS',()=>{M.st=1;}],['SETTINGS',()=>{more();M.pp='set';}]].concat(cl?[]:[['MENU',finishMatch]]):[['SUBS',()=>openSubs('half')],['TACTICS',()=>{more();M.pp='tact';M.instr=1;}],['STATS',()=>{M.st=1;}],['SETTINGS',()=>{more();M.pp='set';}]];
   const g=W*.015,bw=(W*.8-g*(row.length-1))/row.length;row.forEach((b,i)=>ubtn(W*.1+i*(bw+g),H*.67,bw,H*.1,b[0],b[1],0));
   const hf=full?(cl?finishMatch:rematch):S.brk.fn;ubtn(W*.3,H*.81,W*.4,H*.14,full?(cl?'CONTINUE':'PLAY AGAIN'):S.brk.btn,hf,Y);UI.def=hf;
@@ -5850,7 +5850,7 @@ update=function(){
   const priorMode=S.mode,priorHalf=S.half,practice=!!S.prac;
   _updateLaw7StoppageClock();
   if(practice||S.prac||priorHalf<1||priorHalf>4||S.half!==priorHalf||H>W)return;
-  const stopped=priorMode==='whistle'||priorMode==='goal'||(priorMode==='subs'&&S.ret!=='half')||priorMode==='replay'||
+  const stopped=priorMode==='whistle'||priorMode==='goal'||(priorMode==='subs'&&S.ret!=='half'&&!PITCH11Law.manualPauseExcludesAddedTime({mode:priorMode,manualPause:S.manualPause}))||priorMode==='replay'||
     (priorMode==='kickoff'&&S.clock>0);
   if(!stopped)return;
   S.clock+=DT;
