@@ -79,7 +79,11 @@ test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-g
   assert.ok(studio.includes("garmentTargetMode==='all'?Object.keys(targets):[active]"));
   assert.ok(studio.includes("setGarmentTargetMode(b.dataset.targetMode)"));
   assert.ok(studio.includes("ALL mode applies the Pitchy design to all four garment meshes."));
-  assert.ok(studio.includes("SET mode applies the Pitchy design only to the garment selected below."));
+  assert.ok(studio.includes("SET mode enables garment selection and applies the Pitchy design only to the selected garment."));
+  assert.ok(studio.includes('id="garmentSelection" aria-disabled="true" inert'));
+  assert.ok(studio.includes("selection.inert=disabled"));
+  assert.ok(studio.includes("selection.setAttribute('aria-disabled',String(disabled))"));
+  assert.ok(studio.includes('.garment-selection[aria-disabled="true"]{opacity:.38;pointer-events:none}'));
 });
 
 test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
