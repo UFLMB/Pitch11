@@ -16,7 +16,8 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 .eyebrow{color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.18em}.heading{margin:5px 0 5px;font-size:18px;font-weight:800;letter-spacing:-.03em}.intro{margin:0 0 14px;color:var(--muted);font-size:10px;line-height:1.55}
 .group{margin:13px 0;padding-top:12px;border-top:1px solid var(--line)}.group-title{margin-bottom:8px;color:#c2ccd7;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
 .field{display:grid;gap:6px;margin:9px 0;color:#cbd5e1;font-size:10px}.field input[type=file],.field select{width:100%;min-width:0;padding:10px;border:1px solid var(--line);border-radius:9px;background:#0c151f;color:var(--text);font-size:11px}.field input[type=range]{width:100%;accent-color:var(--gold)}.row{display:flex;gap:7px}.row>*{flex:1;min-width:0}.note{padding:9px 10px;border:1px solid #33413c;border-radius:9px;background:#111b19;color:#b9c9bd;font-size:10px;line-height:1.5}.error{margin-top:9px;color:#fca5a5;font-size:10px;line-height:1.5;white-space:pre-wrap}.meta{margin-top:8px;color:var(--muted);font-size:9px;line-height:1.5;overflow-wrap:anywhere}
-#modelAudit{white-space:pre-line;overflow-wrap:anywhere}\n#hint{position:fixed;z-index:2;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border:1px solid var(--line);border-radius:20px;background:#0b111be8;color:#cbd5e1;font-size:10px;white-space:nowrap;pointer-events:none}
+#modelAudit{white-space:pre-line;overflow-wrap:anywhere}
+#uvAtlas{display:block;width:100%;aspect-ratio:1/1;border:1px solid var(--line);border-radius:10px;background:#0b1119;image-rendering:auto}.uv-meta{margin-top:7px;color:var(--muted);font-size:9px;line-height:1.5}\n#hint{position:fixed;z-index:2;bottom:14px;left:50%;transform:translateX(-50%);padding:8px 12px;border:1px solid var(--line);border-radius:20px;background:#0b111be8;color:#cbd5e1;font-size:10px;white-space:nowrap;pointer-events:none}
 #panelToggle{display:none}.panel-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.panel-title-wrap{min-width:0}#panelToggle{align-items:center;justify-content:center;min-width:38px;min-height:36px;padding:6px 10px;font-size:16px}
 @media(max-width:760px),(max-height:600px){header{top:7px;left:7px;right:7px}.brand,.status{padding:8px 10px}.brand{font-size:10px}.brand small{font-size:8px}#tools{top:54px;left:7px;right:7px;max-width:none;justify-content:center;gap:4px;padding:5px}#tools button,#tools a{flex:1 1 auto;min-width:0;min-height:36px;padding:6px 5px;font-size:9px}#panel{top:auto;left:7px;right:7px;bottom:max(7px,env(safe-area-inset-bottom));width:auto;max-height:42dvh;padding:11px;border-radius:13px}.heading{font-size:16px}.intro{margin-bottom:8px}.group{margin:9px 0;padding-top:8px}.field{margin:7px 0}#hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 43dvh);font-size:9px}#panelToggle{display:inline-flex}#panel.collapsed{top:auto;max-height:none;height:auto;overflow:hidden;padding:8px 10px}#panel.collapsed .panel-content{display:none}#panel.collapsed .panel-top{min-height:36px}body.panel-collapsed #hint{bottom:calc(max(7px,env(safe-area-inset-bottom)) + 58px)}}
 #tools a{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 11px;border:1px solid #9d8046;border-radius:9px;background:linear-gradient(180deg,#6b5731,#382d1b);color:#fff0c9;text-decoration:none;font-size:10px;font-weight:850;letter-spacing:.04em}\n</style>
@@ -35,6 +36,7 @@ button{min-height:38px;padding:8px 11px;border:1px solid #344354;border-radius:9
 <div class="note" id="modelInfo">Default model: input/player-model-candidate/character.fbx</div>
 </div>
 <div class="group"><div class="group-title">Model / Kit compatibility audit</div><div class="note" id="modelAudit" aria-live="polite">Waiting for model inspection…</div><div class="meta">Read-only diagnostics. UV island count is a structural check only; garment placement still requires visual verification.</div></div>
+<div class="group"><div class="group-title">UV map inspection</div><label class="field">Mesh / material<select id="uvTarget" disabled><option value="">Waiting for model…</option></select></label><canvas id="uvAtlas" width="768" height="768" aria-label="Selected mesh UV layout"></canvas><div class="uv-meta" id="uvInfo">Select a mesh and material to inspect its UV layout. Texture image is shown underneath the UV boundaries when available.</div><div class="meta">Read-only UV diagnostic · No UV coordinates or textures are modified. Garment identity must be confirmed against the 3D surface; UV island counts alone are not proof.</div></div>
 <div class="group"><div class="group-title">Animation</div>
 <label class="field">Animation<select id="animationSelect" disabled><option value="">No animation loaded</option></select></label>
 <div class="row"><button id="playPause" disabled>PLAY</button><button id="stop" disabled>STOP</button></div>
@@ -122,6 +124,61 @@ function updateModelAudit(root){
  const kitState=!bodyMaterialFound?'BLOCKED · no material name containing “body”':!bodyTextureFound?'BLOCKED · body material has no base-colour texture':bodyIslandCount<27?'NOT READY · body UV has '+bodyIslandCount+' islands; current Kit Studio expects at least 27':'POTENTIAL UV MATCH · '+bodyIslandCount+' body UV islands; exact garment island mapping still needs verification';
  const rigLines=['RIG COUNTS · '+sceneBoneNodes+' scene-graph bone nodes · '+skeletons.size+' skeleton object(s) · '+skinnedBoneReferences+' skinned bone references · '+uniqueSkinnedJoints.size+' unique skinned joints'];
  $('modelAudit').textContent='GEOMETRY · '+meshCount+' meshes · '+skinnedCount+' skinned · '+vertices.toLocaleString()+' vertices · '+triangles.toLocaleString()+' triangles\n'+rigLines.join('\n')+'\nKIT STUDIO CHECK · '+kitState+'\n'+lines.join('\n');
+}
+function updateUvInspector(root){
+ const select=$('uvTarget'),canvas=$('uvAtlas'),ctx=canvas.getContext('2d');
+ const entries=[];
+ root.traverse(mesh=>{
+  if(!mesh.isMesh||!mesh.geometry?.getAttribute('uv'))return;
+  const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+  mats.forEach((material,materialIndex)=>{
+   if(!material)return;
+   const groups=mesh.geometry.groups?.length?mesh.geometry.groups.filter(g=>g.materialIndex===materialIndex):[{start:0,count:mesh.geometry.index?.count||mesh.geometry.getAttribute('position')?.count||0,materialIndex:0}];
+   if(!groups.length)return;
+   entries.push({mesh,material,materialIndex,groups,label:(mesh.name||'Unnamed mesh')+' / '+(material.name||('Material '+(materialIndex+1)))});
+  });
+ });
+ select.innerHTML='';
+ if(!entries.length){select.add(new Option('No UV0 meshes found',''));select.disabled=true;ctx.clearRect(0,0,canvas.width,canvas.height);$('uvInfo').textContent='No mesh with UV0 coordinates was found.';return}
+ entries.forEach((entry,index)=>select.add(new Option(entry.label,String(index))));
+ select.disabled=false;
+ const draw=()=>{
+  const entry=entries[Number(select.value)]||entries[0],geometry=entry.mesh.geometry,uv=geometry.getAttribute('uv'),index=geometry.index;
+  const width=canvas.width,height=canvas.height,pad=18,inner=width-pad*2;
+  ctx.clearRect(0,0,width,height);ctx.fillStyle='#101923';ctx.fillRect(0,0,width,height);
+  const map=entry.material.map,image=map?.image||map?.source?.data;
+  let textureDrawn=false;
+  if(image&&image.width&&image.height){
+   const scale=Math.min(inner/image.width,inner/image.height),w=image.width*scale,h=image.height*scale,x=(width-w)/2,y=(height-h)/2;
+   ctx.save();ctx.globalAlpha=.82;ctx.drawImage(image,x,y,w,h);ctx.restore();textureDrawn=true;
+  }
+  const mapImage=image&&image.width&&image.height?image:null;
+  const scale=mapImage?Math.min(inner/mapImage.width,inner/mapImage.height):inner;
+  const drawW=mapImage?mapImage.width*scale:inner,drawH=mapImage?mapImage.height*scale:inner;
+  const ox=(width-drawW)/2,oy=(height-drawH)/2;
+  ctx.strokeStyle=textureDrawn?'rgba(40,225,210,.88)':'rgba(220,230,240,.82)';ctx.lineWidth=1.25;
+  const edgeCounts=new Map(),edgePoints=new Map();let triangleCount=0;
+  for(const group of entry.groups){
+   const start=Math.max(0,Math.floor(group.start/3)),count=Math.max(0,Math.floor(group.count/3));
+   for(let t=start;t<start+count;t++){
+    const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);
+    if(ids.some(id=>id>=uv.count))continue;
+    triangleCount++;
+    for(let e=0;e<3;e++){
+     const a=ids[e],b=ids[(e+1)%3],pa=[uv.getX(a),uv.getY(a)],pb=[uv.getX(b),uv.getY(b)];
+     const ka=pa.map(v=>Math.round(v*100000)).join(','),kb=pb.map(v=>Math.round(v*100000)).join(',');
+     const key=ka<kb?ka+'|'+kb:kb+'|'+ka;
+     edgeCounts.set(key,(edgeCounts.get(key)||0)+1);if(!edgePoints.has(key))edgePoints.set(key,[pa,pb]);
+    }
+   }
+  }
+  ctx.beginPath();
+  for(const [key,count] of edgeCounts){if(count!==1)continue;const [a,b]=edgePoints.get(key);const x1=ox+a[0]*drawW,x2=ox+b[0]*drawW;const y1=oy+(map?.flipY?a[1]:1-a[1])*drawH,y2=oy+(map?.flipY?b[1]:1-b[1])*drawH;ctx.moveTo(x1,y1);ctx.lineTo(x2,y2)}
+  ctx.stroke();
+  const islandCount=inspectUvIslands(entry.mesh,entry.materialIndex);
+  $('uvInfo').textContent=entry.label+' · '+islandCount+' UV island(s) · '+triangleCount.toLocaleString()+' triangles · '+(textureDrawn?'base-colour texture displayed':'no base-colour texture; showing UV layout on grid')+' · UV orientation follows the material texture flipY setting.';
+ };
+ select.onchange=draw;draw();
 }
 function updateTimeline(){if(!currentAction)return;const duration=currentAction.getClip().duration||0;const t=Math.max(0,Math.min(duration,currentAction.time));$('timeline').value=String(duration?Math.round(t/duration*1000):0);$('timeReadout').textContent=t.toFixed(2)+' / '+duration.toFixed(2)+' s'}
 function updateAnimationControls(){const enabled=!!clips.length;$('timeline').disabled=!enabled;$('loop').disabled=!enabled;$('stepBack').disabled=!enabled;$('stepForward').disabled=!enabled}
@@ -326,7 +383,7 @@ async function loadModel(url,label,revokeAfter=false){
   const isFbx=/\.fbx(?:$|\?)/i.test(label)||/\.fbx(?:$|\?)/i.test(url);
   const asset=isFbx?await fbxLoader.loadAsync(url):await loader.loadAsync(url);
   if(activeRoot)scene.remove(activeRoot);
-  activeRoot=isFbx?asset:asset.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);updateModelAudit(activeRoot);
+  activeRoot=isFbx?asset:asset.scene;scene.add(activeRoot);frameModel(activeRoot);collectMaterials(activeRoot);updateModelAudit(activeRoot);updateUvInspector(activeRoot);
   mixer=new THREE.AnimationMixer(activeRoot);clips=[...(asset.animations||[])];clipSources=[];
   modelInfo.textContent=label+' · '+clips.length+' embedded clip(s)';
   refreshAnimationList('idle');setStatus(isFbx?'MIXAMO FBX MODEL LOADED':'MODEL LOADED');
