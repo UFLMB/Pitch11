@@ -128,7 +128,7 @@ function buildPlan(brief,type='kit'){
   const explicitStyle=/\b(retro|classic|vintage|stealth|minimal|clean|elegant|aggressive|bold|dynamic|speed|futuristic|cyber|neon|luxury|premium|elite)\b|retró|retro|klasszikus|régi iskola|letisztult|elegáns|visszafogott|agresszív|dinamikus|gyors|erőteljes|futurisztikus|neon|jövő|luxus|prémium|elit/i.test(s);
   const explicitMaterial=/\b(glossy|shiny|polished|matte|metallic|chrome|soft.?touch|rubberized)\b|fényes|csillogó|matt|fémes|króm|gumírozott|puha tapintás/i.test(s);
   const explicitGarment=/\b(shorts?|trunks?|socks?|stockings?|boots?|cleats?|jersey|shirt)\b|nadrág|sort|sportszár|zokni|cipő|stoplis|mez/i.test(s);
-  const singleGarmentIntent=/\b(only|just|change only|edit only|this garment only)\b|\b(csak|kizárólag)\\s+(?:a\\s+)?(?:mezt|felsőt|nadrágot|sortot|sportszárat|zoknit|cipőt|stoplist)\b|(?:csak|kizárólag)\\s+(?:ezt\\s+)?(?:a\\s+)?ruhadarabot/i.test(s);
+  const singleGarmentIntent=/\b(only|just|change only|edit only|this garment only)\b|\b(csak|kizárólag)\s+(?:a\s+)?(?:mezt|felsőt|nadrágot|sortot|sportszárat|zoknit|cipőt|stoplist)\b|(?:csak|kizárólag)\s+(?:ezt\s+)?(?:a\s+)?ruhadarabot/i.test(s);
   const garmentColors=garmentColoursIn(s);
   if(!cs.length)questions.push(hu?'Nem adtál meg konkrét színt; kontrasztos alappalettát választottam.':'No exact colours specified; I selected a high-contrast palette.');
   if(!explicitPattern)questions.push(hu?'A mintát még nem határoztad meg; alapértelmezett mintát választottam.':'The pattern is unspecified; I selected a default pattern.');
