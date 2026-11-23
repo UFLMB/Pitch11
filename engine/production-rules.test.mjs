@@ -625,7 +625,7 @@ test("Law 7 counts match stoppages, adds the lost time back, and shows added-tim
   assert.match(source, /function refreshLaw7AddedTime\(\)/);
   assert.match(source, /S\.lostTime\+=DT/);
   assert.match(source, /priorMode==='whistle'/);
-  assert.match(source, /priorMode==='subs'&&S\.ret!=='half'/);
+  assert.match(source, /priorMode==='subs'&&S\.ret!=='half'&&S\.ret!=='play'&&S\.ret!=='kickoff'/);
   assert.match(source, /priorMode==='kickoff'&&S\.clock>0/);
 });
 
