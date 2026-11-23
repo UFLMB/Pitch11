@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090d12">
+<title>PITCH 11 | Mixamo UV Atlas Viewer</title>
+<script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js","three/addons/":"./vendor/three/examples/jsm/"}}</script>
+<style>
+:root{color-scheme:dark;--bg:#090d12;--panel:#101923;--panel2:#172230;--line:#2b3949;--text:#edf3f8;--muted:#91a0b2;--gold:#d1b27c;--cyan:#46d8c7}
+*{box-sizing:border-box}html,body{margin:0;width:100%;min-height:100%;background:var(--bg);color:var(--text);font:14px Inter,system-ui,-apple-system,"Segoe UI",sans-serif}body{overflow-x:hidden}
+header{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:#090d12ed;backdrop-filter:blur(16px)}
+.brand{font-size:12px;font-weight:900;letter-spacing:.16em}.brand small{display:block;margin-top:4px;color:var(--muted);font-size:9px;letter-spacing:.13em}
+.status{max-width:55vw;color:var(--muted);font-size:10px;letter-spacing:.08em;text-align:right}
+main{display:grid;grid-template-columns:minmax(280px,390px) minmax(0,1fr);gap:12px;padding:12px;max-width:1800px;margin:auto}
+.panel{min-width:0;padding:14px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(155deg,#101923,#0c131c)}
+h1{margin:0 0 6px;font-size:19px;letter-spacing:-.03em}.eyebrow{color:var(--gold);font-size:9px;font-weight:850;letter-spacing:.18em}.intro{margin:0 0 14px;color:var(--muted);font-size:11px;line-height:1.55}
+.section{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}.section h2{margin:0 0 9px;color:#cbd5e1;font-size:10px;letter-spacing:.13em;text-transform:uppercase}
+select,button{font:inherit}select{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#0b131d;color:var(--text);font-size:11px}
+button{min-height:36px;padding:7px 10px;border:1px solid #344354;border-radius:9px;background:#172230;color:#dce5ee;font-size:10px;font-weight:800;cursor:pointer}button.active{border-color:var(--gold);background:#28251f;color:#f0d7a5}.row{display:flex;gap:7px;margin-top:8px}.row>*{flex:1}
+.mesh-list{display:grid;gap:6px}.mesh-item{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid #273545;border-radius:9px;background:#0c151f;font-size:10px}.mesh-item input{accent-color:var(--cyan)}.mesh-item span{min-width:0;flex:1;overflow-wrap:anywhere}.mesh-item small{color:var(--muted);font-size:9px}
+.note{padding:9px 10px;border:1px solid #33413c;border-radius:9px;background:#111b19;color:#b9c9bd;font-size:10px;line-height:1.5}.meta{margin-top:8px;color:var(--muted);font-size:9px;line-height:1.5;overflow-wrap:anywhere}.error{color:#fca5a5;white-space:pre-wrap}
+.viewer-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}.view-card{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:14px;background:#0c131c}.view-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 12px;border-bottom:1px solid var(--line)}.view-head strong{font-size:10px;letter-spacing:.1em}.view-head span{color:var(--muted);font-size:9px}
+#stage{height:min(76vh,850px);min-height:420px;background:radial-gradient(ellipse at 50% 42%,#1b2935,#090d12 70%)}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#atlasWrap{padding:10px}#atlas{display:block;width:100%;aspect-ratio:1/1;background:#101923;border:1px solid #2b3949;border-radius:8px;image-rendering:auto}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}.stat{padding:9px;border:1px solid #273545;border-radius:9px;background:#0c151f}.stat b{display:block;font-size:14px}.stat span{color:var(--muted);font-size:9px}
+@media(max-width:900px){main{grid-template-columns:1fr}.viewer-grid{grid-template-columns:1fr 1fr}#stage{height:56vh;min-height:350px}}
+@media(max-width:620px){header{padding:9px}.status{font-size:9px}main{padding:7px;gap:8px}.panel{padding:11px}.viewer-grid{grid-template-columns:1fr}#stage{height:48vh;min-height:300px}.view-head{padding:9px}}
+</style>
+</head>
+<body>
+<header><div class="brand">PITCH 11<small>DEDICATED MIXAMO UV INSPECTION</small></div><div class="status" id="status">LOADING MIXAMO FBX…</div></header>
+<main>
+<aside class="panel">
+<div class="eyebrow">PITCH 11 · CHARACTER TOOLS</div>
+<h1>Mixamo UV Atlas Viewer</h1>
+<p class="intro">Independent, read-only inspection of the current game character. This page uses the candidate Mixamo FBX directly and does not reuse the legacy GLB atlas, anatomy labels, UV masks or Kit Studio mapping.</p>
+<div class="note">SOURCE · input/player-model-candidate/character.fbx<br>UV SET · UV0 (FBX primary texture coordinates)<br>EDITING · disabled — original model and textures remain unchanged</div>
+<div class="section"><h2>Mesh selection</h2><select id="meshSelect" disabled><option>Waiting for FBX…</option></select><div class="row"><button id="isolate" disabled>ISOLATE SELECTED</button><button id="showAll" disabled>SHOW ALL</button></div><div class="meta" id="meshSummary">Seven source meshes are expected from the foundation audit.</div></div>
+<div class="section"><h2>Mesh visibility</h2><div class="mesh-list" id="meshList"><div class="meta">Mesh controls will appear after loading.</div></div></div>
+<div class="section"><h2>Texture display</h2><div class="row"><button id="textureToggle" class="active" aria-pressed="true" disabled>TEXTURE ON</button><button id="wireToggle" aria-pressed="false" disabled>WIREFRAME OFF</button></div><div class="meta" id="materialInfo">Material and embedded texture details will be shown for the selected mesh.</div></div>
+<div class="section"><h2>UV inspection</h2><div class="stats"><div class="stat"><b id="uvCount">—</b><span>UV vertices</span></div><div class="stat"><b id="triCount">—</b><span>Triangles</span></div><div class="stat"><b id="uvRange">—</b><span>UV range</span></div><div class="stat"><b id="uvArea">—</b><span>Summed UV triangle area</span></div></div><div class="meta" id="uvNotes">Select a mesh to inspect its actual UV0 coordinates over the texture assigned to its material. Overlapping UVs are drawn as-is, not separated or re-packed.</div></div>
+<div class="section"><div class="note">Important: a material may be shared by multiple meshes. The atlas shows the selected mesh's UV coordinates over that mesh's assigned base-colour texture. Hair UV overlap is intentionally preserved for investigation.</div><div class="meta error" id="error" role="alert"></div></div>
+</aside>
+<section class="viewer-grid">
+<div class="view-card"><div class="view-head"><strong>3D CHARACTER</strong><span>DRAG TO ORBIT · PINCH TO ZOOM</span></div><div id="stage"></div></div>
+<div class="view-card"><div class="view-head"><strong>SELECTED MESH · UV0</strong><span id="atlasLabel">TEXTURE BACKDROP</span></div><div id="atlasWrap"><canvas id="atlas" width="1024" height="1024"></canvas><div class="meta" id="atlasMeta">UV island outlines are generated from the selected mesh geometry.</div></div></div>
+</section>
+</main>
+<script type="module">
+import * as THREE from 'three';
+import {FBXLoader} from 'three/addons/loaders/FBXLoader.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const $=id=>document.getElementById(id);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x090d12);
+const camera=new THREE.PerspectiveCamera(38,1,.01,1000);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;$('stage').appendChild(renderer.domElement);
+scene.add(new THREE.HemisphereLight(0xffffff,0x263342,2));const key=new THREE.DirectionalLight(0xffffff,2.1);key.position.set(3,5,4);scene.add(key);const fill=new THREE.DirectionalLight(0x8db8ff,.9);fill.position.set(-4,2,-3);scene.add(fill);
+const controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;controls.target.set(0,1,0);
+const ctx=$('atlas').getContext('2d');let root=null,meshes=[],selected=null,showTexture=true,wireframe=false,materials=[],radius=1;
+const loader=new FBXLoader();
+function resize(){const r=$('stage').getBoundingClientRect();if(!r.width||!r.height)return;camera.aspect=r.width/r.height;camera.updateProjectionMatrix();renderer.setSize(r.width,r.height,false)}
+new ResizeObserver(resize).observe($('stage'));
+function textureImage(map){return map?.image||map?.source?.data||null}
+function imageSize(image){return {w:image?.naturalWidth||image?.videoWidth||image?.width||0,h:image?.naturalHeight||image?.videoHeight||image?.height||0}}
+function meshTriangles(mesh){const g=mesh.geometry,p=g.getAttribute('position'),idx=g.index;return Math.floor((idx?idx.count:p?.count||0)/3)}
+function uvStats(mesh){const uv=mesh.geometry.getAttribute('uv'),idx=mesh.geometry.index,count=meshTriangles(mesh);if(!uv)return null;let minU=Infinity,minV=Infinity,maxU=-Infinity,maxV=-Infinity,area=0,degenerate=0;for(let i=0;i<uv.count;i++){const u=uv.getX(i),v=uv.getY(i);minU=Math.min(minU,u);maxU=Math.max(maxU,u);minV=Math.min(minV,v);maxV=Math.max(maxV,v)}for(let t=0;t<count;t++){const ids=[0,1,2].map(k=>idx?idx.getX(t*3+k):t*3+k),a=ids.map(i=>[uv.getX(i),uv.getY(i)]),v=Math.abs((a[0][0]*(a[1][1]-a[2][1])+a[1][0]*(a[2][1]-a[0][1])+a[2][0]*(a[0][1]-a[1][1]))/2);area+=v;if(v<1e-10)degenerate++}return{count:uv.count,minU,minV,maxU,maxV,area,degenerate,triangles:count}}
+function drawAtlas(mesh){
+ const canvas=$('atlas'),w=canvas.width,h=canvas.height,uv=mesh.geometry.getAttribute('uv'),mats=Array.isArray(mesh.material)?mesh.material:[mesh.material],mat=mats[0]||null,map=mat?.map,image=textureImage(map),size=imageSize(image);
+ ctx.clearRect(0,0,w,h);ctx.fillStyle='#101923';ctx.fillRect(0,0,w,h);
+ let drawn=false;if(showTexture&&image&&size.w&&size.h){ctx.save();if(map?.flipY){ctx.translate(0,h);ctx.scale(1,-1)}ctx.drawImage(image,0,0,w,h);ctx.restore();drawn=true}
+ if(!uv){ctx.fillStyle='#fca5a5';ctx.font='24px system-ui';ctx.fillText('UV0 NOT AVAILABLE',32,55);$('atlasLabel').textContent='NO UV0';return}
+ const pos=mesh.geometry.getAttribute('position'),idx=mesh.geometry.index,triangles=meshTriangles(mesh);
+ ctx.lineWidth=1.2;ctx.strokeStyle='rgba(45,225,207,.86)';ctx.beginPath();
+ const point=(id)=>{const u=uv.getX(id),v=uv.getY(id);return [u*w,(map?.flipY?v:1-v)*h]};
+ for(let t=0;t<triangles;t++){const ids=[0,1,2].map(k=>idx?idx.getX(t*3+k):t*3+k),p=ids.map(point);ctx.moveTo(p[0][0],p[0][1]);ctx.lineTo(p[1][0],p[1][1]);ctx.lineTo(p[2][0],p[2][1]);ctx.closePath()}ctx.stroke();
+ const s=uvStats(mesh);$('atlasLabel').textContent=drawn?(size.w+'×'+size.h+' TEXTURE'):'UV WIREFRAME';
+ $('atlasMeta').textContent=(drawn?'Assigned base-colour texture shown':'No base-colour image available; displaying UVs on graphite')+' · '+triangles.toLocaleString()+' triangles · UVs outside 0–1 are retained.';
+}
+function selectMesh(mesh){selected=mesh;$('meshSelect').value=String(meshes.indexOf(mesh));const s=uvStats(mesh),mats=Array.isArray(mesh.material)?mesh.material:[mesh.material],mat=mats[0],map=mat?.map,img=textureImage(map),dim=imageSize(img);$('uvCount').textContent=s?s.count.toLocaleString():'NONE';$('triCount').textContent=s?s.triangles.toLocaleString():'—';$('uvRange').textContent=s?s.minU.toFixed(2)+'–'+s.maxU.toFixed(2)+' / '+s.minV.toFixed(2)+'–'+s.maxV.toFixed(2):'—';$('uvArea').textContent=s?s.area.toFixed(3):'—';$('uvNotes').textContent=s?'Summed triangle UV area: '+s.area.toFixed(6)+'. Degenerate UV triangles: '+s.degenerate+'. This is a raw UV-space metric, not a count of unique texel coverage.':'No UV0 attribute found.';$('materialInfo').textContent=(mat?.name||'Unnamed material')+' · '+(map?'base-colour map '+(dim.w&&dim.h?dim.w+'×'+dim.h:'image dimensions pending'):'no base-colour map')+' · '+(mesh.isSkinnedMesh?'skinned mesh':'static mesh');drawAtlas(mesh);$('meshSummary').textContent=meshes.length+' meshes loaded · selected: '+(mesh.name||'unnamed');}
+function buildControls(){const list=$('meshList'),select=$('meshSelect');list.innerHTML='';select.innerHTML='';meshes.forEach((mesh,i)=>{const name=mesh.name||'Mesh '+(i+1),opt=new Option(name,String(i));select.add(opt);const label=document.createElement('label');label.className='mesh-item';const check=document.createElement('input');check.type='checkbox';check.checked=mesh.visible;check.addEventListener('change',()=>{mesh.visible=check.checked});const span=document.createElement('span');span.textContent=name;const small=document.createElement('small');small.textContent=meshTriangles(mesh).toLocaleString()+' tri';label.append(check,span,small);list.append(label)});select.disabled=false;$('isolate').disabled=false;$('showAll').disabled=false;$('textureToggle').disabled=false;$('wireToggle').disabled=false;select.addEventListener('change',()=>selectMesh(meshes[Number(select.value)]));}
+function frameModel(object){const box=new THREE.Box3().setFromObject(object),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3());object.position.sub(center);object.position.y+=size.y/2;const sphere=new THREE.Box3().setFromObject(object).getBoundingSphere(new THREE.Sphere());radius=Math.max(sphere.radius,.5);camera.position.set(radius*.2,radius*.65,radius*3.2);camera.near=Math.max(.005,radius/100);camera.far=radius*100;camera.updateProjectionMatrix();controls.target.set(0,size.y*.48,0);controls.minDistance=radius*1.1;controls.maxDistance=radius*8;controls.update();}
+$('isolate').addEventListener('click',()=>{meshes.forEach(m=>m.visible=m===selected);[...$('meshList').querySelectorAll('input')].forEach((c,i)=>c.checked=meshes[i]===selected)});
+$('showAll').addEventListener('click',()=>{meshes.forEach(m=>m.visible=true);[...$('meshList').querySelectorAll('input')].forEach(c=>c.checked=true)});
+$('textureToggle').addEventListener('click',()=>{showTexture=!showTexture;$('textureToggle').textContent=showTexture?'TEXTURE ON':'TEXTURE OFF';$('textureToggle').classList.toggle('active',showTexture);$('textureToggle').setAttribute('aria-pressed',String(showTexture));if(selected)drawAtlas(selected)});
+$('wireToggle').addEventListener('click',()=>{wireframe=!wireframe;materials.forEach(m=>m.wireframe=wireframe);$('wireToggle').textContent=wireframe?'WIREFRAME ON':'WIREFRAME OFF';$('wireToggle').classList.toggle('active',wireframe);$('wireToggle').setAttribute('aria-pressed',String(wireframe))});
+loader.load('./input/player-model-candidate/character.fbx',object=>{
+ root=object;object.traverse(o=>{if(!o.isMesh)return;meshes.push(o);(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m&&!materials.includes(m))materials.push(m)});if(o.geometry.getAttribute('uv')&&!o.geometry.getAttribute('uv1')){}});
+ scene.add(object);frameModel(object);buildControls();const preferred=meshes.find(m=>m.name==='Ch38_Body')||meshes[0];selectMesh(preferred);resize();$('status').textContent='MIXAMO FBX LOADED · '+meshes.length+' MESHES';$('meshSummary').textContent=meshes.length+' source meshes · '+materials.length+' material instances · no legacy atlas mapping';
+},undefined,error=>{$('status').textContent='FBX LOAD FAILED';$('error').textContent='Could not load the candidate FBX. '+(error?.message||String(error))+'\nCheck that the GitHub Pages deployment includes the Git LFS asset.'});
+function animate(){requestAnimationFrame(animate);controls.update();renderer.render(scene,camera)}animate();resize();
+</script>
+</body>
+</html>
