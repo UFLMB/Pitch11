@@ -28,7 +28,7 @@ test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("map?map.clone():new THREE.CanvasTexture(originalCanvas)"));
   assert.ok(studio.includes("sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material]"));
   assert.ok(studio.includes("for(let materialIndex=0;materialIndex<sourceMaterials.length;materialIndex++)"));
-  assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,mask,canvas:originalCanvas,width:w,height:h})"));
+  assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,originalNormalMap:material.normalMap,originalBumpMap:material.bumpMap,originalDisplacementMap:material.displacementMap,originalSpecularMap:material.specularMap,mask,canvas:originalCanvas,width:w,height:h})"));
   assert.ok(studio.includes("buildMask(mesh,{image:originalCanvas},materialIndex,sourceMaterials.length)"));
   assert.ok(studio.includes("clonedMaterials.push(material)"));
   assert.ok(studio.includes("layer.texture.image=layer.canvas"));
@@ -90,14 +90,22 @@ test("Pitchy garment target has an explicit ALL full-kit mode and SET selected-g
   assert.ok(studio.includes('.garment-selection[aria-disabled="true"]{opacity:.38;pointer-events:none}'));
 });
 
-test("Pitchy pattern rendering is clipped to each Mixamo UV0 garment mask and preserves source texture detail", () => {
-  assert.ok(studio.includes("ctx.drawImage(layer.mask,0,0)"));
+test("Mixamo Kit Studio supports CLEAN REPLACE and PRESERVE DETAIL texture treatments", () => {
+  assert.ok(studio.includes('data-texture-treatment="clean"'));
+  assert.ok(studio.includes('data-texture-treatment="preserve"'));
+  assert.ok(studio.includes("let textureTreatment='clean'"));
+  assert.ok(studio.includes("if(textureTreatment==='preserve')"));
+  assert.ok(studio.includes("function applyLayerTreatment(layer)"));
+  assert.ok(studio.includes("layer.material.normalMap=textureTreatment==='clean'?null:layer.originalNormalMap"));
+  assert.ok(studio.includes("layer.material.bumpMap=textureTreatment==='clean'?null:layer.originalBumpMap"));
+  assert.ok(studio.includes("layer.material.displacementMap=textureTreatment==='clean'?null:layer.originalDisplacementMap"));
+  assert.ok(studio.includes("layer.material.specularMap=textureTreatment==='clean'?null:layer.originalSpecularMap"));
+  assert.ok(studio.includes("originalNormalMap:material.normalMap"));
+  assert.ok(studio.includes("layer.material.normalMap=layer.originalNormalMap"));
   assert.ok(studio.includes("o.globalCompositeOperation='soft-light'"));
-  assert.ok(studio.includes('o.globalAlpha=.22'));
   assert.ok(studio.includes("o.drawImage(layer.originalAlpha,0,0)"));
   assert.ok(studio.includes("plan.pattern"));
 });
-
 test("ALL mode prepares and validates four independent garment textures before committing", () => {
   assert.ok(studio.includes("const missing=keys.filter(key=>!records.has(key))"));
   assert.ok(studio.includes("const prepared=keys.map(key=>"));
