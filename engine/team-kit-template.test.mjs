@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parseTeamRosterCsv, resolveKitGraphicText, createStoredZip, teamKitRecordKey } from "./team-kit-template.mjs";
+import { parseTeamRosterCsv, resolveKitGraphicText, createStoredZip, teamKitRecordKey, teamKitGroupKey } from "./team-kit-template.mjs";
 
 const renderer = readFileSync(new URL("./match-player-renderer.mjs", import.meta.url), "utf8");
 
@@ -52,6 +52,8 @@ test("generated player kit keys normalize shirt numbers and separate team and go
   assert.equal(teamKitRecordKey(0, "OUTFIELD", "07"), "0:OUTFIELD:7");
   assert.equal(teamKitRecordKey(1, "OUTFIELD", 7), "1:OUTFIELD:7");
   assert.equal(teamKitRecordKey(0, "GK", "01"), "0:GK:1");
+  assert.equal(teamKitGroupKey(1, "OUTFIELD"), "1:OUTFIELD");
+  assert.equal(teamKitGroupKey(0, "GK"), "0:GK");
 });
 
 test("match renderer loads generated kit textures by team, role and shirt number", () => {
@@ -60,6 +62,9 @@ test("match renderer loads generated kit textures by team, role and shirt number
   assert.ok(renderer.includes("generatedKitPart(node.name)"));
   assert.ok(renderer.includes("copy.map = texture"));
   assert.ok(renderer.includes("copy.color.set(0xffffff)"));
+  assert.ok(renderer.includes("this.generatedKitTextureCache = new Map()"));
+  assert.ok(renderer.includes("personalizedParts.has(part)"));
+  assert.ok(renderer.includes("this.generatedKitTextureCache.set(cacheKey, texture)"));
   assert.ok(renderer.includes("this.ensureGeneratedKit(entry, state)"));
 });
 
