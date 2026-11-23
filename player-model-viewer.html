@@ -189,12 +189,13 @@ function updateUvInspector(root){
    for(let t=start;t<end;t++){
     const ids=[0,1,2].map(k=>index?index.getX(t*3+k):t*3+k);if(ids.some(id=>id>=uv.count||id>=position.count))continue;
     const points=ids.map(id=>[uv.getX(id),uv.getY(id)]);triangles.push({index:t,ids,points});
-    for(let e=0;e<3;e++){const a=points[e],b=points[(e+1)%3],key=edgeKey(vertexKey(ids[e]),vertexKey(ids[(e+1)%3]));edgeCounts.set(key,(edgeCounts.get(key)||0)+1);if(!edgePoints.has(key))edgePoints.set(key,[a,b]);if(edgeOwners.has(key))join(t,edgeOwners.get(key));else edgeOwners.set(key,t)}
+    for(let e=0;e<3;e++){const a=points[e],b=points[(e+1)%3],key=edgeKey(vertexKey(ids[e]),vertexKey(ids[(e+1)%3]));edgeCounts.set(key,(edgeCounts.get(key)||0)+1);if(!edgePoints.has(key))edgePoints.set(key,[a,b]);if(!edgeOwners.has(key))edgeOwners.set(key,[]);edgeOwners.get(key).push(t)}
    }
   }
   const parent=new Map(triangles.map(t=>[t.index,t.index]));
   const find=x=>parent.get(x)===x?x:(parent.set(x,find(parent.get(x))),parent.get(x));
   const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)parent.set(b,a)};
+  for(const owners of edgeOwners.values())for(let i=1;i<owners.length;i++)join(owners[0],owners[i]);
   const islandMap=new Map();
   for(const tri of triangles){const id=find(tri.index);if(!islandMap.has(id))islandMap.set(id,{triangles:[],number:islandMap.size+1});islandMap.get(id).triangles.push(tri)}
   const islands=[...islandMap.values()];
