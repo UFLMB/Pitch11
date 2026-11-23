@@ -129,6 +129,21 @@ test('substitution eligibility enforces five players and three stoppage opportun
 });
 
 
+test('player-opened pause is excluded from Law 7 added-time stoppage accounting', () => {
+  assert.equal(law.manualPauseExcludesAddedTime({ mode: 'subs', manualPause: true }), true);
+  assert.equal(law.manualPauseExcludesAddedTime({ mode: 'subs', manualPause: false }), false);
+  assert.equal(law.manualPauseExcludesAddedTime({ mode: 'subs', manualPause: true, returnMode: 'whistle' }), true);
+  assert.equal(law.manualPauseExcludesAddedTime({ mode: 'whistle', manualPause: true }), false);
+  assert.equal(law.manualPauseExcludesAddedTime({ mode: 'half', manualPause: true }), false);
+});
+
+test('production clock wrapper excludes only manually opened pause time', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(html, /function openSubs\(ret,manualPause=false\)/);
+  assert.match(html, /openSubs\(S\.mode,true\)/);
+  assert.match(html, /manualPauseExcludesAddedTime\(\{mode:priorMode,manualPause:S\.manualPause\}\)/);
+});
+
 test('goalkeeper hand control expires only after eight full seconds', () => {
   assert.equal(law.goalkeeperHoldExpired(0), false);
   assert.equal(law.goalkeeperHoldExpired(7.999), false);
