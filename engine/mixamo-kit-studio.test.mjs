@@ -25,7 +25,10 @@ test("garment targets use their own FBX mesh UV0 triangles", () => {
 
 test("garment material edits are isolated from shared source materials", () => {
   assert.ok(studio.includes("sourceMaterial.clone()"));
-  assert.ok(studio.includes("map?map.clone():new THREE.CanvasTexture(originalCanvas)"));
+  assert.ok(studio.includes("function cloneTextureWithIndependentSource(sourceTexture,image)"));
+  assert.ok(studio.includes("const texture=sourceTexture.clone();texture.source=new THREE.Source(image)"));
+  assert.ok(studio.includes("map?cloneTextureWithIndependentSource(map,originalCanvas):new THREE.CanvasTexture(originalCanvas)"));
+  assert.ok(studio.includes("texture.source=new THREE.Source(image)"));
   assert.ok(studio.includes("sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material]"));
   assert.ok(studio.includes("for(let materialIndex=0;materialIndex<sourceMaterials.length;materialIndex++)"));
   assert.ok(studio.includes("layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,originalNormalMap:material.normalMap,originalBumpMap:material.bumpMap,originalDisplacementMap:material.displacementMap,originalSpecularMap:material.specularMap,mask,canvas:originalCanvas,width:w,height:h})"));
