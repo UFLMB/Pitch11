@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analysePitchyBrief } from './pitchy-v2.mjs';
+import { analysePitchyBrief, PITCHY_ROLE_PRESETS } from './pitchy-v2.mjs';
 
 test('understands the existing Hungarian diagonal-stripe brief', () => {
   const plan = analysePitchyBrief('Készíts fekete-arany, agresszív, vékony átlós csíkos mezt fekete gallérral', 'kit');
@@ -84,4 +84,17 @@ test('marks whether a garment was explicitly named so whole-kit designs can targ
   assert.equal(whole.detected.garmentExplicit, false);
   assert.equal(single.detected.garmentExplicit, true);
   assert.equal(single.garment, 'shorts');
+});
+
+
+test('provides complete-kit role presets for all Ch38 character roles', () => {
+  assert.deepEqual(Object.keys(PITCHY_ROLE_PRESETS), ['player', 'referee', 'assistant', 'coach', 'staff', 'supporter']);
+  for (const [role, preset] of Object.entries(PITCHY_ROLE_PRESETS)) {
+    assert.ok(preset.label.length > 0, role + ' has a visible label');
+    const plan = analysePitchyBrief(preset.brief, 'kit');
+    assert.equal(plan.detected.garmentExplicit, false, role + ' must target the complete four-garment kit');
+    assert.ok(plan.baseColor.startsWith('#'), role + ' has a resolved base colour');
+    assert.ok(plan.accentColor.startsWith('#'), role + ' has a resolved accent colour');
+    assert.ok(plan.pattern, role + ' has a resolved pattern');
+  }
 });
