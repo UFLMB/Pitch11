@@ -137,7 +137,7 @@ function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME, fadeSe
   return true;
 }
 
-function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false, subsReturnMode = "play", substitutionScreenActive = false) {
+function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = false, subsReturnMode = "play", substitutionScreenActive = false, manualPauseActive = false) {
   // Cutscenes and the walkout are not musical stoppages; fade out during the walkout.
   if (walkoutActive) return { active: false, fadeSeconds: 3.25 };
   if (cutsceneActive) return { active: false, fadeSeconds: 0 };
@@ -145,7 +145,12 @@ function resolveMenuMusicIntent(mode, walkoutActive = false, cutsceneActive = fa
   if (mode === "menu" || mode === "half" || mode === "full") {
     return { active: true, fadeSeconds: 0 };
   }
-  // Require the actual SUBS panel, and exclude injury/free-kick stoppages.
+  // Music is also allowed when the player explicitly opens PAUSED during live play.
+  // Automatic whistle/injury/goal stoppages do not set manualPauseActive.
+  if (mode === "subs" && manualPauseActive && subsReturnMode === "play") {
+    return { active: true, fadeSeconds: 0 };
+  }
+  // Require the actual SUBS panel for a substitution stoppage, and exclude injuries/free kicks.
   if (mode === "subs" && substitutionScreenActive && ["play", "half", "full"].includes(subsReturnMode)) {
     return { active: true, fadeSeconds: 0 };
   }
