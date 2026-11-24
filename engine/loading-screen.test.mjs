@@ -27,5 +27,6 @@ test("loading screen provides a user-activated fullscreen control and useful mat
   assert.match(index, /fullscreen\.addEventListener\('click'/);
   assert.match(index, /requestFullscreen/);
   assert.match(index, /MATCHDAY NOTE/);
+  assert.match(index, /p11-stadium-ambience/);
   assert.match(index, /RETRY LOADING/);
 });
