@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { MENU_MUSIC, SOURCES, resolveMenuMusicIntent, menuMusic, unlock } from "./audio-assets.mjs";
+import { MENU_MUSIC, SOURCES, resolveMenuMusicIntent, menuMusic, preloadAssets, unlock } from "./audio-assets.mjs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const audioModule = read("./audio-assets.mjs");
@@ -116,5 +116,28 @@ test("loading music fade waits until browser audio unlock actually starts playba
   } finally {
     globalThis.Audio = originalAudio;
     globalThis.requestAnimationFrame = originalRaf;
+  }
+});
+
+
+test("startup audio preload verifies every registered sound and the menu music", async () => {
+  const originalFetch = globalThis.fetch;
+  const requested = [];
+  const progress = [];
+  globalThis.fetch = async url => {
+    requested.push(String(url));
+    return { ok: true, arrayBuffer: async () => new ArrayBuffer(16) };
+  };
+  try {
+    const result = await preloadAssets(value => progress.push(value.completed));
+    assert.equal(result.state, "ready");
+    assert.equal(result.completed, 9);
+    assert.equal(result.total, 9);
+    assert.equal(requested.length, 9);
+    assert.ok(requested.includes(MENU_MUSIC));
+    for (const url of Object.values(SOURCES)) assert.ok(requested.includes(url));
+    assert.ok(progress.includes(9));
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 });
