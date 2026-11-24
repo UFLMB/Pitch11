@@ -8,15 +8,7 @@ import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { extractHorizontalRootMotion, flattenHorizontalRootMotion, removeLocomotionRootTranslation, shouldRemoveLocomotionRootTranslation, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 
-const CORE_MIXAMO_CLIPS = [
-  "offensive idle.fbx",
-  "jog forward.fbx",
-  "jog backward.fbx",
-  "jog strafe left.fbx",
-  "jog strafe right.fbx",
-  "goalkeeper sidestep.fbx",
-  "goalkeeper sidestep (2).fbx"
-];
+
 function loadWithTimeout(promise, timeoutMs, label) {
   if (!(timeoutMs > 0)) return promise;
   let timeoutId;
@@ -230,8 +222,26 @@ export class MatchPlayerRenderer {
       // animation FBX here hid the entire team on slow/mobile connections.
       this.status = "ready";
       this.animationLoadState = "loading";
-      this.animationLoadPromise = Promise.allSettled(MIXAMO_ANIMATION_FILES.map(file => this.loadMixamoClip(file).then(value => { this.animationProgress.completed++; this.onProgress?.({ type: "animation", ...this.animationProgress }); return value; }, error => { this.animationProgress.completed++; this.onProgress?.({ type: "animation", ...this.animationProgress }); throw error; })))
-        .then(results => {
+      this.animationLoadPromise = (async () => {
+        const results = [];
+        const batchSize = 4;
+        for (let offset = 0; offset < MIXAMO_ANIMATION_FILES.length; offset += batchSize) {
+          const batch = MIXAMO_ANIMATION_FILES.slice(offset, offset + batchSize);
+          const settled = await Promise.allSettled(batch.map(file =>
+            this.loadMixamoClip(file).then(value => {
+              this.animationProgress.completed++;
+              this.onProgress?.({ type: "animation", ...this.animationProgress });
+              return value;
+            }, error => {
+              this.animationProgress.completed++;
+              this.onProgress?.({ type: "animation", ...this.animationProgress });
+              throw error;
+            })
+          ));
+          results.push(...settled);
+        }
+        return results;
+      })().then(results => {
           const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${MIXAMO_ANIMATION_FILES[index]}: ${result.reason?.message || String(result.reason)}`] : []);
           this.clipCount = this.clipCache.size;
           this.error = failures.join("; ");
