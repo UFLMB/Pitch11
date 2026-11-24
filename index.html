@@ -6659,6 +6659,7 @@ take=function(p,byHand=false){
   const pbrStates=Object.values(pbr);
   const optional=Object.values(b.optionalAssets||{});
   const anim=model.animationProgress||{completed:0,total:54};
+  const kits=model.kitProgress||{completed:0,total:0};
   const playerStats=diagnostics.playerModels||{};
   const stadiumProgress=clamp(b.progress);
   const modelProgress=clamp(model.progress);
@@ -6668,11 +6669,12 @@ take=function(p,byHand=false){
   const pbrRatio=pbrStates.length===3?pbrStates.filter(x=>isReady(x.status)).length/3:0;
   const detailedTexture= b.timings?.detailedTurfTextureState==='ready'?1:0;
   const playerModelsRatio=playerStats.expectedPlayers>0?clamp(playerStats.renderedPlayers/playerStats.expectedPlayers):0;
-  const weighted=15*stadiumProgress+10*modelProgress+40*animationProgress+10*audioRatio+10*optionalRatio+10*((pbrRatio+detailedTexture)/2)+5*playerModelsRatio;
+  const kitRatio=kits.total>0?clamp(kits.completed/kits.total):0;
+  const weighted=15*stadiumProgress+10*modelProgress+35*animationProgress+10*audioRatio+10*optionalRatio+10*((pbrRatio+detailedTexture)/2)+5*playerModelsRatio+5*kitRatio;
   const elapsed=now-started;
   const allReady=b.state==='ready'&&model.state==='ready'&&model.animationState==='ready'&&anim.total===54&&anim.completed===54&&
    audioState==='ready'&&optional.length===3&&optional.every(isReady)&&pbrStates.length===3&&pbrStates.every(x=>isReady(x.status))&&
-   detailedTexture===1&&stadium?.playerModelsReady===true;
+   detailedTexture===1&&stadium?.playerModelsReady===true&&kits.total===playerStats.expectedPlayers&&kits.completed===kits.total;
   const errors=[];
   if(['error','runtime-error'].includes(b.state))errors.push(b.error||'Stadium failed');
   if(['error','asset-error'].includes(model.state))errors.push(model.error||'Player model failed');
@@ -6701,6 +6703,7 @@ take=function(p,byHand=false){
   else if(pbrRatio<1)sub='PITCH TEXTURES '+Math.round(pbrRatio*3)+' / 3';
   else if(!detailedTexture)sub='GENERATING THE FINAL GRASS SURFACE';
   else if(!stadium?.playerModelsReady)sub='PLAYER MODELS '+(playerStats.renderedPlayers||0)+' / '+(playerStats.expectedPlayers||22);
+  else if(kits.completed<kits.total)sub='KIT TEXTURES '+kits.completed+' / '+kits.total;
   else if(allReady)sub=elapsed<MINIMUM_DURATION?'MATCHDAY PRESENTATION':'ALL SYSTEMS READY';
   detail.textContent=sub;
   const tipIndex=Math.floor(elapsed/4600)%tips.length;
