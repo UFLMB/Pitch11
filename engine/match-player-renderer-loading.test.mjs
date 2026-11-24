@@ -47,3 +47,11 @@ test("all 54 catalogued player and goalkeeper animations are included in startup
   assert.match(playerSource, /animationProgress\.completed\+\+/);
   assert.match(playerSource, /this\.animationLoadState = failures\.length \? "partial" : "ready"/);
 });
+
+test("generated kit texture reads are tracked until they finish or safely fall back", () => {
+  assert.match(playerSource, /this\.kitLoadProgress = \{ completed: 0, total: 0 \}/);
+  assert.match(playerSource, /this\.kitLoadProgress\.total\+\+/);
+  assert.match(playerSource, /\.finally\(finishKitLoad\)/);
+  assert.match(playerSource, /type: "kit"/);
+  assert.match(runtimeSource, /kitProgress:\{\.\.\.playerRenderer\.kitLoadProgress\}/);
+});
