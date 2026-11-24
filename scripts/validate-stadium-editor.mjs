@@ -35,7 +35,7 @@ assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environme
 assert.ok(html.includes('previewRenderer=new THREE.WebGLRenderer'), 'Live preview must use its own dedicated WebGL renderer so inspector panels cannot occlude it.');
 assert.ok(html.includes('previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1:1.5))'), 'Dedicated preview renderer must cap pixel ratio for mobile GPU safety.');
 assert.ok(html.includes("$('previewStage').appendChild(previewRenderer.domElement)"), 'Dedicated preview canvas must be mounted inside the visible preview stage.');
-assert.ok(html.includes('#previewStage canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0'), 'Preview canvas must occupy the preview stage below its status overlays.');
+assert.ok(html.includes('#previewStage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;z-index:0'), 'Preview canvas must occupy the preview stage below its status overlays.');
 assert.ok(html.includes('const previewScene=new THREE.Scene()'), 'Live preview scene is missing.');
 assert.ok(html.includes('renderer=live.renderer'), 'Main editor viewport must continue using the isolated Matchday Environment renderer.');
 assert.ok(html.includes('previewRenderer.render(previewScene,previewCamera)'), 'Live preview must render through its dedicated renderer, not the main viewport renderer.');
