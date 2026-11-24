@@ -13,6 +13,8 @@ permissions:
   pages: write
   id-token: write
 
+# Recovery note: a new commit SHA creates a fresh GitHub Pages deployment record
+# if the Pages API leaves a previous commit's deployment in a failed state.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
