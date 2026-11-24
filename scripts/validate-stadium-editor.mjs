@@ -20,6 +20,9 @@ for (const feature of [
   'data-tool="rotate"', 'data-tool="scale"', 'materialColor', 'emissiveIntensity',
   'applyText', 'imageUpload', 'duplicateSelected', 'deleteSelected',
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
+  'LIVE OBJECT PREVIEW', 'LIVE SYNC', 'id="previewStage"', 'function createLivePreviewClone(object)',
+  'function syncLivePreviewNode(source,clone,isRoot=false)', 'function renderLivePreview()',
+  'renderer.render(previewScene,previewCamera)', 'renderer.setScissorTest(true)',
   "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
   'live.renderer', 'live.scene', 'openConfigDb', 'data-filter="people"', 'function isPersonnelActor(object)', 'function hasPersonnelActorAncestor(object)',
   'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
@@ -30,6 +33,10 @@ assert.ok(html.includes('renderer=live.renderer'), 'Standalone editor must reuse
 assert.ok(html.includes("width:'100vw',height:'100vh'"), 'Hidden Environment Lab bridge must use the full viewport, not a 2x2 pixel viewport.');
 assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environment Lab startup errors immediately.');
 assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
+assert.ok(html.includes('const previewScene=new THREE.Scene()'), 'Live preview scene is missing.');
+assert.ok(html.includes('renderer=live.renderer'), 'Live preview must share the live Matchday WebGL renderer.');
+assert.ok(html.includes('renderLivePreview();'), 'Live preview must render continuously alongside the main viewport.');
+assert.ok(html.includes('clone.material=source.material'), 'Live preview must reflect source material replacements as well as transforms.');
 assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
 assert.ok(html.includes("return'people'"), 'Personnel actors must have a dedicated PEOPLE filter category.');
 assert.ok(html.includes('(!isPersonnelActor(o)&&hasPersonnelActorAncestor(o))'), 'Personnel must be selected and transformed as complete actors, not individual body meshes.');
