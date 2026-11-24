@@ -72,7 +72,7 @@ header{position:fixed;z-index:3;top:12px;left:14px;right:14px;display:flex;justi
 <div class="graphics-actions"><button class="action" id="saveTeamTemplate" type="button">SAVE TEAM TEMPLATE</button><button class="action primary" id="generateSquadPack" type="button">GENERATE SQUAD TEXTURE PACK</button></div>
 <div class="graphics-help" id="squadPackStatus">CSV columns: Name, Number. Generated textures are saved for the match renderer and exported as a full-resolution ZIP backup. Shared shorts, socks and boots are stored once per team; personalized parts are stored per player. Runtime textures are optimized to max 1024 px.</div>
 </div></div>
-<div class="section"><div class="section-title">Texture package</div><button class="action primary" id="exportAll" style="width:100%">EXPORT ALL GARMENT TEXTURES</button><button class="action" id="saveGraphics" style="width:100%;margin-top:7px">SAVE GRAPHICS TO THIS BROWSER</button><p class="help">Exports one PNG per garment mesh. These are standalone base-colour texture files; they do not overwrite the source FBX or its embedded images.</p></div>
+<div class="section"><div class="section-title">Texture package</div><button class="action primary" id="exportAll" style="width:100%">EXPORT ALL GARMENT TEXTURES</button><button class="action" id="exportStoredKits" style="width:100%;margin-top:7px">EXPORT ALL SAVED KIT DATA · ZIP</button><button class="action" id="saveGraphics" style="width:100%;margin-top:7px">SAVE GRAPHICS TO THIS BROWSER</button><p class="help">Exports the current garment PNGs, or backs up every saved template, team kit and generated player kit from this browser’s IndexedDB into one ZIP, preserving texture Blobs and metadata.</p><div class="mesh-meta" id="storedExportStatus" aria-live="polite"></div></div>
 <div class="footer">Non-destructive foundation build · original embedded textures are preserved in memory for reset. Hair, skin, eyelashes and gameplay assets are outside this editor's scope.</div>
 <div class="mesh-meta error" id="error" role="alert"></div>
 </div>
@@ -202,6 +202,55 @@ $('duplicateGraphic').addEventListener('click',()=>{const items=activeGraphics()
 $('deleteGraphic').addEventListener('click',()=>{const key=$('graphicGarment').value,items=activeGraphics(),index=items.findIndex(x=>x.id===selectedGraphicId);if(index<0)return;pushGraphicHistory();items.splice(index,1);selectedGraphicId=null;renderGraphics(key);refreshGraphicUI()});
 function safeKitFilename(value){return String(value||'player').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').replace(/^_+|_+$/g,'').slice(0,40)||'player'}
 function openTeamKitDatabase(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('This browser does not support IndexedDB.'));return;}const request=indexedDB.open('pitch11-team-kit-templates',3);request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('templates'))db.createObjectStore('templates');if(!db.objectStoreNames.contains('playerKits'))db.createObjectStore('playerKits');if(!db.objectStoreNames.contains('teamKits'))db.createObjectStore('teamKits')};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open team template storage.'))})}
+async function readAllKitStore(db,storeName){
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(storeName,'readonly'),store=tx.objectStore(storeName),request=store.openCursor(),items=[];
+  request.onsuccess=()=>{const cursor=request.result;if(!cursor){resolve(items);return;}items.push({key:cursor.key,value:cursor.value});cursor.continue();};
+  request.onerror=()=>reject(request.error||new Error('Could not read '+storeName+' storage.'));
+  tx.onerror=()=>reject(tx.error||new Error('Could not read '+storeName+' storage.'));
+ });
+}
+function safeArchivePart(value){return String(value??'record').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').slice(0,80)||'record';}
+async function archiveKitValue(value,path,entries,blobIndex){
+ if(value instanceof Blob){
+  const name=path+'/blobs/'+String(++blobIndex.value).padStart(4,'0')+'.'+(value.type==='image/png'?'png':value.type==='image/jpeg'?'jpg':value.type==='image/webp'?'webp':'bin');
+  entries.push({name,data:value});return {$type:'Blob',$file:name,mimeType:value.type||'application/octet-stream',size:value.size};
+ }
+ if(value instanceof ArrayBuffer){const name=path+'/blobs/'+String(++blobIndex.value).padStart(4,'0')+'.bin';entries.push({name,data:new Uint8Array(value)});return {$type:'ArrayBuffer',$file:name,byteLength:value.byteLength};}
+ if(ArrayBuffer.isView(value)){const name=path+'/blobs/'+String(++blobIndex.value).padStart(4,'0')+'.bin';entries.push({name,data:new Uint8Array(value.buffer,value.byteOffset,value.byteLength)});return {$type:value.constructor.name,$file:name,byteLength:value.byteLength};}
+ if(Array.isArray(value)){const result=[];for(let i=0;i<value.length;i++)result.push(await archiveKitValue(value[i],path+'/'+String(i).padStart(4,'0'),entries,blobIndex));return result;}
+ if(value&&typeof value==='object'){
+  if(value instanceof Date)return {$type:'Date',value:value.toISOString()};
+  const result={};for(const [key,child] of Object.entries(value))result[key]=await archiveKitValue(child,path+'/'+safeArchivePart(key),entries,blobIndex);return result;
+ }
+ return value;
+}
+async function exportStoredKitDatabase(){
+ const button=$('exportStoredKits'),status=$('storedExportStatus');button.disabled=true;status.textContent='READING SAVED KIT DATABASE…';
+ let db;
+ try{
+  db=await openTeamKitDatabase();
+  const stores=['templates','teamKits','playerKits'],entries=[],manifest={schema:'pitch11-kit-storage-backup',version:1,exportedAt:new Date().toISOString(),database:'pitch11-team-kit-templates',databaseVersion:3,stores:{}};
+  let totalRecords=0,blobIndex={value:0};
+  for(const storeName of stores){
+   const records=await readAllKitStore(db,storeName);manifest.stores[storeName]={recordCount:records.length,records:[]};totalRecords+=records.length;
+   for(const record of records){
+    const key=safeArchivePart(Array.isArray(record.key)?record.key.join('_'):record.key);
+    const base='pitch11-kit-backup/'+storeName+'/'+key;
+    const archived=await archiveKitValue(record.value,base,entries,blobIndex);
+    manifest.stores[storeName].records.push({key:record.key,value:archived});
+   }
+   status.textContent='BACKING UP '+storeName.toUpperCase()+' · '+records.length+' RECORDS';
+  }
+  entries.push({name:'pitch11-kit-backup/manifest.json',data:JSON.stringify(manifest,null,2)});
+  if(!totalRecords)throw new Error('No saved kit records were found in this browser database.');
+  const zip=await createStoredZip(entries),url=URL.createObjectURL(zip),link=document.createElement('a');
+  link.href=url;link.download='pitch11-complete-kit-storage-backup.zip';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),30000);
+  status.textContent='BACKUP EXPORTED · '+totalRecords+' RECORDS · '+blobIndex.value+' BINARY ASSETS · '+entries.length+' ZIP FILES';
+ }catch(error){status.textContent='EXPORT FAILED · '+error.message;$('error').textContent='Saved kit backup failed: '+error.message;}
+ finally{db?.close();button.disabled=false;}
+}
+
 async function writeSavedTeamTemplate(template){const db=await openTeamKitDatabase();await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readwrite');tx.objectStore('templates').put(template,'active');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Could not save team template.'));tx.onabort=()=>reject(tx.error||new Error('Team template save was cancelled.'))});db.close()}
 async function readSavedTeamTemplate(){const db=await openTeamKitDatabase();const value=await new Promise((resolve,reject)=>{const tx=db.transaction('templates','readonly'),request=tx.objectStore('templates').get('active');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error||new Error('Could not read team template.'))});db.close();return value}
 async function restoreTemplateBaseTextures(template){if(!template?.baseTextures)return;for(const key of Object.keys(targets)){const record=records.get(key),images=template.baseTextures[key]||[];if(!record)continue;for(let index=0;index<Math.min(record.layers.length,images.length);index++){const layer=record.layers[index],image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(new Error('Could not restore '+key+' base texture.'));image.src=images[index]});const canvas=document.createElement('canvas');canvas.width=layer.width;canvas.height=layer.height;canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);layer.canvas=canvas;layer.texture.image=canvas;layer.texture.needsUpdate=true;layer.material.needsUpdate=true;}renderGraphics(key)}}
@@ -292,7 +341,7 @@ document.querySelectorAll('[data-target-mode]').forEach(b=>b.addEventListener('c
 document.querySelectorAll('[data-color]').forEach(b=>b.addEventListener('click',()=>{activeColour=b.dataset.color;applyColour(active,activeColour);$('customColor').value=activeColour;selectGarment(active)}));
 $('customColor').addEventListener('input',e=>{activeColour=e.target.value;applyColour(active,activeColour);document.querySelectorAll('[data-color]').forEach(b=>b.classList.remove('active'));selectGarment(active)});
 $('resetGarment').addEventListener('click',()=>{const r=records.get(active);if(!r)return;r.colour=null;for(const layer of r.layers){layer.canvas=layer.originalCanvas;layer.texture.image=layer.canvas;layer.texture.needsUpdate=true;layer.material.normalMap=layer.originalNormalMap;layer.material.bumpMap=layer.originalBumpMap;layer.material.displacementMap=layer.originalDisplacementMap;layer.material.specularMap=layer.originalSpecularMap;layer.material.needsUpdate=true;}r.canvas=r.layers[0].canvas;renderGraphics(active);selectGarment(active)});
-$('exportTexture').addEventListener('click',()=>exportOne(active));$('exportAll').addEventListener('click',exportAll);
+$('exportTexture').addEventListener('click',()=>exportOne(active));$('exportAll').addEventListener('click',exportAll);$('exportStoredKits').addEventListener('click',exportStoredKitDatabase);
 mountPitchy({type:'kit',host:$('pitchyMount'),onApply:applyPitchyDesign});
 const textureManager=new THREE.LoadingManager();let resolveTextureLoads;const textureLoadsFinished=new Promise(resolve=>{resolveTextureLoads=resolve;textureManager.onLoad=resolveTextureLoads});const textureLoadErrors=[];textureManager.onError=url=>textureLoadErrors.push(url);const loader=new FBXLoader(textureManager);$('status').textContent='LOADING CH38 FBX…';
 loader.load('./input/player-model-candidate/character.fbx',async object=>{root=object;scene.add(root);$('status').textContent='CH38 FBX LOADED · WAITING FOR EMBEDDED TEXTURES…';await textureLoadsFinished;const found=new Map();root.traverse(mesh=>{if(!mesh.isMesh)return;found.set(mesh.name,mesh)});let missing=[];for(const [key,name] of Object.entries(targets)){const mesh=found.get(name);if(!mesh){missing.push(name);continue}try{const sourceMaterials=Array.isArray(mesh.material)?mesh.material:[mesh.material],clonedMaterials=[],layers=[];for(let materialIndex=0;materialIndex<sourceMaterials.length;materialIndex++){const sourceMaterial=sourceMaterials[materialIndex];if(!sourceMaterial)throw new Error('material slot '+materialIndex+' is empty');const material=sourceMaterial.clone();clonedMaterials.push(material);const map=sourceMaterial.map,image=map?textureImage(map):null;if(map&&!image)throw new Error('material slot '+materialIndex+' diffuse texture did not load');const w=image?(image.naturalWidth||image.videoWidth||image.width):1024,h=image?(image.naturalHeight||image.videoHeight||image.height):1024;if(!w||!h)throw new Error('material slot '+materialIndex+' diffuse image has zero dimensions');const originalCanvas=document.createElement('canvas');originalCanvas.width=w;originalCanvas.height=h;const originalContext=originalCanvas.getContext('2d');if(image)originalContext.drawImage(image,0,0,w,h);else{originalContext.fillStyle='#ffffff';originalContext.fillRect(0,0,w,h)}const originalAlpha=document.createElement('canvas');originalAlpha.width=w;originalAlpha.height=h;originalAlpha.getContext('2d').drawImage(originalCanvas,0,0);const mask=buildMask(mesh,{image:originalCanvas},materialIndex,sourceMaterials.length),texture=map?cloneTextureWithIndependentSource(map,originalCanvas):new THREE.CanvasTexture(originalCanvas);texture.image=originalCanvas;if(!map){texture.colorSpace=THREE.SRGBColorSpace;material.color?.set?.(0xffffff)}texture.needsUpdate=true;material.map=texture;material.needsUpdate=true;layers.push({materialIndex,material,texture,originalCanvas,originalAlpha,originalNormalMap:material.normalMap,originalBumpMap:material.bumpMap,originalDisplacementMap:material.displacementMap,originalSpecularMap:material.specularMap,mask,canvas:originalCanvas,width:w,height:h});}if(!layers.length)throw new Error('no editable material slots');mesh.material=Array.isArray(mesh.material)?clonedMaterials:clonedMaterials[0];records.set(key,{key,mesh,layers,colour:null,uvCount:mesh.geometry.getAttribute('uv').count,triangles:Math.floor((mesh.geometry.index?mesh.geometry.index.count:mesh.geometry.getAttribute('position').count)/3),...layers[0]});}catch(e){missing.push(name+' ('+e.message+')')}}frameModel(root);cameraView('front');const loaded=records.size;$('status').textContent='CH38 FBX LOADED · '+found.size+' MESHES · '+loaded+'/4 GARMENTS READY';$('meshMeta').textContent=loaded+' garment meshes mapped from their own FBX UV0 data.';if(missing.length)$('error').textContent='Some garment targets could not be enabled:\n'+missing.join('\n')+(textureLoadErrors.length?'\nTexture load failures:\n'+textureLoadErrors.join('\n'):'');selectGarment('shirt');$('graphicGarment').value='shirt';await restoreGraphics();refreshGraphicUI()},undefined,error=>{$('status').textContent='FBX LOAD FAILED';$('error').textContent=String(error?.message||error)+'\nCheck that the Git LFS model asset is present in the Pages deployment.'});
