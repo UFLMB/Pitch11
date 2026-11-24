@@ -3,7 +3,7 @@ import { getGeneratedPlayerKit } from "./team-kit-template.mjs";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
-import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
+import { MIXAMO_ANIMATION_FILES, resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { extractHorizontalRootMotion, flattenHorizontalRootMotion, removeLocomotionRootTranslation, shouldRemoveLocomotionRootTranslation, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
@@ -168,6 +168,7 @@ export class MatchPlayerRenderer {
     this.status = "loading";
     this.animationLoadState = "not-started";
     this.animationLoadPromise = null;
+    this.animationProgress = { completed: 0, total: MIXAMO_ANIMATION_FILES.length };
     this.error = "";
     this.mixamoError = "";
     this.modelSource = "";
@@ -229,9 +230,9 @@ export class MatchPlayerRenderer {
       // animation FBX here hid the entire team on slow/mobile connections.
       this.status = "ready";
       this.animationLoadState = "loading";
-      this.animationLoadPromise = Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)))
+      this.animationLoadPromise = Promise.allSettled(MIXAMO_ANIMATION_FILES.map(file => this.loadMixamoClip(file).then(value => { this.animationProgress.completed++; this.onProgress?.({ type: "animation", ...this.animationProgress }); return value; }, error => { this.animationProgress.completed++; this.onProgress?.({ type: "animation", ...this.animationProgress }); throw error; })))
         .then(results => {
-          const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${CORE_MIXAMO_CLIPS[index]}: ${result.reason?.message || String(result.reason)}`] : []);
+          const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${MIXAMO_ANIMATION_FILES[index]}: ${result.reason?.message || String(result.reason)}`] : []);
           this.clipCount = this.clipCache.size;
           this.error = failures.join("; ");
           this.animationLoadState = failures.length ? "partial" : "ready";
