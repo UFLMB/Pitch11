@@ -28,7 +28,7 @@ for (const feature of [
   'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')",
   'id="diagnosticsBtn"', 'id="diagnosticsPanel"', 'function diagnosticsSnapshot()',
   'function renderDiagnostics()', 'window.addEventListener(\'unhandledrejection\'',
-  'diagnostics.lastPick=', 'Animation/render loop failed', 'COPY REPORT'
+  'diagnostics.lastPick=', 'Animation/render loop failed', 'rendererArrayTypes', 'isForeignRendererArray', 'rendererWindow[typeName]', 'rendererRealm', 'COPY REPORT'
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
