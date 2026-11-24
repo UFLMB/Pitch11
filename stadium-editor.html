@@ -144,11 +144,21 @@ let lastBufferAudit=0;
 function auditAndRepairGeometryBuffers(force=false){
  const now=performance.now();if(!force&&now-lastBufferAudit<500)return;lastBufferAudit=now;
  const repaired=[],unsupported=[],seen=new Set(),seenAttributes=new WeakSet();
- const supported=array=>array instanceof Float32Array||array instanceof Uint16Array||array instanceof Int16Array||array instanceof Uint32Array||array instanceof Int32Array||array instanceof Int8Array||array instanceof Uint8Array||array instanceof Uint8ClampedArray;
+ // The main WebGLRenderer belongs to the hidden Environment Lab iframe, while
+ // editor helpers (ground, TransformControls and user-added meshes) are built
+ // in this page's JavaScript realm. Typed-array constructors are realm-local:
+ // a parent Float32Array is not the iframe renderer's Float32Array, even though
+ // both contain valid float data. Three.js WebGLAttributes compares constructors
+ // by identity and rejects those foreign-realm arrays at upload time.
+ const rendererWindow=renderer?.domElement?.ownerDocument?.defaultView||state.bridgeFrame?.contentWindow||window;
+ const rendererArrayTypes=new Set(['Float32Array','Uint16Array','Int16Array','Uint32Array','Int32Array','Int8Array','Uint8Array','Uint8ClampedArray']);
+ const supported=array=>!!array&&ArrayBuffer.isView(array)&&rendererArrayTypes.has(array.constructor?.name);
+ const targetArrayConstructor=array=>rendererWindow[array?.constructor?.name]||null;
+ const isForeignRendererArray=array=>{const Ctor=targetArrayConstructor(array);return !!Ctor&&array.constructor!==Ctor;};
  const finiteValues=array=>{try{return Array.from(array).every(value=>typeof value==='number'&&Number.isFinite(value));}catch(_){return false;}};
  const storageOf=attribute=>attribute?.isInterleavedBufferAttribute?attribute.data:attribute;
  const arrayOf=attribute=>storageOf(attribute)?.array;
- const needsFix=attribute=>{const array=arrayOf(attribute);return !array||!supported(array)||!finiteValues(array);};
+ const needsFix=attribute=>{const array=arrayOf(attribute);return !array||!supported(array)||isForeignRendererArray(array)||!finiteValues(array);};
  const regenerateUv=(object,geometry)=>{
   const position=geometry?.getAttribute?.('position');
   if(!position||position.itemSize<2||!position.count)return false;
@@ -172,16 +182,20 @@ function auditAndRepairGeometryBuffers(force=false){
   if(!array){unsupported.push({object:object.name||object.type,attribute:name,sourceType:'missing',reason:'Missing backing array'});return;}
   if(seenAttributes.has(storage))return;seenAttributes.add(storage);
   const sourceType=array.constructor?.name||typeof array;
-  if(!supported(array)){
+  const foreignRealm=isForeignRendererArray(array);
+  if(!supported(array)||foreignRealm){
    let values;try{values=Array.from(array);}catch(error){unsupported.push({object:object.name||object.type,attribute:name,sourceType,reason:error.message});return;}
    if(!values.length||!values.every(value=>typeof value==='number'&&Number.isFinite(value))){unsupported.push({object:object.name||object.type,attribute:name,sourceType,reason:'Unsupported storage contains non-finite or non-numeric values'});return;}
    const maxIndex=isIndex?values.reduce((max,value)=>Math.max(max,value),0):0;
-   const typed=isIndex?(maxIndex>65535?new Uint32Array(values):new Uint16Array(values)):new Float32Array(values);
+   const typeName=isIndex?(maxIndex>65535?'Uint32Array':'Uint16Array'):(rendererArrayTypes.has(sourceType)?sourceType:'Float32Array');
+   const Ctor=rendererWindow[typeName];
+   if(typeof Ctor!=='function'){unsupported.push({object:object.name||object.type,attribute:name,sourceType,reason:'Renderer realm does not expose '+typeName});return;}
+   const typed=new Ctor(values);
    storage.array=typed;
    if(attribute.isInterleavedBufferAttribute)storage.count=typed.length/storage.stride;
    else if(!attribute.isInterleavedBufferAttribute)attribute.count=typed.length/(attribute.itemSize||1);
    storage.needsUpdate=true;
-   repaired.push({object:object.name||object.type,attribute:name,sourceType,entries:values.length,reason:'Converted unsupported buffer storage on an editor-only geometry clone'});
+   repaired.push({object:object.name||object.type,attribute:name,sourceType,entries:values.length,reason:foreignRealm?'Recreated typed array in the WebGL renderer iframe realm':'Converted unsupported buffer storage on an editor-only geometry clone'});
    return;
   }
   if(!finiteValues(array)){
@@ -459,7 +473,7 @@ async function boot(){
   frame();
  }catch(error){diagnostics.stage='BOOT_FAILED';diagRecord('error','Editor boot failed',{message:error?.message||String(error),stack:error?.stack||''});console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Open Environment Lab first to confirm the stadium asset is available, then retry.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
 }
-function diagnosticsSnapshot(){const selected=state.selected,gl=renderer?.getContext?.(),previewGl=previewRenderer?.getContext?.();return {report:'PITCH 11 STADIUM EDITOR DIAGNOSTICS',generatedAt:new Date().toISOString(),startedAt:diagnostics.startedAt,stage:diagnostics.stage,page:{url:location.href,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},userAgent:navigator.userAgent},runtime:{editorReady:state.ready,mode:state.mode,mobile,renderer:!!renderer,rendererCanvas:!!renderer?.domElement,rendererCanvasSize:renderer?.domElement?{width:renderer.domElement.width,height:renderer.domElement.height}:null,webgl:!!gl,webglContextLost:gl?.isContextLost?.()??null,webglRenderer:gl?.getParameter?.(gl.RENDERER)||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement,previewWebgl:!!previewGl,previewContextLost:previewGl?.isContextLost?.()??null,bridgeReady:!!state.liveBridge?.ready,bridgeHasScene:!!state.liveBridge?.scene,bridgeHasEditorMode:typeof state.liveBridge?.setEditorMode==='function'},scene:{rootChildren:root.children.length,editableCount:state.meshes.length,selected:selected?{name:selected.name,type:selected.type,path:selected.userData.editorPath,visible:selected.visible,isMesh:!!selected.isMesh,children:selected.children.length}:null},preview:diagnostics.lastPreview,picking:diagnostics.lastPick,bufferAudit:diagnostics.bufferAudit||null,frameLastSeen:diagnostics.lastFrameAt,errors:diagnostics.errors,warnings:diagnostics.warnings,events:diagnostics.events};}
+function diagnosticsSnapshot(){const selected=state.selected,gl=renderer?.getContext?.(),previewGl=previewRenderer?.getContext?.();return {report:'PITCH 11 STADIUM EDITOR DIAGNOSTICS',generatedAt:new Date().toISOString(),startedAt:diagnostics.startedAt,stage:diagnostics.stage,page:{url:location.href,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},userAgent:navigator.userAgent},runtime:{editorReady:state.ready,mode:state.mode,mobile,renderer:!!renderer,rendererCanvas:!!renderer?.domElement,rendererCanvasSize:renderer?.domElement?{width:renderer.domElement.width,height:renderer.domElement.height}:null,webgl:!!gl,webglContextLost:gl?.isContextLost?.()??null,webglRenderer:gl?.getParameter?.(gl.RENDERER)||null,rendererRealm:renderer?.domElement?.ownerDocument?.defaultView?.location?.href||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement,previewWebgl:!!previewGl,previewContextLost:previewGl?.isContextLost?.()??null,bridgeReady:!!state.liveBridge?.ready,bridgeHasScene:!!state.liveBridge?.scene,bridgeHasEditorMode:typeof state.liveBridge?.setEditorMode==='function'},scene:{rootChildren:root.children.length,editableCount:state.meshes.length,selected:selected?{name:selected.name,type:selected.type,path:selected.userData.editorPath,visible:selected.visible,isMesh:!!selected.isMesh,children:selected.children.length}:null},preview:diagnostics.lastPreview,picking:diagnostics.lastPick,bufferAudit:diagnostics.bufferAudit||null,frameLastSeen:diagnostics.lastFrameAt,errors:diagnostics.errors,warnings:diagnostics.warnings,events:diagnostics.events};}
 function renderDiagnostics(){if(!$('diagSummary'))return;const d=diagnosticsSnapshot();$('diagHealth').textContent=d.errors?'ERRORS: '+d.errors:d.warnings?'WARNINGS: '+d.warnings:'NO JS ERRORS';const rows=[['BOOT STAGE',d.stage],['EDITOR READY',d.runtime.editorReady],['BRIDGE',d.runtime.bridgeReady?'CONNECTED':'MISSING'],['WEBGL',d.runtime.webgl?(d.runtime.webglContextLost?'CONTEXT LOST':'OK'):'MISSING'],['PREVIEW RENDERER',d.runtime.previewRenderer?'OK':'MISSING'],['PREVIEW CANVAS',d.runtime.previewCanvas?'OK':'MISSING'],['EDITABLE OBJECTS',d.scene.editableCount],['SELECTED',d.scene.selected?.name||'NONE'],['LAST PICK',d.picking?d.picking.hitCount+' hits / '+d.picking.pickableMeshes+' candidates':'NOT TESTED'],['LAST FRAME',d.frameLastSeen||'NOT STARTED']];$('diagSummary').replaceChildren(...rows.map(([k,v])=>{const el=document.createElement('div'),b=document.createElement('b');b.textContent=k;el.append(b,document.createTextNode(String(v)));return el;}));$('diagEvents').replaceChildren(...d.events.slice(0,25).map(e=>{const el=document.createElement('div');el.className=e.level;el.textContent='['+e.time.slice(11,23)+'] '+e.level.toUpperCase()+' · '+e.message+(Object.keys(e.details||{}).length?' · '+JSON.stringify(e.details):'');return el;}));}
 $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!$('diagnosticsPanel').hidden;renderDiagnostics();});$('diagClose').addEventListener('click',()=>$('diagnosticsPanel').hidden=true);$('diagRefresh').addEventListener('click',renderDiagnostics);$('diagCopy').addEventListener('click',async()=>{const report=JSON.stringify(diagnosticsSnapshot(),null,2);try{await navigator.clipboard.writeText(report);notify('Diagnostics report copied.');}catch(error){const area=document.createElement('textarea');area.value=report;document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();notify(ok?'Diagnostics report copied.':'Copy failed; inspect browser console.');}});
 boot();
