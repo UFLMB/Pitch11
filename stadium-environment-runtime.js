@@ -282,7 +282,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   const scarves=new THREE.InstancedMesh(new THREE.CylinderGeometry(.125,.125,.075,8),scarfMat,all.length);
   const trouserColors=[0x171b22,0x252a31,0x343238,0x4a4038,0x202d35,0x4b4c4d];
   const jacketColors=[0x101923,0x29333d,0x4b3030,0x354638,0x77736c,0x24252a,0x6b4b35,0x263d50,0x8a3037];
-  const hatColors=[0x111820,0x26313b,0x6d3034,0x394638,0x8a8173];legs.name='Crowd · Leg Instances';
+  const hatColors=[0x111820,0x26313b,0x6d3034,0x394638,0x8a8173];
+  legs.name='Crowd · Leg Instances';
   const o=new THREE.Object3D(),col=new THREE.Color();
   const sectionColors=[0x183750,0x8b3038,0x294b3b,0xb38c36,0x35465f,0x713c58,0x8f9894,0x245466,0xeee8d9,0x25302d];
   const skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
@@ -307,11 +308,13 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    o.position.set(p.x,p.y+.875*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();headwear.setMatrixAt(i,o.matrix);headwear.setColorAt(i,col);
    col.setHex(jacketColors[Math.floor(rnd()*jacketColors.length)]);
    o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(Math.PI/2,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
-   col.setHex(trouserColors[Math.floor(rnd()*trouserColors.length)]);
+   col.setHex(fan.skin);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0);
     o.position.set(p.x+side*.15*scale,p.y+.51*scale,p.z);o.rotation.set(0,yaw,side*(fan.raised?.18:.82));o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);
+    col.setHex(trouserColors[Math.floor(rnd()*trouserColors.length)]);
     o.position.set(p.x+side*.075*scale,p.y+.145*scale,p.z);o.rotation.set(0,yaw,side*.035);o.scale.setScalar(scale);o.updateMatrix();legs.setMatrixAt(ai,o.matrix);legs.setColorAt(ai,col);
+    col.setHex(fan.skin);
    }
    return fan;
   });
