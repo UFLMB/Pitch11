@@ -22,7 +22,7 @@ for (const feature of [
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
   'LIVE OBJECT PREVIEW', 'LIVE SYNC', 'id="previewStage"', 'function createLivePreviewClone(object)',
   'function syncLivePreviewNode(source,clone,isRoot=false)', 'function renderLivePreview()',
-  'renderer.render(previewScene,previewCamera)', 'renderer.setScissorTest(true)',
+  'previewRenderer.render(previewScene,previewCamera)', 'renderer.setScissorTest(true)',
   "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
   'live.renderer', 'live.scene', 'openConfigDb', 'data-filter="people"', 'function isPersonnelActor(object)', 'function hasPersonnelActorAncestor(object)',
   'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
@@ -32,9 +32,13 @@ for (const feature of [
 assert.ok(html.includes('renderer=live.renderer'), 'Standalone editor must reuse the isolated Matchday Environment renderer.');
 assert.ok(html.includes("width:'100vw',height:'100vh'"), 'Hidden Environment Lab bridge must use the full viewport, not a 2x2 pixel viewport.');
 assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environment Lab startup errors immediately.');
-assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
+assert.ok(html.includes('previewRenderer=new THREE.WebGLRenderer'), 'Live preview must use its own dedicated WebGL renderer so inspector panels cannot occlude it.');
+assert.ok(html.includes('previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1:1.5))'), 'Dedicated preview renderer must cap pixel ratio for mobile GPU safety.');
+assert.ok(html.includes("$('previewStage').appendChild(previewRenderer.domElement)"), 'Dedicated preview canvas must be mounted inside the visible preview stage.');
+assert.ok(html.includes('#previewStage canvas{position:absolute;inset:0;width:100%;height:100%;z-index:0'), 'Preview canvas must occupy the preview stage below its status overlays.');
 assert.ok(html.includes('const previewScene=new THREE.Scene()'), 'Live preview scene is missing.');
-assert.ok(html.includes('renderer=live.renderer'), 'Live preview must share the live Matchday WebGL renderer.');
+assert.ok(html.includes('renderer=live.renderer'), 'Main editor viewport must continue using the isolated Matchday Environment renderer.');
+assert.ok(html.includes('previewRenderer.render(previewScene,previewCamera)'), 'Live preview must render through its dedicated renderer, not the main viewport renderer.');
 assert.ok(html.includes('renderLivePreview();'), 'Live preview must render continuously alongside the main viewport.');
 assert.ok(html.includes('clone.material=source.material'), 'Live preview must reflect source material replacements as well as transforms.');
 assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
