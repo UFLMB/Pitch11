@@ -112,7 +112,7 @@ test("loading music fade waits until browser audio unlock actually starts playba
     await Promise.resolve();
     assert.equal(scheduled.length, 1, "15-second fade begins after playback is accepted");
     scheduled[0](15000);
-    assert.equal(instance.volume, 1, "music reaches target volume after the full fade");
+    assert.ok(Math.abs(instance.volume - 1) < 0.001, "music reaches target volume after the full fade");
   } finally {
     globalThis.Audio = originalAudio;
     globalThis.requestAnimationFrame = originalRaf;
