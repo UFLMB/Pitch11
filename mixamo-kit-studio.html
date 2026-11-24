@@ -210,7 +210,7 @@ async function readAllKitStore(db,storeName){
   tx.onerror=()=>reject(tx.error||new Error('Could not read '+storeName+' storage.'));
  });
 }
-function safeArchivePart(value){return String(value??'record').normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').slice(0,80)||'record';}
+function safeArchivePart(value){return String(value??'record').normalize('NFKD').replace(/[^a-zA-Z0-9._-]+/g,'_').slice(0,80)||'record';}
 async function archiveKitValue(value,path,entries,blobIndex){
  if(value instanceof Blob){
   const name=path+'/blobs/'+String(++blobIndex.value).padStart(4,'0')+'.'+(value.type==='image/png'?'png':value.type==='image/jpeg'?'jpg':value.type==='image/webp'?'webp':'bin');
