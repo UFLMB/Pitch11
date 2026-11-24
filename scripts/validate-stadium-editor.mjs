@@ -22,7 +22,7 @@ for (const feature of [
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
   'LIVE OBJECT PREVIEW', 'LIVE SYNC', 'id="previewStage"', 'function createLivePreviewClone(object)',
   'function syncLivePreviewNode(source,clone,isRoot=false)', 'function renderLivePreview()',
-  'previewRenderer.render(previewScene,previewCamera)', 'renderer.setScissorTest(true)',
+  'previewRenderer.render(previewScene,previewCamera)',
   "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
   'live.renderer', 'live.scene', 'openConfigDb', 'data-filter="people"', 'function isPersonnelActor(object)', 'function hasPersonnelActorAncestor(object)',
   'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
