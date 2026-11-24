@@ -22,9 +22,10 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 #p11-loading-screen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 
 /* Cinematic stadium motion: a restrained push-in and slowly waking floodlights. */
-#p11-loading-screen::after{content:"";position:absolute;z-index:0;inset:-3%;pointer-events:none;background-image:radial-gradient(ellipse at 78% 18%,rgba(255,238,190,.20) 0%,rgba(255,224,160,.07) 17%,transparent 42%),linear-gradient(112deg,transparent 28%,rgba(255,244,210,.075) 43%,transparent 56%),linear-gradient(72deg,transparent 55%,rgba(205,225,255,.065) 67%,transparent 78%),url("./input/loading_screen.png");background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.72;transform:scale(1.015);transform-origin:56% 48%;animation:p11-stadium-cinematic 15s ease-out both}
+#p11-loading-screen::after{content:"";position:absolute;z-index:0;inset:-3%;pointer-events:none;background-image:radial-gradient(ellipse at 78% 18%,rgba(255,238,190,.20) 0%,rgba(255,224,160,.07) 17%,transparent 42%),linear-gradient(112deg,transparent 28%,rgba(255,244,210,.075) 43%,transparent 56%),linear-gradient(72deg,transparent 55%,rgba(205,225,255,.065) 67%,transparent 78%),url("./input/loading_screen.png");background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.72;transform:scale(1.015);transform-origin:56% 48%;animation:p11-stadium-cinematic 15s ease-out both,p11-stadium-ambience 8s ease-in-out 15s infinite alternate}
 #p11-loading-screen::before{z-index:1}
 #p11-loading-screen .p11-loading-content{z-index:2}
+@keyframes p11-stadium-ambience{0%{opacity:.64;filter:brightness(.96)}100%{opacity:.82;filter:brightness(1.06)}}
 @keyframes p11-stadium-cinematic{0%{transform:scale(1.015) translate3d(0,0,0);filter:brightness(.72)}22%{filter:brightness(.88)}55%{transform:scale(1.055) translate3d(-.35%,.15%,0);filter:brightness(1)}100%{transform:scale(1.085) translate3d(-.7%,.25%,0);filter:brightness(1.04)}}
 @media(prefers-reduced-motion:reduce){#p11-loading-screen::after{animation:none;transform:none;filter:none}}
 
