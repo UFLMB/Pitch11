@@ -3,20 +3,12 @@ import { getGeneratedPlayerKit } from "./team-kit-template.mjs";
 import { FBXLoader } from "../vendor/three/examples/jsm/loaders/FBXLoader.js";
 import { clone as cloneSkeleton } from "../vendor/three/examples/jsm/utils/SkeletonUtils.js";
 import { resolvePlayerAnimationState, resolvePlayerClip, isOneShotAnimationState, stabilizeLocomotionAnimationState } from "./player-animation-map.mjs";
-import { resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
+import { MIXAMO_ANIMATION_FILES, resolveMixamoClipCandidates, isMixamoClipFile } from "./mixamo-animation-catalog.mjs";
 import { mapLegacyPlayers } from "./player-model-state.mjs";
 import { normalizeMixamoTrackTargets } from "./mixamo-track-binding.mjs";
 import { extractHorizontalRootMotion, flattenHorizontalRootMotion, removeLocomotionRootTranslation, shouldRemoveLocomotionRootTranslation, getHorizontalRootMotionDelta, getHorizontalRootMotionDisplacement, getLocomotionTimeScale, shouldFlattenHorizontalRootMotion } from "./locomotion-animation.mjs";
 
-const CORE_MIXAMO_CLIPS = [
-  "offensive idle.fbx",
-  "jog forward.fbx",
-  "jog backward.fbx",
-  "jog strafe left.fbx",
-  "jog strafe right.fbx",
-  "goalkeeper sidestep.fbx",
-  "goalkeeper sidestep (2).fbx"
-];
+
 function loadWithTimeout(promise, timeoutMs, label) {
   if (!(timeoutMs > 0)) return promise;
   let timeoutId;
@@ -168,6 +160,8 @@ export class MatchPlayerRenderer {
     this.status = "loading";
     this.animationLoadState = "not-started";
     this.animationLoadPromise = null;
+    this.animationProgress = { completed: 0, total: MIXAMO_ANIMATION_FILES.length };
+    this.kitLoadProgress = { completed: 0, total: 0 };
     this.error = "";
     this.mixamoError = "";
     this.modelSource = "";
@@ -229,9 +223,27 @@ export class MatchPlayerRenderer {
       // animation FBX here hid the entire team on slow/mobile connections.
       this.status = "ready";
       this.animationLoadState = "loading";
-      this.animationLoadPromise = Promise.allSettled(CORE_MIXAMO_CLIPS.map(file => this.loadMixamoClip(file)))
-        .then(results => {
-          const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${CORE_MIXAMO_CLIPS[index]}: ${result.reason?.message || String(result.reason)}`] : []);
+      this.animationLoadPromise = (async () => {
+        const results = [];
+        const batchSize = 4;
+        for (let offset = 0; offset < MIXAMO_ANIMATION_FILES.length; offset += batchSize) {
+          const batch = MIXAMO_ANIMATION_FILES.slice(offset, offset + batchSize);
+          const settled = await Promise.allSettled(batch.map(file =>
+            this.loadMixamoClip(file).then(value => {
+              this.animationProgress.completed++;
+              this.onProgress?.({ type: "animation", ...this.animationProgress });
+              return value;
+            }, error => {
+              this.animationProgress.completed++;
+              this.onProgress?.({ type: "animation", ...this.animationProgress });
+              throw error;
+            })
+          ));
+          results.push(...settled);
+        }
+        return results;
+      })().then(results => {
+          const failures = results.flatMap((result, index) => result.status === "rejected" ? [`${MIXAMO_ANIMATION_FILES[index]}: ${result.reason?.message || String(result.reason)}`] : []);
           this.clipCount = this.clipCache.size;
           this.error = failures.join("; ");
           this.animationLoadState = failures.length ? "partial" : "ready";
@@ -416,6 +428,11 @@ export class MatchPlayerRenderer {
     const signature = [teamSlot, role, number].join(":");
     if (entry.generatedKitSignature === signature) return;
     entry.generatedKitSignature = signature;
+    this.kitLoadProgress.total++;
+    const finishKitLoad = () => {
+      this.kitLoadProgress.completed++;
+      this.onProgress?.({ type: "kit", ...this.kitLoadProgress });
+    };
     getGeneratedPlayerKit(teamSlot, role, number).then(async record => {
       if (!record || entry.generatedKitSignature !== signature) return;
       const personalizedParts = new Set(record.personalizedParts || []);
@@ -456,7 +473,7 @@ export class MatchPlayerRenderer {
       }
     }).catch(() => {
       // Missing or unavailable browser storage falls back to the built-in team kit.
-    });
+    }).finally(finishKitLoad);
   }
 
   setGroundHeight(value) {

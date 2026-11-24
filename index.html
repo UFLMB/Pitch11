@@ -22,9 +22,10 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 #p11-loading-screen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
 
 /* Cinematic stadium motion: a restrained push-in and slowly waking floodlights. */
-#p11-loading-screen::after{content:"";position:absolute;z-index:0;inset:-3%;pointer-events:none;background-image:radial-gradient(ellipse at 78% 18%,rgba(255,238,190,.20) 0%,rgba(255,224,160,.07) 17%,transparent 42%),linear-gradient(112deg,transparent 28%,rgba(255,244,210,.075) 43%,transparent 56%),linear-gradient(72deg,transparent 55%,rgba(205,225,255,.065) 67%,transparent 78%),url("./input/loading_screen.png");background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.72;transform:scale(1.015);transform-origin:56% 48%;animation:p11-stadium-cinematic 15s ease-out both}
+#p11-loading-screen::after{content:"";position:absolute;z-index:0;inset:-3%;pointer-events:none;background-image:radial-gradient(ellipse at 78% 18%,rgba(255,238,190,.20) 0%,rgba(255,224,160,.07) 17%,transparent 42%),linear-gradient(112deg,transparent 28%,rgba(255,244,210,.075) 43%,transparent 56%),linear-gradient(72deg,transparent 55%,rgba(205,225,255,.065) 67%,transparent 78%),url("./input/loading_screen.png");background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.72;transform:scale(1.015);transform-origin:56% 48%;animation:p11-stadium-cinematic 15s ease-out both,p11-stadium-ambience 8s ease-in-out 15s infinite alternate}
 #p11-loading-screen::before{z-index:1}
 #p11-loading-screen .p11-loading-content{z-index:2}
+@keyframes p11-stadium-ambience{0%{opacity:.64;filter:brightness(.96)}100%{opacity:.82;filter:brightness(1.06)}}
 @keyframes p11-stadium-cinematic{0%{transform:scale(1.015) translate3d(0,0,0);filter:brightness(.72)}22%{filter:brightness(.88)}55%{transform:scale(1.055) translate3d(-.35%,.15%,0);filter:brightness(1)}100%{transform:scale(1.085) translate3d(-.7%,.25%,0);filter:brightness(1.04)}}
 @media(prefers-reduced-motion:reduce){#p11-loading-screen::after{animation:none;transform:none;filter:none}}
 
@@ -36,6 +37,13 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 #p11-loading-screen .p11-loading-track{width:min(320px,76vw);height:2px;margin-top:13px;background:rgba(255,255,255,.34);overflow:hidden;box-shadow:0 1px 8px rgba(0,0,0,.35)}
 #p11-loading-screen .p11-loading-fill{width:0;height:100%;background:linear-gradient(90deg,#b28b4b,#ffe4a0);box-shadow:0 0 12px rgba(255,220,150,.65);transition:width .22s ease}
 #p11-loading-screen .p11-loading-percent{margin-top:9px;font-size:10px;font-variant-numeric:tabular-nums;letter-spacing:.16em;color:rgba(235,239,243,.78);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+#p11-loading-fullscreen{position:fixed;z-index:5;top:calc(env(safe-area-inset-top,0px) + 16px);right:calc(env(safe-area-inset-right,0px) + 16px);width:44px;height:44px;display:grid;place-items:center;border:1px solid rgba(255,226,160,.48);border-radius:13px;background:linear-gradient(145deg,rgba(18,27,35,.82),rgba(4,9,14,.76));color:#fff0c5;box-shadow:0 8px 28px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.12);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);cursor:pointer;touch-action:manipulation}
+#p11-loading-fullscreen:active{transform:scale(.94);background:rgba(216,182,111,.24)}
+#p11-loading-fullscreen svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round}
+#p11-loading-screen .p11-loading-detail{margin-top:8px;min-height:13px;font-size:9px;font-weight:750;letter-spacing:.13em;color:rgba(231,237,243,.78);text-shadow:0 1px 8px rgba(0,0,0,.8)}
+#p11-loading-screen .p11-loading-tip{margin-top:17px;max-width:310px;min-height:30px;font-size:10px;line-height:1.55;font-weight:650;letter-spacing:.045em;color:rgba(238,242,246,.78);text-shadow:0 1px 10px rgba(0,0,0,.9);transition:opacity .25s ease}
+#p11-loading-screen.has-error .p11-loading-error{display:block}
+@media(max-width:600px){#p11-loading-fullscreen{top:calc(env(safe-area-inset-top,0px) + 12px);right:calc(env(safe-area-inset-right,0px) + 12px);width:42px;height:42px}#p11-loading-screen .p11-loading-tip{max-width:280px}}
 #p11-loading-screen .p11-loading-error{display:none;margin-top:20px;padding:11px 24px;border:1px solid rgba(255,224,160,.65);background:rgba(7,12,16,.78);color:#f6dfae;font:800 10px/1 system-ui,sans-serif;letter-spacing:.16em}
 #p11-loading-screen.has-error .p11-loading-error{display:block}
 @media(max-width:600px){#p11-loading-screen{background-position:center center}#p11-loading-screen .p11-loading-content{width:calc(100% - 44px);margin:0 22px calc(env(safe-area-inset-bottom,0px) + 34px)}#p11-loading-screen .p11-loading-status{margin-top:34px}}
@@ -47,12 +55,15 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <div id="p11-version" aria-label="Game version">v0.1.2</div>
 <div id="p11-loading-screen" role="status" aria-live="polite" aria-label="Preparing the match">
+<button id="p11-loading-fullscreen" type="button" aria-label="Enter fullscreen" title="Fullscreen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg></button>
 <div class="p11-loading-content"><div class="p11-loading-brand">PITCH 11</div><div class="p11-loading-rule"></div>
 <div class="p11-loading-tagline">EVERY MATCH BEGINS WITH A MOMENT.</div>
 <div class="p11-loading-status" id="p11-loading-status">PREPARING THE PITCH</div>
 <div class="p11-loading-track" aria-hidden="true"><div class="p11-loading-fill" id="p11-loading-fill"></div></div>
+<div class="p11-loading-detail" id="p11-loading-detail">CHECKING MATCHDAY ASSETS</div>
 <div class="p11-loading-percent" id="p11-loading-percent">0%</div>
-<button class="p11-loading-error" id="p11-loading-continue" type="button">CONTINUE</button></div></div>
+<div class="p11-loading-tip" id="p11-loading-tip">MATCHDAY NOTE · THE TEAMS ARE GETTING READY.</div>
+<button class="p11-loading-error" id="p11-loading-continue" type="button">RETRY</button></div></div>
 <script src="engine/law-compliance.js">
 </script>
 <script>
@@ -6450,7 +6461,7 @@ MS.data=function(){
  window.P11StadiumBoot={state:'loading-runtime',progress:0,error:'',optionalAssets:{}};
 </script>
 <script type="module">
- import('./engine/audio-assets.mjs').catch(error=>console.warn('PITCH 11 optional audio bridge unavailable.',error));
+ import('./engine/audio-assets.mjs').catch(error=>{window.P11AudioBootError=error&&error.message?error.message:String(error);console.warn('PITCH 11 audio bridge unavailable.',error);});
  import('./stadium-runtime.js').catch(error=>{
   const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
   boot.state='runtime-error';boot.error=error&&error.message?error.message:String(error);
@@ -6554,7 +6565,8 @@ take=function(p,byHand=false){
       window.matchMedia('(display-mode:fullscreen)').matches
     ))||navigator.standalone===true
   );
-  const enterFullscreen=()=>{
+  const enterFullscreen=event=>{
+    if(event?.target?.closest?.('#p11-loading-fullscreen'))return;
     if(standalone()||document.fullscreenElement)return;
     const root=document.documentElement;
     if(typeof root.requestFullscreen!=='function')return;
@@ -6575,38 +6587,139 @@ take=function(p,byHand=false){
 
 
 <script>
-/* Matchday loading: a 15-second pre-match sequence, with real boot readiness as the final gate. */
-(()=>{const screen=document.getElementById('p11-loading-screen');if(!screen)return;
-const fill=document.getElementById('p11-loading-fill'),percent=document.getElementById('p11-loading-percent'),status=document.getElementById('p11-loading-status'),button=document.getElementById('p11-loading-continue');
-const started=performance.now(),DURATION=15000,FINAL_PHASE=2000;
-const scenes=[
-{at:0,text:'THE FLOODLIGHTS COME ALIVE'},
-{at:2100,text:'THE PITCH GETS ITS FINAL CHECK'},
-{at:4200,text:'THE STANDS ARE FILLING UP'},
-{at:6300,text:'BOTH TEAMS ARE IN THE TUNNEL'},
-{at:8400,text:'THE PLAYERS WALK OUT'},
-{at:10500,text:'CAPTAINS MEET THE OFFICIALS'},
-{at:12600,text:'KICK-OFF IS JUST MOMENTS AWAY'}
-];
-let finished=false,lastScene=-1;
-const hide=()=>{if(finished)return;finished=true;screen.classList.add('is-hidden');window.setTimeout(()=>screen.remove(),720);};
-button.addEventListener('click',hide);
-const tick=now=>{if(finished)return;const b=window.P11StadiumBoot||{},model=b.playerModel||{};
-const elapsed=now-started,stadiumReady=b.state==='ready',modelReady=model.state==='ready',allReady=stadiumReady&&modelReady;
-const failed=['error','runtime-error'].includes(b.state)||['error','asset-error'].includes(model.state);
-const sp=stadiumReady?1:Math.max(0,Math.min(1,Number(b.progress)||0)),mp=modelReady?1:Math.max(0,Math.min(1,Number(model.progress)||0));
-const measured=(sp*.14+mp*.86)*100;
-let value=Math.min(85,Math.round(measured));
-if(allReady&&elapsed>=DURATION-FINAL_PHASE)value=Math.min(100,85+Math.round(15*Math.min(1,(elapsed-(DURATION-FINAL_PHASE))/FINAL_PHASE)));
-if(allReady&&elapsed>=DURATION)value=100;
-fill.style.width=value+'%';percent.textContent=failed?'—':value+'%';
-if(failed){screen.classList.add('has-error');status.textContent='MATCHDAY — READY WHEN YOU ARE';}
-else{
-const sceneIndex=scenes.reduce((found,scene,i)=>elapsed>=scene.at?i:found,0);
-if(sceneIndex!==lastScene){lastScene=sceneIndex;status.textContent=scenes[sceneIndex].text;}
-if(allReady&&elapsed>=DURATION){status.textContent='READY FOR KICK-OFF';hide();}
-}
-if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
+/* Matchday loading: measured readiness for every required match asset. */
+(()=>{
+ const screen=document.getElementById('p11-loading-screen');if(!screen)return;
+ const fill=document.getElementById('p11-loading-fill'),percent=document.getElementById('p11-loading-percent');
+ const status=document.getElementById('p11-loading-status'),detail=document.getElementById('p11-loading-detail');
+ const tip=document.getElementById('p11-loading-tip'),retry=document.getElementById('p11-loading-continue');
+ const fullscreen=document.getElementById('p11-loading-fullscreen');
+ const started=performance.now(),MINIMUM_DURATION=15000;
+ const tips=[
+  'MATCHDAY NOTE · THE PENALTY MARK IS 11 METRES FROM THE GOAL LINE.',
+  'MATCHDAY NOTE · A STANDARD MATCH HAS TWO 45-MINUTE HALVES.',
+  'MATCHDAY NOTE · THE REFEREE ADDS TIME FOR DELAYS AND STOPPAGES.',
+  'MATCHDAY NOTE · EVERY PLAYER MODEL IS BEING PREPARED BEFORE KICK-OFF.',
+  'MATCHDAY NOTE · THE GOALKEEPER ANIMATIONS ARE CHECKED AGAINST THE SAME RIG.',
+  'MATCHDAY NOTE · THE PITCH SURFACE AND ITS LIGHTING ARE BEING FINALISED.',
+  'MATCHDAY NOTE · BOTH TEAMS WILL BE READY WHEN THE LAST ASSET IS IN.',
+  'MATCHDAY NOTE · TAKE A MOMENT. THE FLOODLIGHTS ARE COMING ON.'
+ ];
+ let finished=false,audioStarted=false,audioState='loading',audioProgress={completed:0,total:9,failed:[]};
+ const clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
+ const fullscreenAvailable=()=>!!(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);
+ const updateFullscreen=()=>{
+  if(!fullscreen)return;
+  const active=!!(document.fullscreenElement||document.webkitFullscreenElement);
+  fullscreen.setAttribute('aria-label',active?'Exit fullscreen':'Enter fullscreen');
+  fullscreen.title=active?'Exit fullscreen':'Fullscreen';
+  fullscreen.innerHTML=active
+   ?'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3v5H3M16 3v5h5M3 16h5v5M21 16h-5v5"/></svg>'
+   :'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>';
+ };
+ const requestFullscreen=()=>{
+  const root=document.documentElement;
+  if(document.fullscreenElement||document.webkitFullscreenElement){
+   const exit=document.exitFullscreen||document.webkitExitFullscreen;
+   if(exit)try{const result=exit.call(document);if(result?.catch)result.catch(()=>{});}catch(_){}
+   return;
+  }
+  const request=root.requestFullscreen||root.webkitRequestFullscreen;
+  if(!request){detail.textContent='FULLSCREEN IS NOT SUPPORTED BY THIS BROWSER';return;}
+  try{const result=request.call(root);if(result?.catch)result.catch(()=>{detail.textContent='USE YOUR BROWSER MENU FOR FULLSCREEN';});}
+  catch(_){detail.textContent='USE YOUR BROWSER MENU FOR FULLSCREEN';}
+ };
+ if(fullscreen){
+  fullscreen.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();requestFullscreen();});
+  if(!fullscreenAvailable())fullscreen.hidden=true;
+  document.addEventListener('fullscreenchange',updateFullscreen);
+  document.addEventListener('webkitfullscreenchange',updateFullscreen);
+  updateFullscreen();
+ }
+ retry.addEventListener('click',()=>window.location.reload());
+ const beginAudio=()=>{
+  const audio=window.P11AudioAssets;
+  if(!audio){
+   if(window.P11AudioBootError){audioState='error';audioProgress={...audioProgress,failed:[window.P11AudioBootError]};}
+   return;
+  }
+  if(audioStarted)return;
+  audioStarted=true;
+  audio.preloadAssets(progress=>{audioProgress=progress;}).then(result=>{
+   audioState=result.state;audioProgress=result;
+  }).catch(error=>{
+   audioState='error';audioProgress={...audioProgress,failed:[error?.message||String(error)]};
+  });
+ };
+ const isReady=state=>state==='ready';
+ const tick=now=>{
+  if(finished)return;
+  beginAudio();
+  const b=window.P11StadiumBoot||{},model=b.playerModel||{},stadium=window.P11Stadium;
+  const diagnostics=stadium?.diagnostics||{},pitch=diagnostics.pitch||{},pbr=pitch.pbrLoad?.files||{};
+  const pbrStates=Object.values(pbr);
+  const optional=Object.values(b.optionalAssets||{});
+  const anim=model.animationProgress||{completed:0,total:54};
+  const kits=model.kitProgress||{completed:0,total:0};
+  const playerStats=diagnostics.playerModels||{};
+  const stadiumProgress=clamp(b.progress);
+  const modelProgress=clamp(model.progress);
+  const animationProgress=anim.total>0?clamp(anim.completed/anim.total):0;
+  const audioRatio=audioProgress.total>0?clamp(audioProgress.completed/audioProgress.total):0;
+  const optionalRatio=optional.length===3?optional.filter(isReady).length/3:0;
+  const pbrRatio=pbrStates.length===3?pbrStates.filter(x=>isReady(x.status)).length/3:0;
+  const detailedTexture= b.timings?.detailedTurfTextureState==='ready'?1:0;
+  const playerModelsRatio=playerStats.expectedPlayers>0?clamp(playerStats.renderedPlayers/playerStats.expectedPlayers):0;
+  const kitRatio=kits.total>0?clamp(kits.completed/kits.total):0;
+  const weighted=15*stadiumProgress+10*modelProgress+35*animationProgress+10*audioRatio+10*optionalRatio+10*((pbrRatio+detailedTexture)/2)+5*playerModelsRatio+5*kitRatio;
+  const elapsed=now-started;
+  const allReady=b.state==='ready'&&model.state==='ready'&&model.animationState==='ready'&&anim.total===54&&anim.completed===54&&
+   audioState==='ready'&&optional.length===3&&optional.every(isReady)&&pbrStates.length===3&&pbrStates.every(x=>isReady(x.status))&&
+   detailedTexture===1&&stadium?.playerModelsReady===true&&kits.total===playerStats.expectedPlayers&&kits.completed===kits.total;
+  const errors=[];
+  if(['error','runtime-error'].includes(b.state))errors.push(b.error||'Stadium failed');
+  if(['error','asset-error'].includes(model.state))errors.push(model.error||'Player model failed');
+  if(model.animationState==='partial'||model.animationState==='error')errors.push(model.error||'One or more animations failed');
+  if(audioState==='error')errors.push(...(audioProgress.failed||['Audio preload failed']));
+  if(optional.some(x=>x==='error'))errors.push('A stadium detail asset failed');
+  if(pbrStates.some(x=>x.status==='error'))errors.push('A pitch texture failed');
+  const failed=errors.length>0;
+  const value=allReady&&elapsed>=MINIMUM_DURATION?100:Math.min(99,Math.floor(weighted));
+  fill.style.width=value+'%';
+  percent.textContent=failed?'—':value+'%';
+  const phase=failed?'MATCHDAY ASSET ERROR':
+   allReady?(elapsed>=MINIMUM_DURATION?'READY FOR KICK-OFF':'FINAL MATCHDAY PRESENTATION'):
+   anim.completed<anim.total?'LOADING PLAYER ANIMATIONS':
+   audioState!=='ready'?'LOADING MATCH AUDIO':
+   optionalRatio<1?'BUILDING THE STADIUM':
+   pbrRatio<1||!detailedTexture?'FINISHING THE PITCH':
+   !stadium?.playerModelsReady?'PREPARING BOTH TEAMS':
+   !model.state||model.state!=='ready'?'LOADING PLAYER MODEL':
+   'FINALISING MATCHDAY';
+  status.textContent=phase;
+  let sub='VERIFYING MATCH RESOURCES';
+  if(anim.completed<anim.total)sub='ANIMATIONS '+anim.completed+' / '+anim.total;
+  else if(audioState!=='ready')sub='AUDIO FILES '+audioProgress.completed+' / '+audioProgress.total;
+  else if(optionalRatio<1)sub='STADIUM DETAILS '+Math.round(optionalRatio*3)+' / 3';
+  else if(pbrRatio<1)sub='PITCH TEXTURES '+Math.round(pbrRatio*3)+' / 3';
+  else if(!detailedTexture)sub='GENERATING THE FINAL GRASS SURFACE';
+  else if(!stadium?.playerModelsReady)sub='PLAYER MODELS '+(playerStats.renderedPlayers||0)+' / '+(playerStats.expectedPlayers||22);
+  else if(kits.completed<kits.total)sub='KIT TEXTURES '+kits.completed+' / '+kits.total;
+  else if(allReady)sub=elapsed<MINIMUM_DURATION?'MATCHDAY PRESENTATION':'ALL SYSTEMS READY';
+  detail.textContent=sub;
+  const tipIndex=Math.floor(elapsed/4600)%tips.length;
+  tip.textContent=tips[tipIndex];
+  if(failed){
+   screen.classList.add('has-error');
+   retry.textContent='RETRY LOADING';
+   detail.textContent=errors[0].toUpperCase().slice(0,90);
+  }else if(allReady&&elapsed>=MINIMUM_DURATION){
+   finished=true;screen.classList.add('is-hidden');window.setTimeout(()=>screen.remove(),720);return;
+  }
+  requestAnimationFrame(tick);
+ };
+ requestAnimationFrame(tick);
+})();
 </script>
 </body>
 </html>

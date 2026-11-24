@@ -30,8 +30,47 @@ let musicPlayPending = false;
 let musicFadeFrame = 0;
 let musicTargetVolume = 0;
 let pendingMusicRamp = null;
+let audioPreloadPromise = null;
+let audioPreloadState = "idle";
+let audioPreloadProgress = { completed: 0, total: Object.keys(SOURCES).length + 1, failed: [] };
 const pools = new Map();
 const warned = new Set();
+
+async function preloadAssets(onProgress = null) {
+  if (audioPreloadPromise) return audioPreloadPromise;
+  if (typeof fetch !== "function") {
+    audioPreloadState = "error";
+    return { state: audioPreloadState, ...audioPreloadProgress };
+  }
+  const assets = [...Object.entries(SOURCES), ["menuMusic", MENU_MUSIC]];
+  audioPreloadState = "loading";
+  audioPreloadProgress = { completed: 0, total: assets.length, failed: [] };
+  const report = () => {
+    if (typeof onProgress === "function") onProgress({ ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] });
+  };
+  audioPreloadPromise = Promise.allSettled(assets.map(async ([name, url]) => {
+    const response = await fetch(url, { cache: "force-cache" });
+    if (!response.ok) throw new Error(name + " audio preload failed: HTTP " + response.status);
+    const bytes = await response.arrayBuffer();
+    if (!bytes.byteLength) throw new Error(name + " audio asset is empty");
+    audioPreloadProgress.completed++;
+    report();
+    return { name, bytes: bytes.byteLength };
+  })).then(results => {
+    audioPreloadProgress.failed = results.flatMap((result, index) =>
+      result.status === "rejected" ? [assets[index][0] + ": " + (result.reason?.message || String(result.reason))] : []
+    );
+    audioPreloadState = audioPreloadProgress.failed.length ? "error" : "ready";
+    report();
+    return { state: audioPreloadState, ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] };
+  }).catch(error => {
+    audioPreloadState = "error";
+    audioPreloadProgress.failed = [error?.message || String(error)];
+    report();
+    return { state: audioPreloadState, ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] };
+  });
+  return audioPreloadPromise;
+}
 
 function warnOnce(key, error) {
   if (warned.has(key)) return;
@@ -249,6 +288,9 @@ if (typeof window !== "undefined") {
   });
   window.P11AudioAssets = Object.freeze({
     sources: SOURCES,
+    preloadAssets,
+    get preloadState() { return audioPreloadState; },
+    get preloadProgress() { return { ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] }; },
     menuMusic,
     resolveMenuMusicIntent,
     play,
@@ -260,4 +302,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { SOURCES, MENU_MUSIC, menuMusic, resolveMenuMusicIntent, play, setLevels, tick, unlock };
+export { SOURCES, MENU_MUSIC, menuMusic, preloadAssets, resolveMenuMusicIntent, play, setLevels, tick, unlock };
