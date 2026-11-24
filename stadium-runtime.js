@@ -374,15 +374,15 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   let seed=7711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   crowdFans=all.map((p,i)=>{
    const scale=.88+rnd()*.22,yaw=Math.atan2(-p.x,-p.z)+(rnd()-.5)*.3;
-   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],raised:rnd()<.22,outerwear:rnd()<.43,hooded:rnd()<.24,headwear:rnd()<.19,scarf:rnd()<.13,reacts:false};
    const base=sectionColors[p.section%sectionColors.length];
    const shirtColor=rnd()<.68?base:sectionColors[Math.floor(rnd()*sectionColors.length)];
-   col.setHex(shirtColor).multiplyScalar(.78+rnd()*.42);
+   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],shirtColor,outerwearColor:jacketColors[Math.floor(rnd()*jacketColors.length)],raised:rnd()<.22,outerwear:rnd()<.43,hooded:rnd()<.24,headwear:rnd()<.19,scarf:rnd()<.13,reacts:false};
+   col.setHex(fan.shirtColor).multiplyScalar(.78+rnd()*.42);
    o.position.set(p.x,p.y+.36*scale,p.z);o.rotation.set(0,yaw,0);o.scale.setScalar(scale);o.updateMatrix();torso.setMatrixAt(i,o.matrix);torso.setColorAt(i,col);
    col.setHex(fan.skin);o.position.set(p.x,p.y+.77*scale,p.z);o.scale.setScalar(scale);o.updateMatrix();head.setMatrixAt(i,o.matrix);head.setColorAt(i,col);
    col.setHex(hairColors[Math.floor(rnd()*hairColors.length)]);o.position.set(p.x,p.y+.835*scale,p.z);o.scale.set(scale*.94,scale*.52,scale*.94);o.updateMatrix();hair.setMatrixAt(i,o.matrix);hair.setColorAt(i,col);
    col.setHex(fan.skin);
-   const clothingColor=jacketColors[Math.floor(rnd()*jacketColors.length)];
+   const clothingColor=fan.outerwearColor;
    col.setHex(clothingColor);
    o.position.set(p.x,p.y+.36*scale,p.z+.145*scale);o.rotation.set(0,yaw,0);o.scale.set(fan.outerwear?scale:0,fan.outerwear?scale:0,fan.outerwear?scale:0);o.updateMatrix();outerwear.setMatrixAt(i,o.matrix);outerwear.setColorAt(i,col);
    col.setHex(clothingColor);
@@ -391,7 +391,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    o.position.set(p.x,p.y+.875*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();headwear.setMatrixAt(i,o.matrix);headwear.setColorAt(i,col);
    col.setHex(jacketColors[Math.floor(rnd()*jacketColors.length)]);
    o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(Math.PI/2,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
-   col.setHex(fan.skin);
+   col.setHex(fan.outerwear?fan.outerwearColor:fan.shirtColor);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0);
     o.position.set(p.x+side*.15*scale,p.y+.51*scale,p.z);o.rotation.set(0,yaw,side*(fan.raised?.18:.82));o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);
