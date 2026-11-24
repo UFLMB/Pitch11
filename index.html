@@ -6460,7 +6460,7 @@ MS.data=function(){
  window.P11StadiumBoot={state:'loading-runtime',progress:0,error:'',optionalAssets:{}};
 </script>
 <script type="module">
- import('./engine/audio-assets.mjs').catch(error=>console.warn('PITCH 11 optional audio bridge unavailable.',error));
+ import('./engine/audio-assets.mjs').catch(error=>{window.P11AudioBootError=error&&error.message?error.message:String(error);console.warn('PITCH 11 audio bridge unavailable.',error);});
  import('./stadium-runtime.js').catch(error=>{
   const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
   boot.state='runtime-error';boot.error=error&&error.message?error.message:String(error);
@@ -6564,7 +6564,8 @@ take=function(p,byHand=false){
       window.matchMedia('(display-mode:fullscreen)').matches
     ))||navigator.standalone===true
   );
-  const enterFullscreen=()=>{
+  const enterFullscreen=event=>{
+    if(event?.target?.closest?.('#p11-loading-fullscreen'))return;
     if(standalone()||document.fullscreenElement)return;
     const root=document.documentElement;
     if(typeof root.requestFullscreen!=='function')return;
@@ -6637,7 +6638,11 @@ take=function(p,byHand=false){
  retry.addEventListener('click',()=>window.location.reload());
  const beginAudio=()=>{
   const audio=window.P11AudioAssets;
-  if(!audio||audioStarted)return;
+  if(!audio){
+   if(window.P11AudioBootError){audioState='error';audioProgress={...audioProgress,failed:[window.P11AudioBootError]};}
+   return;
+  }
+  if(audioStarted)return;
   audioStarted=true;
   audio.preloadAssets(progress=>{audioProgress=progress;}).then(result=>{
    audioState=result.state;audioProgress=result;
