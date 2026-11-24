@@ -363,6 +363,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   const outerwear=new THREE.InstancedMesh(new THREE.BoxGeometry(.29,.39,.055),outerwearMat,all.length);
   const hoods=new THREE.InstancedMesh(new THREE.SphereGeometry(.12,7,6),hoodMat,all.length);
   const headwear=new THREE.InstancedMesh(new THREE.CylinderGeometry(.105,.115,.055,8),headwearMat,all.length);
+  const capBrims=new THREE.InstancedMesh(new THREE.BoxGeometry(.15,.018,.085),headwearMat,all.length);
   const scarves=new THREE.InstancedMesh(new THREE.CylinderGeometry(.125,.125,.075,8),scarfMat,all.length);
   const trouserColors=[0x171b22,0x252a31,0x343238,0x4a4038,0x202d35,0x4b4c4d];
   const jacketColors=[0x101923,0x29333d,0x4b3030,0x354638,0x77736c,0x24252a,0x6b4b35,0x263d50,0x8a3037];
@@ -389,8 +390,9 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    o.position.set(p.x,p.y+.80*scale,p.z-.025*scale);o.rotation.set(0,yaw,0);o.scale.set(fan.hooded?scale:0,fan.hooded?scale:0,fan.hooded?scale:0);o.updateMatrix();hoods.setMatrixAt(i,o.matrix);hoods.setColorAt(i,col);
    col.setHex(hatColors[Math.floor(rnd()*hatColors.length)]);
    o.position.set(p.x,p.y+.875*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();headwear.setMatrixAt(i,o.matrix);headwear.setColorAt(i,col);
+   o.position.set(p.x,p.y+.87*scale,p.z+.075*scale);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();capBrims.setMatrixAt(i,o.matrix);capBrims.setColorAt(i,col);
    col.setHex(jacketColors[Math.floor(rnd()*jacketColors.length)]);
-   o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(Math.PI/2,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
+   o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
    col.setHex(fan.outerwear?fan.outerwearColor:fan.shirtColor);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0);
@@ -401,9 +403,9 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    }
    return fan;
   });
-  for(const mesh of[torso,head,hair,arms,legs,outerwear,hoods,headwear,scarves]){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
-  scene.add(torso,head,hair,arms,legs,outerwear,hoods,headwear,scarves);
-  crowdFans.meshes={torso,head,hair,arms,legs,outerwear,hoods,headwear,scarves};
+  for(const mesh of[torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves]){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
+  scene.add(torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves);
+  crowdFans.meshes={torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves};
  }
  function addSecurity(){
   const positions=createProductionSecurityPositions();
@@ -475,7 +477,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    o.position.set(f.x,f.y+.77*f.scale+bob,f.z);o.updateMatrix();meshes.head.setMatrixAt(i,o.matrix);
    o.position.set(f.x,f.y+.80*f.scale+bob,f.z-.025*f.scale);o.scale.set(f.hooded?f.scale:0,f.hooded?f.scale:0,f.hooded?f.scale:0);o.updateMatrix();meshes.hoods.setMatrixAt(i,o.matrix);
    o.position.set(f.x,f.y+.875*f.scale+bob,f.z);o.scale.set(f.headwear?f.scale:0,f.headwear?f.scale:0,f.headwear?f.scale:0);o.updateMatrix();meshes.headwear.setMatrixAt(i,o.matrix);
-   o.position.set(f.x,f.y+.675*f.scale+bob,f.z);o.rotation.set(Math.PI/2,f.yaw,0);o.scale.set(f.scarf?f.scale:0,f.scarf?f.scale:0,f.scarf?f.scale:0);o.updateMatrix();meshes.scarves.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.87*f.scale+bob,f.z+.075*f.scale);o.updateMatrix();meshes.capBrims.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.675*f.scale+bob,f.z);o.rotation.set(0,f.yaw,0);o.scale.set(f.scarf?f.scale:0,f.scarf?f.scale:0,f.scarf?f.scale:0);o.updateMatrix();meshes.scarves.setMatrixAt(i,o.matrix);
    o.rotation.set(0,f.yaw,0);o.scale.setScalar(f.scale);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0),sway=f.raised?Math.sin(now*.005+f.phase+side)*.24:wave*.055;
@@ -483,7 +486,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    }
   }
   meshes.torso.instanceMatrix.needsUpdate=true;meshes.head.instanceMatrix.needsUpdate=true;meshes.arms.instanceMatrix.needsUpdate=true;
-  meshes.outerwear.instanceMatrix.needsUpdate=true;meshes.hoods.instanceMatrix.needsUpdate=true;meshes.headwear.instanceMatrix.needsUpdate=true;meshes.scarves.instanceMatrix.needsUpdate=true;
+  meshes.outerwear.instanceMatrix.needsUpdate=true;meshes.hoods.instanceMatrix.needsUpdate=true;meshes.headwear.instanceMatrix.needsUpdate=true;meshes.capBrims.instanceMatrix.needsUpdate=true;meshes.scarves.instanceMatrix.needsUpdate=true;
  }
  function updateStaff(now){
   const t=now*.00055;
