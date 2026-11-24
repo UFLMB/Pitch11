@@ -21,7 +21,7 @@ for (const feature of [
   'applyText', 'imageUpload', 'duplicateSelected', 'deleteSelected',
   'function undo()', 'function redo()', 'localStorage', 'PITCH11_STADIUM_CONFIG',
   "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
-  'live.renderer', 'live.scene', 'openConfigDb',
+  'live.renderer', 'live.scene', 'openConfigDb', 'data-filter="people"', 'function isPersonnelActor(object)', 'function hasPersonnelActorAncestor(object)',
   'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
@@ -31,6 +31,13 @@ assert.ok(html.includes("width:'100vw',height:'100vh'"), 'Hidden Environment Lab
 assert.ok(html.includes("boot?.state==='error'"), 'Editor must surface Environment Lab startup errors immediately.');
 assert.ok(!html.includes('new THREE.WebGLRenderer'), 'Editor must not allocate a second WebGL context.');
 assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
+assert.ok(html.includes("return'people'"), 'Personnel actors must have a dedicated PEOPLE filter category.');
+assert.ok(html.includes('(!isPersonnelActor(o)&&hasPersonnelActorAncestor(o))'), 'Personnel must be selected and transformed as complete actors, not individual body meshes.');
+assert.ok(html.includes('if(hasPersonnelActorAncestor(target))'), 'Viewport clicks must select the whole personnel actor, not an individual body part.');
+assert.ok(runtime.includes("guard.name='Stadium Security Guard '+(i+1)"), 'Production security actors are missing from the live environment.');
+assert.ok(runtime.includes("actor.name='Touchline Staff '+(side>0?'North ':'South ')+(i+1)"), 'Touchline staff actors are missing from the live environment.');
+assert.ok(runtime.includes('const z=side*38.1,x=-22+i*11;'), 'Touchline staff placement coordinates are missing.');
+assert.ok(runtime.includes('createProductionSecurityPositions()'), 'Production security placement positions are missing.');
 assert.ok(runtime.includes('editorSelectable=true'), 'Runtime stadium assemblies are missing editor selection metadata.');
 assert.ok(runtime.includes('setEditorMode(active)'), 'Environment runtime does not expose the isolated editor bridge.');
 assert.ok(runtime.includes('if(externalEditorActive)return'), 'Environment runtime does not pause its own renderer while the editor owns the scene.');
