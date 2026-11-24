@@ -391,11 +391,13 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    o.position.set(p.x,p.y+.875*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();headwear.setMatrixAt(i,o.matrix);headwear.setColorAt(i,col);
    col.setHex(jacketColors[Math.floor(rnd()*jacketColors.length)]);
    o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(Math.PI/2,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
-   col.setHex(trouserColors[Math.floor(rnd()*trouserColors.length)]);
+   col.setHex(fan.skin);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0);
     o.position.set(p.x+side*.15*scale,p.y+.51*scale,p.z);o.rotation.set(0,yaw,side*(fan.raised?.18:.82));o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);
+    col.setHex(trouserColors[Math.floor(rnd()*trouserColors.length)]);
     o.position.set(p.x+side*.075*scale,p.y+.145*scale,p.z);o.rotation.set(0,yaw,side*.035);o.scale.setScalar(scale);o.updateMatrix();legs.setMatrixAt(ai,o.matrix);legs.setColorAt(ai,col);
+    col.setHex(fan.skin);
    }
    return fan;
   });
