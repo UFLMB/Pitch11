@@ -34,7 +34,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 .previewHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .previewLive{display:inline-flex;align-items:center;gap:5px;color:#c8f58b;font-size:7px;font-weight:900;letter-spacing:.12em}
 .previewLive:before{content:"";width:6px;height:6px;border-radius:50%;background:#a3e635;box-shadow:0 0 10px #a3e635}
-#previewStage{position:relative;height:184px;min-height:184px;overflow:hidden;border:1px solid #ffffff1a;border-radius:8px;background:rgba(7,16,13,.08)}
+#previewStage{position:relative;height:184px;min-height:184px;overflow:hidden;border:1px solid #ffffff1a;border-radius:8px;background:#111c17;isolation:isolate}#previewStage canvas{position:absolute;inset:0;display:block;width:100%;height:100%;z-index:0}
 #previewName{position:absolute;left:10px;right:10px;top:9px;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f1f8ed;font-size:9px;font-weight:900;letter-spacing:.08em;text-shadow:0 2px 8px #000}
 #previewStatus{position:absolute;left:10px;bottom:9px;z-index:1;color:#a8b9aa;font-size:7px;font-weight:800;letter-spacing:.12em;text-shadow:0 1px 5px #000}
 #previewStage:after{content:"";position:absolute;inset:auto 0 0;height:34px;background:linear-gradient(transparent,#07100dcc);pointer-events:none}
@@ -123,7 +123,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 const $=id=>document.getElementById(id);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
 const mobile=matchMedia('(max-width:800px)').matches;
-let renderer=null;
+let renderer=null,previewRenderer=null;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
 const orbit=new OrbitControls(camera,host);orbit.enableDamping=true;orbit.dampingFactor=.065;orbit.minDistance=12;orbit.maxDistance=650;orbit.maxPolarAngle=Math.PI*.495;orbit.target.set(0,12,0);
@@ -214,11 +214,12 @@ function renderLivePreview(){
   $('previewName').textContent=selected?safeName(selected.name||'Unnamed object'):'NO OBJECT SELECTED';
   $('previewStatus').textContent=selected?(selected.visible?'LIVE · FOLLOWING SELECTION':'OBJECT HIDDEN'):'SELECT AN OBJECT TO PREVIEW';
  }
- const rect=stage.getBoundingClientRect();
- const left=Math.max(0,rect.left),right=Math.min(innerWidth,rect.right);
- const top=Math.max(0,rect.top),bottom=Math.min(innerHeight,rect.bottom);
- const width=right-left,height=bottom-top;
+ if(!previewRenderer)return;
+ const width=Math.floor(stage.clientWidth),height=Math.floor(stage.clientHeight);
  if(width<4||height<4)return;
+ const pixelRatio=Math.min(window.devicePixelRatio||1,mobile?1:1.5);
+ if(previewRenderer.domElement.width!==Math.floor(width*pixelRatio)||previewRenderer.domElement.height!==Math.floor(height*pixelRatio))previewRenderer.setSize(width,height,false);
+ previewRenderer.setPixelRatio(pixelRatio);
  if(previewSource&&previewClone){
   previewSource.updateWorldMatrix(true,true);
   const bounds=new THREE.Box3().setFromObject(previewSource);
@@ -227,9 +228,7 @@ function renderLivePreview(){
   $('previewStatus').textContent=previewSource.visible?'LIVE · POSITION / ROTATION / SCALE':'OBJECT HIDDEN';
  }
  previewCamera.aspect=width/height;previewCamera.updateProjectionMatrix();
- const x=Math.round(left),y=Math.round(innerHeight-bottom),w=Math.round(width),h=Math.round(height);
- renderer.setScissorTest(true);renderer.setViewport(x,y,w,h);renderer.setScissor(x,y,w,h);renderer.clearDepth();renderer.render(previewScene,previewCamera);
- renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);
+ previewRenderer.render(previewScene,previewCamera);
 }
 function renderList(){
  const q=$('objectSearch').value.trim().toLowerCase();list.replaceChildren();
@@ -343,6 +342,10 @@ async function boot(){
   live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
   renderer=live.renderer;if(!renderer)throw new Error('The live Matchday renderer is unavailable.');
   host.appendChild(renderer.domElement);renderer.setSize(innerWidth,innerHeight,false);
+  previewRenderer=new THREE.WebGLRenderer({alpha:false,antialias:!mobile,powerPreference:'low-power'});
+  previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1:1.5));
+  previewRenderer.outputColorSpace=THREE.SRGBColorSpace;previewRenderer.toneMapping=THREE.ACESFilmicToneMapping;previewRenderer.toneMappingExposure=1.05;
+  previewRenderer.setClearColor(0x111c17,1);$('previewStage').appendChild(previewRenderer.domElement);
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;
   renderer.domElement.style.touchAction='none';root.add(live.scene);state.model=live.scene;state.modelScale=1;
   const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
