@@ -267,11 +267,24 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   const skinMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.88});
   const trouserMat=new THREE.MeshStandardMaterial({color:0x20242a,roughness:.94});
   const hairMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.98});
+  const outerwearMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.9});
+  const hoodMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.94});
+  const headwearMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.86});
+  const scarfMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.92});
   const torso=new THREE.InstancedMesh(bodyGeo,bodyMat,all.length);torso.name='Crowd · Torso Instances';
   const head=new THREE.InstancedMesh(headGeo,skinMat,all.length);head.name='Crowd · Head Instances';
   const hair=new THREE.InstancedMesh(hairGeo,hairMat,all.length);hair.name='Crowd · Hair Instances';
   const arms=new THREE.InstancedMesh(armGeo,skinMat,all.length*2);arms.name='Crowd · Arm Instances';
-  const legs=new THREE.InstancedMesh(legGeo,trouserMat,all.length*2);legs.name='Crowd · Leg Instances';
+  const legs=new THREE.InstancedMesh(legGeo,trouserMat,all.length*2);
+  const outerwear=new THREE.InstancedMesh(new THREE.BoxGeometry(.29,.39,.055),outerwearMat,all.length);
+  const hoods=new THREE.InstancedMesh(new THREE.SphereGeometry(.12,7,6),hoodMat,all.length);
+  const headwear=new THREE.InstancedMesh(new THREE.CylinderGeometry(.105,.115,.055,8),headwearMat,all.length);
+  const capBrims=new THREE.InstancedMesh(new THREE.BoxGeometry(.15,.018,.085),headwearMat,all.length);
+  const scarves=new THREE.InstancedMesh(new THREE.CylinderGeometry(.125,.125,.075,8),scarfMat,all.length);
+  const trouserColors=[0x171b22,0x252a31,0x343238,0x4a4038,0x202d35,0x4b4c4d];
+  const jacketColors=[0x101923,0x29333d,0x4b3030,0x354638,0x77736c,0x24252a,0x6b4b35,0x263d50,0x8a3037];
+  const hatColors=[0x111820,0x26313b,0x6d3034,0x394638,0x8a8173];
+  legs.name='Crowd · Leg Instances';
   const o=new THREE.Object3D(),col=new THREE.Color();
   const sectionColors=[0x183750,0x8b3038,0x294b3b,0xb38c36,0x35465f,0x713c58,0x8f9894,0x245466,0xeee8d9,0x25302d];
   const skinColors=[0xd5a47f,0xb97f5e,0x8e5b43,0xe2bd9b,0x704936,0xc99470];
@@ -279,23 +292,37 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   let seed=7711;const rnd=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
   crowdFans=all.map((p,i)=>{
    const scale=.88+rnd()*.22,yaw=Math.atan2(-p.x,-p.z)+(rnd()-.5)*.3;
-   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],raised:rnd()<.22,reacts:false};
    const base=sectionColors[p.section%sectionColors.length];
-   col.setHex(base).multiplyScalar(.82+rnd()*.32);
+   const shirtColor=rnd()<.68?base:sectionColors[Math.floor(rnd()*sectionColors.length)];
+   const fan={...p,scale,yaw,phase:rnd()*Math.PI*2,delay:rnd()*.62,response:.35+rnd()*.65,skin:skinColors[Math.floor(rnd()*skinColors.length)],shirtColor,outerwearColor:jacketColors[Math.floor(rnd()*jacketColors.length)],raised:rnd()<.22,outerwear:rnd()<.43,hooded:rnd()<.24,headwear:rnd()<.19,scarf:rnd()<.13,reacts:false};
+   col.setHex(fan.shirtColor).multiplyScalar(.78+rnd()*.42);
    o.position.set(p.x,p.y+.36*scale,p.z);o.rotation.set(0,yaw,0);o.scale.setScalar(scale);o.updateMatrix();torso.setMatrixAt(i,o.matrix);torso.setColorAt(i,col);
    col.setHex(fan.skin);o.position.set(p.x,p.y+.77*scale,p.z);o.scale.setScalar(scale);o.updateMatrix();head.setMatrixAt(i,o.matrix);head.setColorAt(i,col);
    col.setHex(hairColors[Math.floor(rnd()*hairColors.length)]);o.position.set(p.x,p.y+.835*scale,p.z);o.scale.set(scale*.94,scale*.52,scale*.94);o.updateMatrix();hair.setMatrixAt(i,o.matrix);hair.setColorAt(i,col);
    col.setHex(fan.skin);
+   const clothingColor=fan.outerwearColor;
+   col.setHex(clothingColor);
+   o.position.set(p.x,p.y+.36*scale,p.z+.145*scale);o.rotation.set(0,yaw,0);o.scale.set(fan.outerwear?scale:0,fan.outerwear?scale:0,fan.outerwear?scale:0);o.updateMatrix();outerwear.setMatrixAt(i,o.matrix);outerwear.setColorAt(i,col);
+   col.setHex(clothingColor);
+   o.position.set(p.x,p.y+.80*scale,p.z-.025*scale);o.rotation.set(0,yaw,0);o.scale.set(fan.hooded?scale:0,fan.hooded?scale:0,fan.hooded?scale:0);o.updateMatrix();hoods.setMatrixAt(i,o.matrix);hoods.setColorAt(i,col);
+   col.setHex(hatColors[Math.floor(rnd()*hatColors.length)]);
+   o.position.set(p.x,p.y+.875*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();headwear.setMatrixAt(i,o.matrix);headwear.setColorAt(i,col);
+   o.position.set(p.x,p.y+.87*scale,p.z+.075*scale);o.scale.set(fan.headwear?scale:0,fan.headwear?scale:0,fan.headwear?scale:0);o.updateMatrix();capBrims.setMatrixAt(i,o.matrix);capBrims.setColorAt(i,col);
+   col.setHex(jacketColors[Math.floor(rnd()*jacketColors.length)]);
+   o.position.set(p.x,p.y+.675*scale,p.z);o.rotation.set(0,yaw,0);o.scale.set(fan.scarf?scale:0,fan.scarf?scale:0,fan.scarf?scale:0);o.updateMatrix();scarves.setMatrixAt(i,o.matrix);scarves.setColorAt(i,col);
+   col.setHex(fan.outerwear?fan.outerwearColor:fan.shirtColor);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0);
     o.position.set(p.x+side*.15*scale,p.y+.51*scale,p.z);o.rotation.set(0,yaw,side*(fan.raised?.18:.82));o.scale.setScalar(scale);o.updateMatrix();arms.setMatrixAt(ai,o.matrix);arms.setColorAt(ai,col);
-    o.position.set(p.x+side*.075*scale,p.y+.145*scale,p.z);o.rotation.set(0,yaw,side*.035);o.scale.setScalar(scale);o.updateMatrix();legs.setMatrixAt(ai,o.matrix);
+    col.setHex(trouserColors[Math.floor(rnd()*trouserColors.length)]);
+    o.position.set(p.x+side*.075*scale,p.y+.145*scale,p.z);o.rotation.set(0,yaw,side*.035);o.scale.setScalar(scale);o.updateMatrix();legs.setMatrixAt(ai,o.matrix);legs.setColorAt(ai,col);
+    col.setHex(fan.skin);
    }
    return fan;
   });
-  for(const mesh of[torso,head,hair,arms,legs]){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
-  scene.add(torso,head,hair,arms,legs);
-  crowdFans.meshes={torso,head,hair,arms,legs};
+  for(const mesh of[torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves]){mesh.instanceMatrix.needsUpdate=true;mesh.computeBoundingSphere();}
+  scene.add(torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves);
+  crowdFans.meshes={torso,head,hair,arms,legs,outerwear,hoods,headwear,capBrims,scarves};
  }
  function addSecurity(){
   const positions=createProductionSecurityPositions();
@@ -315,6 +342,8 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
     const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.075,.28,3,5),boots);leg.position.set(side*.105,.29,0);guard.add(leg);
    }
    const radio=new THREE.Mesh(new THREE.BoxGeometry(.1,.16,.06),boots);radio.position.set(.2,1.1,.16);guard.add(radio);
+   const reflectiveBand=new THREE.Mesh(new THREE.BoxGeometry(.435,.045,.285),new THREE.MeshStandardMaterial({color:0xe7f0a4,roughness:.55,metalness:.08}));reflectiveBand.position.set(0,.91,-.015);guard.add(reflectiveBand);
+   for(const side of[-1,1]){const sleeveBand=new THREE.Mesh(new THREE.CylinderGeometry(.078,.078,.045,6),new THREE.MeshStandardMaterial({color:0xe7f0a4,roughness:.55}));sleeveBand.position.set(side*.29,1.03,0);guard.add(sleeveBand);}
    guard.position.set(p.x,0,p.z);
    guard.rotation.y=p.zone==='sideline-stand'?(p.z>0?0:Math.PI):(p.x>0?Math.PI/2:-Math.PI/2);
    guard.userData={base:guard.rotation.y,phase:i*.71,editorSelectable:true};
@@ -332,6 +361,11 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    if(side>0&&i===2)continue;
    const actor=new THREE.Group(),topMat=new THREE.MeshStandardMaterial({color:tops[(i+(side>0?2:0))%tops.length],roughness:.88});
    const torso=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.48,4,7),topMat);torso.position.y=1.02;actor.add(torso);
+   if(i===0||i===1||i===4){
+    const jacket=new THREE.Mesh(new THREE.BoxGeometry(.34,.48,.075),new THREE.MeshStandardMaterial({color:i===0?0x18232e:i===1?0x3b4248:0x26313b,roughness:.94}));jacket.position.set(0,1.02,.145);actor.add(jacket);
+    const zipper=new THREE.Mesh(new THREE.BoxGeometry(.012,.39,.009),new THREE.MeshStandardMaterial({color:0xb7bdc0,metalness:.35,roughness:.5}));zipper.position.set(0,1.02,.188);actor.add(zipper);
+   }
+   const collar=new THREE.Mesh(new THREE.TorusGeometry(.105,.018,5,12),new THREE.MeshStandardMaterial({color:0x252b31,roughness:.85}));collar.position.set(0,1.29,.015);actor.add(collar);
    const neck=new THREE.Mesh(new THREE.CylinderGeometry(.065,.075,.13,6),skinMat);neck.position.y=1.38;actor.add(neck);
    const head=new THREE.Mesh(new THREE.SphereGeometry(.13,8,7),skinMat);head.position.y=1.55;actor.add(head);
    const hair=new THREE.Mesh(new THREE.SphereGeometry(.132,8,6),darkHair);hair.position.set(0,1.61,-.012);hair.scale.set(1,.48,1);actor.add(hair);
@@ -344,6 +378,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
    // Staff lanyard and role-specific sideline detail.
    const lanyard=new THREE.Mesh(new THREE.BoxGeometry(.025,.24,.012),new THREE.MeshStandardMaterial({color:0xe5c65a,roughness:.8}));lanyard.position.set(.015,1.13,.205);actor.add(lanyard);
    if(i===1||i===3){const bib=new THREE.Mesh(new THREE.BoxGeometry(.34,.32,.025),new THREE.MeshStandardMaterial({color:i===1?0xd8ee45:0xe9e7dc,roughness:.8}));bib.position.set(0,1.04,.19);actor.add(bib);}
+   if(i===3){const cameraBody=new THREE.Mesh(new THREE.BoxGeometry(.18,.13,.12),new THREE.MeshStandardMaterial({color:0x111820,metalness:.35,roughness:.48}));cameraBody.position.set(.31,1.02,.04);actor.add(cameraBody);const lens=new THREE.Mesh(new THREE.CylinderGeometry(.045,.045,.08,8),new THREE.MeshStandardMaterial({color:0x080b10,metalness:.55,roughness:.25}));lens.rotation.x=Math.PI/2;lens.position.set(.31,1.02,.13);actor.add(lens);}
    if(i===2){const caseBox=new THREE.Mesh(new THREE.BoxGeometry(.28,.22,.12),new THREE.MeshStandardMaterial({color:0xc62d32,roughness:.75}));caseBox.position.set(.31,.77,.02);actor.add(caseBox);}
    actor.name='Touchline Staff '+(side>0?'North ':'South ')+(i+1);actor.userData.editorSelectable=true;
    const z=side*38.1,x=-22+i*11;
@@ -358,13 +393,20 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   for(let i=start;i<crowdFans.length;i+=step){
    const f=crowdFans[i],wave=Math.sin(now*.0042+f.phase+f.delay*3)*f.response,bob=f.raised?Math.max(0,wave)*.035:Math.abs(wave)*.008;
    o.position.set(f.x,f.y+.36*f.scale+bob,f.z);o.rotation.set(0,f.yaw,0);o.scale.setScalar(f.scale);o.updateMatrix();meshes.torso.setMatrixAt(i,o.matrix);
+   o.position.z=f.z+.145*f.scale;o.updateMatrix();meshes.outerwear.setMatrixAt(i,o.matrix);
    o.position.set(f.x,f.y+.77*f.scale+bob,f.z);o.updateMatrix();meshes.head.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.80*f.scale+bob,f.z-.025*f.scale);o.scale.set(f.hooded?f.scale:0,f.hooded?f.scale:0,f.hooded?f.scale:0);o.updateMatrix();meshes.hoods.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.875*f.scale+bob,f.z);o.scale.set(f.headwear?f.scale:0,f.headwear?f.scale:0,f.headwear?f.scale:0);o.updateMatrix();meshes.headwear.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.87*f.scale+bob,f.z+.075*f.scale);o.updateMatrix();meshes.capBrims.setMatrixAt(i,o.matrix);
+   o.position.set(f.x,f.y+.675*f.scale+bob,f.z);o.rotation.set(0,f.yaw,0);o.scale.set(f.scarf?f.scale:0,f.scarf?f.scale:0,f.scarf?f.scale:0);o.updateMatrix();meshes.scarves.setMatrixAt(i,o.matrix);
+   o.rotation.set(0,f.yaw,0);o.scale.setScalar(f.scale);
    for(let side=-1;side<=1;side+=2){
     const ai=i*2+(side===1?1:0),sway=f.raised?Math.sin(now*.005+f.phase+side)*.24:wave*.055;
     o.position.set(f.x+side*.15*f.scale,f.y+.51*f.scale+bob,f.z);o.rotation.set(0,f.yaw,side*(f.raised?.18+sway:.82+sway));o.scale.setScalar(f.scale);o.updateMatrix();meshes.arms.setMatrixAt(ai,o.matrix);
    }
   }
   meshes.torso.instanceMatrix.needsUpdate=true;meshes.head.instanceMatrix.needsUpdate=true;meshes.arms.instanceMatrix.needsUpdate=true;
+  meshes.outerwear.instanceMatrix.needsUpdate=true;meshes.hoods.instanceMatrix.needsUpdate=true;meshes.headwear.instanceMatrix.needsUpdate=true;meshes.capBrims.instanceMatrix.needsUpdate=true;meshes.scarves.instanceMatrix.needsUpdate=true;
  }
  function updateStaff(now){
   const t=now*.00055;
