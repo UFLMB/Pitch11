@@ -196,9 +196,11 @@ function createLivePreviewClone(object){
 }
 function syncLivePreviewNode(source,clone,isRoot=false){
  if(isRoot){
-  source.matrixWorld.decompose(clone.position,clone.quaternion,clone.scale);
-  clone.position.sub(previewCenter).multiplyScalar(previewFit);
-  clone.scale.multiplyScalar(previewFit);
+  const worldPosition=new THREE.Vector3(),worldQuaternion=new THREE.Quaternion(),worldScale=new THREE.Vector3();
+  source.matrixWorld.decompose(worldPosition,worldQuaternion,worldScale);
+  clone.position.copy(worldPosition).sub(previewCenter).multiplyScalar(previewFit);
+  clone.quaternion.copy(worldQuaternion);
+  clone.scale.copy(worldScale).multiplyScalar(previewFit);
  }else{
   clone.position.copy(source.position);clone.quaternion.copy(source.quaternion);clone.scale.copy(source.scale);
  }
