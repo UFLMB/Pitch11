@@ -236,7 +236,7 @@ async function exportStoredKitDatabase(){
    const records=await readAllKitStore(db,storeName);manifest.stores[storeName]={recordCount:records.length,records:[]};totalRecords+=records.length;
    for(const record of records){
     const key=safeArchivePart(Array.isArray(record.key)?record.key.join('_'):record.key);
-    const base='pitch11-kit-backup/'+storeName+'/'+key;
+    const base='pitch11-kit-backup/'+storeName+'/'+String(manifest.stores[storeName].records.length+1).padStart(4,'0')+'_'+key;
     const archived=await archiveKitValue(record.value,base,entries,blobIndex);
     manifest.stores[storeName].records.push({key:record.key,value:archived});
    }
