@@ -11,7 +11,7 @@
 #viewport{position:fixed;inset:0;z-index:0}#viewport canvas{display:block;width:100%;height:100%;touch-action:none}
 .topbar{position:fixed;z-index:5;left:0;right:0;top:0;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:linear-gradient(180deg,#050907ed,#05090799);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
 .brand{display:flex;flex-direction:column;gap:3px;min-width:130px}.brand b{font-size:13px;letter-spacing:.16em}.brand small{font-size:9px;letter-spacing:.16em;color:#a3e635}
-.actions{display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:nowrap;justify-content:flex-end;overflow-x:auto;white-space:nowrap;scrollbar-width:none}.actions::-webkit-scrollbar{display:none}.actions button{flex:none}
+.actions{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;flex-wrap:wrap;justify-content:flex-end;overflow:visible;white-space:normal}.actions button{flex:0 0 auto}
 button,select,input,textarea{font:inherit}button{border:1px solid #ffffff2a;border-radius:8px;background:#17221c;color:#eef5ed;padding:9px 11px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer}
 button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#26391d}button:disabled{opacity:.35;cursor:not-allowed}
 #layout{position:fixed;z-index:3;top:70px;bottom:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(220px,270px) 1fr minmax(250px,300px);gap:10px;pointer-events:none}
@@ -50,9 +50,9 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 #toast.show{opacity:1}
 #mobilePanels{display:none}
 @media(max-width:850px){
- .topbar{min-height:54px;padding:7px 9px}.brand{min-width:100px}.brand b{font-size:11px}.brand small{font-size:7px}
- .actions{justify-content:flex-start;gap:5px}.actions button{padding:8px 8px;font-size:8px}
- #layout{top:62px;bottom:8px;left:7px;right:7px;grid-template-columns:1fr;pointer-events:none}
+ .topbar{min-height:0;padding:7px 9px;display:flex;flex-wrap:wrap;gap:6px}.brand{width:100%;min-width:0;flex:0 0 100%;flex-direction:row;align-items:center;justify-content:space-between}.brand b{font-size:11px}.brand small{font-size:7px}
+ .actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;flex:0 0 100%;gap:5px;overflow:visible;justify-content:stretch}.actions button{width:100%;min-width:0;padding:8px 5px;font-size:8px;white-space:nowrap}
+ #layout{top:108px;bottom:8px;left:7px;right:7px;grid-template-columns:1fr;pointer-events:none}
  #leftPanel,#rightPanel{position:absolute;top:0;bottom:0;width:min(290px,84vw);max-height:100%;transition:transform .2s ease}
  #leftPanel{left:0;transform:translateX(calc(-100% - 10px))}
  #rightPanel{right:0;transform:translateX(calc(100% + 10px))}
@@ -62,7 +62,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
  #mobilePanels button{padding:8px 10px}
  #selectionHint{bottom:8px;font-size:8px}
 }
-@media(max-width:430px){.actions button[data-wide="1"]{display:none}.brand{min-width:86px}.brand small{letter-spacing:.08em}}
+@media(max-width:430px){.brand small{letter-spacing:.08em}}
 </style>
 <script type="importmap">
 {"imports":{"three":"./vendor/three/build/three.module.js","three/":"./vendor/three/","three/addons/":"./vendor/three/examples/jsm/"}}
@@ -239,7 +239,7 @@ function renderList(){
 }
 function selectObject(o){
  if(!o||o.userData.editorLocked||o.userData.editorDecal)return;
- state.selected=o;transform.detach();if(state.mode==='edit')transform.attach(o);
+ state.selected=o;transform.detach();if(state.mode==='edit')transform.attach(o);if(mobile)$('rightPanel').classList.add('open');
  $('selectionHint').textContent=(state.mode==='edit'?'EDIT MODE · ':'VIEW MODE · ')+safeName(o.name||'Unnamed mesh')+' · '+objectCategory(o).toUpperCase();
  updateInspector();renderList();
 }
@@ -298,7 +298,8 @@ function applyConfig(data){
  state.decals=new Map(data.decals||[]);applyAllDecals();renderList();updateInspector();pushHistory();notify('Stadium configuration loaded.');
 }
 async function loadSaved(){try{let raw=null;try{const db=await openConfigDb();raw=await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readonly'),request=tx.objectStore('configs').get('current');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});db.close();}catch(_){raw=localStorage.getItem('p11-stadium-editor-v1');}if(raw)applyConfig(JSON.parse(raw));}catch(e){console.warn('Saved stadium config could not be restored',e);notify('Saved configuration could not be restored.');}}
-function selectByPointer(event){if(state.mode!=='edit'||transform.dragging)return;const rect=renderer.domElement.getBoundingClientRect();pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const hits=raycaster.intersectObjects(state.meshes.filter(o=>o.isMesh&&o.visible),false);if(hits.length){let target=hits[0].object;while(target&&target!==root&&target.userData?.editorLocked)target=target.parent;if(hasPersonnelActorAncestor(target)){while(target&&target!==root&&!isPersonnelActor(target))target=target.parent;}if(target&&target!==root)selectObject(target);}else{state.selected=null;transform.detach();updateInspector();renderList();}}
+function isEffectivelyVisible(object){for(let node=object;node&&node!==root;node=node.parent)if(!node.visible)return false;return true;}
+function selectByPointer(event){if(transform.dragging||!renderer)return;const rect=renderer.domElement.getBoundingClientRect();if(!rect.width||!rect.height)return;pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const pickMeshes=[];root.traverse(o=>{if(o.isMesh&&isEffectivelyVisible(o)&&!hasLockedAncestor(o)&&!isPitchMesh(o))pickMeshes.push(o);});const hits=raycaster.intersectObjects(pickMeshes,false);if(hits.length){let target=hits[0].object;while(target&&target!==root&&!state.meshes.includes(target)){if(isPersonnelActor(target))break;target=target.parent;}if(target&&target!==root)selectObject(target);else{state.selected=null;transform.detach();updateInspector();renderList();}}else{state.selected=null;transform.detach();updateInspector();renderList();}}
 let down=null;host.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});host.addEventListener('pointerup',e=>{if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);if(moved<5)selectByPointer(e);down=null;});
 transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value){updateInspector();pushHistory();}});
 transform.addEventListener('objectChange',()=>updateInspector());
