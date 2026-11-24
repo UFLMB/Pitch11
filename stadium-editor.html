@@ -152,7 +152,7 @@ function auditAndRepairGeometryBuffers(force=false){
   if(typeof array.length!=='number'){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:'No array-like buffer'});return;}
   let values;try{values=Array.from(array);}catch(error){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:error.message});return;}
   if(!values.length||!values.every(value=>typeof value==='number'&&Number.isFinite(value))){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:'Buffer contains non-finite or non-numeric values'});return;}
-  const typed=isIndex?(Math.max(...values)>65535?new Uint32Array(values):new Uint16Array(values)):new Float32Array(values);
+  const maxIndex=isIndex?values.reduce((max,value)=>Math.max(max,value),0):0;const typed=isIndex?(maxIndex>65535?new Uint32Array(values):new Uint16Array(values)):new Float32Array(values);
   storage.array=typed;
   if(attribute.isInterleavedBufferAttribute)storage.count=typed.length/storage.stride;
   else attribute.count=typed.length/(attribute.itemSize||1);
