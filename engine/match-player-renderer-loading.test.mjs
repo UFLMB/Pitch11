@@ -42,7 +42,7 @@ test("animation mixer cadence matches the stadium render cadence", () => {
 test("all 54 catalogued player and goalkeeper animations are included in startup preload", async () => {
   const { MIXAMO_ANIMATION_FILES } = await import("./mixamo-animation-catalog.mjs");
   assert.equal(MIXAMO_ANIMATION_FILES.length, 54);
-  assert.match(playerSource, /MIXAMO_ANIMATION_FILES\.map\(file => this\.loadMixamoClip\(file\)/);
+  assert.match(playerSource, /MIXAMO_ANIMATION_FILES\.slice\(offset, offset \+ batchSize\)/);
   assert.match(playerSource, /const batchSize = 4/);
   assert.match(playerSource, /animationProgress\.completed\+\+/);
   assert.match(playerSource, /this\.animationLoadState = failures\.length \? "partial" : "ready"/);
