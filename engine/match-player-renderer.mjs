@@ -161,6 +161,7 @@ export class MatchPlayerRenderer {
     this.animationLoadState = "not-started";
     this.animationLoadPromise = null;
     this.animationProgress = { completed: 0, total: MIXAMO_ANIMATION_FILES.length };
+    this.kitLoadProgress = { completed: 0, total: 0 };
     this.error = "";
     this.mixamoError = "";
     this.modelSource = "";
@@ -427,6 +428,11 @@ export class MatchPlayerRenderer {
     const signature = [teamSlot, role, number].join(":");
     if (entry.generatedKitSignature === signature) return;
     entry.generatedKitSignature = signature;
+    this.kitLoadProgress.total++;
+    const finishKitLoad = () => {
+      this.kitLoadProgress.completed++;
+      this.onProgress?.({ type: "kit", ...this.kitLoadProgress });
+    };
     getGeneratedPlayerKit(teamSlot, role, number).then(async record => {
       if (!record || entry.generatedKitSignature !== signature) return;
       const personalizedParts = new Set(record.personalizedParts || []);
@@ -467,7 +473,7 @@ export class MatchPlayerRenderer {
       }
     }).catch(() => {
       // Missing or unavailable browser storage falls back to the built-in team kit.
-    });
+    }).finally(finishKitLoad);
   }
 
   setGroundHeight(value) {
