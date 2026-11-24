@@ -145,10 +145,32 @@ function auditAndRepairGeometryBuffers(force=false){
  const now=performance.now();if(!force&&now-lastBufferAudit<500)return;lastBufferAudit=now;
  const repaired=[],unsupported=[],seen=new Set();
  const supported=array=>array instanceof Float32Array||array instanceof Uint16Array||array instanceof Int16Array||array instanceof Uint32Array||array instanceof Int32Array||array instanceof Int8Array||array instanceof Uint8Array||array instanceof Uint8ClampedArray;
+ const finiteValues=array=>{try{return Array.from(array).every(value=>typeof value==='number'&&Number.isFinite(value));}catch(_){return false;}};
+ const regenerateUv=(object)=>{
+  const source=object.geometry,position=source?.getAttribute?.('position');
+  if(!position||position.itemSize<2||!position.count)return false;
+  const geometry=source.clone(),p=geometry.getAttribute('position');
+  const bounds=new THREE.Box3().setFromBufferAttribute(p),size=bounds.getSize(new THREE.Vector3());
+  const keys=['x','y','z'],axes=[0,1,2].sort((a,b)=>size[keys[b]]-size[keys[a]]).slice(0,2);
+  const uv=new Float32Array(p.count*2);
+  for(let i=0;i<p.count;i++){
+   const point=[p.getX(i),p.getY(i),p.getZ(i)];
+   for(let axis=0;axis<2;axis++){
+    const key=keys[axes[axis]],extent=Math.max(size[key],1e-6);
+    uv[i*2+axis]=THREE.MathUtils.clamp((point[axes[axis]]-bounds.min[key])/extent,0,1);
+   }
+  }
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  object.geometry=geometry;
+  repaired.push({object:object.name||object.type,attribute:'uv',sourceType:'Float32Array',entries:uv.length,reason:'Regenerated finite UVs on an editor/runtime geometry clone'});
+  return true;
+ };
  const normalize=(attribute,object,name,isIndex=false)=>{
   if(!attribute)return;
   const storage=attribute.isInterleavedBufferAttribute?attribute.data:attribute,array=storage?.array;
-  if(!array||supported(array))return;
+  if(!array){unsupported.push({object:object.name||object.type,attribute:name,sourceType:typeof array,reason:'Missing backing array'});return;}
+  const isSupported=supported(array),isFinite=finiteValues(array);
+  if(isSupported&&isFinite)return;
   if(typeof array.length!=='number'){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:'No array-like buffer'});return;}
   let values;try{values=Array.from(array);}catch(error){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:error.message});return;}
   if(!values.length||!values.every(value=>typeof value==='number'&&Number.isFinite(value))){unsupported.push({object:object.name||object.type,attribute:name,sourceType:array?.constructor?.name||typeof array,reason:'Buffer contains non-finite or non-numeric values'});return;}
@@ -157,14 +179,19 @@ function auditAndRepairGeometryBuffers(force=false){
   if(attribute.isInterleavedBufferAttribute)storage.count=typed.length/storage.stride;
   else attribute.count=typed.length/(attribute.itemSize||1);
   storage.needsUpdate=true;
-  repaired.push({object:object.name||object.type,attribute:name,sourceType:array.constructor?.name||typeof array,entries:values.length});
+  repaired.push({object:object.name||object.type,attribute:name,sourceType:array.constructor?.name||typeof array,entries:values.length,reason:'Converted unsupported buffer storage to a typed array'});
  };
- root.traverse(object=>{
-  const geometry=object.geometry;if(!geometry||seen.has(geometry))return;seen.add(geometry);
+ scene.traverse(object=>{
+  let geometry=object.geometry;if(!geometry||seen.has(geometry))return;seen.add(geometry);
+  const uv=geometry.getAttribute?.('uv');
+  if(uv&&!finiteValues((uv.isInterleavedBufferAttribute?uv.data:uv).array)){
+   if(object.isMesh&&regenerateUv(object))geometry=object.geometry;
+   else unsupported.push({object:object.name||object.type,attribute:'uv',sourceType:(uv.isInterleavedBufferAttribute?uv.data:uv).array?.constructor?.name||'unknown',reason:'Could not safely regenerate UVs without mesh position data'});
+  }
   for(const [name,attribute] of Object.entries(geometry.attributes||{}))normalize(attribute,object,name,false);
   if(geometry.index)normalize(geometry.index,object,'index',true);
  });
- diagnostics.bufferAudit={checkedGeometries:seen.size,repaired,unsupported,checkedAt:new Date().toISOString()};
+ diagnostics.bufferAudit={scope:'full-rendered-scene',checkedGeometries:seen.size,repaired,unsupported,checkedAt:new Date().toISOString()};
  if(repaired.length)diagRecord('warn','Invalid geometry buffer attributes repaired',{count:repaired.length,items:repaired.slice(0,20)});
  if(unsupported.length)diagRecord('error','Unsupported geometry buffer attributes remain',{count:unsupported.length,items:unsupported.slice(0,20)});
 }
