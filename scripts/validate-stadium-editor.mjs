@@ -41,6 +41,7 @@ assert.ok(html.includes('renderer=live.renderer'), 'Main editor viewport must co
 assert.ok(html.includes('previewRenderer.render(previewScene,previewCamera)'), 'Live preview must render through its dedicated renderer, not the main viewport renderer.');
 assert.ok(html.includes('renderLivePreview();'), 'Live preview must render continuously alongside the main viewport.');
 assert.ok(html.includes('clone.material=source.material'), 'Live preview must reflect source material replacements as well as transforms.');
+assert.ok(html.includes('clone.scale.copy(worldScale).multiplyScalar(previewFit)'), 'Live preview root scale must be derived from source world scale on every frame without cumulative multiplication.');
 assert.ok(html.includes('o.userData.editorSelectable'), 'Editor object hierarchy must include named stadium assemblies.');
 assert.ok(html.includes("return'people'"), 'Personnel actors must have a dedicated PEOPLE filter category.');
 assert.ok(html.includes('(!isPersonnelActor(o)&&hasPersonnelActorAncestor(o))'), 'Personnel must be selected and transformed as complete actors, not individual body meshes.');
