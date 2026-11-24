@@ -22,7 +22,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("resolveMixamoClipCandidates"));
   assert.ok(renderer.includes("context.ballOwner"));
   assert.ok(renderer.includes("context.restart"));
-  assert.ok(renderer.includes("CORE_MIXAMO_CLIPS"));
+  assert.ok(renderer.includes("MIXAMO_ANIMATION_FILES"));
   assert.ok(renderer.includes("shouldRemoveLocomotionRootTranslation(file)"));
   assert.ok(renderer.includes("removeLocomotionRootTranslation(clip)"));
   assert.ok(renderer.includes("else if (shouldFlattenHorizontalRootMotion(file))"));
@@ -33,7 +33,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
   assert.ok(renderer.includes("node.frustumCulled = false"));
   assert.ok(renderer.includes("isSkinnedMesh"));
   assert.ok(renderer.includes('this.animationLoadState = "loading"'));
-  assert.ok(renderer.includes("this.animationLoadPromise = Promise.allSettled"));
+  assert.ok(renderer.includes("this.animationLoadPromise = (async () =>"));
   assert.ok(renderer.includes('this.status = "ready"'));
   assert.ok(renderer.includes('status = "asset-error"'));
   assert.ok(!renderer.includes("fallbackModelUrl"));
@@ -74,8 +74,10 @@ test("stadium GLB loader supports Meshopt-compressed geometry", () => {
 
 test("optional animation failures do not prevent skinned player models from rendering", () => {
   const renderer = read("./match-player-renderer.mjs");
-  assert.ok(renderer.includes("Promise.allSettled(CORE_MIXAMO_CLIPS.map"));
+  assert.ok(renderer.includes("Promise.allSettled(batch.map"));
   assert.ok(renderer.includes("this.status = \"ready\";"));
+  assert.ok(renderer.includes("const batchSize = 4"));
+  assert.ok(renderer.includes("MIXAMO_ANIMATION_FILES.length"));
   assert.ok(renderer.includes("this.template = null;"));
   assert.ok(!renderer.includes("this.animations = await Promise.all(clipFiles.map"));
 });
