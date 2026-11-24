@@ -11,7 +11,7 @@
 #viewport{position:fixed;inset:0;z-index:0}#viewport canvas{display:block;width:100%;height:100%;touch-action:none}
 .topbar{position:fixed;z-index:5;left:0;right:0;top:0;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 14px;background:linear-gradient(180deg,#050907ed,#05090799);border-bottom:1px solid var(--line);backdrop-filter:blur(14px)}
 .brand{display:flex;flex-direction:column;gap:3px;min-width:130px}.brand b{font-size:13px;letter-spacing:.16em}.brand small{font-size:9px;letter-spacing:.16em;color:#a3e635}
-.actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.actions{display:flex;align-items:center;gap:6px;flex:1;min-width:0;flex-wrap:nowrap;justify-content:flex-end;overflow-x:auto;white-space:nowrap;scrollbar-width:none}.actions::-webkit-scrollbar{display:none}.actions button{flex:none}
 button,select,input,textarea{font:inherit}button{border:1px solid #ffffff2a;border-radius:8px;background:#17221c;color:#eef5ed;padding:9px 11px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer}
 button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#26391d}button:disabled{opacity:.35;cursor:not-allowed}
 #layout{position:fixed;z-index:3;top:70px;bottom:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(220px,270px) 1fr minmax(250px,300px);gap:10px;pointer-events:none}
@@ -34,11 +34,11 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 .previewHeading{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .previewLive{display:inline-flex;align-items:center;gap:5px;color:#c8f58b;font-size:7px;font-weight:900;letter-spacing:.12em}
 .previewLive:before{content:"";width:6px;height:6px;border-radius:50%;background:#a3e635;box-shadow:0 0 10px #a3e635}
-#previewStage{position:relative;height:184px;min-height:184px;overflow:hidden;border:1px solid #ffffff1a;border-radius:8px;background:linear-gradient(145deg,#17241d,#0b1310 65%,#101a17)}
+#previewStage{position:relative;height:184px;min-height:184px;overflow:hidden;border:1px solid #ffffff1a;border-radius:8px;background:rgba(7,16,13,.08)}
 #previewName{position:absolute;left:10px;right:10px;top:9px;z-index:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#f1f8ed;font-size:9px;font-weight:900;letter-spacing:.08em;text-shadow:0 2px 8px #000}
 #previewStatus{position:absolute;left:10px;bottom:9px;z-index:1;color:#a8b9aa;font-size:7px;font-weight:800;letter-spacing:.12em;text-shadow:0 1px 5px #000}
 #previewStage:after{content:"";position:absolute;inset:auto 0 0;height:34px;background:linear-gradient(transparent,#07100dcc);pointer-events:none}
-@media(max-width:850px){#rightPanel .previewSection{background:#0a100ef0}#previewStage{height:170px;min-height:170px}}
+@media(max-width:850px){#rightPanel .previewSection{background:rgba(10,16,14,.34)}#previewStage{height:170px;min-height:170px}}
 .section{display:flex;flex-direction:column;gap:7px}.sectionTitle{font-size:8px;color:#a3e635;font-weight:900;letter-spacing:.14em}
 .fieldGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .field{display:flex;flex-direction:column;gap:4px;min-width:0}.field label{font-size:8px;color:var(--muted);letter-spacing:.05em}.field input,.field textarea,.field select{width:100%;min-width:0;background:#111b16;border:1px solid var(--line);border-radius:6px;color:#f4f7f2;padding:8px;font-size:10px;outline:none}
@@ -51,7 +51,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 #mobilePanels{display:none}
 @media(max-width:850px){
  .topbar{min-height:54px;padding:7px 9px}.brand{min-width:100px}.brand b{font-size:11px}.brand small{font-size:7px}
- .actions button{padding:8px 8px;font-size:8px}
+ .actions{justify-content:flex-start;gap:5px}.actions button{padding:8px 8px;font-size:8px}
  #layout{top:62px;bottom:8px;left:7px;right:7px;grid-template-columns:1fr;pointer-events:none}
  #leftPanel,#rightPanel{position:absolute;top:0;bottom:0;width:min(290px,84vw);max-height:100%;transition:transform .2s ease}
  #leftPanel{left:0;transform:translateX(calc(-100% - 10px))}
