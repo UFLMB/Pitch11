@@ -48,6 +48,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 #loading small{display:block;color:#90a293;font-size:10px;letter-spacing:.04em;margin-top:10px;line-height:1.5}
 #toast{position:fixed;z-index:30;left:50%;bottom:20px;transform:translateX(-50%);padding:9px 13px;border-radius:99px;background:#1c2b1e;border:1px solid #a3e63566;color:#e7ffd0;font-size:10px;opacity:0;transition:opacity .18s;pointer-events:none}
 #toast.show{opacity:1}
+#diagnosticsPanel{position:fixed;z-index:60;right:14px;top:76px;width:min(520px,calc(100vw - 28px));max-height:min(72vh,680px);overflow:auto;background:#08110df5;border:1px solid #a3e63566;border-radius:12px;box-shadow:0 18px 55px #000b;padding:12px;font:10px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;color:#e8f2e7}#diagnosticsPanel[hidden]{display:none}#diagnosticsPanel header,#diagnosticsPanel footer{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;background:#08110d;z-index:1}#diagnosticsPanel header{top:0;padding-bottom:9px;border-bottom:1px solid var(--line)}#diagnosticsPanel footer{bottom:0;padding-top:9px;border-top:1px solid var(--line)}#diagHealth{color:#a3e635;font-weight:900}#diagSummary{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px 0}#diagSummary div{padding:7px;background:#111b16;border:1px solid #ffffff18;border-radius:6px;overflow-wrap:anywhere}#diagSummary b{display:block;color:#9db0a0;font-size:8px;margin-bottom:2px}#diagEvents{display:flex;flex-direction:column;gap:5px;padding-bottom:8px}#diagEvents div{padding:7px;border-left:2px solid #a3e635;background:#111b16;overflow-wrap:anywhere}#diagEvents .error{border-color:#ff7168;color:#ffd2ce}#diagEvents .warn{border-color:#eabf55;color:#ffe6ac}@media(max-width:850px){#diagnosticsPanel{top:150px;right:8px;width:calc(100vw - 16px);max-height:65vh}}
 #mobilePanels{display:none}
 @media(max-width:850px){
  .topbar{min-height:0;padding:7px 9px;display:flex;flex-wrap:wrap;gap:6px}.brand{width:100%;min-width:0;flex:0 0 100%;flex-direction:row;align-items:center;justify-content:space-between}.brand b{font-size:11px}.brand small{font-size:7px}
@@ -75,7 +76,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
  <div class="actions">
   <button id="viewMode" class="active">VIEW MODE</button><button id="editMode">EDIT MODE</button>
   <button id="saveBtn" class="primary" data-wide="1">SAVE</button><button id="exportBtn" data-wide="1">EXPORT</button><button id="importBtn" data-wide="1">IMPORT</button>
-  <button id="backBtn">BACK</button>
+  <button id="diagnosticsBtn">DIAGNOSTICS</button><button id="backBtn">BACK</button>
  </div>
 </header>
 <div id="layout">
@@ -114,6 +115,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 <div id="selectionHint">VIEW MODE · DRAG TO ORBIT · SCROLL TO ZOOM · SWITCH TO EDIT MODE TO MODIFY OBJECTS</div>
 <div id="loading">LOADING STADIUM EDITOR<small>Preparing the stadium model and editable object hierarchy…</small></div>
 <div id="toast"></div>
+<section id="diagnosticsPanel" aria-label="Stadium Editor diagnostics" hidden><header><strong>LIVE DIAGNOSTICS</strong><span id="diagHealth">COLLECTING</span><button id="diagClose" type="button">CLOSE</button></header><div id="diagSummary"></div><div id="diagEvents"></div><footer><button id="diagRefresh" type="button">REFRESH</button><button id="diagCopy" type="button" class="primary">COPY REPORT</button></footer></section>
 <input id="configFile" type="file" accept="application/json,.json" hidden>
 <script type="module">
 import * as THREE from 'three';
@@ -121,6 +123,11 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 
 const $=id=>document.getElementById(id);
+const diagnostics={startedAt:new Date().toISOString(),stage:'PAGE_INITIALIZED',events:[],lastPick:null,lastPreview:null,lastFrameAt:null,errors:0,warnings:0};
+function diagRecord(level,message,details={}){const item={time:new Date().toISOString(),level,message:String(message),details};diagnostics.events.unshift(item);diagnostics.events=diagnostics.events.slice(0,80);if(level==='error')diagnostics.errors++;if(level==='warn')diagnostics.warnings++;if($('diagnosticsPanel')&&!$('diagnosticsPanel').hidden)renderDiagnostics();}
+window.addEventListener('error',e=>diagRecord('error',e.message||'Window error',{file:e.filename,line:e.lineno,column:e.colno}));
+window.addEventListener('unhandledrejection',e=>diagRecord('error','Unhandled promise rejection',{reason:String(e.reason?.stack||e.reason)}));
+window.addEventListener('error',e=>{if(e.target&&e.target!==window)diagRecord('error','Resource failed to load',{tag:e.target.tagName,src:e.target.src||e.target.href||''});},true);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
 const mobile=matchMedia('(max-width:800px)').matches;
 let renderer=null,previewRenderer=null;
@@ -211,6 +218,7 @@ function syncLivePreviewNode(source,clone,isRoot=false){
 }
 function renderLivePreview(){
  const stage=$('previewStage'),selected=state.selected;
+ diagnostics.lastPreview={selected:selected?.name||null,clone:!!previewClone,renderer:!!previewRenderer,canvas:!!previewRenderer?.domElement,stageWidth:stage.clientWidth,stageHeight:stage.clientHeight};
  if(selected!==previewSource){
   previewSource=selected;createLivePreviewClone(selected);
   $('previewName').textContent=selected?safeName(selected.name||'Unnamed object'):'NO OBJECT SELECTED';
@@ -239,7 +247,8 @@ function renderList(){
  for(const o of visible){const b=document.createElement('button');b.className='objectRow'+(state.selected===o?' selected':'');const dot=document.createElement('span');dot.className='dot';const name=document.createElement('span');name.className='objName';name.textContent=safeName(o.name||'Unnamed mesh');const type=document.createElement('span');type.className='objType';type.textContent=objectCategory(o).toUpperCase();b.append(dot,name,type);b.addEventListener('click',()=>selectObject(o));list.append(b);}
 }
 function selectObject(o){
- if(!o||o.userData.editorLocked||o.userData.editorDecal)return;
+ if(!o||o.userData.editorLocked||o.userData.editorDecal){diagRecord('warn','Selection rejected',{candidate:o?.name||null,locked:!!o?.userData?.editorLocked,decal:!!o?.userData?.editorDecal});return;}
+ diagRecord('info','Object selected',{name:o.name||'Unnamed',type:o.type,path:o.userData.editorPath||stablePath(o),isMesh:!!o.isMesh,visible:o.visible});
  state.selected=o;transform.detach();if(state.mode==='edit')transform.attach(o);if(mobile)$('rightPanel').classList.add('open');
  $('selectionHint').textContent=(state.mode==='edit'?'EDIT MODE · ':'VIEW MODE · ')+safeName(o.name||'Unnamed mesh')+' · '+objectCategory(o).toUpperCase();
  updateInspector();renderList();
@@ -300,7 +309,7 @@ function applyConfig(data){
 }
 async function loadSaved(){try{let raw=null;try{const db=await openConfigDb();raw=await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readonly'),request=tx.objectStore('configs').get('current');request.onsuccess=()=>resolve(request.result||null);request.onerror=()=>reject(request.error);});db.close();}catch(_){raw=localStorage.getItem('p11-stadium-editor-v1');}if(raw)applyConfig(JSON.parse(raw));}catch(e){console.warn('Saved stadium config could not be restored',e);notify('Saved configuration could not be restored.');}}
 function isEffectivelyVisible(object){for(let node=object;node&&node!==root;node=node.parent)if(!node.visible)return false;return true;}
-function selectByPointer(event){if(transform.dragging||!renderer)return;const rect=renderer.domElement.getBoundingClientRect();if(!rect.width||!rect.height)return;pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const pickMeshes=[];root.traverse(o=>{if(o.isMesh&&isEffectivelyVisible(o)&&!hasLockedAncestor(o)&&!isPitchMesh(o))pickMeshes.push(o);});const hits=raycaster.intersectObjects(pickMeshes,false);if(hits.length){let target=hits[0].object;if(hasPersonnelActorAncestor(target)){while(target&&target!==root&&!isPersonnelActor(target))target=target.parent;}while(target&&target!==root&&!state.meshes.includes(target)){if(isPersonnelActor(target))break;target=target.parent;}if(target&&target!==root)selectObject(target);else{state.selected=null;transform.detach();updateInspector();renderList();}}else{state.selected=null;transform.detach();updateInspector();renderList();}}
+function selectByPointer(event){if(transform.dragging||!renderer){diagnostics.lastPick={skipped:true,dragging:!!transform.dragging,renderer:!!renderer};return;}const rect=renderer.domElement.getBoundingClientRect();if(!rect.width||!rect.height)return;pointer.x=((event.clientX-rect.left)/rect.width)*2-1;pointer.y=-((event.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const pickMeshes=[];root.traverse(o=>{if(o.isMesh&&isEffectivelyVisible(o)&&!hasLockedAncestor(o)&&!isPitchMesh(o))pickMeshes.push(o);});const hits=raycaster.intersectObjects(pickMeshes,false);diagnostics.lastPick={x:event.clientX,y:event.clientY,rect:{left:rect.left,top:rect.top,width:rect.width,height:rect.height},pickableMeshes:pickMeshes.length,hitCount:hits.length,nearest:hits[0]?.object?.name||null,nearestType:hits[0]?.object?.type||null};if(hits.length){let target=hits[0].object;if(hasPersonnelActorAncestor(target)){while(target&&target!==root&&!isPersonnelActor(target))target=target.parent;}while(target&&target!==root&&!state.meshes.includes(target)){if(isPersonnelActor(target))break;target=target.parent;}if(target&&target!==root)selectObject(target);else{state.selected=null;transform.detach();updateInspector();renderList();}}else{state.selected=null;transform.detach();updateInspector();renderList();}}
 let down=null;host.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY};});host.addEventListener('pointerup',e=>{if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);if(moved<5)selectByPointer(e);down=null;});
 transform.addEventListener('dragging-changed',e=>{orbit.enabled=!e.value;if(!e.value){updateInspector();pushHistory();}});
 transform.addEventListener('objectChange',()=>updateInspector());
@@ -325,9 +334,10 @@ $('backBtn').addEventListener('click',()=>location.href='./environment-lab.html'
 $('objectsToggle').addEventListener('click',()=>$('leftPanel').classList.toggle('open'));$('propertiesToggle').addEventListener('click',()=>$('rightPanel').classList.toggle('open'));
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){setMode('view');}});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(renderer)renderer.setSize(innerWidth,innerHeight,false);});
-function frame(){requestAnimationFrame(frame);clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();}
+function frame(){requestAnimationFrame(frame);try{clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();diagnostics.lastFrameAt=new Date().toISOString();}catch(error){diagRecord('error','Animation/render loop failed',{message:error.message,stack:error.stack});}}
 async function boot(){
  try{
+  diagnostics.stage='WAITING_FOR_ENVIRONMENT_BRIDGE';diagRecord('info','Boot started',{url:location.href,userAgent:navigator.userAgent});
   const bridge=document.createElement('iframe');bridge.title='PITCH 11 live Matchday Environment';bridge.src='./environment-lab.html?editorHost=1';bridge.setAttribute('aria-hidden','true');bridge.tabIndex=-1;
   Object.assign(bridge.style,{position:'fixed',inset:'0',width:'100vw',height:'100vh',opacity:'0',pointerEvents:'none',border:'0',zIndex:'1'});document.body.appendChild(bridge);
   const started=performance.now();let live=null;
@@ -341,24 +351,27 @@ async function boot(){
   }
   if(!live?.ready||!live.scene)throw new Error('The live Matchday stadium did not become ready within 45 seconds. Check Environment Lab loading and assets.');
   if(typeof live.setEditorMode!=='function')throw new Error('The live Matchday runtime is missing its Stadium Editor bridge.');
-  live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
+  diagnostics.stage='BRIDGE_CONNECTED';diagRecord('info','Environment bridge ready',{ready:live.ready,hasScene:!!live.scene,hasRenderer:!!live.renderer,hasEditorBridge:typeof live.setEditorMode==='function'});live.setEditorMode(true);state.liveBridge=live;state.bridgeFrame=bridge;
   renderer=live.renderer;if(!renderer)throw new Error('The live Matchday renderer is unavailable.');
   host.appendChild(renderer.domElement);renderer.setSize(innerWidth,innerHeight,false);
-  previewRenderer=new THREE.WebGLRenderer({alpha:false,antialias:!mobile,powerPreference:'low-power'});
+  diagnostics.stage='CREATING_PREVIEW_RENDERER';previewRenderer=new THREE.WebGLRenderer({alpha:false,antialias:!mobile,powerPreference:'low-power'});
   previewRenderer.setPixelRatio(Math.min(window.devicePixelRatio||1,mobile?1:1.5));
   previewRenderer.outputColorSpace=THREE.SRGBColorSpace;previewRenderer.toneMapping=THREE.ACESFilmicToneMapping;previewRenderer.toneMappingExposure=1.05;
   previewRenderer.setClearColor(0x111c17,1);$('previewStage').appendChild(previewRenderer.domElement);
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=false;
   renderer.domElement.style.touchAction='none';root.add(live.scene);state.model=live.scene;state.modelScale=1;
   const bounds=new THREE.Box3().setFromObject(live.scene);if(bounds.isEmpty())throw new Error('The live Matchday scene contains no visible stadium geometry.');
-  collectMeshes();
+  collectMeshes();diagnostics.stage='SCENE_READY';diagRecord('info','Editable scene collected',{meshCount:state.meshes.length,sceneChildren:root.children.length,sceneBoundsEmpty:bounds.isEmpty()});
   const finalBounds=new THREE.Box3().setFromObject(live.scene),center=finalBounds.getCenter(new THREE.Vector3()),radius=finalBounds.getSize(new THREE.Vector3()).length();
   orbit.target.copy(center);camera.position.copy(center).add(new THREE.Vector3(radius*.58,radius*.42,radius*1.12));camera.near=.1;camera.far=Math.max(1200,radius*8);camera.updateProjectionMatrix();orbit.update();
-  state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();loading.style.display='none';
+  state.ready=true;renderList();updateInspector();await loadSaved();pushHistory();diagnostics.stage='READY';diagRecord('info','Editor ready',{editableObjects:state.meshes.length,selected:state.selected?.name||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement});renderDiagnostics();loading.style.display='none';
   notify('Connected to live Matchday scene · '+state.meshes.length+' editable mesh objects.');
   frame();
- }catch(error){console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Open Environment Lab first to confirm the stadium asset is available, then retry.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
+ }catch(error){diagnostics.stage='BOOT_FAILED';diagRecord('error','Editor boot failed',{message:error?.message||String(error),stack:error?.stack||''});console.error(error);loading.innerHTML='<div><strong style="color:#ffb4a8">STADIUM EDITOR COULD NOT LOAD</strong><small>'+String(error?.message||error)+'</small><small>Open Environment Lab first to confirm the stadium asset is available, then retry.</small><button id="retry" style="margin-top:14px">RETRY</button></div>';$('retry').addEventListener('click',()=>location.reload());}
 }
+function diagnosticsSnapshot(){const selected=state.selected,gl=renderer?.getContext?.(),previewGl=previewRenderer?.getContext?.();return {report:'PITCH 11 STADIUM EDITOR DIAGNOSTICS',generatedAt:new Date().toISOString(),startedAt:diagnostics.startedAt,stage:diagnostics.stage,page:{url:location.href,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},userAgent:navigator.userAgent},runtime:{editorReady:state.ready,mode:state.mode,mobile,renderer:!!renderer,rendererCanvas:!!renderer?.domElement,rendererCanvasSize:renderer?.domElement?{width:renderer.domElement.width,height:renderer.domElement.height}:null,webgl:!!gl,webglContextLost:gl?.isContextLost?.()??null,webglRenderer:gl?.getParameter?.(gl.RENDERER)||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement,previewWebgl:!!previewGl,previewContextLost:previewGl?.isContextLost?.()??null,bridgeReady:!!state.liveBridge?.ready,bridgeHasScene:!!state.liveBridge?.scene,bridgeHasEditorMode:typeof state.liveBridge?.setEditorMode==='function'},scene:{rootChildren:root.children.length,editableCount:state.meshes.length,selected:selected?{name:selected.name,type:selected.type,path:selected.userData.editorPath,visible:selected.visible,isMesh:!!selected.isMesh,children:selected.children.length}:null},preview:diagnostics.lastPreview,picking:diagnostics.lastPick,frameLastSeen:diagnostics.lastFrameAt,errors:diagnostics.errors,warnings:diagnostics.warnings,events:diagnostics.events};}
+function renderDiagnostics(){if(!$('diagSummary'))return;const d=diagnosticsSnapshot();$('diagHealth').textContent=d.errors?'ERRORS: '+d.errors:d.warnings?'WARNINGS: '+d.warnings:'NO JS ERRORS';const rows=[['BOOT STAGE',d.stage],['EDITOR READY',d.runtime.editorReady],['BRIDGE',d.runtime.bridgeReady?'CONNECTED':'MISSING'],['WEBGL',d.runtime.webgl?(d.runtime.webglContextLost?'CONTEXT LOST':'OK'):'MISSING'],['PREVIEW RENDERER',d.runtime.previewRenderer?'OK':'MISSING'],['PREVIEW CANVAS',d.runtime.previewCanvas?'OK':'MISSING'],['EDITABLE OBJECTS',d.scene.editableCount],['SELECTED',d.scene.selected?.name||'NONE'],['LAST PICK',d.picking?d.picking.hitCount+' hits / '+d.picking.pickableMeshes+' candidates':'NOT TESTED'],['LAST FRAME',d.frameLastSeen||'NOT STARTED']];$('diagSummary').replaceChildren(...rows.map(([k,v])=>{const el=document.createElement('div'),b=document.createElement('b');b.textContent=k;el.append(b,document.createTextNode(String(v)));return el;}));$('diagEvents').replaceChildren(...d.events.slice(0,25).map(e=>{const el=document.createElement('div');el.className=e.level;el.textContent='['+e.time.slice(11,23)+'] '+e.level.toUpperCase()+' · '+e.message+(Object.keys(e.details||{}).length?' · '+JSON.stringify(e.details):'');return el;}));}
+$('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!$('diagnosticsPanel').hidden;renderDiagnostics();});$('diagClose').addEventListener('click',()=>$('diagnosticsPanel').hidden=true);$('diagRefresh').addEventListener('click',renderDiagnostics);$('diagCopy').addEventListener('click',async()=>{const report=JSON.stringify(diagnosticsSnapshot(),null,2);try{await navigator.clipboard.writeText(report);notify('Diagnostics report copied.');}catch(error){const area=document.createElement('textarea');area.value=report;document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();notify(ok?'Diagnostics report copied.':'Copy failed; inspect browser console.');}});
 boot();
 </script>
 </body>

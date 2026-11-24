@@ -25,7 +25,10 @@ for (const feature of [
   'previewRenderer.render(previewScene,previewCamera)',
   "environment-lab.html?editorHost=1", 'P11Stadium', 'setEditorMode(true)',
   'live.renderer', 'live.scene', 'openConfigDb', 'data-filter="people"', 'function isPersonnelActor(object)', 'function hasPersonnelActorAncestor(object)',
-  'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')"
+  'Object removed from this stadium version', "cameraPreset('drone')", "cameraPreset('pov')",
+  'id="diagnosticsBtn"', 'id="diagnosticsPanel"', 'function diagnosticsSnapshot()',
+  'function renderDiagnostics()', 'window.addEventListener(\'unhandledrejection\'',
+  'diagnostics.lastPick=', 'Animation/render loop failed', 'COPY REPORT'
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor feature: ' + feature);
 }
