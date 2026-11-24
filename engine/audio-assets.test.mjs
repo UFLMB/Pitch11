@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { MENU_MUSIC, SOURCES, resolveMenuMusicIntent } from "./audio-assets.mjs";
+import { MENU_MUSIC, SOURCES, resolveMenuMusicIntent, menuMusic, unlock } from "./audio-assets.mjs";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const audioModule = read("./audio-assets.mjs");
@@ -79,4 +79,42 @@ test("menu music is limited to menu, substitutions, half-time and full-time", ()
   }
   assert.deepEqual(resolveMenuMusicIntent("play", false, true), off);
   assert.deepEqual(resolveMenuMusicIntent("kickoff", true), { active: false, fadeSeconds: 3.25 });
+});
+
+
+test("loading music fade waits until browser audio unlock actually starts playback", async () => {
+  const originalAudio = globalThis.Audio;
+  const originalRaf = globalThis.requestAnimationFrame;
+  const scheduled = [];
+  let instance;
+  class FakeAudio {
+    constructor() {
+      this.paused = true;
+      this.volume = 0.32;
+      this.listeners = {};
+      instance = this;
+    }
+    addEventListener(name, callback) { this.listeners[name] = callback; }
+    play() { this.paused = false; return Promise.resolve(); }
+    pause() { this.paused = true; }
+  }
+  globalThis.Audio = FakeAudio;
+  globalThis.requestAnimationFrame = callback => {
+    scheduled.push(callback);
+    return scheduled.length;
+  };
+  try {
+    menuMusic(true, true, 1, 15);
+    assert.ok(instance, "menu audio element is created");
+    assert.equal(instance.volume, 0, "music stays silent while browser autoplay is locked");
+    assert.equal(scheduled.length, 0, "fade timer does not run before playback");
+    unlock();
+    await Promise.resolve();
+    assert.equal(scheduled.length, 1, "15-second fade begins after playback is accepted");
+    scheduled[0](15000);
+    assert.ok(Math.abs(instance.volume - 1) < 0.001, "music reaches target volume after the full fade");
+  } finally {
+    globalThis.Audio = originalAudio;
+    globalThis.requestAnimationFrame = originalRaf;
+  }
 });

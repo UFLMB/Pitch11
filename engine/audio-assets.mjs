@@ -29,6 +29,7 @@ let musicAudio = null;
 let musicPlayPending = false;
 let musicFadeFrame = 0;
 let musicTargetVolume = 0;
+let pendingMusicRamp = null;
 const pools = new Map();
 const warned = new Set();
 
@@ -48,6 +49,14 @@ function getMusicAudio() {
   return musicAudio;
 }
 
+function applyPendingMusicRamp() {
+  if (!pendingMusicRamp || !menuRequested || !menuEnabled) return false;
+  const pending = pendingMusicRamp;
+  pendingMusicRamp = null;
+  rampMusicVolume(pending.target, pending.duration, false);
+  return true;
+}
+
 function startMenuMusic() {
   const audio = getMusicAudio();
   if (!audio || !unlocked || !menuRequested || !menuEnabled) return false;
@@ -56,12 +65,16 @@ function startMenuMusic() {
   try {
     const result = audio.play();
     if (result && typeof result.then === "function") {
-      result.then(() => { musicPlayPending = false; }).catch(error => {
+      result.then(() => {
+        musicPlayPending = false;
+        applyPendingMusicRamp();
+      }).catch(error => {
         musicPlayPending = false;
         warnOnce("Menu music playback was blocked; it will retry after the next user gesture.", error);
       });
     } else {
       musicPlayPending = false;
+      applyPendingMusicRamp();
     }
     return true;
   } catch (error) {
@@ -121,11 +134,17 @@ function menuMusic(active, enabled = true, volume = DEFAULT_MUSIC_VOLUME, fadeSe
   const duration = Math.max(0, Number(fadeSeconds) || 0);
   if (target > 0) {
     if (audio.paused) {
+      cancelMusicFade();
+      pendingMusicRamp = duration > 0 ? { target, duration } : null;
       audio.volume = duration > 0 ? 0 : target;
       startMenuMusic();
+      if (duration <= 0 && unlocked) audio.volume = target;
+    } else {
+      pendingMusicRamp = null;
+      rampMusicVolume(target, duration, false);
     }
-    rampMusicVolume(target, duration, false);
   } else {
+    pendingMusicRamp = null;
     musicPlayPending = false;
     if (audio.paused) {
       cancelMusicFade();
@@ -241,4 +260,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { SOURCES, MENU_MUSIC, menuMusic, resolveMenuMusicIntent, play, setLevels, tick };
+export { SOURCES, MENU_MUSIC, menuMusic, resolveMenuMusicIntent, play, setLevels, tick, unlock };
