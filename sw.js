@@ -18,7 +18,7 @@ self.addEventListener('fetch',event=>{
   event.respondWith(fetch(request).then(response=>{
     if(response.ok&&response.type==='basic'){
       const copy=response.clone();
-      event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.put(request,copy)).catch(()=>{}));
+      caches.open(CACHE_NAME).then(cache=>cache.put(request,copy)).catch(()=>{});
     }
     return response;
   }).catch(async()=>{
