@@ -313,4 +313,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { SOURCES, MENU_MUSIC, menuMusic, preloadAssets, resolveMenuMusicIntent, play, setLevels, tick, unlock };
+export { SOURCES, MENU_MUSIC, menuMusic, preloadAssets, retryPreloadAssets, resolveMenuMusicIntent, play, setLevels, tick, unlock };
