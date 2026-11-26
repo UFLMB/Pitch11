@@ -390,7 +390,7 @@ function applyDecal(o,data,image=null){
  const texture=makeDecalTexture(data.text,data.color,data.background,data.fontSize,image);
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,transparent:false,side:THREE.DoubleSide,depthWrite:true}));
  mesh.name='EDITOR DECAL · '+(data.text||'IMAGE');mesh.userData.editorDecal=true;mesh.position.set(localCenter.x,localCenter.y,localBox.max.z+Math.max(.015,Math.abs(localSize.z)*.025));o.add(mesh);mesh.renderOrder=5;
- state.decals.set(o.userData.editorPath,data);
+ state.decals.set(o.userData.editorPath,data);auditAndRepairGeometryBuffers(true);
 }
 function applyAllDecals(){for(const [path,data] of state.decals){const o=state.meshes.find(x=>x.userData.editorPath===path);if(o)applyDecal(o,data);}}
 function addPrimitive(kind){
@@ -523,8 +523,9 @@ $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!
  const __applyConfigOriginal=applyConfig;
  applyConfig=function(data){
   if(!data||data.format!=='PITCH11_STADIUM_CONFIG'||!Array.isArray(data.objects)||!Array.isArray(data.decals||[]))throw new Error('Invalid stadium configuration structure.');
-  for(const [i,e] of data.objects.entries()){
+  const importPaths=new Set();for(const [i,e] of data.objects.entries()){
    if(!e||typeof e.path!=='string'||!Array.isArray(e.position)||e.position.length!==3||!Array.isArray(e.rotation)||e.rotation.length!==3||!Array.isArray(e.scale)||e.scale.length!==3||![...e.position,...e.rotation,...e.scale].every(Number.isFinite))throw new Error('Invalid transform data at object '+i+'. Import cancelled without changes.');
+   if(importPaths.has(e.path))throw new Error('Duplicate object path at entry '+i+'. Import cancelled.');importPaths.add(e.path);
    if(e.geometryData)new THREE.BufferGeometryLoader().parse(e.geometryData);
   }
   if((data.decals||[]).some(pair=>!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string'||!pair[1]||typeof pair[1]!=='object'))throw new Error('Invalid decal data. Import cancelled without changes.');
