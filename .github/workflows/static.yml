@@ -224,6 +224,8 @@ jobs:
           NODE
       - name: Check isolated Environment Lab runtime module syntax
         run: node --check stadium-environment-runtime.js
+      - name: Validate runtime hardening fixes
+        run: node scripts/validate-runtime-hardening.mjs
       - name: Validate Stadium Editor module and editing safeguards
         run: node scripts/validate-stadium-editor.mjs
       - name: Validate Environment Lab mobile WebGL startup
@@ -350,6 +352,7 @@ jobs:
             test "$(stat -c%s "$asset")" -gt 1000
             test "$(head -c 4 "$asset")" = "glTF"
           done
+          sha256sum assets/football-stadium.glb assets/team-dugout.glb assets/corner-flag.glb assets/players/idle.glb assets/players/walk.glb assets/players/run.glb | tee /tmp/pitch11-external-assets.sha256
           node scripts/validate-player-assets.mjs
           node scripts/inspect-player-fbx-package.mjs --compare-model
           node scripts/export-player-texture-audit.mjs /tmp/pitch11-player-texture-audit

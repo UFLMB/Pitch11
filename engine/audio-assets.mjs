@@ -62,7 +62,10 @@ async function preloadAssets(onProgress = null) {
     );
     audioPreloadState = audioPreloadProgress.failed.length ? "error" : "ready";
     report();
-    return { state: audioPreloadState, ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] };
+    const result = { state: audioPreloadState, ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] };
+    // Allow a caller to retry transient network failures without reloading.
+    if (audioPreloadState === "error") audioPreloadPromise = null;
+    return result;
   }).catch(error => {
     audioPreloadState = "error";
     audioPreloadProgress.failed = [error?.message || String(error)];
@@ -70,6 +73,13 @@ async function preloadAssets(onProgress = null) {
     return { state: audioPreloadState, ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] };
   });
   return audioPreloadPromise;
+}
+
+function retryPreloadAssets(onProgress = null) {
+  audioPreloadPromise = null;
+  audioPreloadState = "idle";
+  audioPreloadProgress = { completed: 0, total: Object.keys(SOURCES).length + 1, failed: [] };
+  return preloadAssets(onProgress);
 }
 
 function warnOnce(key, error) {
@@ -289,6 +299,7 @@ if (typeof window !== "undefined") {
   window.P11AudioAssets = Object.freeze({
     sources: SOURCES,
     preloadAssets,
+    retryPreloadAssets,
     get preloadState() { return audioPreloadState; },
     get preloadProgress() { return { ...audioPreloadProgress, failed: [...audioPreloadProgress.failed] }; },
     menuMusic,
@@ -302,4 +313,4 @@ if (typeof window !== "undefined") {
   });
 }
 
-export { SOURCES, MENU_MUSIC, menuMusic, preloadAssets, resolveMenuMusicIntent, play, setLevels, tick, unlock };
+export { SOURCES, MENU_MUSIC, menuMusic, preloadAssets, retryPreloadAssets, resolveMenuMusicIntent, play, setLevels, tick, unlock };
