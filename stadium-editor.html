@@ -514,11 +514,11 @@ $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!
  };
  const __duplicateOriginal=duplicateSelected;
  duplicateSelected=function(){
-  __duplicateOriginal();const clone=state.selected;if(!clone)return;
+  const source=state.selected;__duplicateOriginal();const clone=state.selected;if(!clone)return;
   const cloneMaterials=node=>{if(node.material)node.material=Array.isArray(node.material)?node.material.map(m=>m?.clone?.()||m):node.material.clone();node.children.forEach(cloneMaterials);};
   cloneMaterials(clone);
   const assignPaths=(node,path)=>{node.userData={...node.userData,editorPath:path};node.children.forEach((child,index)=>assignPaths(child,path+'/CHILD-'+index));};
-  assignPaths(clone,clone.userData.editorPath);const decal=state.decals.get(o.userData.editorPath);if(decal){state.decals.set(clone.userData.editorPath,decal);applyDecal(clone,decal);}auditAndRepairGeometryBuffers(true);renderList();
+  assignPaths(clone,clone.userData.editorPath);const decal=source?state.decals.get(source.userData.editorPath):null;if(decal){state.decals.set(clone.userData.editorPath,decal);applyDecal(clone,decal);}auditAndRepairGeometryBuffers(true);renderList();
  };
  const __applyConfigOriginal=applyConfig;
  applyConfig=function(data){
