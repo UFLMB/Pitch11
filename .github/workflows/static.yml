@@ -224,6 +224,8 @@ jobs:
           NODE
       - name: Check isolated Environment Lab runtime module syntax
         run: node --check stadium-environment-runtime.js
+      - name: Validate runtime hardening fixes
+        run: node scripts/validate-runtime-hardening.mjs
       - name: Validate Stadium Editor module and editing safeguards
         run: node scripts/validate-stadium-editor.mjs
       - name: Validate Environment Lab mobile WebGL startup
