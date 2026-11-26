@@ -88,6 +88,9 @@ for (const feature of [
   "webglcontextrestored",
   "Import cancelled without changes",
   "Duplicate object path at entry"
+  "DecalGeometry",
+  "EDITOR PROJECTED DECAL",
+  "Save configuration in this browser on this device only",
 ]) {
   assert.ok(html.includes(feature), 'Missing Stadium Editor audit regression guard: ' + feature);
 }
