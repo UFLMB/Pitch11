@@ -75,7 +75,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
  <div class="brand"><b>PITCH 11</b><small>STADIUM EDITOR · WORKSPACE</small></div>
  <div class="actions">
   <button id="viewMode" class="active">VIEW MODE</button><button id="editMode">EDIT MODE</button>
-  <button id="saveBtn" class="primary" data-wide="1">SAVE</button><button id="exportBtn" data-wide="1">EXPORT</button><button id="importBtn" data-wide="1">IMPORT</button>
+  <button id="saveBtn" class="primary" data-wide="1" title="Save configuration in this browser on this device only">SAVE LOCAL</button><button id="exportBtn" data-wide="1">EXPORT</button><button id="importBtn" data-wide="1">IMPORT</button>
   <button id="diagnosticsBtn">DIAGNOSTICS</button><button id="backBtn">BACK</button>
  </div>
 </header>
@@ -121,6 +121,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 const $=id=>document.getElementById(id);
 const diagnostics={startedAt:new Date().toISOString(),stage:'PAGE_INITIALIZED',events:[],lastPick:null,lastPreview:null,lastFrameAt:null,errors:0,warnings:0};
@@ -600,6 +601,63 @@ $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!
    canvas.addEventListener('webglcontextrestored',()=>{diagnostics.stage='WEBGL_CONTEXT_RESTORED';diagRecord('warn','WebGL context restored; requesting renderer state reset');try{renderer.resetState();renderer.setSize(innerWidth,innerHeight,false);auditAndRepairGeometryBuffers(true);}catch(error){diagRecord('error','Renderer recovery failed',{message:error.message});}});
   }
   __frameWithContext();
+ };
+}
+
+
+// Project decals onto the selected object's actual surface rather than floating
+// a flat quad beyond its local bounding-box front.
+{
+ removeDecalFor=function(object){
+  const ownerPath=object?.userData?.editorPath;
+  const targets=new Set();
+  object?.children?.forEach(child=>{if(child.userData?.editorDecal)targets.add(child);});
+  scene.traverse(node=>{if(node.userData?.editorDecalOwnerPath===ownerPath)targets.add(node);});
+  for(const decal of targets){
+   decal.parent?.remove(decal);
+   decal.traverse(node=>{node.geometry?.dispose?.();if(node.material){const mats=Array.isArray(node.material)?node.material:[node.material];mats.forEach(material=>{material.map?.dispose?.();material.dispose?.();});}});
+  }
+ };
+ applyDecal=function(object,data,image=null){
+  if(data?.imageData&&!image){
+   const restored=new Image();restored.onload=()=>applyDecal(object,data,restored);
+   restored.onerror=()=>{diagRecord('warn','Decal image could not be restored',{path:object.userData.editorPath});notify('A saved decal image could not be loaded.');};
+   restored.src=data.imageData;return;
+  }
+  removeDecalFor(object);
+  if(!data||(!data.text&&!image)){state.decals.delete(object.userData.editorPath);return;}
+  const candidates=[];
+  if(object.isMesh)candidates.push(object);
+  else object.traverse(node=>{if(node.isMesh&&!node.userData.editorDecal)candidates.push(node);});
+  if(!candidates.length){notify('This object has no mesh surface for a decal.');return;}
+  let target=candidates[0],best=-1;
+  for(const mesh of candidates){
+   if(!mesh.geometry)continue;
+   if(!mesh.geometry.boundingBox)mesh.geometry.computeBoundingBox();
+   const box=mesh.geometry.boundingBox;if(!box)continue;
+   const size=box.getSize(new THREE.Vector3()),score=size.x*size.y+size.y*size.z+size.x*size.z;
+   if(score>best){best=score;target=mesh;}
+  }
+  target.updateWorldMatrix(true,true);
+  if(!target.geometry.boundingBox)target.geometry.computeBoundingBox();
+  const localBox=target.geometry.boundingBox;
+  const localSize=localBox.getSize(new THREE.Vector3()),localCenter=localBox.getCenter(new THREE.Vector3());
+  const worldScale=target.getWorldScale(new THREE.Vector3());
+  const size=new THREE.Vector3(Math.max(.35,Math.abs(localSize.x*worldScale.x)*.9),Math.max(.18,Math.abs(localSize.y*worldScale.y)*.78),Math.max(.12,Math.abs(localSize.z*worldScale.z)+.2));
+  const worldPosition=localCenter.applyMatrix4(target.matrixWorld);
+  const worldQuaternion=target.getWorldQuaternion(new THREE.Quaternion());
+  const normal=new THREE.Vector3(0,0,1).applyQuaternion(worldQuaternion).normalize();
+  worldPosition.addScaledVector(normal,Math.max(.02,size.z*.45));
+  const orientation=new THREE.Euler().setFromQuaternion(worldQuaternion,'XYZ');
+  const geometry=new DecalGeometry(target,worldPosition,orientation,size);
+  if(!geometry.getAttribute('position')?.count){geometry.dispose();notify('No suitable surface was found for this decal.');return;}
+  const texture=makeDecalTexture(data.text,data.color,data.background,data.fontSize,image);
+  const mesh=new THREE.Mesh(geometry,new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,side:THREE.DoubleSide}));
+  mesh.name='EDITOR PROJECTED DECAL · '+(data.text||'IMAGE');
+  mesh.userData.editorDecal=true;mesh.userData.editorDecalOwnerPath=object.userData.editorPath;
+  mesh.renderOrder=5;scene.add(mesh);
+  state.decals.set(object.userData.editorPath,data);
+  auditAndRepairGeometryBuffers(true);
  };
 }
 
