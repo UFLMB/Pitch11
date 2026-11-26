@@ -129,7 +129,7 @@ window.addEventListener('error',e=>diagRecord('error',e.message||'Window error',
 window.addEventListener('unhandledrejection',e=>diagRecord('error','Unhandled promise rejection',{reason:String(e.reason?.stack||e.reason)}));
 window.addEventListener('error',e=>{if(e.target&&e.target!==window)diagRecord('error','Resource failed to load',{tag:e.target.tagName,src:e.target.src||e.target.href||''});},true);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
-const mobile=matchMedia('(max-width:800px)').matches;
+const mobile=matchMedia('(max-width:850px)').matches;
 let renderer=null,previewRenderer=null;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
@@ -383,7 +383,7 @@ function makeDecalTexture(text,color,bg,fontSize,image=null){
 }
 function removeDecalFor(o){const old=o.children.find(c=>c.userData.editorDecal);if(old){o.remove(old);old.traverse(x=>{x.geometry?.dispose?.();if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{m.map?.dispose?.();m.dispose?.();});}});}}
 function applyDecal(o,data,image=null){
- if(data?.imageData&&!image){const restored=new Image();restored.onload=()=>applyDecal(o,data,restored);restored.src=data.imageData;return;}
+ if(data?.imageData&&!image){const restored=new Image();restored.onload=()=>applyDecal(o,data,restored);restored.onerror=()=>{diagRecord('warn','Decal image could not be restored',{path:o.userData.editorPath});notify('A saved decal image could not be loaded.');};restored.src=data.imageData;return;}
  removeDecalFor(o);if(!data||(!data.text&&!image)){state.decals.delete(o.userData.editorPath);return;}
  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const localBox=o.geometry.boundingBox||new THREE.Box3(new THREE.Vector3(-.5,-.5,-.05),new THREE.Vector3(.5,.5,.05));const localSize=localBox.getSize(new THREE.Vector3()),localCenter=localBox.getCenter(new THREE.Vector3());
  const w=Math.max(.35,Math.abs(localSize.x)*.9),h=Math.max(.18,Math.abs(localSize.y)*.78);
@@ -438,7 +438,7 @@ $('backBtn').addEventListener('click',()=>location.href='./environment-lab.html'
 $('objectsToggle').addEventListener('click',()=>$('leftPanel').classList.toggle('open'));$('propertiesToggle').addEventListener('click',()=>$('rightPanel').classList.toggle('open'));
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){setMode('view');}});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(renderer)renderer.setSize(innerWidth,innerHeight,false);});
-function frame(){requestAnimationFrame(frame);try{auditAndRepairGeometryBuffers();clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();diagnostics.lastFrameAt=new Date().toISOString();}catch(error){diagRecord('error','Animation/render loop failed',{message:error.message,stack:error.stack});}}
+let renderLoopStopped=false,renderLoopFailures=0;function frame(){if(renderLoopStopped)return;try{auditAndRepairGeometryBuffers();clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();diagnostics.lastFrameAt=new Date().toISOString();renderLoopFailures=0;requestAnimationFrame(frame);}catch(error){renderLoopFailures++;diagRecord('error','Animation/render loop failed',{message:error.message,stack:error.stack,consecutiveFailures:renderLoopFailures});if(renderLoopFailures>=3){renderLoopStopped=true;diagRecord('error','Render loop halted after repeated failures',{message:error.message});notify('Rendering halted after a graphics error. Reload the editor to recover.');}else requestAnimationFrame(frame);}}
 async function boot(){
  try{
   diagnostics.stage='WAITING_FOR_ENVIRONMENT_BRIDGE';diagRecord('info','Boot started',{url:location.href,userAgent:navigator.userAgent});
@@ -493,7 +493,7 @@ $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!
    for(const [name,attribute] of Object.entries(source.attributes||{})){
     const Ctor=window[attribute.array?.constructor?.name]||Float32Array;
     const values=new Ctor(attribute.count*attribute.itemSize);
-    for(let i=0;i<attribute.count;i++)for(let j=0;j<attribute.itemSize;j++)values[i*attribute.itemSize+j]=attribute.getComponent(i,j);
+    for(let i=0;i<attribute.count;i++)for(let j=0;j<attribute.itemSize;j++)values[i*attribute.itemSize+j]=(j===0?attribute.getX(i):j===1?attribute.getY(i):j===2?attribute.getZ(i):attribute.getW(i));
     geometry.setAttribute(name,new THREE.BufferAttribute(values,attribute.itemSize,attribute.normalized));
    }
    if(source.index){
@@ -541,6 +541,51 @@ $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!
  setMode=function(mode){if(state.selected&&!state.selected.visible){state.selected=null;transform.detach();}__setModeOriginal(mode);};
  host.addEventListener('pointercancel',()=>{down=null;},{passive:true});
  window.addEventListener('blur',()=>{down=null;});
+}
+
+
+// Complete material-state capture for meshes with multiple material slots.
+{
+ const __snapshotOriginal=snapshot;
+ snapshot=function(){
+  const data=JSON.parse(__snapshotOriginal());
+  for(const entry of data.entries){
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);
+   const list=object?(Array.isArray(object.material)?object.material:[object.material]):[];
+   entry.materials=list.map(m=>m?{color:colorHex(m.color),roughness:m.roughness??.7,metalness:m.metalness??0,emissive:colorHex(m.emissive),emissiveIntensity:m.emissiveIntensity??0}:null);
+  }
+  return JSON.stringify(data);
+ };
+ const __restoreWithMaterials=restoreSnapshot;
+ restoreSnapshot=function(value){
+  const data=JSON.parse(value);__restoreWithMaterials(value);
+  for(const entry of data.entries||[]){
+   if(!entry.materials)continue;
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);if(!object)continue;
+   const list=Array.isArray(object.material)?object.material:[object.material];
+   entry.materials.forEach((saved,index)=>{const m=list[index];if(!m||!saved)return;if(m.color)m.color.set(saved.color||'#ffffff');if(m.emissive)m.emissive.set(saved.emissive||'#000000');if('roughness'in m)m.roughness=saved.roughness??.7;if('metalness'in m)m.metalness=saved.metalness??0;if('emissiveIntensity'in m)m.emissiveIntensity=saved.emissiveIntensity??0;m.needsUpdate=true;});
+  }
+ };
+ const __serializeOriginal=serialize;
+ serialize=function(){
+  const data=__serializeOriginal();
+  data.objects.forEach(entry=>{
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);
+   const list=object?(Array.isArray(object.material)?object.material:[object.material]):[];
+   entry.materials=list.map(m=>m?{color:colorHex(m.color),roughness:m.roughness??.7,metalness:m.metalness??0,emissive:colorHex(m.emissive),emissiveIntensity:m.emissiveIntensity??0}:null);
+  });
+  return data;
+ };
+ const __applyConfigWithMaterials=applyConfig;
+ applyConfig=function(data){
+  __applyConfigWithMaterials(data);
+  for(const entry of data.objects||[]){
+   if(!entry.materials)continue;
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);if(!object)continue;
+   const list=Array.isArray(object.material)?object.material:[object.material];
+   entry.materials.forEach((saved,index)=>{const m=list[index];if(!m||!saved)return;if(m.color)m.color.set(saved.color||'#ffffff');if(m.emissive)m.emissive.set(saved.emissive||'#000000');if('roughness'in m)m.roughness=saved.roughness??.7;if('metalness'in m)m.metalness=saved.metalness??0;if('emissiveIntensity'in m)m.emissiveIntensity=saved.emissiveIntensity??0;m.needsUpdate=true;});
+  }
+ };
 }
 
 boot();
