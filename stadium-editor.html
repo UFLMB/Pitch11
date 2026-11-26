@@ -14,7 +14,7 @@
 .actions{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0;flex-wrap:wrap;justify-content:flex-end;overflow:visible;white-space:normal}.actions button{flex:0 0 auto}
 button,select,input,textarea{font:inherit}button{border:1px solid #ffffff2a;border-radius:8px;background:#17221c;color:#eef5ed;padding:9px 11px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer}
 button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#26391d}button:disabled{opacity:.35;cursor:not-allowed}
-#layout{position:fixed;z-index:3;top:70px;bottom:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(220px,270px) 1fr minmax(250px,300px);gap:10px;pointer-events:none}
+#layout{position:fixed;z-index:3;top:70px;bottom:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(220px,270px) minmax(250px,300px);gap:10px;pointer-events:none}
 .panel{min-height:0;display:flex;flex-direction:column;background:#0a100edc;border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(16px);overflow:hidden;pointer-events:auto;box-shadow:0 12px 36px #0005}
 .panel h2{font-size:10px;letter-spacing:.15em;margin:0;padding:13px 13px 10px;color:#d8e5d7;border-bottom:1px solid var(--line)}
 .panelBody{padding:11px;overflow:auto;min-height:0}
@@ -403,8 +403,8 @@ function deleteSelected(){const o=state.selected;if(!o)return;o.visible=false;up
 function resetTransform(){const o=state.selected;if(!o)return;const initial=o.userData.editorInitialTransform;if(initial){o.position.fromArray(initial.position);o.rotation.fromArray(initial.rotation);o.scale.fromArray(initial.scale);}else{o.position.set(0,0,0);o.rotation.set(0,0,0);o.scale.set(1,1,1);}updateInspector();pushHistory();}
 function serialize(){return{format:'PITCH11_STADIUM_CONFIG',version:1,createdAt:new Date().toISOString(),model:'football-stadium.glb',objects:state.meshes.map(o=>({path:o.userData.editorPath,name:o.name,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray(),visible:o.visible,material:{color:colorHex(materialOf(o)?.color),roughness:materialOf(o)?.roughness??.7,metalness:materialOf(o)?.metalness??0,emissive:colorHex(materialOf(o)?.emissive),emissiveIntensity:materialOf(o)?.emissiveIntensity??0},added:o.userData.editorAdded||false,sourcePath:o.userData.editorSourcePath||null,geometry:{type:o.geometry?.type,parameters:o.geometry?.parameters||{}},geometryData:o.userData.editorAdded&&!o.userData.editorSourcePath?o.geometry?.toJSON():undefined})),decals:[...state.decals.entries()]};}
 function openConfigDb(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('IndexedDB unavailable'));return;}const request=indexedDB.open('p11-stadium-editor',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('configs'))request.result.createObjectStore('configs');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open local database'));});}
-async function saveLocal(){const payload=JSON.stringify(serialize());try{const db=await openConfigDb();await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readwrite');tx.objectStore('configs').put(payload,'current');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();notify('Stadium configuration saved on this device.');}catch(error){try{localStorage.setItem('p11-stadium-editor-v1',payload);notify('Stadium configuration saved locally.');}catch(_){notify('Local save failed. Export the configuration JSON instead.');}}}
-function downloadJson(){const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-stadium-config.json';a.click();URL.revokeObjectURL(url);notify('Configuration exported.');}
+async function saveLocal(){const payload=JSON.stringify(serialize());let db=null;try{db=await openConfigDb();await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readwrite');tx.objectStore('configs').put(payload,'current');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Save transaction aborted'));});notify('Stadium configuration saved on this device.');}catch(error){try{localStorage.setItem('p11-stadium-editor-v1',payload);notify('Stadium configuration saved locally.');}catch(_){notify('Local save failed. Export the configuration JSON instead.');}}finally{try{db?.close();}catch(_){}}}
+function downloadJson(){const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-stadium-config.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);notify('Configuration exported.');}
 function applyConfig(data){
  if(!data||data.format!=='PITCH11_STADIUM_CONFIG'||!Array.isArray(data.objects))throw new Error('Unsupported stadium configuration file.');
  const importedPaths=new Set(data.objects.map(entry=>entry.path));for(const o of state.meshes)if(o.userData.editorAdded&&!importedPaths.has(o.userData.editorPath))o.visible=false;
@@ -476,6 +476,73 @@ async function boot(){
 function diagnosticsSnapshot(){const selected=state.selected,gl=renderer?.getContext?.(),previewGl=previewRenderer?.getContext?.();return {report:'PITCH 11 STADIUM EDITOR DIAGNOSTICS',generatedAt:new Date().toISOString(),startedAt:diagnostics.startedAt,stage:diagnostics.stage,page:{url:location.href,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},userAgent:navigator.userAgent},runtime:{editorReady:state.ready,mode:state.mode,mobile,renderer:!!renderer,rendererCanvas:!!renderer?.domElement,rendererCanvasSize:renderer?.domElement?{width:renderer.domElement.width,height:renderer.domElement.height}:null,webgl:!!gl,webglContextLost:gl?.isContextLost?.()??null,webglRenderer:gl?.getParameter?.(gl.RENDERER)||null,rendererRealm:renderer?.domElement?.ownerDocument?.defaultView?.location?.href||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement,previewWebgl:!!previewGl,previewContextLost:previewGl?.isContextLost?.()??null,bridgeReady:!!state.liveBridge?.ready,bridgeHasScene:!!state.liveBridge?.scene,bridgeHasEditorMode:typeof state.liveBridge?.setEditorMode==='function'},scene:{rootChildren:root.children.length,editableCount:state.meshes.length,selected:selected?{name:selected.name,type:selected.type,path:selected.userData.editorPath,visible:selected.visible,isMesh:!!selected.isMesh,children:selected.children.length}:null},preview:diagnostics.lastPreview,picking:diagnostics.lastPick,bufferAudit:diagnostics.bufferAudit||null,frameLastSeen:diagnostics.lastFrameAt,errors:diagnostics.errors,warnings:diagnostics.warnings,events:diagnostics.events};}
 function renderDiagnostics(){if(!$('diagSummary'))return;const d=diagnosticsSnapshot();$('diagHealth').textContent=d.errors?'ERRORS: '+d.errors:d.warnings?'WARNINGS: '+d.warnings:'NO JS ERRORS';const rows=[['BOOT STAGE',d.stage],['EDITOR READY',d.runtime.editorReady],['BRIDGE',d.runtime.bridgeReady?'CONNECTED':'MISSING'],['WEBGL',d.runtime.webgl?(d.runtime.webglContextLost?'CONTEXT LOST':'OK'):'MISSING'],['PREVIEW RENDERER',d.runtime.previewRenderer?'OK':'MISSING'],['PREVIEW CANVAS',d.runtime.previewCanvas?'OK':'MISSING'],['EDITABLE OBJECTS',d.scene.editableCount],['SELECTED',d.scene.selected?.name||'NONE'],['LAST PICK',d.picking?d.picking.hitCount+' hits / '+d.picking.pickableMeshes+' candidates':'NOT TESTED'],['LAST FRAME',d.frameLastSeen||'NOT STARTED']];$('diagSummary').replaceChildren(...rows.map(([k,v])=>{const el=document.createElement('div'),b=document.createElement('b');b.textContent=k;el.append(b,document.createTextNode(String(v)));return el;}));$('diagEvents').replaceChildren(...d.events.slice(0,25).map(e=>{const el=document.createElement('div');el.className=e.level;el.textContent='['+e.time.slice(11,23)+'] '+e.level.toUpperCase()+' · '+e.message+(Object.keys(e.details||{}).length?' · '+JSON.stringify(e.details):'');return el;}));}
 $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!$('diagnosticsPanel').hidden;renderDiagnostics();});$('diagClose').addEventListener('click',()=>$('diagnosticsPanel').hidden=true);$('diagRefresh').addEventListener('click',renderDiagnostics);$('diagCopy').addEventListener('click',async()=>{const report=JSON.stringify(diagnosticsSnapshot(),null,2);try{await navigator.clipboard.writeText(report);notify('Diagnostics report copied.');}catch(error){const area=document.createElement('textarea');area.value=report;document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();notify(ok?'Diagnostics report copied.':'Copy failed; inspect browser console.');}});
+
+// AUDIT HARDENING PATCH — keep renderer work bounded and state transitions safe.
+{
+ const __auditOriginal=auditAndRepairGeometryBuffers;
+ let __lastFullAudit=0;
+ auditAndRepairGeometryBuffers=function(force=false){
+  const now=performance.now();
+  if(!force&&__lastFullAudit&&now-__lastFullAudit<8000)return;
+  __lastFullAudit=now;__auditOriginal(true);
+ };
+ const __previewOriginal=createLivePreviewClone;
+ function __convertPreviewGeometry(node){
+  if(node.geometry){
+   const source=node.geometry,geometry=source.clone();
+   for(const [name,attribute] of Object.entries(source.attributes||{})){
+    const Ctor=window[attribute.array?.constructor?.name]||Float32Array;
+    const values=new Ctor(attribute.count*attribute.itemSize);
+    for(let i=0;i<attribute.count;i++)for(let j=0;j<attribute.itemSize;j++)values[i*attribute.itemSize+j]=attribute.getComponent(i,j);
+    geometry.setAttribute(name,new THREE.BufferAttribute(values,attribute.itemSize,attribute.normalized));
+   }
+   if(source.index){
+    const index=source.index,Ctor=window[index.array?.constructor?.name]||Uint32Array,values=new Ctor(index.count);
+    for(let i=0;i<index.count;i++)values[i]=index.getX(i);
+    geometry.setIndex(new THREE.BufferAttribute(values,1));
+   }
+   node.geometry=geometry;
+  }
+  for(const child of node.children||[])__convertPreviewGeometry(child);
+ }
+ createLivePreviewClone=function(object){__previewOriginal(object);if(previewClone)__convertPreviewGeometry(previewClone);};
+ const __restoreOriginal=restoreSnapshot;
+ restoreSnapshot=function(value){
+  for(const o of state.meshes)removeDecalFor(o);
+  __restoreOriginal(value);
+  if(state.selected&&!state.selected.visible){state.selected=null;transform.detach();}
+ };
+ const __duplicateOriginal=duplicateSelected;
+ duplicateSelected=function(){
+  __duplicateOriginal();const clone=state.selected;if(!clone)return;
+  const cloneMaterials=node=>{if(node.material)node.material=Array.isArray(node.material)?node.material.map(m=>m?.clone?.()||m):node.material.clone();node.children.forEach(cloneMaterials);};
+  cloneMaterials(clone);
+  const assignPaths=(node,path)=>{node.userData={...node.userData,editorPath:path};node.children.forEach((child,index)=>assignPaths(child,path+'/CHILD-'+index));};
+  assignPaths(clone,clone.userData.editorPath);renderList();
+ };
+ const __applyConfigOriginal=applyConfig;
+ applyConfig=function(data){
+  if(!data||data.format!=='PITCH11_STADIUM_CONFIG'||!Array.isArray(data.objects)||!Array.isArray(data.decals||[]))throw new Error('Invalid stadium configuration structure.');
+  for(const [i,e] of data.objects.entries()){
+   if(!e||typeof e.path!=='string'||!Array.isArray(e.position)||e.position.length!==3||!Array.isArray(e.rotation)||e.rotation.length!==3||!Array.isArray(e.scale)||e.scale.length!==3||![...e.position,...e.rotation,...e.scale].every(Number.isFinite))throw new Error('Invalid transform data at object '+i+'. Import cancelled without changes.');
+   if(e.geometryData)new THREE.BufferGeometryLoader().parse(e.geometryData);
+  }
+  if((data.decals||[]).some(pair=>!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string'||!pair[1]||typeof pair[1]!=='object'))throw new Error('Invalid decal data. Import cancelled without changes.');
+  const before=state.meshes.slice(),transforms=before.map(o=>({o,p:o.position.toArray(),r:o.rotation.toArray(),s:o.scale.toArray(),v:o.visible,material:o.material})),decals=new Map(state.decals);
+  try{__applyConfigOriginal(data);}
+  catch(error){
+   for(const o of state.meshes)if(!before.includes(o)){root.remove(o);o.traverse(n=>n.geometry?.dispose?.());}
+   state.meshes=before;
+   for(const t of transforms){t.o.position.fromArray(t.p);t.o.rotation.fromArray(t.r);t.o.scale.fromArray(t.s);t.o.visible=t.v;t.o.material=t.material;}
+   state.decals=decals;applyAllDecals();renderList();updateInspector();throw error;
+  }
+ };
+ const __setModeOriginal=setMode;
+ setMode=function(mode){if(state.selected&&!state.selected.visible){state.selected=null;transform.detach();}__setModeOriginal(mode);};
+ host.addEventListener('pointercancel',()=>{down=null;},{passive:true});
+ window.addEventListener('blur',()=>{down=null;});
+}
+
 boot();
 </script>
 </body>
