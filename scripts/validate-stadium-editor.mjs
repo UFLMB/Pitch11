@@ -69,4 +69,27 @@ assert.ok(html.includes("$('backBtn').addEventListener('click',()=>location.href
 assert.ok(html.includes('#mobilePanels{display:none}') && html.includes('#mobilePanels{display:flex'), 'Mobile editor must expose compact object/property panel toggles.');
 assert.ok(html.includes('id="duplicateBtn"') && html.includes('id="deleteBtn"'), 'Object actions must remain available in the responsive inspector.');
 assert.ok(!html.includes('graphics3d.html'), 'Stadium Editor must not route into the production renderer.');
+
+// Regression guards for the recent Stadium Editor audit fixes.
+for (const feature of [
+  "const mobile=matchMedia('(max-width:850px)').matches",
+  "grid-template-columns:minmax(220px,270px) 1fr minmax(250px,300px)",
+  "#rightPanel{grid-column:3",
+  "__lastAuditedMeshCount=-1",
+  "function __convertPreviewGeometry(node)",
+  "attribute.getX(i)",
+  "host.addEventListener('pointercancel'",
+  "restored.onerror=",
+  "setTimeout(()=>URL.revokeObjectURL(url),1500)",
+  "finally{try{db?.close();}catch(_){}}",
+  "renderLoopFailures>=3",
+  "entry.materials=list.map",
+    "webglcontextlost",
+  "webglcontextrestored",
+  "Import cancelled without changes",
+  "Duplicate object path at entry"
+]) {
+  assert.ok(html.includes(feature), 'Missing Stadium Editor audit regression guard: ' + feature);
+}
+
 console.log('Standalone Stadium Editor module syntax and feature-safety checks passed.');

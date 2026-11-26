@@ -26,7 +26,7 @@ button.active,button.primary{border-color:#a3e635;color:#e4ffb4;background:#2639
 #centerTools{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;pointer-events:auto;padding:5px;background:#07100de0;border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(12px)}
 #centerTools button{min-width:46px;padding:8px 9px}
 #selectionHint{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);max-width:calc(100% - 20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 12px;border:1px solid var(--line);border-radius:99px;background:#07100de0;color:#d7e5d6;font-size:9px;letter-spacing:.07em;pointer-events:none}
-#rightPanel{background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none}
+#rightPanel{grid-column:3;background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none}
 #rightPanel>h2{background:#0a100ef2;border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(14px)}
 #rightPanel .panelBody{display:flex;flex-direction:column;gap:12px;background:transparent}
 #rightPanel .section:not(.previewSection){padding:10px;background:#0a100eed;border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(14px)}
@@ -129,7 +129,7 @@ window.addEventListener('error',e=>diagRecord('error',e.message||'Window error',
 window.addEventListener('unhandledrejection',e=>diagRecord('error','Unhandled promise rejection',{reason:String(e.reason?.stack||e.reason)}));
 window.addEventListener('error',e=>{if(e.target&&e.target!==window)diagRecord('error','Resource failed to load',{tag:e.target.tagName,src:e.target.src||e.target.href||''});},true);
 const host=$('viewport'),loading=$('loading'),list=$('objectList'),hint=$('selectionHint'),toast=$('toast');
-const mobile=matchMedia('(max-width:800px)').matches;
+const mobile=matchMedia('(max-width:850px)').matches;
 let renderer=null,previewRenderer=null;
 const scene=new THREE.Scene();scene.background=new THREE.Color(0x101d25);scene.fog=new THREE.Fog(0x101d25,260,650);
 const camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.1,1600);camera.position.set(0,115,235);
@@ -383,14 +383,14 @@ function makeDecalTexture(text,color,bg,fontSize,image=null){
 }
 function removeDecalFor(o){const old=o.children.find(c=>c.userData.editorDecal);if(old){o.remove(old);old.traverse(x=>{x.geometry?.dispose?.();if(x.material){const mats=Array.isArray(x.material)?x.material:[x.material];mats.forEach(m=>{m.map?.dispose?.();m.dispose?.();});}});}}
 function applyDecal(o,data,image=null){
- if(data?.imageData&&!image){const restored=new Image();restored.onload=()=>applyDecal(o,data,restored);restored.src=data.imageData;return;}
+ if(data?.imageData&&!image){const restored=new Image();restored.onload=()=>applyDecal(o,data,restored);restored.onerror=()=>{diagRecord('warn','Decal image could not be restored',{path:o.userData.editorPath});notify('A saved decal image could not be loaded.');};restored.src=data.imageData;return;}
  removeDecalFor(o);if(!data||(!data.text&&!image)){state.decals.delete(o.userData.editorPath);return;}
  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();const localBox=o.geometry.boundingBox||new THREE.Box3(new THREE.Vector3(-.5,-.5,-.05),new THREE.Vector3(.5,.5,.05));const localSize=localBox.getSize(new THREE.Vector3()),localCenter=localBox.getCenter(new THREE.Vector3());
  const w=Math.max(.35,Math.abs(localSize.x)*.9),h=Math.max(.18,Math.abs(localSize.y)*.78);
  const texture=makeDecalTexture(data.text,data.color,data.background,data.fontSize,image);
  const mesh=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:texture,transparent:false,side:THREE.DoubleSide,depthWrite:true}));
  mesh.name='EDITOR DECAL · '+(data.text||'IMAGE');mesh.userData.editorDecal=true;mesh.position.set(localCenter.x,localCenter.y,localBox.max.z+Math.max(.015,Math.abs(localSize.z)*.025));o.add(mesh);mesh.renderOrder=5;
- state.decals.set(o.userData.editorPath,data);
+ state.decals.set(o.userData.editorPath,data);auditAndRepairGeometryBuffers(true);
 }
 function applyAllDecals(){for(const [path,data] of state.decals){const o=state.meshes.find(x=>x.userData.editorPath===path);if(o)applyDecal(o,data);}}
 function addPrimitive(kind){
@@ -403,8 +403,8 @@ function deleteSelected(){const o=state.selected;if(!o)return;o.visible=false;up
 function resetTransform(){const o=state.selected;if(!o)return;const initial=o.userData.editorInitialTransform;if(initial){o.position.fromArray(initial.position);o.rotation.fromArray(initial.rotation);o.scale.fromArray(initial.scale);}else{o.position.set(0,0,0);o.rotation.set(0,0,0);o.scale.set(1,1,1);}updateInspector();pushHistory();}
 function serialize(){return{format:'PITCH11_STADIUM_CONFIG',version:1,createdAt:new Date().toISOString(),model:'football-stadium.glb',objects:state.meshes.map(o=>({path:o.userData.editorPath,name:o.name,position:o.position.toArray(),rotation:o.rotation.toArray(),scale:o.scale.toArray(),visible:o.visible,material:{color:colorHex(materialOf(o)?.color),roughness:materialOf(o)?.roughness??.7,metalness:materialOf(o)?.metalness??0,emissive:colorHex(materialOf(o)?.emissive),emissiveIntensity:materialOf(o)?.emissiveIntensity??0},added:o.userData.editorAdded||false,sourcePath:o.userData.editorSourcePath||null,geometry:{type:o.geometry?.type,parameters:o.geometry?.parameters||{}},geometryData:o.userData.editorAdded&&!o.userData.editorSourcePath?o.geometry?.toJSON():undefined})),decals:[...state.decals.entries()]};}
 function openConfigDb(){return new Promise((resolve,reject)=>{if(!('indexedDB'in window)){reject(new Error('IndexedDB unavailable'));return;}const request=indexedDB.open('p11-stadium-editor',1);request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains('configs'))request.result.createObjectStore('configs');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Could not open local database'));});}
-async function saveLocal(){const payload=JSON.stringify(serialize());try{const db=await openConfigDb();await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readwrite');tx.objectStore('configs').put(payload,'current');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});db.close();notify('Stadium configuration saved on this device.');}catch(error){try{localStorage.setItem('p11-stadium-editor-v1',payload);notify('Stadium configuration saved locally.');}catch(_){notify('Local save failed. Export the configuration JSON instead.');}}}
-function downloadJson(){const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-stadium-config.json';a.click();URL.revokeObjectURL(url);notify('Configuration exported.');}
+async function saveLocal(){const payload=JSON.stringify(serialize());let db=null;try{db=await openConfigDb();await new Promise((resolve,reject)=>{const tx=db.transaction('configs','readwrite');tx.objectStore('configs').put(payload,'current');tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error('Save transaction aborted'));});notify('Stadium configuration saved on this device.');}catch(error){try{localStorage.setItem('p11-stadium-editor-v1',payload);notify('Stadium configuration saved locally.');}catch(_){notify('Local save failed. Export the configuration JSON instead.');}}finally{try{db?.close();}catch(_){}}}
+function downloadJson(){const blob=new Blob([JSON.stringify(serialize(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='pitch11-stadium-config.json';a.style.display='none';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);notify('Configuration exported.');}
 function applyConfig(data){
  if(!data||data.format!=='PITCH11_STADIUM_CONFIG'||!Array.isArray(data.objects))throw new Error('Unsupported stadium configuration file.');
  const importedPaths=new Set(data.objects.map(entry=>entry.path));for(const o of state.meshes)if(o.userData.editorAdded&&!importedPaths.has(o.userData.editorPath))o.visible=false;
@@ -438,7 +438,7 @@ $('backBtn').addEventListener('click',()=>location.href='./environment-lab.html'
 $('objectsToggle').addEventListener('click',()=>$('leftPanel').classList.toggle('open'));$('propertiesToggle').addEventListener('click',()=>$('rightPanel').classList.toggle('open'));
 window.addEventListener('keydown',e=>{if(e.target instanceof HTMLInputElement||e.target instanceof HTMLTextAreaElement)return;if(e.key==='1')transform.setMode('translate');if(e.key==='2')transform.setMode('rotate');if(e.key==='3')transform.setMode('scale');if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}if(e.key==='Escape'){setMode('view');}});
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();if(renderer)renderer.setSize(innerWidth,innerHeight,false);});
-function frame(){requestAnimationFrame(frame);try{auditAndRepairGeometryBuffers();clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();diagnostics.lastFrameAt=new Date().toISOString();}catch(error){diagRecord('error','Animation/render loop failed',{message:error.message,stack:error.stack});}}
+let renderLoopStopped=false,renderLoopFailures=0;function frame(){if(renderLoopStopped)return;try{auditAndRepairGeometryBuffers();clock.getDelta();if(state.mode==='edit')orbit.enabled=!transform.dragging;orbit.update();renderer.setScissorTest(false);renderer.setViewport(0,0,innerWidth,innerHeight);renderer.render(scene,camera);renderLivePreview();diagnostics.lastFrameAt=new Date().toISOString();renderLoopFailures=0;requestAnimationFrame(frame);}catch(error){renderLoopFailures++;diagRecord('error','Animation/render loop failed',{message:error.message,stack:error.stack,consecutiveFailures:renderLoopFailures});if(renderLoopFailures>=3){renderLoopStopped=true;diagRecord('error','Render loop halted after repeated failures',{message:error.message});notify('Rendering halted after a graphics error. Reload the editor to recover.');}else requestAnimationFrame(frame);}}
 async function boot(){
  try{
   diagnostics.stage='WAITING_FOR_ENVIRONMENT_BRIDGE';diagRecord('info','Boot started',{url:location.href,userAgent:navigator.userAgent});
@@ -476,6 +476,133 @@ async function boot(){
 function diagnosticsSnapshot(){const selected=state.selected,gl=renderer?.getContext?.(),previewGl=previewRenderer?.getContext?.();return {report:'PITCH 11 STADIUM EDITOR DIAGNOSTICS',generatedAt:new Date().toISOString(),startedAt:diagnostics.startedAt,stage:diagnostics.stage,page:{url:location.href,readyState:document.readyState,viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},userAgent:navigator.userAgent},runtime:{editorReady:state.ready,mode:state.mode,mobile,renderer:!!renderer,rendererCanvas:!!renderer?.domElement,rendererCanvasSize:renderer?.domElement?{width:renderer.domElement.width,height:renderer.domElement.height}:null,webgl:!!gl,webglContextLost:gl?.isContextLost?.()??null,webglRenderer:gl?.getParameter?.(gl.RENDERER)||null,rendererRealm:renderer?.domElement?.ownerDocument?.defaultView?.location?.href||null,previewRenderer:!!previewRenderer,previewCanvas:!!previewRenderer?.domElement,previewWebgl:!!previewGl,previewContextLost:previewGl?.isContextLost?.()??null,bridgeReady:!!state.liveBridge?.ready,bridgeHasScene:!!state.liveBridge?.scene,bridgeHasEditorMode:typeof state.liveBridge?.setEditorMode==='function'},scene:{rootChildren:root.children.length,editableCount:state.meshes.length,selected:selected?{name:selected.name,type:selected.type,path:selected.userData.editorPath,visible:selected.visible,isMesh:!!selected.isMesh,children:selected.children.length}:null},preview:diagnostics.lastPreview,picking:diagnostics.lastPick,bufferAudit:diagnostics.bufferAudit||null,frameLastSeen:diagnostics.lastFrameAt,errors:diagnostics.errors,warnings:diagnostics.warnings,events:diagnostics.events};}
 function renderDiagnostics(){if(!$('diagSummary'))return;const d=diagnosticsSnapshot();$('diagHealth').textContent=d.errors?'ERRORS: '+d.errors:d.warnings?'WARNINGS: '+d.warnings:'NO JS ERRORS';const rows=[['BOOT STAGE',d.stage],['EDITOR READY',d.runtime.editorReady],['BRIDGE',d.runtime.bridgeReady?'CONNECTED':'MISSING'],['WEBGL',d.runtime.webgl?(d.runtime.webglContextLost?'CONTEXT LOST':'OK'):'MISSING'],['PREVIEW RENDERER',d.runtime.previewRenderer?'OK':'MISSING'],['PREVIEW CANVAS',d.runtime.previewCanvas?'OK':'MISSING'],['EDITABLE OBJECTS',d.scene.editableCount],['SELECTED',d.scene.selected?.name||'NONE'],['LAST PICK',d.picking?d.picking.hitCount+' hits / '+d.picking.pickableMeshes+' candidates':'NOT TESTED'],['LAST FRAME',d.frameLastSeen||'NOT STARTED']];$('diagSummary').replaceChildren(...rows.map(([k,v])=>{const el=document.createElement('div'),b=document.createElement('b');b.textContent=k;el.append(b,document.createTextNode(String(v)));return el;}));$('diagEvents').replaceChildren(...d.events.slice(0,25).map(e=>{const el=document.createElement('div');el.className=e.level;el.textContent='['+e.time.slice(11,23)+'] '+e.level.toUpperCase()+' · '+e.message+(Object.keys(e.details||{}).length?' · '+JSON.stringify(e.details):'');return el;}));}
 $('diagnosticsBtn').addEventListener('click',()=>{$('diagnosticsPanel').hidden=!$('diagnosticsPanel').hidden;renderDiagnostics();});$('diagClose').addEventListener('click',()=>$('diagnosticsPanel').hidden=true);$('diagRefresh').addEventListener('click',renderDiagnostics);$('diagCopy').addEventListener('click',async()=>{const report=JSON.stringify(diagnosticsSnapshot(),null,2);try{await navigator.clipboard.writeText(report);notify('Diagnostics report copied.');}catch(error){const area=document.createElement('textarea');area.value=report;document.body.append(area);area.select();const ok=document.execCommand('copy');area.remove();notify(ok?'Diagnostics report copied.':'Copy failed; inspect browser console.');}});
+
+// AUDIT HARDENING PATCH — keep renderer work bounded and state transitions safe.
+{
+ const __auditOriginal=auditAndRepairGeometryBuffers;
+ let __lastFullAudit=0,__lastAuditedMeshCount=-1;
+ auditAndRepairGeometryBuffers=function(force=false){
+  const now=performance.now();
+  const meshCount=state.meshes?.length||0;if(!force&&__lastFullAudit&&meshCount===__lastAuditedMeshCount)return;
+  __lastFullAudit=now;__lastAuditedMeshCount=meshCount;__auditOriginal(true);
+ };
+ const __previewOriginal=createLivePreviewClone;
+ function __convertPreviewGeometry(node){
+  if(node.geometry){
+   const source=node.geometry,geometry=source.clone();
+   for(const [name,attribute] of Object.entries(source.attributes||{})){
+    const Ctor=window[attribute.array?.constructor?.name]||Float32Array;
+    const values=new Ctor(attribute.count*attribute.itemSize);
+    for(let i=0;i<attribute.count;i++)for(let j=0;j<attribute.itemSize;j++)values[i*attribute.itemSize+j]=(j===0?attribute.getX(i):j===1?attribute.getY(i):j===2?attribute.getZ(i):attribute.getW(i));
+    geometry.setAttribute(name,new THREE.BufferAttribute(values,attribute.itemSize,attribute.normalized));
+   }
+   if(source.index){
+    const index=source.index,Ctor=window[index.array?.constructor?.name]||Uint32Array,values=new Ctor(index.count);
+    for(let i=0;i<index.count;i++)values[i]=index.getX(i);
+    geometry.setIndex(new THREE.BufferAttribute(values,1));
+   }
+   node.geometry=geometry;
+  }
+  for(const child of node.children||[])__convertPreviewGeometry(child);
+ }
+ createLivePreviewClone=function(object){__previewOriginal(object);if(previewClone)__convertPreviewGeometry(previewClone);};
+ const __restoreOriginal=restoreSnapshot;
+ restoreSnapshot=function(value){
+  for(const o of state.meshes)removeDecalFor(o);
+  __restoreOriginal(value);
+  if(state.selected&&!state.selected.visible){state.selected=null;transform.detach();}
+ };
+ const __duplicateOriginal=duplicateSelected;
+ duplicateSelected=function(){
+  __duplicateOriginal();const clone=state.selected;if(!clone)return;
+  const cloneMaterials=node=>{if(node.material)node.material=Array.isArray(node.material)?node.material.map(m=>m?.clone?.()||m):node.material.clone();node.children.forEach(cloneMaterials);};
+  cloneMaterials(clone);
+  const assignPaths=(node,path)=>{node.userData={...node.userData,editorPath:path};node.children.forEach((child,index)=>assignPaths(child,path+'/CHILD-'+index));};
+  assignPaths(clone,clone.userData.editorPath);const decal=state.decals.get(o.userData.editorPath);if(decal){state.decals.set(clone.userData.editorPath,decal);applyDecal(clone,decal);}auditAndRepairGeometryBuffers(true);renderList();
+ };
+ const __applyConfigOriginal=applyConfig;
+ applyConfig=function(data){
+  if(!data||data.format!=='PITCH11_STADIUM_CONFIG'||!Array.isArray(data.objects)||!Array.isArray(data.decals||[]))throw new Error('Invalid stadium configuration structure.');
+  const importPaths=new Set();for(const [i,e] of data.objects.entries()){
+   if(!e||typeof e.path!=='string'||!Array.isArray(e.position)||e.position.length!==3||!Array.isArray(e.rotation)||e.rotation.length!==3||!Array.isArray(e.scale)||e.scale.length!==3||![...e.position,...e.rotation,...e.scale].every(Number.isFinite))throw new Error('Invalid transform data at object '+i+'. Import cancelled without changes.');
+   if(importPaths.has(e.path))throw new Error('Duplicate object path at entry '+i+'. Import cancelled.');importPaths.add(e.path);
+   if(e.geometryData)new THREE.BufferGeometryLoader().parse(e.geometryData);
+  }
+  if((data.decals||[]).some(pair=>!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string'||!pair[1]||typeof pair[1]!=='object'))throw new Error('Invalid decal data. Import cancelled without changes.');
+  const before=state.meshes.slice(),transforms=before.map(o=>({o,p:o.position.toArray(),r:o.rotation.toArray(),s:o.scale.toArray(),v:o.visible,material:o.material})),decals=new Map(state.decals);
+  try{__applyConfigOriginal(data);}
+  catch(error){
+   for(const o of state.meshes)if(!before.includes(o)){root.remove(o);o.traverse(n=>n.geometry?.dispose?.());}
+   state.meshes=before;
+   for(const t of transforms){t.o.position.fromArray(t.p);t.o.rotation.fromArray(t.r);t.o.scale.fromArray(t.s);t.o.visible=t.v;t.o.material=t.material;}
+   state.decals=decals;applyAllDecals();renderList();updateInspector();throw error;
+  }
+ };
+ const __setModeOriginal=setMode;
+ setMode=function(mode){if(state.selected&&!state.selected.visible){state.selected=null;transform.detach();}__setModeOriginal(mode);};
+ host.addEventListener('pointercancel',()=>{down=null;},{passive:true});
+ window.addEventListener('blur',()=>{down=null;});
+}
+
+
+// Complete material-state capture for meshes with multiple material slots.
+{
+ const __snapshotOriginal=snapshot;
+ snapshot=function(){
+  const data=JSON.parse(__snapshotOriginal());
+  for(const entry of data.entries){
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);
+   const list=object?(Array.isArray(object.material)?object.material:[object.material]):[];
+   entry.materials=list.map(m=>m?{color:colorHex(m.color),roughness:m.roughness??.7,metalness:m.metalness??0,emissive:colorHex(m.emissive),emissiveIntensity:m.emissiveIntensity??0}:null);
+  }
+  return JSON.stringify(data);
+ };
+ const __restoreWithMaterials=restoreSnapshot;
+ restoreSnapshot=function(value){
+  const data=JSON.parse(value);__restoreWithMaterials(value);
+  for(const entry of data.entries||[]){
+   if(!entry.materials)continue;
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);if(!object)continue;
+   const list=Array.isArray(object.material)?object.material:[object.material];
+   entry.materials.forEach((saved,index)=>{const m=list[index];if(!m||!saved)return;if(m.color)m.color.set(saved.color||'#ffffff');if(m.emissive)m.emissive.set(saved.emissive||'#000000');if('roughness'in m)m.roughness=saved.roughness??.7;if('metalness'in m)m.metalness=saved.metalness??0;if('emissiveIntensity'in m)m.emissiveIntensity=saved.emissiveIntensity??0;m.needsUpdate=true;});
+  }
+ };
+ const __serializeOriginal=serialize;
+ serialize=function(){
+  const data=__serializeOriginal();
+  data.objects.forEach(entry=>{
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);
+   const list=object?(Array.isArray(object.material)?object.material:[object.material]):[];
+   entry.materials=list.map(m=>m?{color:colorHex(m.color),roughness:m.roughness??.7,metalness:m.metalness??0,emissive:colorHex(m.emissive),emissiveIntensity:m.emissiveIntensity??0}:null);
+  });
+  return data;
+ };
+ const __applyConfigWithMaterials=applyConfig;
+ applyConfig=function(data){
+  __applyConfigWithMaterials(data);
+  for(const entry of data.objects||[]){
+   if(!entry.materials)continue;
+   const object=state.meshes.find(o=>o.userData.editorPath===entry.path);if(!object)continue;
+   const list=Array.isArray(object.material)?object.material:[object.material];
+   entry.materials.forEach((saved,index)=>{const m=list[index];if(!m||!saved)return;if(m.color)m.color.set(saved.color||'#ffffff');if(m.emissive)m.emissive.set(saved.emissive||'#000000');if('roughness'in m)m.roughness=saved.roughness??.7;if('metalness'in m)m.metalness=saved.metalness??0;if('emissiveIntensity'in m)m.emissiveIntensity=saved.emissiveIntensity??0;m.needsUpdate=true;});
+  }
+ };
+}
+
+
+// WebGL context diagnostics and restoration handshake for the live stadium canvas.
+{
+ const __frameWithContext=frame;
+ frame=function(){
+  if(renderer?.domElement&&!renderer.domElement.__p11ContextWatch){
+   const canvas=renderer.domElement;canvas.__p11ContextWatch=true;
+   canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();diagnostics.stage='WEBGL_CONTEXT_LOST';diagRecord('error','Live renderer WebGL context lost',{status:renderer.getContext()?.isContextLost?.()||false});notify('Graphics context lost. Waiting for the browser to restore it.');});
+   canvas.addEventListener('webglcontextrestored',()=>{diagnostics.stage='WEBGL_CONTEXT_RESTORED';diagRecord('warn','WebGL context restored; requesting renderer state reset');try{renderer.resetState();renderer.setSize(innerWidth,innerHeight,false);auditAndRepairGeometryBuffers(true);}catch(error){diagRecord('error','Renderer recovery failed',{message:error.message});}});
+  }
+  __frameWithContext();
+ };
+}
+
 boot();
 </script>
 </body>
