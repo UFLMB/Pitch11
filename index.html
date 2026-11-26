@@ -6636,7 +6636,12 @@ take=function(p,byHand=false){
   document.addEventListener('webkitfullscreenchange',updateFullscreen);
   updateFullscreen();
  }
- retry.addEventListener('click',()=>window.location.reload());
+ retry.addEventListener('click',()=>{
+  if(audioState==='error'&&window.P11AudioAssets){
+   audioStarted=false;audioState='loading';audioProgress={completed:0,total:9,failed:[]};
+   screen.classList.remove('has-error');retry.textContent='RETRY LOADING';beginAudio();
+  }else window.location.reload();
+ });
  const beginAudio=()=>{
   const audio=window.P11AudioAssets;
   if(!audio){
@@ -6645,7 +6650,9 @@ take=function(p,byHand=false){
   }
   if(audioStarted)return;
   audioStarted=true;
-  audio.preloadAssets(progress=>{audioProgress=progress;}).then(result=>{
+  const preload=audio.preloadState==='error'&&typeof audio.retryPreloadAssets==='function'
+   ?audio.retryPreloadAssets:audio.preloadAssets;
+  preload.call(audio,progress=>{audioProgress=progress;}).then(result=>{
    audioState=result.state;audioProgress=result;
   }).catch(error=>{
    audioState='error';audioProgress={...audioProgress,failed:[error?.message||String(error)]};
