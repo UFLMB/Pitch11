@@ -1,4 +1,4 @@
-const CACHE_NAME='pitch11-shell-v6';
+const CACHE_NAME='pitch11-shell-v7';
 const SHELL=['./','./index.html','./manifest.webmanifest','./assets/pitch11-icon.svg'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()));
@@ -11,30 +11,23 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET')return;
   const url=new URL(request.url);
   if(url.origin!==self.location.origin)return;
-  if(request.mode==='navigate'){
-    event.respondWith(fetch(request).then(response=>{
-      if(response.ok){const copy=response.clone();caches.open(CACHE_NAME).then(cache=>cache.put('./index.html',copy));}
-      return response;
-    }).catch(()=>caches.match('./index.html')));
-    return;
-  }
-  // Scripts and ES modules must be refreshed from the network first. The old
-  // cache-first policy could keep an outdated stadium runtime indefinitely.
-  if(request.destination==='script'||/\.(?:js|mjs|glb)$/.test(url.pathname)){
-    event.respondWith(fetch(request).then(response=>{
-      if(response.ok&&response.type==='basic'){
-        const copy=response.clone();
-        caches.open(CACHE_NAME).then(cache=>cache.put(request,copy));
-      }
-      return response;
-    }).catch(()=>caches.match(request)));
-    return;
-  }
-  event.respondWith(caches.match(request).then(cached=>cached||fetch(request).then(response=>{
+
+  // Network-first for every same-origin GET. This prevents stale images,
+  // audio, textures and configuration files from surviving a new deployment.
+  // The previous response remains available as an offline fallback.
+  event.respondWith(fetch(request).then(response=>{
     if(response.ok&&response.type==='basic'){
       const copy=response.clone();
-      caches.open(CACHE_NAME).then(cache=>cache.put(request,copy));
+      event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.put(request,copy)).catch(()=>{}));
     }
     return response;
-  })));
+  }).catch(async()=>{
+    const cached=await caches.match(request);
+    if(cached)return cached;
+    if(request.mode==='navigate'){
+      const shell=await caches.match('./index.html');
+      if(shell)return shell;
+    }
+    throw new Error('PITCH 11 offline cache miss: '+url.pathname);
+  }));
 });
