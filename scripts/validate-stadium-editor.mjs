@@ -75,7 +75,7 @@ for (const feature of [
   "const mobile=matchMedia('(max-width:850px)').matches",
   "grid-template-columns:minmax(220px,270px) 1fr minmax(250px,300px)",
   "#rightPanel{grid-column:3",
-  "const __lastAuditedMeshCount=-1",
+  "__lastAuditedMeshCount=-1",
   "function __convertPreviewGeometry(node)",
   "attribute.getX(i)",
   "host.addEventListener('pointercancel'",
@@ -84,8 +84,7 @@ for (const feature of [
   "finally{try{db?.close();}catch(_){}}",
   "renderLoopFailures>=3",
   "entry.materials=list.map",
-  "data.materials",
-  "webglcontextlost",
+    "webglcontextlost",
   "webglcontextrestored",
   "Import cancelled without changes",
   "Duplicate object path at entry"
