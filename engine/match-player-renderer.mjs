@@ -609,6 +609,11 @@ export class MatchPlayerRenderer {
   get ready() { return this.status === "ready" && !!this.template; }
   get loadedClipNames() { return [...this.clipCache.keys()].map(file => file.replace(/\.fbx$/i, "")).sort(); }
   get failedClipNames() { return [...this.failedClips.entries()].map(([file, error]) => ({ file, error })); }
+  get coreAnimationReadiness() {
+    const loaded = CORE_MIXAMO_CLIPS.filter(file => this.clipCache.has(file)).length;
+    const failed = CORE_MIXAMO_CLIPS.filter(file => this.failedClips.has(file)).length;
+    return { total: CORE_MIXAMO_CLIPS.length, loaded, failed, progress: loaded / CORE_MIXAMO_CLIPS.length, state: this.animationLoadState };
+  }
   get count() { return this.players.size; }
   get expectedCount() { return this.inputPlayerCount; }
   get visibleCount() { return this.visiblePlayerCount; }
