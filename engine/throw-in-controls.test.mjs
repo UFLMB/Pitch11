@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readGameplaySource } from "./gameplay-source.mjs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const html = readFileSync(resolve(root, "index.html"), "utf8");
+const html = readGameplaySource(root);
 
 test("throw-in action buttons execute the dedicated overhead restart", () => {
   const law15 = html.slice(html.indexOf("/* Law 15: every attacking action button"), html.indexOf("/* IFAB Law 14: goalkeeper line"));
