@@ -32,7 +32,7 @@ test("touch landscape devices use a dedicated compact pause layout", () => {
 test("mobile pause actions retain a minimum 44 CSS-pixel-equivalent canvas hit area and rows fit available height", () => {
   assert.match(pause, /const actionH=mobile\?44:Math\.max\(44,H\*\.062\)/);
   assert.match(pause, /actionY-rowY-gap\*4-H\*\.018/);
-  assert.match(pause, /Math\.max\(mobile\?34:H\*\.075/);
+  assert.match(pause, /Math\.max\(mobile\?34:H\*\.06/);
   assert.match(pause, /const bottom=H\*\(mobile\?\.985:\.97\)/);
 });
 
@@ -47,10 +47,10 @@ test("camera chosen in match settings remains selected when returning to the pau
 });
 
 test("pause navigation uses genuinely translucent surfaces and a narrower live-view rail", () => {
-  assert.match(pause, /const panelW=mobile\?W\*\.385:W\*\.305/);
+  assert.match(pause, /const panelW=mobile\?W\*\.335:W\*\.27/);
   assert.match(pause, /rgba\(3,8,11,\.62\)/);
-  assert.match(pause, /rgba\(163,230,53,\.17\)/);
-  assert.match(pause, /rgba\(22,34,39,\.17\)/);
+  assert.match(pause, /rgba\(163,230,53,\.22\)/);
+  assert.match(pause, /rgba\(22,34,39,\.22\)/);
   assert.doesNotMatch(pause, /rgba\(163,230,53,\.96\)|rgba\(22,34,39,\.84\)/);
 });
 
@@ -59,4 +59,21 @@ test("pause bottom actions are compact, icon-led and retain mobile touch targets
   assert.match(pause, /◉ CAMERA/);
   assert.match(pause, /↻ RESTART/);
   assert.match(pause, /⏻ QUIT/);
+});
+
+test("match information is displayed in a compact header above the live 3D view", () => {
+  assert.match(pause, /const liveX=left\+panelW\+W\*\.035/);
+  assert.match(pause, /const infoX=liveX,infoY=top\+H\*\.012/);
+  assert.match(pause, /txt\('MATCH INFORMATION'/);
+  assert.match(pause, /KIT\[0\]\.name/);
+  assert.match(pause, /S\.score\[0\].*S\.score\[1\]/);
+  assert.match(pause, /KIT\[1\]\.name/);
+  assert.match(pause, /fit\(clockStr\(\)/);
+});
+
+test("pause options remain vertically stacked in compact boxes with high-contrast labels", () => {
+  assert.match(pause, /const rowH=Math\.max\(mobile\?34:H\*\.06,Math\.min\(H\*\(mobile\?\.09:\.082\)/);
+  assert.match(pause, /rows\.forEach\(\(r,i\)=>\{\s*const y=rowY\+i\*\(rowH\+gap\)/);
+  assert.match(pause, /selected\?'#f4ffe8':'#f7faf5'/);
+  assert.match(pause, /ctx\.shadowColor='rgba\(0,0,0,\.72\)'/);
 });
