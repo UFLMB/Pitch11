@@ -8,6 +8,7 @@ import vm from "node:vm";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const gameplayScripts = readGameplayScripts(root);
+const html = readFileSync(resolve(root, "index.html"), "utf8");
 const source = readGameplaySource(root);
 assert.ok(gameplayScripts.length > 0, "production gameplay modules must exist");
 const lawSource = readFileSync(new URL("./law-compliance.js", import.meta.url), "utf8");
