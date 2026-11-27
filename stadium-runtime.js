@@ -143,7 +143,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const previewCamera=new THREE.PerspectiveCamera(46,1,.1,700);
  let previewBall=null,pitchTextureCanvas=null,pitchTexture=null,pitchMaterials=[],previewWeatherGroup=null,pitchSurfaceY=0,pitchMarkingsGroup=null,pitchBaseImage=null,pitchGrassBaseCanvas=null,pitchNormalTexture=null,pitchRoughnessTexture=null,pitchSettings={pitch:0,mowing:0},pitchTextureStatus='fallback',pitchDiagnostics={meshCount:0,surfaceCandidates:0,grassMaterialsChanged:0,largestMeshes:[],candidateSamples:[],markings:null};
  let pitchGrassPbrDiagnostics={status:'not-started',quality:null,files:{},materialCount:0,normalBindings:0,roughnessBindings:0};
- let activePitchKey='';
+ let activePitchKey='',detailedTurfTextureStarted=false;
  function drawProceduralGrass(g,width,height){
   // One continuous, deterministic turf image. Blade marks are baked into a
   // single texture; no grass meshes, particle systems, or repeated tiles.
@@ -604,6 +604,8 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    });
    pitchGrassPbrDiagnostics.completedAt=new Date().toISOString();
    activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
+   // Keep the successfully loaded Meshy albedo; only build procedural turf if it failed.
+   scheduleDetailedPitchTexture();
    console.info('PITCH 11 local Sports Turf PBR maps:',{quality,baseColor:baseOK,normalOpenGL:normalOK,roughness:roughOK,metalness:0,materials:pitchMaterials.length});
   };
   load('color.jpg','color',canvas,ok=>{baseOK=ok;finish();});
@@ -692,16 +694,28 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
  function scheduleDetailedPitchTexture(){
-  if(!pitchGrassBaseCanvas||!pitchTexture)return;
+  if(!pitchGrassBaseCanvas||!pitchTexture||detailedTurfTextureStarted)return;
+  // Meshy maps load asynchronously. Wait for all three requests to settle before
+  // deciding whether to keep the PBR albedo or build the procedural fallback.
+  if(pitchGrassPbrDiagnostics.status==='loading'){
+   boot.timings.detailedTurfTextureState='waiting-for-pbr';
+   return;
+  }
+  detailedTurfTextureStarted=true;
+  if(pitchGrassPbrDiagnostics.baseColorApplied){
+   pitchTextureStatus='local-meshy-'+pitchGrassPbrDiagnostics.quality+'-pbr';
+   boot.timings.detailedTurfTextureState='skipped-meshy-pbr';
+   return;
+  }
   const startedAt=performance.now();
-  boot.timings.detailedTurfTextureState='building';
+  boot.timings.detailedTurfTextureState='building-procedural-fallback';
   drawProceduralGrassProgressive(pitchGrassBaseCanvas.getContext('2d',{alpha:false}),pitchGrassBaseCanvas.width,pitchGrassBaseCanvas.height,()=>{
    activePitchKey='';
    updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
    pitchTexture.needsUpdate=true;
-   pitchTextureStatus='procedural-hd-local';
+   pitchTextureStatus='procedural-hd-local-fallback';
    boot.timings.detailedTurfTextureMs=Math.round(performance.now()-startedAt);
-   boot.timings.detailedTurfTextureState='ready';
+   boot.timings.detailedTurfTextureState='ready-procedural-fallback';
   });
  }
  function setStadiumLoadState(state,error=''){
