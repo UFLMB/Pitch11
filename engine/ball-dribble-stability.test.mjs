@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const source = readGameplaySource(root);
 function extractFunction(name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `${name}() must exist`);
