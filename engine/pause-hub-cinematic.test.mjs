@@ -16,7 +16,7 @@ test("pause camera rotates through all existing views, including goal-to-goal", 
 test("manual camera selection takes priority over auto director and restores the saved match camera", () => {
   assert.match(pause, /const selected=p11PauseManualCam==null\?automatic:p11PauseManualCam/);
   assert.match(pause, /finally\{G\.cam=saved;\}/);
-  assert.match(pause, /\['CAMERA',\(\)=>\{cycleCam\(\);p11PauseManualCam=G\.cam;\}\]/);
+  assert.match(pause, /\['◉ CAMERA',\(\)=>\{cycleCam\(\);p11PauseManualCam=G\.cam;\}\]/);
 });
 
 test("opening a new pause session resets the manual camera override and cinematic timer", () => {
@@ -30,7 +30,7 @@ test("touch landscape devices use a dedicated compact pause layout", () => {
 });
 
 test("mobile pause actions retain a minimum 44 CSS-pixel-equivalent canvas hit area and rows fit available height", () => {
-  assert.match(pause, /const actionH=mobile\?Math\.max\(44,H\*\.12\)/);
+  assert.match(pause, /const actionH=mobile\?44:Math\.max\(44,H\*\.062\)/);
   assert.match(pause, /actionY-rowY-gap\*4-H\*\.018/);
   assert.match(pause, /Math\.max\(mobile\?34:H\*\.075/);
   assert.match(pause, /const bottom=H\*\(mobile\?\.985:\.97\)/);
@@ -44,4 +44,19 @@ test("existing pause destinations and half/full-time return handling remain wire
 
 test("camera chosen in match settings remains selected when returning to the pause hub", () => {
   assert.match(pause, /if\(M\.pp==='set'\)p11PauseManualCam=G\.cam;M\.pp='hub'/);
+});
+
+test("pause navigation uses genuinely translucent surfaces and a narrower live-view rail", () => {
+  assert.match(pause, /const panelW=mobile\?W\*\.385:W\*\.305/);
+  assert.match(pause, /rgba\(3,8,11,\.62\)/);
+  assert.match(pause, /rgba\(163,230,53,\.17\)/);
+  assert.match(pause, /rgba\(22,34,39,\.17\)/);
+  assert.doesNotMatch(pause, /rgba\(163,230,53,\.96\)|rgba\(22,34,39,\.84\)/);
+});
+
+test("pause bottom actions are compact, icon-led and retain mobile touch targets", () => {
+  assert.match(pause, /const actionH=mobile\?44:Math\.max\(44,H\*\.062\)/);
+  assert.match(pause, /◉ CAMERA/);
+  assert.match(pause, /↻ RESTART/);
+  assert.match(pause, /⏻ QUIT/);
 });
