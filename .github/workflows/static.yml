@@ -50,6 +50,8 @@ jobs:
           sudo apt-get install -y assimp-utils
       - name: Inspect uploaded FBX animation package
         run: node scripts/inspect-player-fbx-package.mjs
+      - name: Validate every animation with the production Three.js FBXLoader
+        run: node scripts/inspect-three-fbx-package.mjs
       - name: Inspect Git LFS goalkeeper character candidate and animation rig compatibility
         run: node scripts/inspect-player-model-candidate.mjs
       - name: Check inline application scripts
