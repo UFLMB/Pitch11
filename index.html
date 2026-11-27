@@ -6621,15 +6621,23 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
 <script>
 /* PITCH 11 — cinematic live-match pause hub */
 (function(){
-  const p11PauseModes=[0,1,2,3,4,5,6,7].filter(i=>CAMS[i]);
+  const p11PauseModes=Array.from({length:9},(_,i)=>i).filter(i=>i===8||CAMS[i]);
+  let p11PauseManualCam=null;
   const p11PauseStarted=()=>M.pauseCineStarted||(M.pauseCineStarted=performance.now());
+  const p11PauseOpenBase=openSubs;
+  openSubs=function(reason,manualPause=false){
+    p11PauseManualCam=null;
+    M.pauseCineStarted=performance.now();
+    p11PauseOpenBase(reason,manualPause);
+  };
   const p11PauseCamBase=camSet;
   camSet=function(a){
     if(S.mode==='subs'&&M.pp==='hub'&&!M.instr&&p11PauseModes.length){
       const elapsed=Math.max(0,performance.now()-p11PauseStarted());
-      const slot=Math.floor(elapsed/6800)%p11PauseModes.length;
+      const automatic=p11PauseModes[Math.floor(elapsed/6800)%p11PauseModes.length];
+      const selected=p11PauseManualCam==null?automatic:p11PauseManualCam;
       const saved=G.cam;
-      try{G.cam=p11PauseModes[slot];p11PauseCamBase(a);}
+      try{G.cam=selected;p11PauseCamBase(a);}
       finally{G.cam=saved;}
       return;
     }
@@ -6645,8 +6653,8 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
       ctx.fillStyle='rgba(8,18,14,.18)';rr(x,y,w*.018,h,h*.009);ctx.fill();
     }
     ctx.textAlign='left';
-    fit(label,x+w*.075,y+h*(sub?.39:.51),w*.84,h*.31,selected?'#10190c':'#f3f1e9','left');
-    if(sub)fit(sub,x+w*.075,y+h*.73,w*.84,h*.2,selected?'rgba(15,28,12,.78)':'rgba(210,222,240,.62)','left');
+    fit(label,x+w*.075,y+h*(sub?.39:.51),w*.84,h*(sub?.31:.4),selected?'#10190c':'#f3f1e9','left');
+    if(sub)fit(sub,x+w*.075,y+h*.73,w*.84,h*.2,selected?'rgba(15,28,12,.78)':'rgba(210,222,240,.72)','left');
     ctx.textAlign='center';
   };
   drawSubs=function(){
@@ -6660,11 +6668,12 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     if(M.pp==='subs'){_dS();ubtn(W*.02,H*.03,W*.14,H*.09,'‹ BACK',back);return;}
     if(M.pp==='set'){matchSettings(back);return;}
 
-    const mobile=W/H<1.75;
-    const left=mobile?W*.025:W*.035;
-    const panelW=mobile?W*.43:W*.365;
-    const top=H*.07;
-    const bottom=H*.97;
+    const touchMobile=(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)&&Math.min(W,H)<=560;
+    const mobile=touchMobile||W/H<1.55;
+    const left=mobile?W*.018:W*.035;
+    const panelW=mobile?W*.445:W*.365;
+    const top=H*(mobile?.025:.07);
+    const bottom=H*(mobile?.985:.97);
     const panelH=bottom-top;
     UI.r.length=0;UI.def=null;
     // Keep the live stadium view dominant: only the navigation rail receives a strong tint.
@@ -6674,17 +6683,19 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     shade.addColorStop(1,'rgba(3,8,11,0)');
     ctx.fillStyle=shade;ctx.fillRect(0,0,left+panelW*1.35,H);
     ctx.fillStyle='rgba(3,8,11,.32)';ctx.fillRect(0,top,left+panelW,bottom-top);
-    ctx.fillStyle='rgba(163,230,53,.9)';rr(left,top+H*.018,H*.006,H*.055,H*.003);ctx.fill();
+    ctx.fillStyle='rgba(163,230,53,.9)';rr(left,top+H*(mobile?.012:.018),H*.006,H*(mobile?.045:.055),H*.003);ctx.fill();
     ctx.textAlign='left';
-    txt('PITCH 11',left+H*.025,top+H*.045,H*.024,'#a3e635',900);
-    txt('MATCH PAUSED',left+H*.025,top+H*.105,H*.052,'#f3f1e9',900);
-    const clock=clockStr().replace(/\\s+(1ST|2ND|ET1|ET2)$/,'');
-    txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*.145,H*.021,'rgba(223,232,225,.72)',700);
+    txt('PITCH 11',left+H*.025,top+H*(mobile?.032:.045),H*(mobile?.021:.024),'#a3e635',900);
+    txt('MATCH PAUSED',left+H*.025,top+H*(mobile?.082:.105),H*(mobile?.041:.052),'#f3f1e9',900);
+    const clock=clockStr().replace(/\s+(1ST|2ND|ET1|ET2)$/,'');
+    txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*(mobile?.125:.145),H*(mobile?.017:.021),'rgba(223,232,225,.72)',700);
 
-    const gap=H*.012;
-    const rowH=Math.min(H*.11,(panelH-H*.30-gap*4)/5);
-    const rowY=top+H*.16;
-    const rowW=panelW-H*.05;
+    const gap=H*(mobile?.01:.012);
+    const rowY=top+H*(mobile?.155:.16);
+    const actionH=mobile?Math.max(44,H*.12):Math.max(H*.065,Math.min(H*.085,H*.1));
+    const actionY=bottom-actionH;
+    const rowH=Math.max(mobile?40:H*.075,Math.min(H*(mobile?.12:.11),(actionY-rowY-gap*4-H*.018)/5));
+    const rowW=panelW-H*(mobile?.032:.05);
     const rows=[
       ['RESUME MATCH','Return to the pitch',true,()=>resumeSubs()],
       ['TEAM MANAGEMENT','Substitutions · Squad',false,()=>{M.pp='subs';}],
@@ -6694,18 +6705,16 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     ];
     rows.forEach((r,i)=>{
       const y=rowY+i*(rowH+gap);
-      p11PauseAction(left+H*.018,y,rowW,rowH,r[0],r[1],r[2],r[3]);
+      p11PauseAction(left+H*.012,y,rowW,rowH,r[0],mobile?'':r[1],r[2],r[3]);
     });
-    const actionY=Math.min(bottom-H*.1,rowY+5*(rowH+gap)+H*.012);
-    const actionH=Math.max(H*.08,Math.min(H*.1,bottom-actionY));
-    const actionGap=H*.012,actionW=(rowW-actionGap*2)/3;
+    const actionGap=H*(mobile?.009:.012),actionW=(rowW-actionGap*2)/3;
     const actions=[
-      ['CAMERA',()=>{cycleCam();M.pauseCineStarted=performance.now();}],
+      ['CAMERA',()=>{cycleCam();p11PauseManualCam=G.cam;}],
       [M.cf2?'CONFIRM RESTART':'RESTART',()=>{if(M.cf2){M.cf2=0;rematch();}else{M.cf2=1;M.conf=0;}}],
       [M.conf?'CONFIRM QUIT':'QUIT MATCH',()=>{if(M.conf)quitMatch();else{M.conf=1;M.cf2=0;}}]
     ];
     actions.forEach((a,i)=>{
-      const x=left+H*.018+i*(actionW+actionGap),y=actionY;
+      const x=left+H*.012+i*(actionW+actionGap),y=actionY;
       const danger=i===2||i===1&&(M.cf2||M.conf);
       UI.r.push({x,y,w:actionW,h:actionH,fn:a[1]});
       glass(x,y,actionW,actionH,actionH*.2,danger
@@ -6715,7 +6724,7 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     });
     // Small cinematic label on the open side; no opaque card over the match.
     const liveX=left+panelW+W*.035;
-    if(W-liveX>W*.2){
+    if(!mobile&&W-liveX>W*.2){
       ctx.textAlign='left';
       txt('LIVE MATCH VIEW',liveX,H*.88,H*.019,'rgba(235,242,235,.68)',800);
       txt('CINEMATIC CAMERA',liveX,H*.915,H*.015,'rgba(163,230,53,.78)',700);
