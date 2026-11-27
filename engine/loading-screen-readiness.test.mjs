@@ -46,3 +46,10 @@ test("failed required assets cannot unlock the automatic ready state", () => {
   assert.match(index, /const animationFailed=animation\.failed>0\|\|\['partial','error'\]\.includes\(animation\.state\);/);
   assert.match(index, /button\.textContent='CONTINUE ANYWAY'/);
 });
+
+test("fullscreen tap starts the loading music immediately inside the user gesture", () => {
+  assert.match(index, /const startLoadingMusicFromGesture=\(\)=>\{const audio=window\.P11AudioAssets;if\(!audio\?\.menuMusic\)return false;/);
+  assert.match(index, /audio\.menuMusic\(true,enabled,1,15\)/);
+  assert.match(index, /fullscreenButton\?\.addEventListener\('click',\(\)=>\{startLoadingMusicFromGesture\(\);/);
+  assert.match(index, /const enabled=G\.mus==null\?true:!!G\.mus/);
+});
