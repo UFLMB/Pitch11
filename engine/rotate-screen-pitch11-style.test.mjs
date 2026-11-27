@@ -4,7 +4,9 @@ import { readFile } from 'node:fs/promises';
 
 test('portrait orientation displays the PITCH 11 landscape prompt', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  const start = html.indexOf('if(H>W){\\n    UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;');
+  const hud = html.indexOf('function drawHud(){');
+  assert.notEqual(hud, -1, 'HUD renderer exists');
+  const start = html.indexOf('if(H>W){', hud);
   assert.notEqual(start, -1, 'portrait HUD branch exists');
   const end = html.indexOf("if(S.mode==='menu')", start);
   const rotateScreen = html.slice(start, end);
