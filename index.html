@@ -6659,7 +6659,7 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
   };
   drawSubs=function(){
     if(M.instr){_dS();return;}
-    const back=()=>{if(S.ret==='half'||S.ret==='full')resumeSubs();else{M.pp='hub';M.st=0;}};
+    const back=()=>{if(S.ret==='half'||S.ret==='full')resumeSubs();else{if(M.pp==='set')p11PauseManualCam=G.cam;M.pp='hub';M.st=0;}};
     if(M.pp==='tact'){resumeSubs();return;}
     if(M.pp==='stats'){
       if(M.st){statsScr();return;}
