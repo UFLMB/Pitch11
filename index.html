@@ -6627,7 +6627,7 @@ const tick=now=>{if(finished)return;
  fill.style.width=value+'%';percent.textContent=value+'%';
  const optionalFailed=objectStates.some(state=>state==='error');
  const animationFailed=animation.failed>0||['partial','error'].includes(animation.state);
- const failed=b.state==='error'||['error','asset-error'].includes(model.state)||optionalFailed||animationFailed;
+ const failed=b.state==='error'||['error','asset-error'].includes(model.state)||b.pitch?.state==='error'||optionalFailed||animationFailed;
  if(failed){
   screen.classList.add('has-error');button.textContent='CONTINUE ANYWAY';
   status.textContent='A MATCH ASSET COULD NOT BE LOADED';
