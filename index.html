@@ -6647,10 +6647,10 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     UI.r.push({x,y,w,h,fn});
     const selected=!!active;
     glass(x,y,w,h,h*.22,selected
-      ?{top:'rgba(163,230,53,.96)',bot:'rgba(88,145,28,.94)',glow:'rgba(163,230,53,.28)',hl:.28,bd:'rgba(226,255,177,.9)'}
-      :{top:'rgba(22,34,39,.84)',bot:'rgba(5,12,17,.76)',hl:.08,bd:'rgba(220,232,224,.18)'});
+      ?{top:'rgba(163,230,53,.17)',bot:'rgba(88,145,28,.07)',glow:'rgba(163,230,53,.10)',hl:.035,bd:'rgba(205,255,145,.42)'}
+      :{top:'rgba(22,34,39,.17)',bot:'rgba(5,12,17,.09)',hl:.018,bd:'rgba(220,232,224,.10)'});
     if(selected){
-      ctx.fillStyle='rgba(8,18,14,.18)';rr(x,y,w*.018,h,h*.009);ctx.fill();
+      ctx.fillStyle='rgba(8,18,14,.055)';rr(x,y,w*.018,h,h*.009);ctx.fill();
     }
     ctx.textAlign='left';
     fit(label,x+w*.075,y+h*(sub?.39:.51),w*.84,h*(sub?.31:.4),selected?'#10190c':'#f3f1e9','left');
@@ -6671,18 +6671,18 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     const touchMobile=(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)&&Math.min(W,H)<=560;
     const mobile=touchMobile||W/H<1.55;
     const left=mobile?W*.018:W*.035;
-    const panelW=mobile?W*.445:W*.365;
+    const panelW=mobile?W*.385:W*.305;
     const top=H*(mobile?.025:.07);
     const bottom=H*(mobile?.985:.97);
     const panelH=bottom-top;
     UI.r.length=0;UI.def=null;
     // Keep the live stadium view dominant: only the navigation rail receives a strong tint.
-    const shade=ctx.createLinearGradient(left,0,left+panelW*1.35,0);
-    shade.addColorStop(0,'rgba(3,8,11,.94)');
-    shade.addColorStop(.72,'rgba(3,8,11,.76)');
+    const shade=ctx.createLinearGradient(left,0,left+panelW*1.25,0);
+    shade.addColorStop(0,'rgba(3,8,11,.62)');
+    shade.addColorStop(.68,'rgba(3,8,11,.30)');
     shade.addColorStop(1,'rgba(3,8,11,0)');
     ctx.fillStyle=shade;ctx.fillRect(0,0,left+panelW*1.35,H);
-    ctx.fillStyle='rgba(3,8,11,.32)';ctx.fillRect(0,top,left+panelW,bottom-top);
+    ctx.fillStyle='rgba(3,8,11,.09)';ctx.fillRect(0,top,left+panelW,bottom-top);
     ctx.fillStyle='rgba(163,230,53,.9)';rr(left,top+H*(mobile?.012:.018),H*.006,H*(mobile?.045:.055),H*.003);ctx.fill();
     ctx.textAlign='left';
     txt('PITCH 11',left+H*.025,top+H*(mobile?.032:.045),H*(mobile?.021:.024),'#a3e635',900);
@@ -6690,9 +6690,9 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     const clock=clockStr().replace(/\s+(1ST|2ND|ET1|ET2)$/,'');
     txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*(mobile?.125:.145),H*(mobile?.017:.021),'rgba(223,232,225,.72)',700);
 
-    const gap=H*(mobile?.01:.012);
+    const gap=H*(mobile?.008:.009);
     const rowY=top+H*(mobile?.155:.16);
-    const actionH=mobile?Math.max(44,H*.12):Math.max(H*.065,Math.min(H*.085,H*.1));
+    const actionH=mobile?44:Math.max(44,H*.062);
     const actionY=bottom-actionH;
     const rowH=Math.max(mobile?34:H*.075,Math.min(H*(mobile?.12:.11),(actionY-rowY-gap*4-H*.018)/5));
     const rowW=panelW-H*(mobile?.032:.05);
@@ -6707,19 +6707,19 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
       const y=rowY+i*(rowH+gap);
       p11PauseAction(left+H*.012,y,rowW,rowH,r[0],mobile?'':r[1],r[2],r[3]);
     });
-    const actionGap=H*(mobile?.009:.012),actionW=(rowW-actionGap*2)/3;
+    const actionGap=H*(mobile?.007:.009),actionW=(rowW-actionGap*2)/3;
     const actions=[
-      ['CAMERA',()=>{cycleCam();p11PauseManualCam=G.cam;}],
-      [M.cf2?'CONFIRM RESTART':'RESTART',()=>{if(M.cf2){M.cf2=0;rematch();}else{M.cf2=1;M.conf=0;}}],
-      [M.conf?'CONFIRM QUIT':'QUIT MATCH',()=>{if(M.conf)quitMatch();else{M.conf=1;M.cf2=0;}}]
+      ['◉ CAMERA',()=>{cycleCam();p11PauseManualCam=G.cam;}],
+      [M.cf2?'↻ CONFIRM':'↻ RESTART',()=>{if(M.cf2){M.cf2=0;rematch();}else{M.cf2=1;M.conf=0;}}],
+      [M.conf?'⏻ CONFIRM':'⏻ QUIT',()=>{if(M.conf)quitMatch();else{M.conf=1;M.cf2=0;}}]
     ];
     actions.forEach((a,i)=>{
       const x=left+H*.012+i*(actionW+actionGap),y=actionY;
       const danger=i===2||i===1&&(M.cf2||M.conf);
       UI.r.push({x,y,w:actionW,h:actionH,fn:a[1]});
       glass(x,y,actionW,actionH,actionH*.2,danger
-        ?{top:'rgba(130,38,32,.78)',bot:'rgba(65,17,17,.78)',bd:'rgba(255,120,100,.42)'}
-        :{top:'rgba(28,42,45,.8)',bot:'rgba(7,15,20,.78)',bd:'rgba(225,235,230,.2)'});
+        ?{top:'rgba(130,38,32,.20)',bot:'rgba(65,17,17,.12)',bd:'rgba(255,120,100,.30)'}
+        :{top:'rgba(28,42,45,.16)',bot:'rgba(7,15,20,.09)',bd:'rgba(225,235,230,.11)'});
       fit(a[0],x+actionW/2,y+actionH/2,actionW*.9,actionH*.25,danger?'#ff9b88':'#e7ece7');
     });
     // Small cinematic label on the open side; no opaque card over the match.
