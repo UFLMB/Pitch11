@@ -121,7 +121,7 @@ const graphicsMobile=matchMedia('(max-width: 800px)').matches||(navigator.device
 // Mobile supersampling: render above CSS resolution for cleaner 3D edges and sharper pitch/player detail.
 const maxRenderScale=Math.min(window.devicePixelRatio||1,2.0);
 let renderScale=Math.min(maxRenderScale,graphicsMobile?1.75:1.25),W=0,H=0,dpr=renderScale;
-function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=renderScale;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+function resize(){const rect=cv.getBoundingClientRect();W=Math.max(1,rect.width||innerWidth);H=Math.max(1,rect.height||innerHeight);dpr=renderScale;cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);if(H>W){releaseAll();UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;}}
 function setRenderScale(next){const value=clamp(next,1,maxRenderScale);if(Math.abs(value-renderScale)<0.025)return;renderScale=value;resize();window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};}
 window.P11GraphicsQuality={scale:renderScale,maxScale:maxRenderScale,mobile:graphicsMobile};
 
@@ -254,6 +254,7 @@ function press(slot,pid){if(pid===undefined)pid='k'+slot;gDown(slot,pid,0,0);}
 function release(slot,pid){if(pid===undefined)pid='k'+slot;gUp(pid,false);}
 function releaseAll(){gCancelAll();I.spBtn=false;if(I.shoot){I.shoot=false;I.chargeT=0;}joy.on=false;joy.vx=joy.vy=0;for(const k in keys)keys[k]=false;}
 
+cv.addEventListener('pointerdown',e=>{if(H>W){e.preventDefault();e.stopImmediatePropagation();releaseAll();}},true);
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
@@ -1499,12 +1500,12 @@ function camUpdate(){
   cam.v+=(400+Math.min(sp,600)*0.1-(S.mode==='goal'?25:0)-cam.v)*0.03;   // slight zoom out when the ball is fast
 }
 function update(){
+  if(H>W)return;                                         // pause the entire simulation before timers or actions advance in portrait
   snap();
   S.t+=DT;
   if(S.msg&&S.msg.t>0)S.msg.t-=DT;
   if(S.card&&S.card.t>0)S.card.t-=DT;
   if(toast.t>0)toast.t-=DT;
-  if(H>W)return;                                           // portrait: paused
   tickSubstitutionExits();tickPendingSubstitutionClocks();tickSubExitRunners();
   if(FX.hit>0){FX.hit--;camUpdate();return;}               // brief hit-stop on big tackles
   FX.shake=Math.max(0,FX.shake-0.8);
@@ -1815,7 +1816,7 @@ function drawSubs(){
 }
 function drawHud(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='middle';
-  if(H>W){ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);txt('Rotate your phone to landscape',W/2,H/2,Math.min(W*0.07,40),'#fff',700);return;}
+  if(H>W){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);txt('Rotate your phone to landscape',W/2,H/2,Math.min(W*0.07,40),'#fff',700);return;}
   if(S.mode==='menu'){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;drawMenu();return;}
   const m=S.mode,u=Math.max(10,H*0.045);
   const w=u*13.5,h=u*1.9,x=W/2-w/2,y=H*0.015;if(m!=='subs')scoreboard2(u,x,y,w,h);
@@ -2764,6 +2765,7 @@ function skillAct(p){
 }
 /* --- per-tick state: wind-up, first-time arming, wall pass, timers --- */
 function tick8(){
+  if(H>W)return;                                           // timed shots and first-touch actions must pause with the match
   if(SKP.t>0)SKP.t-=DT;
   for(const p of P){if(p.scd>0)p.scd-=DT;if(p.wr>0)p.wr-=DT;}
   if(S.mode!=='play'){W8.p=null;FT8.p=null;W8.wall=0;return;}
@@ -2784,7 +2786,7 @@ const _tk8=take;take=function(p,byHand=false){_tk8(p,byHand);if(W8.wall){if(p===
 const _ai8=aiPlayer;aiPlayer=function(p){
   if(p.wr>0&&!p.gk){const dx=p.wx-p.x,dy=p.wy-p.y,m=Math.hypot(dx,dy);if(m>8){p.ix=dx/m;p.iy=dy/m;p.sp=true;}else{p.ix=p.iy=0;p.sp=false;}return;}
   _ai8(p);};
-const _u8=update;update=function(){tick8();_u8();};
+const _u8=update;update=function(){if(H>W)return;tick8();_u8();};
 /* --- reticle --- */
 function retUpdate(){
   RET.on=false;const p=ctrl;
