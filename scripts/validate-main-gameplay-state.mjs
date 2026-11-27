@@ -41,7 +41,7 @@ assert.match(sw, /event\.waitUntil\(networkResponse\.then/,
 assert.match(sw, /caches\.match\(request\)\.then\(cached=>cached\|\|caches\.match\('\.\/index\.html'\)\)/,
   "offline navigation must prefer the requested route, then fall back to the app shell");
 
-assert.doesNotMatch(viewer, /\\\\n#hint/,
+assert.equal(viewer.includes("\\n#hint"), false,
   "viewer CSS must not contain a literal escaped newline before #hint");
 assert.match(viewer, /}\n#hint\{/,
   "viewer #hint selector must begin on a real CSS line");
