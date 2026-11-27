@@ -6585,7 +6585,8 @@ take=function(p,byHand=false){
 const fill=document.getElementById('p11-loading-fill'),percent=document.getElementById('p11-loading-percent'),status=document.getElementById('p11-loading-status'),button=document.getElementById('p11-loading-continue');
 const fullscreenButton=document.getElementById('p11-loading-fullscreen');
 const syncFullscreenButton=()=>{const active=!!(document.fullscreenElement||document.webkitFullscreenElement);fullscreenButton?.classList.toggle('is-active',active);fullscreenButton?.setAttribute('aria-label',active?'Exit full screen':'Enter full screen');fullscreenButton?.setAttribute('title',active?'Exit full screen':'Full screen');fullscreenButton?.setAttribute('aria-pressed',String(active));};
-fullscreenButton?.addEventListener('click',()=>{const active=document.fullscreenElement||document.webkitFullscreenElement;const action=active?(document.exitFullscreen||document.webkitExitFullscreen):(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);if(typeof action!=='function')return;try{const result=active?action.call(document):action.call(document.documentElement);if(result&&typeof result.catch==='function')result.catch(()=>{});}catch(_){} });
+const startLoadingMusicFromGesture=()=>{const audio=window.P11AudioAssets;if(!audio?.menuMusic)return false;const enabled=G.mus==null?true:!!G.mus;window.P11LoadingMusicRampStarted=true;audio.menuMusic(true,enabled,1,15);return true;};
+fullscreenButton?.addEventListener('click',()=>{startLoadingMusicFromGesture();const active=document.fullscreenElement||document.webkitFullscreenElement;const action=active?(document.exitFullscreen||document.webkitExitFullscreen):(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);if(typeof action!=='function')return;try{const result=active?action.call(document):action.call(document.documentElement);if(result&&typeof result.catch==='function')result.catch(()=>{});}catch(_){} });
 document.addEventListener('fullscreenchange',syncFullscreenButton);document.addEventListener('webkitfullscreenchange',syncFullscreenButton);syncFullscreenButton();
 const started=performance.now(),DURATION=15000,FINAL_PHASE=2000;
 let finished=false;
@@ -6675,16 +6676,17 @@ requestAnimationFrame(tick);})();
   const p11PauseAction=(x,y,w,h,label,sub,active,fn)=>{
     UI.r.push({x,y,w,h,fn});
     const selected=!!active;
-    glass(x,y,w,h,h*.22,selected
-      ?{top:'rgba(163,230,53,.17)',bot:'rgba(88,145,28,.07)',glow:'rgba(163,230,53,.10)',hl:.035,bd:'rgba(205,255,145,.42)'}
-      :{top:'rgba(22,34,39,.17)',bot:'rgba(5,12,17,.09)',hl:.018,bd:'rgba(220,232,224,.10)'});
+    glass(x,y,w,h,h*.2,selected
+      ?{top:'rgba(163,230,53,.22)',bot:'rgba(88,145,28,.11)',glow:'rgba(163,230,53,.12)',hl:.05,bd:'rgba(205,255,145,.58)'}
+      :{top:'rgba(22,34,39,.22)',bot:'rgba(5,12,17,.13)',hl:.025,bd:'rgba(220,232,224,.19)'});
     if(selected){
-      ctx.fillStyle='rgba(8,18,14,.055)';rr(x,y,w*.018,h,h*.009);ctx.fill();
+      ctx.fillStyle='rgba(8,18,14,.035)';rr(x,y,w*.018,h,h*.009);ctx.fill();
     }
     ctx.textAlign='left';
-    fit(label,x+w*.075,y+h*(sub?.39:.51),w*.84,h*(sub?.31:.4),selected?'#10190c':'#f3f1e9','left');
-    if(sub)fit(sub,x+w*.075,y+h*.73,w*.84,h*.2,selected?'rgba(15,28,12,.78)':'rgba(210,222,240,.72)','left');
-    ctx.textAlign='center';
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.72)';ctx.shadowBlur=Math.max(2,h*.11);ctx.shadowOffsetY=1;
+    fit(label,x+w*.075,y+h*(sub?.38:.51),w*.84,h*(sub?.34:.48),selected?'#f4ffe8':'#f7faf5','left');
+    if(sub)fit(sub,x+w*.075,y+h*.75,w*.84,h*.19,selected?'rgba(238,250,222,.92)':'rgba(225,235,226,.9)','left');
+    ctx.restore();ctx.textAlign='center';
   };
   drawSubs=function(){
     if(M.instr){_dS();return;}
@@ -6700,7 +6702,7 @@ requestAnimationFrame(tick);})();
     const touchMobile=(window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)&&Math.min(W,H)<=560;
     const mobile=touchMobile||W/H<1.55;
     const left=mobile?W*.018:W*.035;
-    const panelW=mobile?W*.385:W*.305;
+    const panelW=mobile?W*.335:W*.27;
     const top=H*(mobile?.025:.07);
     const bottom=H*(mobile?.985:.97);
     const panelH=bottom-top;
@@ -6716,15 +6718,23 @@ requestAnimationFrame(tick);})();
     ctx.textAlign='left';
     txt('PITCH 11',left+H*.025,top+H*(mobile?.032:.045),H*(mobile?.021:.024),'#a3e635',900);
     txt('MATCH PAUSED',left+H*.025,top+H*(mobile?.082:.105),H*(mobile?.041:.052),'#f3f1e9',900);
-    const clock=clockStr().replace(/\s+(1ST|2ND|ET1|ET2)$/,'');
-    txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*(mobile?.125:.145),H*(mobile?.017:.021),'rgba(223,232,225,.72)',700);
+    const liveX=left+panelW+W*.035;
+    const infoX=liveX,infoY=top+H*.012,infoW=Math.max(0,W-infoX-W*.025),infoH=H*(mobile?.115:.105);
+    if(infoW>H*.42){
+      glass(infoX,infoY,infoW,infoH,infoH*.2,{top:'rgba(8,17,21,.34)',bot:'rgba(4,10,14,.22)',hl:.035,bd:'rgba(225,238,226,.2)'});
+      txt('MATCH INFORMATION',infoX+infoW*.04,infoY+infoH*.27,infoH*.17,'rgba(226,237,226,.82)',800);
+      fit(clockStr(),infoX+infoW*.7,infoY+infoH*.29,infoW*.26,infoH*.19,'#b9ef73','right');
+      fit(KIT[0].name,infoX+infoW*.04,infoY+infoH*.72,infoW*.30,infoH*.34,'#f7faf5','left');
+      txt(S.score[0]+'  -  '+S.score[1],infoX+infoW*.5,infoY+infoH*.73,infoH*.42,'#ffffff',900);
+      fit(KIT[1].name,infoX+infoW*.66,infoY+infoH*.72,infoW*.30,infoH*.34,'#f7faf5','right');
+    }
 
-    const gap=H*(mobile?.008:.009);
+    const gap=H*(mobile?.007:.008);
     const rowY=top+H*(mobile?.155:.16);
     const actionH=mobile?44:Math.max(44,H*.062);
     const actionY=bottom-actionH;
-    const rowH=Math.max(mobile?34:H*.075,Math.min(H*(mobile?.12:.11),(actionY-rowY-gap*4-H*.018)/5));
-    const rowW=panelW-H*(mobile?.032:.05);
+    const rowH=Math.max(mobile?34:H*.06,Math.min(H*(mobile?.09:.082),(actionY-rowY-gap*4-H*.018)/5));
+    const rowW=panelW-H*(mobile?.025:.04);
     const rows=[
       ['RESUME MATCH','Return to the pitch',true,()=>resumeSubs()],
       ['TEAM MANAGEMENT','Substitutions · Squad',false,()=>{M.pp='subs';}],
@@ -6752,7 +6762,6 @@ requestAnimationFrame(tick);})();
       fit(a[0],x+actionW/2,y+actionH/2,actionW*.9,actionH*.25,danger?'#ff9b88':'#e7ece7');
     });
     // Small cinematic label on the open side; no opaque card over the match.
-    const liveX=left+panelW+W*.035;
     if(!mobile&&W-liveX>W*.2){
       ctx.textAlign='left';
       txt('LIVE MATCH VIEW',liveX,H*.88,H*.019,'rgba(235,242,235,.68)',800);
