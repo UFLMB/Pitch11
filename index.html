@@ -1827,7 +1827,7 @@ function drawHud(){
     const grid=Math.max(24,Math.min(W,H)*.075);for(let gx=0;gx<W;gx+=grid){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}for(let gy=0;gy<H;gy+=grid){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
     const brandY=Math.max(H*.105,32);ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='#a3e635';ctx.font='800 '+Math.max(14,Math.min(W*.055,22))+'px system-ui,sans-serif';ctx.fillText('PITCH 11',W*.5,brandY);
-    ctx.fillStyle='rgba(230,237,226,.58)';ctx.font='600 '+Math.max(8,Math.min(W*.022,11))+'px system-ui,sans-serif';ctx.fillText('MATCHDAY EXPERIENCE',W*.5,brandY+Math.max(18,H*.028));
+    ctx.fillStyle='rgba(230,237,226,.72)';ctx.font='800 '+Math.max(9,Math.min(W*.026,13))+'px system-ui,sans-serif';ctx.fillText('THE GAME AWAITS',W*.5,brandY+Math.max(18,H*.028));
     const phoneW=Math.min(W*.29,H*.22,104),phoneH=phoneW*1.72,phoneX=W*.5,phoneY=H*.405;
     ctx.save();ctx.translate(phoneX,phoneY);ctx.rotate(-.16);
     ctx.shadowColor='rgba(163,230,53,.28)';ctx.shadowBlur=Math.max(8,phoneW*.22);
@@ -1836,11 +1836,18 @@ function drawHud(){
     ctx.shadowBlur=0;ctx.fillStyle='rgba(163,230,53,.13)';ctx.beginPath();ctx.roundRect(-phoneW*.42,-phoneH*.42,phoneW*.84,phoneH*.84,pr*.65);ctx.fill();
     ctx.fillStyle='#a3e635';ctx.beginPath();ctx.roundRect(-phoneW*.17,-phoneH*.42,phoneW*.34,Math.max(2,phoneW*.035),phoneW*.02);ctx.fill();
     ctx.restore();
-    const arrowY=phoneY+phoneH*.62,arrowR=Math.min(W*.055,20);
-    ctx.strokeStyle='#a3e635';ctx.lineWidth=Math.max(2,W*.008);ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.beginPath();ctx.arc(W*.5,arrowY,arrowR,-Math.PI*.78,Math.PI*.7);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(W*.5+arrowR*.72,arrowY+arrowR*.55);ctx.lineTo(W*.5+arrowR*1.05,arrowY+arrowR*.2);ctx.lineTo(W*.5+arrowR*.95,arrowY+arrowR*.78);ctx.stroke();
-    const titleY=Math.min(H*.73,arrowY+arrowR*2.35);
+    const arrowR=Math.max(5,Math.min(phoneW*.19,W*.035,15));
+    ctx.strokeStyle='#a3e635';ctx.lineWidth=Math.max(1.8,W*.0065);ctx.lineCap='round';ctx.lineJoin='round';
+    // Two compact opposing rotation arrows sit beside the handset.
+    const leftAx=phoneX-phoneW*.58,leftAy=phoneY-phoneH*.19;
+    ctx.beginPath();ctx.arc(leftAx,leftAy,arrowR,Math.PI*.18,Math.PI*1.38);ctx.stroke();
+    let ax=leftAx+Math.cos(Math.PI*1.38)*arrowR,ay=leftAy+Math.sin(Math.PI*1.38)*arrowR;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-arrowR*.58,ay-arrowR*.05);ctx.moveTo(ax,ay);ctx.lineTo(ax+arrowR*.12,ay+arrowR*.58);ctx.stroke();
+    const rightAx=phoneX+phoneW*.58,rightAy=phoneY+phoneH*.19;
+    ctx.beginPath();ctx.arc(rightAx,rightAy,arrowR,-Math.PI*.82,Math.PI*.38);ctx.stroke();
+    ax=rightAx+Math.cos(Math.PI*.38)*arrowR;ay=rightAy+Math.sin(Math.PI*.38)*arrowR;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-arrowR*.55,ay+arrowR*.08);ctx.moveTo(ax,ay);ctx.lineTo(ax-arrowR*.05,ay-arrowR*.58);ctx.stroke();
+    const titleY=Math.min(H*.73,phoneY+phoneH*.5+arrowR*1.45);
     txt('ROTATE YOUR SCREEN',W*.5,titleY,Math.max(15,Math.min(W*.058,26)),'#f2f5ed',800);
     ctx.fillStyle='rgba(226,235,219,.62)';ctx.font='600 '+Math.max(9,Math.min(W*.027,13))+'px system-ui,sans-serif';ctx.fillText('PITCH 11 IS DESIGNED FOR LANDSCAPE',W*.5,titleY+Math.max(23,H*.045));
     ctx.fillStyle='rgba(163,230,53,.75)';ctx.fillRect(W*.5-Math.min(W*.09,34),H*.91,Math.min(W*.18,68),2);
