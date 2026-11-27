@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const source = readGameplaySource(root);
 const start = source.indexOf('function bodyCollide(){');
 const end = source.indexOf('\nconst _sbH=stepBall;', start);
 assert.ok(start >= 0 && end > start, 'bodyCollide() must remain present');
