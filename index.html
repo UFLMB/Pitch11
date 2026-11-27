@@ -4594,7 +4594,7 @@ MS.adv=function(){
 MS.data=function(){
   mt('DATA');mbk();
   gpanel(W*.2,H*.2,W*.6,H*.5,'SAVED PROGRESS');
-  mtx('Resets clubs, records, career, cups, leagues',.4,'#c3cfda',.034);mtx('and every setting back to default.',.46,'#c3cfda',.034);
+  mtx('Resets club selection, records, career, cups, leagues',.4,'#c3cfda',.034);mtx('and every setting back to default.',.46,'#c3cfda',.034);
   ubtn(W*.3,H*.54,W*.4,H*.11,M.conf?'TAP AGAIN TO ERASE':'RESET SAVE',()=>{if(M.conf)resetSave();else M.conf=1;},M.conf?'rgba(255,60,40,.5)':0);
 };
 
@@ -6439,7 +6439,7 @@ MS.data=function(){
   const x=W*.22,y=H*.21,w=W*.72,h=H*.62;
   settingsPanel(x,y,w,h,'SAVE DATA');
   settingsText('RESET ALL SAVED PROGRESS?',x+w*.06,y+H*.19,w*.88,H*.045,'#fff','center');
-  settingsWrap('This resets your club, records, career, cups, leagues and every saved setting back to its default.',x+w*.08,y+H*.34,w*.84,H*.105,H*.028,'rgba(205,216,228,.85)','center',3);
+  settingsWrap('This resets your selected club, records, career, cups, leagues and saved settings. Your custom clubs are preserved.',x+w*.08,y+H*.34,w*.84,H*.105,H*.028,'rgba(205,216,228,.85)','center',3);
   ubtn(x+w*.24,y+H*.46,w*.52,H*.095,M.conf?'TAP AGAIN TO ERASE':'RESET SAVE DATA',()=>{
     if(M.conf)resetSave();else M.conf=1;
   },M.conf?'rgba(255,60,40,.5)':0);
