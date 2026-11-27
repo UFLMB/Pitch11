@@ -9,7 +9,7 @@ test('portrait orientation displays the PITCH 11 landscape prompt', async () => 
   const end = html.indexOf("if(S.mode==='menu')", start);
   const rotateScreen = html.slice(start, end);
   assert.match(rotateScreen, /PITCH 11/);
-  assert.match(rotateScreen, /IRON MAST/);
+  assert.match(rotateScreen, /THE GAME AWAITS/);
   assert.doesNotMatch(rotateScreen, /MATCHDAY EXPERIENCE/);
   assert.match(rotateScreen, /phoneX-phoneW\*\.58/);
   assert.match(rotateScreen, /phoneX\+phoneW\*\.58/);
