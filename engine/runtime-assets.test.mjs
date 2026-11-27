@@ -50,6 +50,6 @@ test("production runtime keeps asset dependencies same-origin and locally packag
   ];
 
   for (const [name, source] of sources) {
-    assert.doesNotMatch(source, /https?:\\/\\//i, name + " must not contain absolute remote asset URLs");
+    assert.doesNotMatch(source, /https?:\/\//i, name + " must not contain absolute remote asset URLs");
   }
 });
