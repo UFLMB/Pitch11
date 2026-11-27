@@ -1859,10 +1859,10 @@ function drawHud(){
     ctx.strokeRect(sx+sw*.035,sy+sh*.055,sw*.93,sh*.89);
     ctx.beginPath();ctx.moveTo(0,sy+sh*.055);ctx.lineTo(0,sy+sh*.945);ctx.stroke();
     ctx.beginPath();ctx.arc(0,0,Math.min(sw*.19,sh*.23),0,TAU);ctx.stroke();
-    ctx.strokeRect(sx+sw*.035,sy+sh*.29,sw*.14,sh*.42);
-    ctx.strokeRect(sx+sw*.825,sy+sh*.29,sw*.14,sh*.42);
-    ctx.fillStyle='rgba(163,230,53,.95)';ctx.beginPath();ctx.arc(-sw*.22,0,Math.max(2,phoneW*.025),0,TAU);ctx.fill();
-    ctx.fillStyle='rgba(245,248,238,.92)';ctx.beginPath();ctx.arc(sw*.19,-sh*.12,Math.max(1.5,phoneW*.018),0,TAU);ctx.fill();
+    ctx.strokeRect(sx+sw*.29,sy+sh*.035,sw*.42,sh*.14);
+    ctx.strokeRect(sx+sw*.29,sy+sh*.825,sw*.42,sh*.14);
+    ctx.fillStyle='rgba(163,230,53,.95)';ctx.beginPath();ctx.arc(0,-sh*.22,Math.max(2,phoneW*.025),0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(245,248,238,.92)';ctx.beginPath();ctx.arc(0,sh*.19,Math.max(1.5,phoneW*.018),0,TAU);ctx.fill();
     ctx.restore();
     // Side key and front camera details stay attached to the handset after rotation.
     ctx.fillStyle='rgba(210,222,210,.75)';ctx.beginPath();ctx.roundRect(-phoneW*.12,-phoneH*.485,phoneW*.24,Math.max(2,phoneW*.018),phoneW*.01);ctx.fill();
