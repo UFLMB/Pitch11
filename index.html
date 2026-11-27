@@ -1818,7 +1818,34 @@ function drawSubs(){
 }
 function drawHud(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='middle';
-  if(H>W){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);txt('Rotate your phone to landscape',W/2,H/2,Math.min(W*0.07,40),'#fff',700);return;}
+  if(H>W){
+    UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;
+    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#101820');bg.addColorStop(.52,'#070b10');bg.addColorStop(1,'#030507');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    const glow=ctx.createRadialGradient(W*.5,H*.43,0,W*.5,H*.43,Math.max(W,H)*.72);glow.addColorStop(0,'rgba(163,230,53,.11)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(163,230,53,.045)';ctx.lineWidth=1;
+    const grid=Math.max(24,Math.min(W,H)*.075);for(let gx=0;gx<W;gx+=grid){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}for(let gy=0;gy<H;gy+=grid){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
+    const brandY=Math.max(H*.105,32);ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#a3e635';ctx.font='800 '+Math.max(14,Math.min(W*.055,22))+'px system-ui,sans-serif';ctx.fillText('PITCH 11',W*.5,brandY);
+    ctx.fillStyle='rgba(230,237,226,.58)';ctx.font='600 '+Math.max(8,Math.min(W*.022,11))+'px system-ui,sans-serif';ctx.fillText('MATCHDAY EXPERIENCE',W*.5,brandY+Math.max(18,H*.028));
+    const phoneW=Math.min(W*.29,H*.22,104),phoneH=phoneW*1.72,phoneX=W*.5,phoneY=H*.405;
+    ctx.save();ctx.translate(phoneX,phoneY);ctx.rotate(-.16);
+    ctx.shadowColor='rgba(163,230,53,.28)';ctx.shadowBlur=Math.max(8,phoneW*.22);
+    ctx.lineWidth=Math.max(2,phoneW*.035);ctx.strokeStyle='rgba(210,226,194,.9)';
+    const pr=phoneW*.15;ctx.beginPath();ctx.roundRect(-phoneW*.5,-phoneH*.5,phoneW,phoneH,pr);ctx.stroke();
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(163,230,53,.13)';ctx.beginPath();ctx.roundRect(-phoneW*.42,-phoneH*.42,phoneW*.84,phoneH*.84,pr*.65);ctx.fill();
+    ctx.fillStyle='#a3e635';ctx.beginPath();ctx.roundRect(-phoneW*.17,-phoneH*.42,phoneW*.34,Math.max(2,phoneW*.035),phoneW*.02);ctx.fill();
+    ctx.restore();
+    const arrowY=phoneY+phoneH*.62,arrowR=Math.min(W*.055,20);
+    ctx.strokeStyle='#a3e635';ctx.lineWidth=Math.max(2,W*.008);ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.beginPath();ctx.arc(W*.5,arrowY,arrowR,-Math.PI*.78,Math.PI*.7);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W*.5+arrowR*.72,arrowY+arrowR*.55);ctx.lineTo(W*.5+arrowR*1.05,arrowY+arrowR*.2);ctx.lineTo(W*.5+arrowR*.95,arrowY+arrowR*.78);ctx.stroke();
+    const titleY=Math.min(H*.73,arrowY+arrowR*2.35);
+    txt('ROTATE YOUR SCREEN',W*.5,titleY,Math.max(15,Math.min(W*.058,26)),'#f2f5ed',800);
+    ctx.fillStyle='rgba(226,235,219,.62)';ctx.font='600 '+Math.max(9,Math.min(W*.027,13))+'px system-ui,sans-serif';ctx.fillText('PITCH 11 IS DESIGNED FOR LANDSCAPE',W*.5,titleY+Math.max(23,H*.045));
+    ctx.fillStyle='rgba(163,230,53,.75)';ctx.fillRect(W*.5-Math.min(W*.09,34),H*.91,Math.min(W*.18,68),2);
+    return;
+  }
   if(S.mode==='menu'){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;drawMenu();return;}
   const m=S.mode,u=Math.max(10,H*0.045);
   const w=u*13.5,h=u*1.9,x=W/2-w/2,y=H*0.015;if(m!=='subs')scoreboard2(u,x,y,w,h);
