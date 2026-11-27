@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { fileURLToPath } from "node:url";
 
 const source = await readFile(new URL('./law-compliance.js', import.meta.url), 'utf8');
 const context = { globalThis: {} };
@@ -82,7 +84,7 @@ test('shootout teams are reduced to equal numbers without removing goalkeepers',
 });
 
 test('production ball dimensions remain unchanged', async () => {
-  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const html = readGameplaySource(fileURLToPath(new URL('..', import.meta.url)));
   assert.match(html, /GOALH=36\.6,GOALD=22,GOALZ=24,BR=4,BVR=1\.1,BALL_SCALE=1/);
 });
 
