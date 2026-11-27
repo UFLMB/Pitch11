@@ -9,7 +9,7 @@ const gameplay = readGameplaySource(fileURLToPath(new URL("..", import.meta.url)
 
 test("production stadium renderer owns the skinned player runtime", () => {
   const runtime = read("../stadium-runtime.js");
-  const index = gameplay;
+  const index = read("../index.html") + "\n" + gameplay;
   const renderer = read("./match-player-renderer.mjs");
   assert.ok(runtime.includes("MatchPlayerRenderer"));
   assert.ok(runtime.includes("playerRenderer.update(options.players"));
