@@ -28,7 +28,7 @@ const finalGuard = main.indexOf("const _portraitPauseFinal=update;update=functio
 const mainScriptClose = main.indexOf('</script>\n<script type="importmap">', finalGuard);
 assert.ok(finalGuard >= 0 && mainScriptClose > finalGuard && mainScriptClose - finalGuard < 160,
   "the final update guard must wrap every layered update extension");
-assert.match(main, /if\(H>W\)\{UI\.r\.length=0;UI\.def=null;pauseBtn\.r=camBtn\.r=0;/,
+assert.match(main, /if\\(H>W\\)\\{\\s*UI\\.r\\.length=0;UI\\.def=null;pauseBtn\\.r=camBtn\\.r=0;/,
   "portrait overlay must clear stale menu and gameplay hitboxes");
 const captureGuard = main.indexOf("cv.addEventListener('pointerdown',e=>{if(H>W){e.preventDefault();e.stopImmediatePropagation();releaseAll();}},true);");
 const primaryPointer = main.indexOf("cv.addEventListener('pointerdown',e=>{\n  e.preventDefault();");
