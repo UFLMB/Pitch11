@@ -4,16 +4,17 @@ import { readFile } from 'node:fs/promises';
 
 test('portrait orientation displays the PITCH 11 landscape prompt', async () => {
   const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
-  const start = html.indexOf('if(H>W){\n    UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;');
+  const start = html.indexOf('if(H>W){\\n    UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;');
   assert.notEqual(start, -1, 'portrait HUD branch exists');
   const end = html.indexOf("if(S.mode==='menu')", start);
   const rotateScreen = html.slice(start, end);
   assert.match(rotateScreen, /PITCH 11/);
   assert.match(rotateScreen, /THE GAME AWAITS/);
   assert.doesNotMatch(rotateScreen, /MATCHDAY EXPERIENCE/);
-  assert.match(rotateScreen, /phoneX-phoneW\*\.58/);
-  assert.match(rotateScreen, /phoneX\+phoneW\*\.58/);
-  assert.match(rotateScreen, /Two compact opposing rotation arrows sit beside the handset/);
+  assert.match(rotateScreen, /ctx\\.rotate\\(-Math\\.PI\\/2\\)/);
+  assert.match(rotateScreen, /Hand-authored SVG rotation-arrow paths, drawn directly into the canvas/);
+  assert.match(rotateScreen, /new Path2D\\('M20 7v6h-6/);
+  assert.match(rotateScreen, /ctx\\.scale\\(-arrowSize\\/24,arrowSize\\/24\\)/);
   assert.match(rotateScreen, /ROTATE YOUR SCREEN/);
   assert.match(rotateScreen, /PITCH 11 IS DESIGNED FOR LANDSCAPE/);
   assert.match(rotateScreen, /#a3e635/);
