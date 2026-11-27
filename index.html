@@ -6694,7 +6694,7 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     const rowY=top+H*(mobile?.155:.16);
     const actionH=mobile?Math.max(44,H*.12):Math.max(H*.065,Math.min(H*.085,H*.1));
     const actionY=bottom-actionH;
-    const rowH=Math.max(mobile?40:H*.075,Math.min(H*(mobile?.12:.11),(actionY-rowY-gap*4-H*.018)/5));
+    const rowH=Math.max(mobile?34:H*.075,Math.min(H*(mobile?.12:.11),(actionY-rowY-gap*4-H*.018)/5));
     const rowW=panelW-H*(mobile?.032:.05);
     const rows=[
       ['RESUME MATCH','Return to the pitch',true,()=>resumeSubs()],
