@@ -544,7 +544,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   const quality=mobile?'1k':'2k';
   const prefix='./assets/textures/grass/'+quality+'/sports-turf_'+quality+'_';
   const canvas=pitchGrassBaseCanvas;if(!canvas){pitchGrassPbrDiagnostics={status:'no-base-canvas',quality,files:{}};return;}
-  pitchGrassPbrDiagnostics={status:'loading',quality,files:{color:{url:prefix+'color.jpg',status:'loading'},normalgl:{url:prefix+'normalgl.jpg',status:'loading'},roughness:{url:prefix+'roughness.jpg',status:'loading'}},materialCount:pitchMaterials.length,normalBindings:0,roughnessBindings:0};
+  pitchGrassPbrDiagnostics={status:'loading',quality,files:{color:{url:prefix+'color.jpg',status:'loading'},normalgl:{url:prefix+'normalgl.jpg',status:'loading'},roughness:{url:prefix+'roughness.jpg',status:'loading'}},materialCount:pitchMaterials.length,normalBindings:0,roughnessBindings:0};boot.pitch={state:'loading',progress:0};
   // Build one continuous, high-detail turf surface from the seamless source map.
   // Three offset spatial scales break up obvious repetition without field-sized
   // image blocks. Identical transforms are used for albedo, normal and roughness.
@@ -580,6 +580,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   const roughCanvas=document.createElement('canvas');roughCanvas.width=canvas.width;roughCanvas.height=canvas.height;
   let complete=0,baseOK=false,normalOK=false,roughOK=false;
   const finish=()=>{
+   const settled=Object.values(pitchGrassPbrDiagnostics.files||{}).filter(file=>file.status==='loaded'||file.status==='error').length;boot.pitch={state:'loading',progress:Math.min(.72,settled/3*.72)};
    if(++complete!==3)return;
    if(baseOK){pitchTexture.needsUpdate=true;pitchTextureStatus='local-meshy-'+quality+'-pbr';}
    if(normalOK){
@@ -694,7 +695,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
  function scheduleDetailedPitchTexture(){
-  if(!pitchGrassBaseCanvas||!pitchTexture||detailedTurfTextureStarted)return;
+  if(!pitchGrassBaseCanvas||!pitchTexture||detailedTurfTextureStarted){if(!pitchGrassBaseCanvas||!pitchTexture)boot.pitch={state:'error',progress:0};return;}
   // Meshy maps load asynchronously. Wait for all three requests to settle before
   // deciding whether to keep the PBR albedo or build the procedural fallback.
   if(pitchGrassPbrDiagnostics.status==='loading'){
