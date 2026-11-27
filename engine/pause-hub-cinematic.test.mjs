@@ -16,7 +16,7 @@ test("pause camera rotates through all existing views, including goal-to-goal", 
 test("manual camera selection takes priority over auto director and restores the saved match camera", () => {
   assert.match(pause, /const selected=p11PauseManualCam==null\?automatic:p11PauseManualCam/);
   assert.match(pause, /finally\{G\.cam=saved;\}/);
-  assert.match(pause, /\['CAMERA',\(\)=>\{cycleCam\(\);p11PauseManualCam=G\.cam;\}\]/);
+  assert.match(pause, /\['◉ CAMERA',\(\)=>\{cycleCam\(\);p11PauseManualCam=G\.cam;\}\]/);
 });
 
 test("opening a new pause session resets the manual camera override and cinematic timer", () => {
@@ -30,7 +30,7 @@ test("touch landscape devices use a dedicated compact pause layout", () => {
 });
 
 test("mobile pause actions retain a minimum 44 CSS-pixel-equivalent canvas hit area and rows fit available height", () => {
-  assert.match(pause, /const actionH=mobile\?Math\.max\(44,H\*\.12\)/);
+  assert.match(pause, /const actionH=mobile\?44:Math\.max\(44,H\*\.062\)/);
   assert.match(pause, /actionY-rowY-gap\*4-H\*\.018/);
   assert.match(pause, /Math\.max\(mobile\?34:H\*\.075/);
   assert.match(pause, /const bottom=H\*\(mobile\?\.985:\.97\)/);
