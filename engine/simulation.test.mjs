@@ -278,6 +278,7 @@ test("goalkeeper parries a shot crossing the goal mouth", () => {
 for (const team of [0, 1]) {
   test(`goalkeeper saves use the active keeper after a substitution (team ${team})`, () => {
     const sim = new FootballSimulation();
+    sim.phase = "halfTime"; // substitutions are permitted during a stoppage
     const outgoingId = team * 11;
     assert.equal(sim.substitute(team, outgoingId, 0), true);
     const keeper = sim.players.find(p => p.team === team && !p.out && p.role === "GK");
