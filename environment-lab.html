@@ -45,7 +45,6 @@ button.active{border-color:#a3e635;color:#d8ff93;background:#21351acc}
 #pov-sprint{position:absolute;right:18px;bottom:184px;width:54px;height:54px;padding:0;border-radius:50%;font-size:23px;pointer-events:auto;touch-action:none;box-shadow:0 4px 18px #0009}#pov-sprint.active{background:#45651acc;border-color:#c8ee8b;color:#efffd8}
 #ui-toggle{position:fixed;z-index:12;top:12px;right:12px;width:42px;height:42px;padding:0;font-size:19px}
 body.ui-hidden .hud,body.ui-hidden #drone-hud,body.ui-hidden #drone-help,body.ui-hidden #pov-stick,body.ui-hidden #pov-help,body.ui-hidden #pov-sprint,body.ui-hidden #status{opacity:0!important}
-body.editor-open .hud,body.editor-open #drone-hud,body.editor-open #drone-help,body.editor-open #pov-stick,body.editor-open #pov-help,body.editor-open #pov-sprint,body.editor-open #status,body.editor-open #ui-toggle,body.editor-open #fullscreen-entry{visibility:hidden!important}
 body.ui-hidden #ui-toggle{opacity:0!important}
 body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-stick,body.ui-hidden #pov-sprint{pointer-events:auto}
 #ui-toggle{transition:opacity .15s ease}
@@ -94,7 +93,6 @@ body.ui-hidden .hud button,body.ui-hidden #drone-hud button,body.ui-hidden #pov-
   <button data-view="drone" title="Drone camera" aria-label="Drone camera">✥</button>
   <button id="pov" title="Player POV walk" aria-label="Player POV walk">◉</button>
   <button id="tunnel" title="Tunnel entry" aria-label="Tunnel entry">⇢</button>
-  <button id="stadium-editor" title="Open separate Stadium Editor" aria-label="Open stadium editor">✎</button>
   <button id="element-ids" title="Show color-coded element IDs" aria-label="Show element IDs" aria-pressed="false">#</button>
   <button id="day" class="active" data-time="0" title="Day" aria-label="Day">☀</button>
   <button id="sunset" data-time="1" title="Sunset" aria-label="Sunset">◒</button>
@@ -377,7 +375,6 @@ document.querySelectorAll('[data-time]').forEach(b=>b.addEventListener('click',(
  timeOfDay=Number(b.dataset.time);document.querySelectorAll('[data-time]').forEach(x=>x.classList.toggle('active',x===b));render();
 }));
 document.querySelector('#tunnel').addEventListener('click',enterTunnel);
-document.querySelector('#stadium-editor').addEventListener('click',()=>location.href='./stadium-editor.html');
 document.querySelector('#back').addEventListener('click',()=>location.href='./');
 const uiToggle=document.querySelector('#ui-toggle');
 function setUiHidden(hidden){
