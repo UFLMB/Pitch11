@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1] || '';
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const script = readGameplaySource(root);
 
 test('Law 4 initializes compulsory equipment for starters and substitutes', () => {
   assert.match(script, /function standardPlayerEquipment\(\)/);
