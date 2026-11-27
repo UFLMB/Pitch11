@@ -26,7 +26,7 @@ test("opening a new pause session resets the manual camera override and cinemati
 test("touch landscape devices use a dedicated compact pause layout", () => {
   assert.match(pause, /matchMedia\('\(pointer: coarse\)'\)\.matches\)\&\&Math\.min\(W,H\)<=560/);
   assert.match(pause, /const mobile=touchMobile\|\|W\/H<1\.55/);
-  assert.match(pause, /p11PauseAction\(left\+H\*\.012,y,rowW,rowH,r\[0\],mobile\?'':r\[1\]/);
+  assert.match(pause, /p11PauseAction\(left\+H\*\.012,y,rowW,rowH,r\[0\],r\[1\]/);
 });
 
 test("mobile pause actions retain a minimum 44 CSS-pixel-equivalent canvas hit area and rows fit available height", () => {
@@ -48,10 +48,10 @@ test("camera chosen in match settings remains selected when returning to the pau
 
 test("pause navigation uses genuinely translucent surfaces and a narrower live-view rail", () => {
   assert.match(pause, /const panelW=mobile\?W\*\.335:W\*\.27/);
-  assert.match(pause, /rgba\(3,8,11,\.62\)/);
-  assert.match(pause, /rgba\(163,230,53,\.22\)/);
-  assert.match(pause, /rgba\(22,34,39,\.22\)/);
-  assert.doesNotMatch(pause, /rgba\(163,230,53,\.96\)|rgba\(22,34,39,\.84\)/);
+  assert.match(pause, /rgba\(3,8,11,\.78\)/);
+  assert.match(pause, /rgba\(163,230,53,\.19\)/);
+  assert.match(pause, /rgba\(17,29,34,\.29\)/);
+  assert.doesNotMatch(pause, /rgba\(22,34,39,\.84\)/);
 });
 
 test("pause bottom actions are compact, icon-led and retain mobile touch targets", () => {
