@@ -50,7 +50,7 @@ test("production stadium renderer owns the skinned player runtime", () => {
 });
 
 test("legacy 2D player bodies are disabled while 2D overlays and match HUD remain", () => {
-  const index = read("../index.html");
+  const index = read("../index.html") + "\n" + gameplay;
   const runtime = read("../stadium-runtime.js");
   assert.ok(index.includes("for(const p of ORD)if(!p.out)drawModelPlayerOverlay2D(p,a);"));
   assert.ok(index.includes("drawPlayer3(p,a,true);"));
