@@ -16,6 +16,7 @@ test('portrait orientation displays a polished PITCH 11 landscape prompt', async
   assert.ok(rotateScreen.includes('ctx.rotate(-Math.PI/2)'), 'handset is rotated exactly 90 degrees');
   assert.match(rotateScreen, /miniature football pitch on the display/);
   assert.ok(rotateScreen.includes('ctx.strokeRect(sx+sw*.035,sy+sh*.055,sw*.93,sh*.89)'), 'landscape pitch is drawn inside the phone');
+  assert.ok(rotateScreen.includes('ctx.strokeRect(sx+sw*.29,sy+sh*.035,sw*.42,sh*.14)'), 'penalty boxes align with the horizontal pitch ends');
   assert.match(rotateScreen, /Two custom SVG-style curved arrows/);
   assert.ok(rotateScreen.includes("new Path2D('M19 11a7 7 0 1 1-2.05-4.95"), 'custom curved arrow path is drawn');
   assert.ok(rotateScreen.includes('ctx.scale(-arrowSize/24,arrowSize/24)'), 'opposing arrow is mirrored');
