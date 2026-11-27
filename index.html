@@ -20,6 +20,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 #p11-loading-screen{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:flex-start;overflow:hidden;padding:0;box-sizing:border-box;background:#05090d url("./input/loading_screen.png") center 50%/cover no-repeat;color:#f4f5f6;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:1;visibility:visible;transition:opacity .65s ease,visibility .65s ease;pointer-events:auto}
 #p11-loading-screen::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,6,10,.78) 0%,rgba(2,6,10,.56) 34%,rgba(2,6,10,.12) 72%,rgba(2,6,10,.18) 100%),linear-gradient(0deg,rgba(2,6,10,.82) 0%,rgba(2,6,10,.34) 38%,transparent 76%),linear-gradient(180deg,rgba(2,6,10,.22),transparent 30%);pointer-events:none}
 #p11-loading-screen.is-hidden{opacity:0;visibility:hidden;pointer-events:none}
+#p11-loading-fullscreen{position:absolute;z-index:3;top:calc(env(safe-area-inset-top,0px) + 18px);right:clamp(18px,4vw,42px);display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid rgba(255,224,160,.72);border-radius:3px;background:rgba(5,9,13,.62);color:#ffe5ad;text-shadow:0 1px 8px rgba(0,0,0,.8);box-shadow:0 4px 18px rgba(0,0,0,.24);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}#p11-loading-fullscreen:active{background:rgba(216,182,111,.22)}#p11-loading-fullscreen .p11-fullscreen-icon{font-size:23px;line-height:1;letter-spacing:0}#p11-loading-fullscreen .p11-fullscreen-label{display:none}@media(max-width:600px){#p11-loading-fullscreen{top:calc(env(safe-area-inset-top,0px) + 14px);right:14px;width:44px;height:44px}}
 
 /* Cinematic stadium motion: a restrained push-in and slowly waking floodlights. */
 #p11-loading-screen::after{content:"";position:absolute;z-index:0;inset:-3%;pointer-events:none;background-image:radial-gradient(ellipse at 78% 18%,rgba(255,238,190,.20) 0%,rgba(255,224,160,.07) 17%,transparent 42%),linear-gradient(112deg,transparent 28%,rgba(255,244,210,.075) 43%,transparent 56%),linear-gradient(72deg,transparent 55%,rgba(205,225,255,.065) 67%,transparent 78%),url("./input/loading_screen.png");background-position:center;background-size:cover;background-repeat:no-repeat;opacity:.72;transform:scale(1.015);transform-origin:56% 48%;animation:p11-stadium-cinematic 15s ease-out both}
@@ -47,6 +48,7 @@ canvas#c{position:fixed;left:0;top:0;z-index:1;width:100%;height:100%;display:bl
 <div id="stadium3d" aria-hidden="true"></div><canvas id="c"></canvas>
 <div id="p11-version" aria-label="Game version">v0.1.2</div>
 <div id="p11-loading-screen" role="status" aria-live="polite" aria-label="Preparing the match">
+<button id="p11-loading-fullscreen" type="button" aria-label="Enter full screen" title="Full screen"><span class="p11-fullscreen-icon" aria-hidden="true">⛶</span></button>
 <div class="p11-loading-content"><div class="p11-loading-brand">PITCH 11</div><div class="p11-loading-rule"></div>
 <div class="p11-loading-tagline">EVERY MATCH BEGINS WITH A MOMENT.</div>
 <div class="p11-loading-status" id="p11-loading-status">PREPARING THE PITCH</div>
@@ -6581,6 +6583,10 @@ take=function(p,byHand=false){
 /* Matchday loading: a 15-second pre-match sequence, with real boot readiness as the final gate. */
 (()=>{const screen=document.getElementById('p11-loading-screen');if(!screen)return;
 const fill=document.getElementById('p11-loading-fill'),percent=document.getElementById('p11-loading-percent'),status=document.getElementById('p11-loading-status'),button=document.getElementById('p11-loading-continue');
+const fullscreenButton=document.getElementById('p11-loading-fullscreen');
+const syncFullscreenButton=()=>{const active=!!(document.fullscreenElement||document.webkitFullscreenElement);fullscreenButton?.setAttribute('aria-label',active?'Exit full screen':'Enter full screen');fullscreenButton?.setAttribute('title',active?'Exit full screen':'Full screen');fullscreenButton?.setAttribute('aria-pressed',String(active));};
+fullscreenButton?.addEventListener('click',()=>{const active=document.fullscreenElement||document.webkitFullscreenElement;const action=active?(document.exitFullscreen||document.webkitExitFullscreen):(document.documentElement.requestFullscreen||document.documentElement.webkitRequestFullscreen);if(typeof action!=='function')return;try{const result=active?action.call(document):action.call(document.documentElement);if(result&&typeof result.catch==='function')result.catch(()=>{});}catch(_){} });
+document.addEventListener('fullscreenchange',syncFullscreenButton);document.addEventListener('webkitfullscreenchange',syncFullscreenButton);syncFullscreenButton();
 const started=performance.now(),DURATION=15000,FINAL_PHASE=2000;
 const scenes=[
 {at:0,text:'THE FLOODLIGHTS COME ALIVE'},
