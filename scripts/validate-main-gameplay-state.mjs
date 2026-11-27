@@ -24,7 +24,9 @@ assert.match(main.slice(tickStart, tickEnd), /^function tick8\(\)\{\s*if\(H>W\)r
 
 assert.match(main, /const _u8=update;update=function\(\)\{if\(H>W\)return;tick8\(\);_u8\(\);\};/,
   "the update wrapper must not run timed actions while portrait");
-assert.match(main, /const _portraitPauseFinal=update;update=function\(\)\{if\(H>W\)return;_portraitPauseFinal\(\);\};\\s*<\\/script>\\s*<script type="importmap">/,
+const finalGuard = main.indexOf("const _portraitPauseFinal=update;update=function(){if(H>W)return;_portraitPauseFinal();};");
+const mainScriptClose = main.indexOf("</script>\\n<script type="importmap">", finalGuard);
+assert.ok(finalGuard >= 0 && mainScriptClose > finalGuard && mainScriptClose - finalGuard < 160,
   "the final update guard must wrap every layered update extension");
 assert.match(main, /if\(H>W\)\{UI\.r\.length=0;UI\.def=null;pauseBtn\.r=camBtn\.r=0;/,
   "portrait overlay must clear stale menu and gameplay hitboxes");
