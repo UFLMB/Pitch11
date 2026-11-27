@@ -140,7 +140,7 @@ test('player-opened pause is excluded from Law 7 added-time stoppage accounting'
 });
 
 test('production pause wrapper forwards the manual-pause flag into the state setter', async () => {
-  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+  const html = readGameplaySource(fileURLToPath(new URL('..', import.meta.url)));
   assert.match(html, /function openSubs\(ret,manualPause=false\)/);
   assert.match(html, /openSubs\(S\.mode,true\)/);
   assert.match(html, /manualPauseExcludesAddedTime\(\{mode:priorMode,manualPause:S\.manualPause\}\)/);
