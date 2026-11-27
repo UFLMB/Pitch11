@@ -27,3 +27,4 @@ test("successful Meshy albedo is preserved instead of being overwritten by proce
   assert.ok(scheduler.indexOf("baseColorApplied") < scheduler.indexOf("drawProceduralGrassProgressive"),
     "procedural fallback is only considered after the successful-PBR branch");
 });
+

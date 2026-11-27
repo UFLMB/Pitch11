@@ -8,7 +8,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
 (() => {
  const host=document.getElementById('stadium3d');if(!host)return;
  const boot=window.P11StadiumBoot||(window.P11StadiumBoot={});
- boot.state='initializing-renderer';boot.progress=0;boot.error='';
+ boot.state='initializing-renderer';boot.progress=0;boot.error='';boot.pitch={state:'pending',progress:0};boot.sceneObjects={state:'pending',count:0};
  const bootStartedAt=performance.now();
  boot.timings={};
  const recordBootTiming=name=>{boot.timings[name]=Math.round(performance.now()-bootStartedAt);};
@@ -65,7 +65,7 @@ import { mapLegacyBallState } from './engine/match-ball-state.mjs';
   boot.playerModel={...(boot.playerModel||{}),state:'loading',loaded,total,progress:total>0?Math.min(1,loaded/total):0};
  }});
  playerRenderer.load().then(()=>{
-  boot.playerModel={...(boot.playerModel||{}),state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',error:playerRenderer.error||'',progress:playerRenderer.status==='ready'?1:(boot.playerModel?.progress||0)};
+  boot.playerModel={...(boot.playerModel||{}),state:playerRenderer.status,source:playerRenderer.modelSource,animationState:playerRenderer.animationLoadState||'unknown',animationReadiness:playerRenderer.coreAnimationReadiness,error:playerRenderer.error||'',progress:playerRenderer.status==='ready'?1:(boot.playerModel?.progress||0)};
  }).catch(error=>{
   boot.playerModel={...(boot.playerModel||{}),state:'error',error:error&&error.message?error.message:String(error)};
  });
@@ -544,7 +544,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   const quality=mobile?'1k':'2k';
   const prefix='./assets/textures/grass/'+quality+'/sports-turf_'+quality+'_';
   const canvas=pitchGrassBaseCanvas;if(!canvas){pitchGrassPbrDiagnostics={status:'no-base-canvas',quality,files:{}};return;}
-  pitchGrassPbrDiagnostics={status:'loading',quality,files:{color:{url:prefix+'color.jpg',status:'loading'},normalgl:{url:prefix+'normalgl.jpg',status:'loading'},roughness:{url:prefix+'roughness.jpg',status:'loading'}},materialCount:pitchMaterials.length,normalBindings:0,roughnessBindings:0};
+  pitchGrassPbrDiagnostics={status:'loading',quality,files:{color:{url:prefix+'color.jpg',status:'loading'},normalgl:{url:prefix+'normalgl.jpg',status:'loading'},roughness:{url:prefix+'roughness.jpg',status:'loading'}},materialCount:pitchMaterials.length,normalBindings:0,roughnessBindings:0};boot.pitch={state:'loading',progress:0};
   // Build one continuous, high-detail turf surface from the seamless source map.
   // Three offset spatial scales break up obvious repetition without field-sized
   // image blocks. Identical transforms are used for albedo, normal and roughness.
@@ -580,6 +580,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
   const roughCanvas=document.createElement('canvas');roughCanvas.width=canvas.width;roughCanvas.height=canvas.height;
   let complete=0,baseOK=false,normalOK=false,roughOK=false;
   const finish=()=>{
+   const settled=Object.values(pitchGrassPbrDiagnostics.files||{}).filter(file=>file.status==='loaded'||file.status==='error').length;boot.pitch={state:'loading',progress:Math.min(.72,settled/3*.72)};
    if(++complete!==3)return;
    if(baseOK){pitchTexture.needsUpdate=true;pitchTextureStatus='local-meshy-'+quality+'-pbr';}
    if(normalOK){
@@ -629,7 +630,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  }
  function enhancePitchGrass(stadium){
   stadium.updateMatrixWorld(true);
-  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchGrassBaseCanvas=textures.baseCanvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);pitchTextureStatus='procedural-hd-pending';loadMeshyPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
+  const textures=createPitchGrassTextures();pitchTextureCanvas=textures.canvas;pitchGrassBaseCanvas=textures.baseCanvas;pitchTexture=textures.albedo;pitchSettings={pitch:Math.max(0,Math.min(4,window.P11PitchSettings?.pitch??0)),mowing:Math.max(0,Math.min(3,window.P11PitchSettings?.mowing??0))};activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);boot.pitch={state:'loading',progress:0};pitchTextureStatus='procedural-hd-pending';loadMeshyPitchGrass();let changed=0,meshCount=0,surfaceCandidates=0;
   const largest=[],candidateSamples=[];
   const materialInfo=material=>{
    if(!material)return null;
@@ -694,17 +695,18 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
  const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  const stadiumUrl=mobile?'./assets/football-stadium-mobile.glb':'./assets/football-stadium.glb';
  function scheduleDetailedPitchTexture(){
-  if(!pitchGrassBaseCanvas||!pitchTexture||detailedTurfTextureStarted)return;
+  if(!pitchGrassBaseCanvas||!pitchTexture||detailedTurfTextureStarted){if(!pitchGrassBaseCanvas||!pitchTexture)boot.pitch={state:'error',progress:0};return;}
   // Meshy maps load asynchronously. Wait for all three requests to settle before
   // deciding whether to keep the PBR albedo or build the procedural fallback.
   if(pitchGrassPbrDiagnostics.status==='loading'){
    boot.timings.detailedTurfTextureState='waiting-for-pbr';
+   const files=Object.values(pitchGrassPbrDiagnostics.files||{}),settled=files.filter(file=>file.status==='loaded'||file.status==='error').length;boot.pitch={state:'loading',progress:files.length?Math.min(.7,settled/files.length*.7):0};
    return;
   }
   detailedTurfTextureStarted=true;
   if(pitchGrassPbrDiagnostics.baseColorApplied){
    pitchTextureStatus='local-meshy-'+pitchGrassPbrDiagnostics.quality+'-pbr';
-   boot.timings.detailedTurfTextureState='skipped-meshy-pbr';
+   boot.timings.detailedTurfTextureState='skipped-meshy-pbr';boot.pitch={state:'ready',progress:1,source:pitchTextureStatus};
    return;
   }
   const startedAt=performance.now();
@@ -715,7 +717,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    pitchTexture.needsUpdate=true;
    pitchTextureStatus='procedural-hd-local-fallback';
    boot.timings.detailedTurfTextureMs=Math.round(performance.now()-startedAt);
-   boot.timings.detailedTurfTextureState='ready-procedural-fallback';
+   boot.timings.detailedTurfTextureState='ready-procedural-fallback';boot.pitch={state:'ready',progress:1,source:pitchTextureStatus};
   });
  }
  function setStadiumLoadState(state,error=''){
@@ -785,7 +787,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    optionalAssets.testGoal='error';
    console.warn('PITCH 11 imported goal test asset unavailable',e);
   });
-  ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
+  boot.sceneObjects={state:'ready',count:scene.children.length};ready=true;stadiumLoadProgress=1;setStadiumLoadState('ready');previewFailure='';
   recordBootTiming('stadiumReadyMs');
   scheduleDetailedPitchTexture();
   window.dispatchEvent(new CustomEvent('p11stadiumready'));
@@ -898,7 +900,7 @@ scene.background=new THREE.Color(0x15263a);scene.fog=new THREE.Fog(0x15263a,260,
    get ready(){return ready;},get status(){return stadiumLoadState;},get progress(){return stadiumLoadProgress;},
    get error(){return stadiumLoadError;},get previewFailure(){return previewFailure;},get mobile(){return mobile;},
    get playerModelsReady(){return playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount;},get playerModelsStatus(){return playerRenderer.status;},
-   get diagnostics(){return{bootTimings:{...boot.timings},mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,pbrLoad:{...pitchGrassPbrDiagnostics,files:{...pitchGrassPbrDiagnostics.files}},textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},playerModels:{status:playerRenderer.status,assetReady:playerRenderer.ready,ready:playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount,expectedPlayers:playerRenderer.expectedCount,visiblePlayers:playerRenderer.visibleCount,renderedPlayers:playerRenderer.count,animatedCount:playerRenderer.animatedCount,clipCount:playerRenderer.clipCount,trianglesPerModel:playerRenderer.modelTriangleCount,estimatedPlayerTriangles:playerRenderer.triangleCount,animationHz:playerRenderer.animationUpdateRate,materialVariants:playerRenderer.materialVariants.size,error:playerRenderer.error},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
+   get diagnostics(){return{bootTimings:{...boot.timings},mobile,status:stadiumLoadState,progress:stadiumLoadProgress,error:stadiumLoadError,attempts:stadiumLoadAttempts,crowdCount:crowdFans.length,optionalAssets:{...optionalAssets},pitch:{...pitchDiagnostics,markings:pitchDiagnostics.markings?{...pitchDiagnostics.markings}:null,activeGrassMaterials:pitchMaterials.length,textureSource:pitchTextureStatus,pbrLoad:{...pitchGrassPbrDiagnostics,files:{...pitchGrassPbrDiagnostics.files}},textureResolution:pitchTextureCanvas?pitchTextureCanvas.width:0,pitchSurfaceY:+pitchSurfaceY.toFixed(4),markingsVerticalGap:+(.018-pitchSurfaceY).toFixed(4)},playerModels:{status:playerRenderer.status,assetReady:playerRenderer.ready,ready:playerRenderer.ready&&playerRenderer.expectedCount>0&&playerRenderer.count>=playerRenderer.expectedCount,expectedPlayers:playerRenderer.expectedCount,visiblePlayers:playerRenderer.visibleCount,renderedPlayers:playerRenderer.count,animatedCount:playerRenderer.animatedCount,clipCount:playerRenderer.clipCount,animationReadiness:playerRenderer.coreAnimationReadiness,trianglesPerModel:playerRenderer.modelTriangleCount,estimatedPlayerTriangles:playerRenderer.triangleCount,animationHz:playerRenderer.animationUpdateRate,materialVariants:playerRenderer.materialVariants.size,error:playerRenderer.error},renderInfo:{calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lines:renderer.info.render.lines,points:renderer.info.render.points,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures},renderer:{width:renderer.domElement.width,height:renderer.domElement.height,pixelRatio:renderer.getPixelRatio(),maxTextureSize:renderer.capabilities.maxTextureSize}};},
    setPitchSettings(pitch,mowing){
     pitchSettings={pitch:Math.max(0,Math.min(4,pitch|0)),mowing:Math.max(0,Math.min(3,mowing|0))};
     activePitchKey='';updatePreviewPitch(pitchSettings.pitch,pitchSettings.mowing);
