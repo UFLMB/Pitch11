@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readGameplayScripts, readGameplaySource } from "../engine/gameplay-source.mjs";
 
 const read = path => readFileSync(path, "utf8");
-const main = read("index.html");
+const html = read("index.html");
+const gameplayScripts = readGameplayScripts(".");
+const main = readGameplaySource(".");
 const sw = read("sw.js");
 const viewer = read("player-model-viewer.html");
 const fbx = read("scripts/inspect-player-fbx-package.mjs");
@@ -25,9 +28,14 @@ assert.match(main.slice(tickStart, tickEnd), /^function tick8\(\)\{\s*if\(H>W\)r
 assert.match(main, /const _u8=update;update=function\(\)\{if\(H>W\)return;tick8\(\);_u8\(\);\};/,
   "the update wrapper must not run timed actions while portrait");
 const finalGuard = main.indexOf("const _portraitPauseFinal=update;update=function(){if(H>W)return;_portraitPauseFinal();};");
-const mainScriptClose = main.indexOf('</script>\n<script type="importmap">', finalGuard);
-assert.ok(finalGuard >= 0 && mainScriptClose > finalGuard && mainScriptClose - finalGuard < 160,
-  "the final update guard must wrap every layered update extension");
+assert.ok(finalGuard >= 0, "the final update guard must wrap every layered update extension");
+const loadedModules = [...html.matchAll(/<script\b[^>]*src=["']\.\/engine\/gameplay\/([^"']+)["'][^>]*><\/script>/g)].map(match => match[1]);
+assert.deepEqual(loadedModules, gameplayScripts.map(({ file }) => file),
+  "index.html must load every gameplay module exactly once and in dependency order");
+const importMapPosition = html.indexOf('<script type="importmap">');
+const lastGameplayScriptClose = html.lastIndexOf("</script>", importMapPosition - 1);
+assert.ok(importMapPosition >= 0 && lastGameplayScriptClose >= 0 && lastGameplayScriptClose < importMapPosition,
+  "all classic gameplay modules must load before the import map");
 assert.match(main, /if\(H>W\)\{UI\.r\.length=0;UI\.def=null;pauseBtn\.r=camBtn\.r=0;/,
   "portrait overlay must clear stale menu and gameplay hitboxes");
 const captureGuard = main.indexOf("cv.addEventListener('pointerdown',e=>{if(H>W){e.preventDefault();e.stopImmediatePropagation();releaseAll();}},true);");
