@@ -39,3 +39,17 @@ test("Pages build vendors the pinned Three.js package and checks its license", (
   assert.match(workflow, /vendor\/three\/LICENSE/);
   assert.match(workflow, /vendor\/three\/examples\/jsm\/utils\/SkeletonUtils\.js/);
 });
+
+test("production runtime keeps asset dependencies same-origin and locally packaged", () => {
+  const sources = [
+    ["main page", read("../index.html")],
+    ["stadium runtime", read("../stadium-runtime.js")],
+    ["stadium environment runtime", read("../stadium-environment-runtime.js")],
+    ["player renderer", read("./match-player-renderer.mjs")],
+    ["audio bridge", read("./audio-assets.mjs")]
+  ];
+
+  for (const [name, source] of sources) {
+    assert.doesNotMatch(source, /https?:\/\//i, name + " must not contain absolute remote asset URLs");
+  }
+});
