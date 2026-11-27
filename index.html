@@ -1820,36 +1820,71 @@ function drawHud(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='middle';
   if(H>W){
     UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;
-    const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#101820');bg.addColorStop(.52,'#070b10');bg.addColorStop(1,'#030507');
+    // Restrained premium portrait interstitial: no controls, no clutter, one clear action.
+    const bg=ctx.createLinearGradient(0,0,W,H);
+    bg.addColorStop(0,'#111a20');bg.addColorStop(.48,'#070d12');bg.addColorStop(1,'#020507');
     ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-    const glow=ctx.createRadialGradient(W*.5,H*.43,0,W*.5,H*.43,Math.max(W,H)*.72);glow.addColorStop(0,'rgba(163,230,53,.11)');glow.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle='rgba(163,230,53,.045)';ctx.lineWidth=1;
-    const grid=Math.max(24,Math.min(W,H)*.075);for(let gx=0;gx<W;gx+=grid){ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,H);ctx.stroke();}for(let gy=0;gy<H;gy+=grid){ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke();}
-    const brandY=Math.max(H*.105,32);ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillStyle='#a3e635';ctx.font='800 '+Math.max(14,Math.min(W*.055,22))+'px system-ui,sans-serif';ctx.fillText('PITCH 11',W*.5,brandY);
-    ctx.fillStyle='rgba(230,237,226,.72)';ctx.font='800 '+Math.max(9,Math.min(W*.026,13))+'px system-ui,sans-serif';ctx.fillText('THE GAME AWAITS',W*.5,brandY+Math.max(18,H*.028));
-    const phoneW=Math.min(W*.29,H*.22,104),phoneH=phoneW*1.72,phoneX=W*.5,phoneY=H*.405;
-    // Turn the handset a full 90 degrees: the long edge now reads as landscape.
+    const glow=ctx.createRadialGradient(W*.5,H*.405,0,W*.5,H*.405,Math.max(W,H)*.58);
+    glow.addColorStop(0,'rgba(163,230,53,.13)');glow.addColorStop(.48,'rgba(89,133,48,.045)');glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+    const vignette=ctx.createLinearGradient(0,0,0,H);
+    vignette.addColorStop(0,'rgba(0,0,0,.12)');vignette.addColorStop(.5,'rgba(0,0,0,0)');vignette.addColorStop(1,'rgba(0,0,0,.42)');
+    ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+
+    const brandY=Math.max(34,H*.105);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#a3e635';ctx.font='900 '+Math.max(15,Math.min(W*.057,23))+'px system-ui,sans-serif';
+    ctx.fillText('PITCH 11',W*.5,brandY);
+    ctx.fillStyle='rgba(232,239,229,.62)';ctx.font='750 '+Math.max(9,Math.min(W*.027,12))+'px system-ui,sans-serif';
+    ctx.fillText('THE GAME AWAITS',W*.5,brandY+Math.max(19,H*.029));
+
+    // The local portrait handset is rotated 90 degrees, so its long edge is horizontal.
+    const phoneW=Math.min(W*.34,H*.18,116),phoneH=phoneW*1.72,phoneX=W*.5,phoneY=H*.405;
+    const shellRadius=phoneW*.145;
     ctx.save();ctx.translate(phoneX,phoneY);ctx.rotate(-Math.PI/2);
-    ctx.shadowColor='rgba(163,230,53,.28)';ctx.shadowBlur=Math.max(8,phoneW*.22);
-    ctx.lineWidth=Math.max(2,phoneW*.035);ctx.strokeStyle='rgba(210,226,194,.9)';
-    const pr=phoneW*.15;ctx.beginPath();ctx.roundRect(-phoneW*.5,-phoneH*.5,phoneW,phoneH,pr);ctx.stroke();
-    ctx.shadowBlur=0;ctx.fillStyle='rgba(163,230,53,.13)';ctx.beginPath();ctx.roundRect(-phoneW*.42,-phoneH*.42,phoneW*.84,phoneH*.84,pr*.65);ctx.fill();
-    ctx.fillStyle='#a3e635';ctx.beginPath();ctx.roundRect(-phoneW*.17,-phoneH*.42,phoneW*.34,Math.max(2,phoneW*.035),phoneW*.02);ctx.fill();
+    ctx.shadowColor='rgba(0,0,0,.72)';ctx.shadowBlur=phoneW*.24;ctx.shadowOffsetY=phoneW*.10;
+    ctx.fillStyle='#080d11';ctx.strokeStyle='rgba(224,235,219,.92)';ctx.lineWidth=Math.max(2,phoneW*.022);
+    ctx.beginPath();ctx.roundRect(-phoneW*.5,-phoneH*.5,phoneW,phoneH,shellRadius);ctx.fill();ctx.stroke();
+    ctx.shadowBlur=0;ctx.shadowOffsetY=0;
+    ctx.strokeStyle='rgba(163,230,53,.28)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.roundRect(-phoneW*.455,-phoneH*.465,phoneW*.91,phoneH*.93,shellRadius*.72);ctx.stroke();
+
+    // A miniature football pitch on the display makes landscape orientation unmistakable.
+    const sx=-phoneW*.405,sy=-phoneH*.405,sw=phoneW*.81,sh=phoneH*.81;
+    const screen=ctx.createLinearGradient(sx,sy,sx+sw,sy+sh);
+    screen.addColorStop(0,'#173b27');screen.addColorStop(.5,'#0e2d20');screen.addColorStop(1,'#173b27');
+    ctx.fillStyle=screen;ctx.beginPath();ctx.roundRect(sx,sy,sw,sh,shellRadius*.45);ctx.fill();
+    ctx.save();ctx.beginPath();ctx.roundRect(sx,sy,sw,sh,shellRadius*.45);ctx.clip();
+    ctx.strokeStyle='rgba(226,245,222,.78)';ctx.lineWidth=Math.max(.8,phoneW*.008);
+    ctx.strokeRect(sx+sw*.035,sy+sh*.055,sw*.93,sh*.89);
+    ctx.beginPath();ctx.moveTo(0,sy+sh*.055);ctx.lineTo(0,sy+sh*.945);ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,Math.min(sw*.19,sh*.23),0,TAU);ctx.stroke();
+    ctx.strokeRect(sx+sw*.035,sy+sh*.29,sw*.14,sh*.42);
+    ctx.strokeRect(sx+sw*.825,sy+sh*.29,sw*.14,sh*.42);
+    ctx.fillStyle='rgba(163,230,53,.95)';ctx.beginPath();ctx.arc(-sw*.22,0,Math.max(2,phoneW*.025),0,TAU);ctx.fill();
+    ctx.fillStyle='rgba(245,248,238,.92)';ctx.beginPath();ctx.arc(sw*.19,-sh*.12,Math.max(1.5,phoneW*.018),0,TAU);ctx.fill();
     ctx.restore();
-    // Hand-authored SVG rotation-arrow paths, drawn directly into the canvas.
-    const arrowSize=Math.max(15,Math.min(phoneW*.3,W*.052,22));
-    const rotateArrow=new Path2D('M20 7v6h-6 M20 13a8 8 0 1 1-2.34-5.66L20 10');
-    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=1.9;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.translate(phoneX-phoneH*.57-arrowSize*.5,phoneY-arrowSize*.5);
+    // Side key and front camera details stay attached to the handset after rotation.
+    ctx.fillStyle='rgba(210,222,210,.75)';ctx.beginPath();ctx.roundRect(-phoneW*.12,-phoneH*.485,phoneW*.24,Math.max(2,phoneW*.018),phoneW*.01);ctx.fill();
+    ctx.fillStyle='rgba(163,230,53,.85)';ctx.beginPath();ctx.arc(0,-phoneH*.465,Math.max(1.5,phoneW*.012),0,TAU);ctx.fill();
+    ctx.restore();
+
+    // Two custom SVG-style curved arrows are drawn as vector paths, mirrored to show rotation.
+    const arrowSize=Math.max(19,Math.min(phoneW*.27,W*.065,27));
+    const rotateArrow=new Path2D('M19 11a7 7 0 1 1-2.05-4.95L20 9 M20 3v6h-6');
+    const arrowOffset=phoneH*.5+arrowSize*.88;
+    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.translate(phoneX-arrowOffset-arrowSize*.5,phoneY-arrowSize*.5);
     ctx.scale(arrowSize/24,arrowSize/24);ctx.stroke(rotateArrow);ctx.restore();
-    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=1.9;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.translate(phoneX+phoneH*.57+arrowSize*.5,phoneY-arrowSize*.5);
+    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.translate(phoneX+arrowOffset+arrowSize*.5,phoneY-arrowSize*.5);
     ctx.scale(-arrowSize/24,arrowSize/24);ctx.stroke(rotateArrow);ctx.restore();
-    const titleY=Math.min(H*.73,phoneY+phoneW*.72+arrowSize*.65);
-    txt('ROTATE YOUR SCREEN',W*.5,titleY,Math.max(15,Math.min(W*.058,26)),'#f2f5ed',800);
-    ctx.fillStyle='rgba(226,235,219,.62)';ctx.font='600 '+Math.max(9,Math.min(W*.027,13))+'px system-ui,sans-serif';ctx.fillText('PITCH 11 IS DESIGNED FOR LANDSCAPE',W*.5,titleY+Math.max(23,H*.045));
-    ctx.fillStyle='rgba(163,230,53,.75)';ctx.fillRect(W*.5-Math.min(W*.09,34),H*.91,Math.min(W*.18,68),2);
+
+    const titleY=Math.min(H*.735,phoneY+phoneW*.56+arrowSize*1.42);
+    txt('ROTATE YOUR SCREEN',W*.5,titleY,Math.max(16,Math.min(W*.059,26)),'#f2f5ed',850);
+    ctx.fillStyle='rgba(226,235,219,.68)';ctx.font='650 '+Math.max(9,Math.min(W*.028,13))+'px system-ui,sans-serif';
+    ctx.fillText('PITCH 11 IS DESIGNED FOR LANDSCAPE',W*.5,titleY+Math.max(24,H*.047));
+    ctx.fillStyle='rgba(163,230,53,.78)';ctx.fillRect(W*.5-Math.min(W*.10,38),H*.91,Math.min(W*.20,76),2);
     return;
   }
   if(S.mode==='menu'){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;drawMenu();return;}
