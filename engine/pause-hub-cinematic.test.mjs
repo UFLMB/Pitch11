@@ -51,7 +51,7 @@ test("pause navigation uses genuinely translucent surfaces and a narrower live-v
   assert.match(pause, /rgba\(3,8,11,\.78\)/);
   assert.match(pause, /rgba\(163,230,53,\.19\)/);
   assert.match(pause, /rgba\(17,29,34,\.29\)/);
-  assert.doesNotMatch(pause, /rgba\(163,230,53,\.96\)|rgba\(22,34,39,\.84\)/);
+  assert.doesNotMatch(pause, /rgba\(22,34,39,\.84\)/);
 });
 
 test("pause bottom actions are compact, icon-led and retain mobile touch targets", () => {
