@@ -281,6 +281,8 @@ jobs:
           node --check scripts/inspect-player-fbx-package.mjs
           node --check engine/league-soccer-ballphysics.mjs
           node --check stadium-runtime.js
+      - name: Validate main gameplay, offline cache and diagnostic export regressions
+        run: node scripts/validate-main-gameplay-state.mjs
       - name: Run simulation and adapter regression tests
         run: node --test engine/*.test.mjs
 

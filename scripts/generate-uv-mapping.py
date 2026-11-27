@@ -117,15 +117,15 @@ def main():
       "uv_triangle_data_matches_metadata":True}
     with (OUT/"uv-anatomical-mapping.json").open("w",encoding="utf-8") as f: json.dump(report,f,ensure_ascii=False,indent=2)
     with (OUT/"READ-ME-HU.txt").open("w",encoding="utf-8") as f:
-        f.write("PITCH 11 – DIAGNOSZTIKAI UV MAPPING\\n\\n")
-        f.write(f"Összesen {report['validation']['total_islands']} UV-sziget és {report['validation']['total_triangles']} UV-háromszög.\\n")
-        f.write("A sárga kontúrok az eredeti UV-háromszögeket követik. A számok a JSON island mezőjével egyeznek.\\n")
-        f.write("VÉGLEGES, RUN 18-BAN ELLENŐRZÖTT UV-VETÍTÉS: X=u*(szélesség-1); Y=v*magasság. NINCS vízszintes vagy függőleges tükrözés. A textúra változatlan.\\n\\n")
+        f.write("PITCH 11 – DIAGNOSZTIKAI UV MAPPING\n\n")
+        f.write(f"Összesen {report['validation']['total_islands']} UV-sziget és {report['validation']['total_triangles']} UV-háromszög.\n")
+        f.write("A sárga kontúrok az eredeti UV-háromszögeket követik. A számok a JSON island mezőjével egyeznek.\n")
+        f.write("VÉGLEGES, RUN 18-BAN ELLENŐRZÖTT UV-VETÍTÉS: X=u*(szélesség-1); Y=v*magasság. NINCS vízszintes vagy függőleges tükrözés. A textúra változatlan.\n\n")
         for group in ("body","head"):
-            f.write(group.upper()+"\\n")
-            for i,label in enumerate(LABELS[group],1): f.write(f"{i:02d}. {label}\\n")
-            f.write("\\n")
-        f.write("Diagnosztikai csomag: a player.glb és a játék forrásfájljai nem módosultak.\\n")
+            f.write(group.upper()+"\n")
+            for i,label in enumerate(LABELS[group],1): f.write(f"{i:02d}. {label}\n")
+            f.write("\n")
+        f.write("Diagnosztikai csomag: a player.glb és a játék forrásfájljai nem módosultak.\n")
     print(json.dumps(report["validation"],ensure_ascii=False,indent=2))
 
 if __name__=="__main__": main()

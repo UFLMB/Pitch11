@@ -130,5 +130,5 @@ const report = {
   files: results
 };
 const reportText = JSON.stringify(report, null, 2);
-await writeFile("player-fbx-audit.json", reportText + "\\n");
+await writeFile("player-fbx-audit.json", reportText + "\n");
 console.log(reportText);

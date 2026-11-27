@@ -275,6 +275,32 @@ test("goalkeeper parries a shot crossing the goal mouth", () => {
   assert.ok(sim.getSnapshot().events.some(e => e.type === "keeperSave"));
 });
 
+for (const team of [0, 1]) {
+  test(`goalkeeper saves use the active keeper after a substitution (team ${team})`, () => {
+    const sim = new FootballSimulation();
+    sim.phase = "halfTime"; // substitutions are permitted during a stoppage
+    const outgoingId = team * 11;
+    assert.equal(sim.substitute(team, outgoingId, 0), true);
+    const keeper = sim.players.find(p => p.team === team && !p.out && p.role === "GK");
+    assert.ok(keeper);
+    assert.notEqual(keeper.id, outgoingId);
+    keeper.x = team === 0 ? 2 : 103;
+    keeper.y = 34;
+    sim.ball.owner = -1;
+    sim.ball.lastTouchTeam = 1 - team;
+    sim.ball.x = team === 0 ? 5 : 100;
+    sim.ball.y = 34;
+    sim.ball.z = 1;
+    sim.ball.vx = team === 0 ? -10 : 10;
+    sim.ball.vy = 0;
+    sim.ball.vz = 3;
+    sim.resolveGoalkeeperSaves();
+    const save = sim.events.find(e => e.type === "keeperSave");
+    assert.ok(save);
+    assert.equal(save.keeper, keeper.id);
+  });
+}
+
 test("match clock pauses at half-time and resumes into full-time", () => {
   const sim = new FootballSimulation({ halfLengthSeconds: .05 });
   for (let i = 0; i < 4; i++) sim.update(FIXED_DT);

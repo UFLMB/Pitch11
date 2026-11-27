@@ -549,7 +549,8 @@ export class FootballSimulation {
       const predictedY = b.y + b.vy * t;
       const predictedZ = b.z + b.vz * t - 4.905 * t * t;
       if (predictedZ < .12 || predictedZ > PITCH.goalHeight + .45) continue;
-      const keeper = this.players[team * 11];
+      const keeper = this.players.find(p => p.team === team && !p.out && p.role === "GK");
+      if (!keeper) continue;
       if (Math.abs(predictedY - keeper.y) > 2.0) continue;
       const reach = clamp(1.8 - predictedZ * .25, .85, 1.8);
       if (Math.abs(keeper.x - ownGoal) > 10 || Math.abs(predictedY - keeper.y) > reach) continue;
