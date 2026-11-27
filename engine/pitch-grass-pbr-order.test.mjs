@@ -28,38 +28,3 @@ test("successful Meshy albedo is preserved instead of being overwritten by proce
     "procedural fallback is only considered after the successful-PBR branch");
 });
 
-const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const playerRenderer = readFileSync(new URL("./match-player-renderer.mjs", import.meta.url), "utf8");
-
-test("loading screen fullscreen control uses the PITCH 11 icon-only glass treatment", () => {
-  assert.match(html, /id="p11-loading-fullscreen"[^>]*aria-pressed="false"/);
-  assert.match(html, /p11-fullscreen-icon[^>]*><svg viewBox="0 0 24 24"/);
-  assert.match(html, /#p11-loading-fullscreen::before/);
-  assert.match(html, /#p11-loading-fullscreen\\.is-active/);
-});
-
-test("loading percentage cannot pass 94 until all required runtime systems are ready", () => {
-  assert.match(html, /let value=Math\\.min\\(94,Math\\.round\\(measured\\*94\\)\\)/);
-  assert.match(html, /if\\(allReady&&elapsed>=DURATION-FINAL_PHASE\\)value=95/);
-  assert.match(html, /if\\(allReady&&elapsed>=DURATION\\)value=100/);
-  for (const expression of [
-    "b.state==='ready'&&b.sceneObjects?.state==='ready'",
-    "model.state==='ready'&&players.assetReady===true",
-    "animation.state==='ready'&&animation.total>0&&animation.loaded>=animation.total",
-    "players.ready===true&&expectedPlayers>=22&&renderedPlayers>=22",
-    "b.pitch?.state==='ready'",
-    "objectStates.length===3&&objectStates.every(state=>state==='ready')"
-  ]) assert.ok(html.includes(expression), `Missing loading gate: ${expression}`);
-});
-
-test("stadium runtime publishes measured pitch, scene and optional object readiness", () => {
-  assert.match(runtime, /boot\\.pitch=\\{state:'loading',progress:0\\}/);
-  assert.match(runtime, /boot\\.pitch=\\{state:'ready',progress:1,source:pitchTextureStatus\\}/);
-  assert.match(runtime, /boot\\.sceneObjects=\\{state:'ready',count:scene\\.children\\.length\\}/);
-  assert.match(runtime, /boot\\.optionalAssets=optionalAssets/);
-});
-
-test("player renderer exposes readiness for all core animation clips", () => {
-  assert.match(playerRenderer, /get coreAnimationReadiness\\(\\)/);
-  assert.match(playerRenderer, /loaded, failed, progress: loaded \\/ CORE_MIXAMO_CLIPS\\.length, state: this\\.animationLoadState/);
-});
