@@ -41,3 +41,7 @@ test("existing pause destinations and half/full-time return handling remain wire
     assert.ok(pause.includes(token), `missing preserved pause behavior: ${token}`);
   }
 });
+
+test("camera chosen in match settings remains selected when returning to the pause hub", () => {
+  assert.match(pause, /if\(M\.pp==='set'\)p11PauseManualCam=G\.cam;M\.pp='hub'/);
+});
