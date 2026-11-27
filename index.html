@@ -6617,5 +6617,114 @@ if(allReady&&elapsed>=DURATION){status.textContent='READY FOR KICK-OFF';hide();}
 }
 if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
 </script>
+
+<script>
+/* PITCH 11 — cinematic live-match pause hub */
+(function(){
+  const p11PauseModes=[0,1,2,3,4,5,6,7].filter(i=>CAMS[i]);
+  const p11PauseStarted=()=>M.pauseCineStarted||(M.pauseCineStarted=performance.now());
+  const p11PauseCamBase=camSet;
+  camSet=function(a){
+    if(S.mode==='subs'&&M.pp==='hub'&&!M.instr&&p11PauseModes.length){
+      const elapsed=Math.max(0,performance.now()-p11PauseStarted());
+      const slot=Math.floor(elapsed/6800)%p11PauseModes.length;
+      const saved=G.cam;
+      try{G.cam=p11PauseModes[slot];p11PauseCamBase(a);}
+      finally{G.cam=saved;}
+      return;
+    }
+    p11PauseCamBase(a);
+  };
+  const p11PauseAction=(x,y,w,h,label,sub,active,fn)=>{
+    UI.r.push({x,y,w,h,fn});
+    const selected=!!active;
+    glass(x,y,w,h,h*.22,selected
+      ?{top:'rgba(163,230,53,.96)',bot:'rgba(88,145,28,.94)',glow:'rgba(163,230,53,.28)',hl:.28,bd:'rgba(226,255,177,.9)'}
+      :{top:'rgba(22,34,39,.84)',bot:'rgba(5,12,17,.76)',hl:.08,bd:'rgba(220,232,224,.18)'});
+    if(selected){
+      ctx.fillStyle='rgba(8,18,14,.18)';rr(x,y,w*.018,h,h*.009);ctx.fill();
+    }
+    ctx.textAlign='left';
+    fit(label,x+w*.075,y+h*(sub?.39:.51),w*.84,h*.31,selected?'#10190c':'#f3f1e9','left');
+    if(sub)fit(sub,x+w*.075,y+h*.73,w*.84,h*.2,selected?'rgba(15,28,12,.78)':'rgba(210,222,240,.62)','left');
+    ctx.textAlign='center';
+  };
+  drawSubs=function(){
+    if(M.instr){_dS();return;}
+    const back=()=>{if(S.ret==='half'||S.ret==='full')resumeSubs();else{M.pp='hub';M.st=0;}};
+    if(M.pp==='tact'){resumeSubs();return;}
+    if(M.pp==='stats'){
+      if(M.st){statsScr();return;}
+      back();if(S.mode!=='subs')return;
+    }
+    if(M.pp==='subs'){_dS();ubtn(W*.02,H*.03,W*.14,H*.09,'‹ BACK',back);return;}
+    if(M.pp==='set'){matchSettings(back);return;}
+
+    const mobile=W/H<1.75;
+    const left=mobile?W*.025:W*.035;
+    const panelW=mobile?W*.43:W*.365;
+    const top=H*.145;
+    const bottom=H*.925;
+    const panelH=bottom-top;
+    UI.r.length=0;UI.def=null;
+    // Keep the live stadium view dominant: only the navigation rail receives a strong tint.
+    const shade=ctx.createLinearGradient(left,0,left+panelW*1.35,0);
+    shade.addColorStop(0,'rgba(3,8,11,.94)');
+    shade.addColorStop(.72,'rgba(3,8,11,.76)');
+    shade.addColorStop(1,'rgba(3,8,11,0)');
+    ctx.fillStyle=shade;ctx.fillRect(0,0,left+panelW*1.35,H);
+    ctx.fillStyle='rgba(3,8,11,.32)';ctx.fillRect(0,top,left+panelW,bottom-top);
+    ctx.fillStyle='rgba(163,230,53,.9)';rr(left,top+H*.018,H*.006,H*.055,H*.003);ctx.fill();
+    ctx.textAlign='left';
+    txt('PITCH 11',left+H*.025,top+H*.045,H*.024,'#a3e635',900);
+    txt('MATCH PAUSED',left+H*.025,top+H*.105,H*.052,'#f3f1e9',900);
+    const clock=clockStr().replace(/\\s+(1ST|2ND|ET1|ET2)$/,'');
+    txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*.145,H*.021,'rgba(223,232,225,.72)',700);
+
+    const gap=H*.012;
+    const rowH=Math.min(H*.105,(panelH-H*.37-gap*4)/5);
+    const rowY=top+H*.19;
+    const rowW=panelW-H*.05;
+    const rows=[
+      ['RESUME MATCH','Return to the pitch',true,()=>resumeSubs()],
+      ['TEAM MANAGEMENT','Substitutions · Squad',false,()=>{M.pp='subs';}],
+      ['TACTICS','Formation · Pressing · Line',false,()=>{M.instr=1;}],
+      ['MATCH STATS','Possession · Shots · Match data',false,()=>{M.pp='stats';M.st=1;}],
+      ['SETTINGS','Camera · Sound · Gameplay',false,()=>{M.pp='set';}]
+    ];
+    rows.forEach((r,i)=>{
+      const y=rowY+i*(rowH+gap);
+      p11PauseAction(left+H*.018,y,rowW,rowH,r[0],r[1],r[2],r[3]);
+    });
+    const actionY=Math.min(bottom-H*.105,rowY+5*(rowH+gap)+H*.012);
+    const actionH=Math.max(H*.065,Math.min(H*.082,bottom-actionY));
+    const actionGap=H*.012,actionW=(rowW-actionGap*2)/3;
+    const actions=[
+      ['CAMERA',()=>{cycleCam();M.pauseCineStarted=performance.now();}],
+      [M.cf2?'CONFIRM RESTART':'RESTART',()=>{if(M.cf2){M.cf2=0;rematch();}else{M.cf2=1;M.conf=0;}}],
+      [M.conf?'CONFIRM QUIT':'QUIT MATCH',()=>{if(M.conf)quitMatch();else{M.conf=1;M.cf2=0;}}]
+    ];
+    actions.forEach((a,i)=>{
+      const x=left+H*.018+i*(actionW+actionGap),y=actionY;
+      const danger=i===2||i===1&&(M.cf2||M.conf);
+      UI.r.push({x,y,w:actionW,h:actionH,fn:a[1]});
+      glass(x,y,actionW,actionH,actionH*.2,danger
+        ?{top:'rgba(130,38,32,.78)',bot:'rgba(65,17,17,.78)',bd:'rgba(255,120,100,.42)'}
+        :{top:'rgba(28,42,45,.8)',bot:'rgba(7,15,20,.78)',bd:'rgba(225,235,230,.2)'});
+      fit(a[0],x+actionW/2,y+actionH/2,actionW*.9,actionH*.25,danger?'#ff9b88':'#e7ece7');
+    });
+    // Small cinematic label on the open side; no opaque card over the match.
+    const liveX=left+panelW+W*.035;
+    if(W-liveX>W*.2){
+      ctx.textAlign='left';
+      txt('LIVE MATCH VIEW',liveX,H*.88,H*.019,'rgba(235,242,235,.68)',800);
+      txt('CINEMATIC CAMERA',liveX,H*.915,H*.015,'rgba(163,230,53,.78)',700);
+      ctx.textAlign='center';
+    }
+    UI.def=resumeSubs;
+  };
+})();
+</script>
+
 </body>
 </html>
