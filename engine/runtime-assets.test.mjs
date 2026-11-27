@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { fileURLToPath } from "node:url";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -9,6 +11,7 @@ test("Three.js runtime is loaded from the same origin in every 3D entry point", 
   const stadium = read("../stadium-runtime.js");
   const graphics = read("../graphics3d.html");
   const index = read("../index.html");
+  const gameplay = readGameplaySource(fileURLToPath(new URL("..", import.meta.url)));
   const playerRenderer = read("./match-player-renderer.mjs");
 
   assert.match(lab, /from ["']\.\.\/vendor\/three\/build\/three\.module\.js["']/);
@@ -19,7 +22,7 @@ test("Three.js runtime is loaded from the same origin in every 3D entry point", 
   assert.match(stadium, /get diagnostics\(\)/);
   assert.match(stadium, /mobile\?2:1/);
   assert.match(index, /import\('\.\/stadium-runtime\.js'\)\.catch/);
-  assert.match(index, /STADIUM LOAD FAILED/);
+  assert.match(gameplay, /STADIUM LOAD FAILED/);
   assert.match(lab, /SkeletonUtils\.js/);
   assert.match(lab, /assets\/players\/player\.glb/);
   assert.match(graphics, /"three":"\.\/vendor\/three\/build\/three\.module\.js"/);

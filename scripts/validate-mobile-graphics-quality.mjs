@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readGameplaySource } from '../engine/gameplay-source.mjs';
 
-const html = fs.readFileSync('index.html', 'utf8');
+const html = readGameplaySource('.');
 const runtime = fs.readFileSync('stadium-runtime.js', 'utf8');
 
 assert.match(html, /const maxRenderScale=Math\.min\(window\.devicePixelRatio\|\|1,2\.0\)/, 'mobile and desktop render scale cap should be 2.0, limited by devicePixelRatio');

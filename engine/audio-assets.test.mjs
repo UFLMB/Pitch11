@@ -2,10 +2,12 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { MENU_MUSIC, SOURCES, resolveMenuMusicIntent } from "./audio-assets.mjs";
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { fileURLToPath } from "node:url";
 
 const read = path => readFileSync(new URL(path, import.meta.url), "utf8");
 const audioModule = read("./audio-assets.mjs");
-const game = read("../index.html");
+const game = read("../index.html") + "\n" + readGameplaySource(fileURLToPath(new URL("..", import.meta.url)));
 
 test("every registered menu audio source exists at its declared repository path", () => {
   const paths = [

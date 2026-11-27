@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const source = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const source = readGameplaySource(root);
 
 test('a loose ball after a standing tackle uses the shared contact lock', () => {
   const start = source.indexOf('function tryTackle(');

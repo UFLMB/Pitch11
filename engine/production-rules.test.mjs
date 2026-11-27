@@ -1,12 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { readGameplayScripts, readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
-const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const scriptMatch = html.match(/<script>\s*([\s\S]*?)<\/script>/);
-assert.ok(scriptMatch, "production game script must exist");
-const source = scriptMatch[1];
+const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const gameplayScripts = readGameplayScripts(root);
+const html = readFileSync(resolve(root, "index.html"), "utf8");
+const source = readGameplaySource(root);
+assert.ok(gameplayScripts.length > 0, "production gameplay modules must exist");
 const lawSource = readFileSync(new URL("./law-compliance.js", import.meta.url), "utf8");
 
 test("Law 4 equipment inspection rejects missing compulsory kit and unsafe items", () => {
@@ -46,7 +50,9 @@ test("Law 4 equipment checks are wired into match start and substitution entry",
 });
 
 test("production browser runtime parses without syntax errors", () => {
-  assert.doesNotThrow(() => new vm.Script(source, { filename: "index.html:inline-script" }));
+  for (const { file, source: moduleSource } of gameplayScripts) {
+    assert.doesNotThrow(() => new vm.Script(moduleSource, { filename: `engine/gameplay/${file}` }));
+  }
 });
 
 test("the existing ball dimensions and render scale remain unchanged", () => {
