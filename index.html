@@ -5466,7 +5466,6 @@ resetSave=function(){
 load();fixX();applyX();fixRf();fixAssistSettings();fixControlSettings();
 G.mbg=Number.isInteger(G.mbg)&&G.mbg>=0&&G.mbg<=20?G.mbg:0;
 applyConfig();syncLayout();M.opp=nextOpp();newMatch();S.mode='menu';S.t=0;
-const _portraitPauseFinal=update;update=function(){if(H>W)return;_portraitPauseFinal();};
 requestAnimationFrame(frame);
 
 /* Law 15: every attacking action button can execute the throw-in, but
@@ -6447,6 +6446,7 @@ MS.data=function(){
 };
 /* ===================== END SETTINGS 2.0 ===================== */
 
+const _portraitPauseFinal=update;update=function(){if(H>W)return;_portraitPauseFinal();};
 </script>
 <script type="importmap">{"imports":{"three":"./vendor/three/build/three.module.js"}}</script>
 <script>
