@@ -11,10 +11,10 @@ test('portrait orientation displays the PITCH 11 landscape prompt', async () => 
   assert.match(rotateScreen, /PITCH 11/);
   assert.match(rotateScreen, /THE GAME AWAITS/);
   assert.doesNotMatch(rotateScreen, /MATCHDAY EXPERIENCE/);
-  assert.match(rotateScreen, /ctx\\.rotate\\(-Math\\.PI\\/2\\)/);
+  assert.ok(rotateScreen.includes('ctx.rotate(-Math.PI/2)'), 'handset is rotated to landscape');
   assert.match(rotateScreen, /Hand-authored SVG rotation-arrow paths, drawn directly into the canvas/);
-  assert.match(rotateScreen, /new Path2D\\('M20 7v6h-6/);
-  assert.match(rotateScreen, /ctx\\.scale\\(-arrowSize\\/24,arrowSize\\/24\\)/);
+  assert.ok(rotateScreen.includes("new Path2D('M20 7v6h-6"), 'custom SVG path is drawn');
+  assert.ok(rotateScreen.includes('ctx.scale(-arrowSize/24,arrowSize/24)'), 'opposing arrow is mirrored');
   assert.match(rotateScreen, /ROTATE YOUR SCREEN/);
   assert.match(rotateScreen, /PITCH 11 IS DESIGNED FOR LANDSCAPE/);
   assert.match(rotateScreen, /#a3e635/);
