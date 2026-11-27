@@ -6663,8 +6663,8 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     const mobile=W/H<1.75;
     const left=mobile?W*.025:W*.035;
     const panelW=mobile?W*.43:W*.365;
-    const top=H*.145;
-    const bottom=H*.925;
+    const top=H*.07;
+    const bottom=H*.97;
     const panelH=bottom-top;
     UI.r.length=0;UI.def=null;
     // Keep the live stadium view dominant: only the navigation rail receives a strong tint.
@@ -6682,8 +6682,8 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
     txt(clock+'  ·  '+(S.half===1?'FIRST HALF':S.half===2?'SECOND HALF':S.half===3?'EXTRA TIME':'MATCH'),left+H*.025,top+H*.145,H*.021,'rgba(223,232,225,.72)',700);
 
     const gap=H*.012;
-    const rowH=Math.min(H*.105,(panelH-H*.37-gap*4)/5);
-    const rowY=top+H*.19;
+    const rowH=Math.min(H*.11,(panelH-H*.30-gap*4)/5);
+    const rowY=top+H*.16;
     const rowW=panelW-H*.05;
     const rows=[
       ['RESUME MATCH','Return to the pitch',true,()=>resumeSubs()],
@@ -6696,8 +6696,8 @@ if(!finished)requestAnimationFrame(tick);};requestAnimationFrame(tick);})();
       const y=rowY+i*(rowH+gap);
       p11PauseAction(left+H*.018,y,rowW,rowH,r[0],r[1],r[2],r[3]);
     });
-    const actionY=Math.min(bottom-H*.105,rowY+5*(rowH+gap)+H*.012);
-    const actionH=Math.max(H*.065,Math.min(H*.082,bottom-actionY));
+    const actionY=Math.min(bottom-H*.1,rowY+5*(rowH+gap)+H*.012);
+    const actionH=Math.max(H*.08,Math.min(H*.1,bottom-actionY));
     const actionGap=H*.012,actionW=(rowW-actionGap*2)/3;
     const actions=[
       ['CAMERA',()=>{cycleCam();M.pauseCineStarted=performance.now();}],
