@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
+import { readGameplaySource } from "./gameplay-source.mjs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const html = readGameplaySource(root);
 const start = html.indexOf('function separate(){');
 const end = html.indexOf('\nfunction stepBall(){', start);
-assert.ok(start >= 0 && end > start, 'separate() must remain present in index.html');
+assert.ok(start >= 0 && end > start, 'separate() must remain present in the gameplay modules');
 const separateSource = html.slice(start, end);
 const makeSeparate = (players) => {
   const clampPos = (p) => {
