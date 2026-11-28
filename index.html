@@ -1820,60 +1820,67 @@ function drawHud(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='middle';
   if(H>W){
     UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;
-    // Minimal rotate-device interstitial, closely following the supplied black-and-white reference.
-    ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
-    ctx.strokeStyle='#f7f7f7';ctx.fillStyle='#f7f7f7';
-    ctx.lineCap='round';ctx.lineJoin='round';
+    // Premium landscape-orientation interstitial: instruction stays outside the handset.
+    const cx=W*.5;
+    const bg=ctx.createLinearGradient(0,0,W,H);
+    bg.addColorStop(0,'#080d10');bg.addColorStop(.52,'#020405');bg.addColorStop(1,'#080c0e');
+    ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    const glow=ctx.createRadialGradient(cx,H*.48,0,cx,H*.48,Math.max(W,H)*.62);
+    glow.addColorStop(0,'rgba(163,230,53,.105)');glow.addColorStop(.42,'rgba(68,104,50,.045)');glow.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+    // Fine framing lines add depth without competing with the instruction.
+    ctx.strokeStyle='rgba(220,238,220,.055)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(W*.09,H*.12);ctx.lineTo(W*.09,H*.88);ctx.moveTo(W*.91,H*.12);ctx.lineTo(W*.91,H*.88);ctx.stroke();
+    ctx.fillStyle='rgba(163,230,53,.88)';ctx.fillRect(W*.09,H*.12,W*.105,2);
+    ctx.fillStyle='rgba(226,238,226,.38)';ctx.font='800 '+Math.max(9,Math.min(W*.027,11))+'px Arial,sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('PITCH 11  /  MATCHDAY',W*.09,H*.105);
 
-    const cx=W*.5,cy=H*.49;
-    const phoneW=Math.min(W*.66, H*.30, 310),phoneH=phoneW*.43;
-    const px=cx-phoneW*.5,py=cy-phoneH*.5;
-    const r=phoneH*.12;
-    ctx.lineWidth=Math.max(1.3,Math.min(2.2,W*.005));
-    ctx.beginPath();ctx.roundRect(px,py,phoneW,phoneH,r);ctx.stroke();
-    ctx.lineWidth=Math.max(1,Math.min(1.5,W*.0035));
-    ctx.beginPath();ctx.roundRect(px+phoneW*.035,py+phoneH*.07,phoneW*.93,phoneH*.86,r*.72);ctx.stroke();
-
-    // Landscape phone details: side camera/speaker on the left, circular home sensor on the right.
-    ctx.beginPath();ctx.arc(px+phoneW*.027,cy,Math.max(1.5,phoneH*.018),0,TAU);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(px+phoneW*.055,cy-phoneH*.11);ctx.lineTo(px+phoneW*.055,cy+phoneH*.11);ctx.stroke();
-    ctx.beginPath();ctx.arc(px+phoneW*.94,cy,phoneH*.075,0,TAU);ctx.stroke();
-
+    // Typographic hierarchy: the action is clearly above the phone, never on its display.
     ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillStyle='#f7f7f7';
-    ctx.font='500 '+Math.max(12,Math.min(phoneH*.22,W*.046,23))+'px Arial,sans-serif';
-    ctx.fillText('ROTATE',cx,cy-phoneH*.19);
-    ctx.fillText('YOUR',cx,cy);
-    ctx.fillText('PHONE',cx,cy+phoneH*.19);
+    ctx.fillStyle='rgba(163,230,53,.92)';ctx.font='800 '+Math.max(10,Math.min(W*.032,12))+'px Arial,sans-serif';ctx.fillText('A BETTER VIEW OF THE GAME',cx,H*.255);
+    ctx.fillStyle='#f4f7f2';ctx.font='900 '+Math.max(24,Math.min(W*.085,34))+'px Arial,sans-serif';ctx.fillText('ROTATE YOUR SCREEN',cx,H*.305);
+    ctx.fillStyle='rgba(225,234,225,.58)';ctx.font='500 '+Math.max(10,Math.min(W*.033,13))+'px Arial,sans-serif';ctx.fillText('Turn your phone sideways to continue',cx,H*.355);
 
-    // PITCH 11 signature lime accent: keep the reference's simple curved arrows, branded in the game's lime.
-    ctx.strokeStyle='#a3e635';
-    const aw=Math.max(24,Math.min(W*.13,48)),lw=Math.max(3.2,Math.min(5.2,W*.012));
-    ctx.lineWidth=lw;
-    const leftX=px-aw*.55,rightX=px+phoneW+aw*.55;
-    const topY=py-phoneH*.42,bottomY=py+phoneH+phoneH*.42;
-    ctx.beginPath();
-    ctx.moveTo(leftX+aw*.95,topY);
-    ctx.lineTo(leftX+aw*.48,topY);
-    ctx.bezierCurveTo(leftX+aw*.12,topY,leftX,topY+aw*.22,leftX,topY+aw*.55);
-    ctx.lineTo(leftX,bottomY-aw*.42);
-    ctx.moveTo(leftX-aw*.25,bottomY-aw*.67);
-    ctx.lineTo(leftX,bottomY-aw*.42);
-    ctx.lineTo(leftX+aw*.25,bottomY-aw*.67);
-    ctx.stroke();
+    const phoneW=Math.min(W*.68,H*.245,300),phoneH=phoneW*.445;
+    const px=cx-phoneW*.5,cy=H*.535,py=cy-phoneH*.5,r=phoneH*.15;
+    // Soft device shadow and premium layered titanium bezel.
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.8)';ctx.shadowBlur=Math.max(16,phoneH*.35);ctx.shadowOffsetY=phoneH*.12;
+    const frame=ctx.createLinearGradient(px,py,px+phoneW,py+phoneH);
+    frame.addColorStop(0,'#aab2b0');frame.addColorStop(.18,'#394143');frame.addColorStop(.52,'#111719');frame.addColorStop(.82,'#59615f');frame.addColorStop(1,'#c0c6c1');
+    ctx.fillStyle=frame;ctx.strokeStyle='rgba(244,249,242,.68)';ctx.lineWidth=Math.max(1.2,W*.0035);
+    ctx.beginPath();ctx.roundRect(px,py,phoneW,phoneH,r);ctx.fill();ctx.stroke();ctx.restore();
+    const sx=px+phoneW*.045,sy=py+phoneH*.09,sw=phoneW*.91,sh=phoneH*.82;
+    const screenFill=ctx.createLinearGradient(sx,sy,sx+sw,sy+sh);
+    screenFill.addColorStop(0,'#15251b');screenFill.addColorStop(.5,'#0b1711');screenFill.addColorStop(1,'#08100c');
+    ctx.fillStyle=screenFill;ctx.beginPath();ctx.roundRect(sx,sy,sw,sh,r*.65);ctx.fill();
+    // A restrained pitch graphic inside the handset reinforces the landscape game view.
+    ctx.save();ctx.beginPath();ctx.roundRect(sx+sw*.035,sy+sh*.06,sw*.93,sh*.88,r*.42);ctx.clip();
+    ctx.strokeStyle='rgba(205,239,190,.38)';ctx.lineWidth=Math.max(.8,W*.0018);
+    ctx.strokeRect(sx+sw*.035,sy+sh*.06,sw*.93,sh*.88);
+    ctx.beginPath();ctx.moveTo(cx,sy+sh*.06);ctx.lineTo(cx,sy+sh*.94);ctx.stroke();
+    ctx.beginPath();ctx.arc(cx,cy,sh*.23,0,TAU);ctx.stroke();
+    ctx.strokeRect(sx+sw*.035,sy+sh*.28,sw*.17,sh*.44);ctx.strokeRect(sx+sw*.795,sy+sh*.28,sw*.17,sh*.44);
+    ctx.strokeStyle='rgba(163,230,53,.42)';ctx.lineWidth=Math.max(1,W*.0022);
+    ctx.beginPath();ctx.moveTo(sx+sw*.12,sy+sh*.5);ctx.lineTo(sx+sw*.88,sy+sh*.5);ctx.stroke();
+    ctx.restore();
+    // Side controls and speaker details.
+    ctx.strokeStyle='rgba(238,244,238,.78)';ctx.lineWidth=Math.max(1,W*.002);
+    ctx.beginPath();ctx.moveTo(px+phoneW*.025,cy-phoneH*.13);ctx.lineTo(px+phoneW*.025,cy+phoneH*.13);ctx.moveTo(px+phoneW*.975,cy-phoneH*.1);ctx.lineTo(px+phoneW*.975,cy+phoneH*.1);ctx.stroke();
 
-    ctx.beginPath();
-    ctx.moveTo(rightX-aw*.95,bottomY);
-    ctx.lineTo(rightX-aw*.48,bottomY);
-    ctx.bezierCurveTo(rightX-aw*.12,bottomY,rightX,bottomY-aw*.22,rightX,bottomY-aw*.55);
-    ctx.lineTo(rightX,topY+aw*.42);
-    ctx.moveTo(rightX-aw*.25,topY+aw*.67);
-    ctx.lineTo(rightX,topY+aw*.42);
-    ctx.lineTo(rightX+aw*.25,topY+aw*.67);
-    ctx.stroke();
+    // Two clean lime rotation cues orbit the device.
+    const aw=Math.max(22,Math.min(W*.105,38)),lw=Math.max(2.6,Math.min(4.2,W*.009));
+    ctx.strokeStyle='#a3e635';ctx.lineWidth=lw;ctx.lineCap='round';ctx.lineJoin='round';
+    const ax=px-aw*.62,ay=py-phoneH*.33,bx=px+phoneW+aw*.62,by=py+phoneH+phoneH*.33;
+    ctx.beginPath();ctx.moveTo(ax+aw,ay);ctx.lineTo(ax+aw*.48,ay);ctx.bezierCurveTo(ax+aw*.12,ay,ax,ay+aw*.2,ax,ay+aw*.52);ctx.lineTo(ax,by-aw*.35);
+    ctx.moveTo(ax-aw*.22,by-aw*.58);ctx.lineTo(ax,by-aw*.35);ctx.lineTo(ax+aw*.22,by-aw*.58);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(bx-aw,by);ctx.lineTo(bx-aw*.48,by);ctx.bezierCurveTo(bx-aw*.12,by,bx,by-aw*.2,bx,by-aw*.52);ctx.lineTo(bx,ay+aw*.35);
+    ctx.moveTo(bx-aw*.22,ay+aw*.58);ctx.lineTo(bx,ay+aw*.35);ctx.lineTo(bx+aw*.22,ay+aw*.58);ctx.stroke();
 
-    ctx.fillStyle='#a3e635';ctx.font='italic 900 '+Math.max(11,Math.min(W*.04,16))+'px Arial,sans-serif';
-    ctx.fillText('PITCH 11',W*.5,H*.83);
+    // Brand footer with a subtle divider and clear breathing room.
+    ctx.fillStyle='rgba(163,230,53,.82)';ctx.fillRect(W*.37,H*.755,W*.26,1);
+    ctx.fillStyle='#edf2e9';ctx.font='italic 900 '+Math.max(15,Math.min(W*.052,21))+'px Arial,sans-serif';ctx.fillText('PITCH 11',cx,H*.79);
+    ctx.fillStyle='rgba(222,232,222,.46)';ctx.font='700 '+Math.max(9,Math.min(W*.026,10))+'px Arial,sans-serif';ctx.fillText('BUILT FOR THE FULL PITCH',cx,H*.825);
+    ctx.fillStyle='rgba(163,230,53,.6)';ctx.beginPath();ctx.arc(cx,H*.89,2.2,0,TAU);ctx.fill();
     return;
   }
   if(S.mode==='menu'){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;drawMenu();return;}
