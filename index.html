@@ -1820,60 +1820,62 @@ function drawHud(){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.textAlign='center';ctx.textBaseline='middle';
   if(H>W){
     UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;
-    // Minimal rotate-device interstitial, closely following the supplied black-and-white reference.
+    // Keep the original handset and rotation arrows; refine only the surrounding typography.
     ctx.fillStyle='#000';ctx.fillRect(0,0,W,H);
+    const cx=W*.5,cy=H*.49;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(163,230,53,.86)';
+    ctx.font='800 '+Math.max(9,Math.min(W*.028,11))+'px Arial,sans-serif';
+    ctx.fillText('MATCHDAY  /  PITCH 11',cx,H*.145);
+    ctx.fillStyle='#f7f7f7';
+    let titleSize=Math.max(19,Math.min(W*.067,27));
+    ctx.font='900 '+titleSize+'px Arial,sans-serif';
+    const titleWidth=ctx.measureText('ROTATE YOUR SCREEN').width;
+    if(titleWidth>W*.88){titleSize*=W*.88/titleWidth;ctx.font='900 '+titleSize+'px Arial,sans-serif';}
+    ctx.fillText('ROTATE YOUR SCREEN',cx,H*.205);
+    ctx.fillStyle='rgba(247,247,247,.58)';
+    ctx.font='500 '+Math.max(10,Math.min(W*.032,12))+'px Arial,sans-serif';
+    ctx.fillText('Turn your phone sideways to continue',cx,H*.255);
+
+    // Original phone illustration: intentionally unchanged.
     ctx.strokeStyle='#f7f7f7';ctx.fillStyle='#f7f7f7';
     ctx.lineCap='round';ctx.lineJoin='round';
-
-    const cx=W*.5,cy=H*.49;
-    const phoneW=Math.min(W*.66, H*.30, 310),phoneH=phoneW*.43;
+    const phoneW=Math.min(W*.66,H*.30,310),phoneH=phoneW*.43;
     const px=cx-phoneW*.5,py=cy-phoneH*.5;
     const r=phoneH*.12;
     ctx.lineWidth=Math.max(1.3,Math.min(2.2,W*.005));
     ctx.beginPath();ctx.roundRect(px,py,phoneW,phoneH,r);ctx.stroke();
     ctx.lineWidth=Math.max(1,Math.min(1.5,W*.0035));
     ctx.beginPath();ctx.roundRect(px+phoneW*.035,py+phoneH*.07,phoneW*.93,phoneH*.86,r*.72);ctx.stroke();
-
-    // Landscape phone details: side camera/speaker on the left, circular home sensor on the right.
     ctx.beginPath();ctx.arc(px+phoneW*.027,cy,Math.max(1.5,phoneH*.018),0,TAU);ctx.stroke();
     ctx.beginPath();ctx.moveTo(px+phoneW*.055,cy-phoneH*.11);ctx.lineTo(px+phoneW*.055,cy+phoneH*.11);ctx.stroke();
     ctx.beginPath();ctx.arc(px+phoneW*.94,cy,phoneH*.075,0,TAU);ctx.stroke();
 
-    ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillStyle='#f7f7f7';
-    ctx.font='500 '+Math.max(12,Math.min(phoneH*.22,W*.046,23))+'px Arial,sans-serif';
-    ctx.fillText('ROTATE',cx,cy-phoneH*.19);
-    ctx.fillText('YOUR',cx,cy);
-    ctx.fillText('PHONE',cx,cy+phoneH*.19);
-
-    // PITCH 11 signature lime accent: keep the reference's simple curved arrows, branded in the game's lime.
+    // Original lime rotation arrows: intentionally unchanged.
     ctx.strokeStyle='#a3e635';
     const aw=Math.max(24,Math.min(W*.13,48)),lw=Math.max(3.2,Math.min(5.2,W*.012));
     ctx.lineWidth=lw;
     const leftX=px-aw*.55,rightX=px+phoneW+aw*.55;
     const topY=py-phoneH*.42,bottomY=py+phoneH+phoneH*.42;
     ctx.beginPath();
-    ctx.moveTo(leftX+aw*.95,topY);
-    ctx.lineTo(leftX+aw*.48,topY);
+    ctx.moveTo(leftX+aw*.95,topY);ctx.lineTo(leftX+aw*.48,topY);
     ctx.bezierCurveTo(leftX+aw*.12,topY,leftX,topY+aw*.22,leftX,topY+aw*.55);
     ctx.lineTo(leftX,bottomY-aw*.42);
-    ctx.moveTo(leftX-aw*.25,bottomY-aw*.67);
-    ctx.lineTo(leftX,bottomY-aw*.42);
-    ctx.lineTo(leftX+aw*.25,bottomY-aw*.67);
+    ctx.moveTo(leftX-aw*.25,bottomY-aw*.67);ctx.lineTo(leftX,bottomY-aw*.42);ctx.lineTo(leftX+aw*.25,bottomY-aw*.67);
     ctx.stroke();
-
     ctx.beginPath();
-    ctx.moveTo(rightX-aw*.95,bottomY);
-    ctx.lineTo(rightX-aw*.48,bottomY);
+    ctx.moveTo(rightX-aw*.95,bottomY);ctx.lineTo(rightX-aw*.48,bottomY);
     ctx.bezierCurveTo(rightX-aw*.12,bottomY,rightX,bottomY-aw*.22,rightX,bottomY-aw*.55);
     ctx.lineTo(rightX,topY+aw*.42);
-    ctx.moveTo(rightX-aw*.25,topY+aw*.67);
-    ctx.lineTo(rightX,topY+aw*.42);
-    ctx.lineTo(rightX+aw*.25,topY+aw*.67);
+    ctx.moveTo(rightX-aw*.25,topY+aw*.67);ctx.lineTo(rightX,topY+aw*.42);ctx.lineTo(rightX+aw*.25,topY+aw*.67);
     ctx.stroke();
 
-    ctx.fillStyle='#a3e635';ctx.font='italic 900 '+Math.max(11,Math.min(W*.04,16))+'px Arial,sans-serif';
-    ctx.fillText('PITCH 11',W*.5,H*.83);
+    // A restrained closing line adds character without touching the handset.
+    ctx.fillStyle='rgba(163,230,53,.16)';ctx.fillRect(W*.39,H*.705,W*.22,1);
+    ctx.fillStyle='#a3e635';ctx.font='italic 900 '+Math.max(14,Math.min(W*.052,21))+'px Arial,sans-serif';
+    ctx.fillText('THE PITCH AWAITS',cx,H*.755);
+    ctx.fillStyle='rgba(247,247,247,.36)';ctx.font='700 '+Math.max(9,Math.min(W*.026,10))+'px Arial,sans-serif';
+    ctx.fillText('PITCH 11',cx,H*.805);
     return;
   }
   if(S.mode==='menu'){UI.r.length=0;UI.def=null;pauseBtn.r=camBtn.r=0;drawMenu();return;}
