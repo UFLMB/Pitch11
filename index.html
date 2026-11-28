@@ -1846,7 +1846,8 @@ function drawHud(){
     ctx.fillText('YOUR',cx,cy);
     ctx.fillText('PHONE',cx,cy+phoneH*.19);
 
-    // Two bold curved rotation arrows outside the handset, as in the supplied reference.
+    // PITCH 11 signature lime accent: keep the reference's simple curved arrows, branded in the game's lime.
+    ctx.strokeStyle='#a3e635';
     const aw=Math.max(24,Math.min(W*.13,48)),lw=Math.max(3.2,Math.min(5.2,W*.012));
     ctx.lineWidth=lw;
     const leftX=px-aw*.55,rightX=px+phoneW+aw*.55;
@@ -1871,7 +1872,7 @@ function drawHud(){
     ctx.lineTo(rightX+aw*.25,topY+aw*.67);
     ctx.stroke();
 
-    ctx.fillStyle='#f7f7f7';ctx.font='500 '+Math.max(10,Math.min(W*.035,14))+'px Arial,sans-serif';
+    ctx.fillStyle='#a3e635';ctx.font='italic 900 '+Math.max(11,Math.min(W*.04,16))+'px Arial,sans-serif';
     ctx.fillText('PITCH 11',W*.5,H*.83);
     return;
   }
