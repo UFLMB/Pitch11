@@ -1849,36 +1849,16 @@ function drawHud(){
     ctx.strokeStyle='rgba(163,230,53,.28)';ctx.lineWidth=1;
     ctx.beginPath();ctx.roundRect(-phoneW*.455,-phoneH*.465,phoneW*.91,phoneH*.93,shellRadius*.72);ctx.stroke();
 
-    // A miniature football pitch on the display makes landscape orientation unmistakable.
+    // Minimal dark display: keep the handset clean, without a pitch illustration.
     const sx=-phoneW*.405,sy=-phoneH*.405,sw=phoneW*.81,sh=phoneH*.81;
     const screen=ctx.createLinearGradient(sx,sy,sx+sw,sy+sh);
-    screen.addColorStop(0,'#173b27');screen.addColorStop(.5,'#0e2d20');screen.addColorStop(1,'#173b27');
+    screen.addColorStop(0,'#0b1115');screen.addColorStop(.5,'#05090c');screen.addColorStop(1,'#0b1115');
     ctx.fillStyle=screen;ctx.beginPath();ctx.roundRect(sx,sy,sw,sh,shellRadius*.45);ctx.fill();
-    ctx.save();ctx.beginPath();ctx.roundRect(sx,sy,sw,sh,shellRadius*.45);ctx.clip();
-    ctx.strokeStyle='rgba(226,245,222,.78)';ctx.lineWidth=Math.max(.8,phoneW*.008);
-    ctx.strokeRect(sx+sw*.035,sy+sh*.055,sw*.93,sh*.89);
-    ctx.beginPath();ctx.moveTo(0,sy+sh*.055);ctx.lineTo(0,sy+sh*.945);ctx.stroke();
-    ctx.beginPath();ctx.arc(0,0,Math.min(sw*.19,sh*.23),0,TAU);ctx.stroke();
-    ctx.strokeRect(sx+sw*.29,sy+sh*.035,sw*.42,sh*.14);
-    ctx.strokeRect(sx+sw*.29,sy+sh*.825,sw*.42,sh*.14);
-    ctx.fillStyle='rgba(163,230,53,.95)';ctx.beginPath();ctx.arc(0,-sh*.22,Math.max(2,phoneW*.025),0,TAU);ctx.fill();
-    ctx.fillStyle='rgba(245,248,238,.92)';ctx.beginPath();ctx.arc(0,sh*.19,Math.max(1.5,phoneW*.018),0,TAU);ctx.fill();
-    ctx.restore();
     // Side key and front camera details stay attached to the handset after rotation.
     ctx.fillStyle='rgba(210,222,210,.75)';ctx.beginPath();ctx.roundRect(-phoneW*.12,-phoneH*.485,phoneW*.24,Math.max(2,phoneW*.018),phoneW*.01);ctx.fill();
     ctx.fillStyle='rgba(163,230,53,.85)';ctx.beginPath();ctx.arc(0,-phoneH*.465,Math.max(1.5,phoneW*.012),0,TAU);ctx.fill();
     ctx.restore();
 
-    // Two custom SVG-style curved arrows are drawn as vector paths, mirrored to show rotation.
-    const arrowSize=Math.max(19,Math.min(phoneW*.27,W*.065,27));
-    const rotateArrow=new Path2D('M19 11a7 7 0 1 1-2.05-4.95L20 9 M20 3v6h-6');
-    const arrowOffset=phoneH*.5+arrowSize*.88;
-    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.translate(phoneX-arrowOffset-arrowSize*.5,phoneY-arrowSize*.5);
-    ctx.scale(arrowSize/24,arrowSize/24);ctx.stroke(rotateArrow);ctx.restore();
-    ctx.save();ctx.strokeStyle='#a3e635';ctx.lineWidth=2;ctx.lineCap='round';ctx.lineJoin='round';
-    ctx.translate(phoneX+arrowOffset+arrowSize*.5,phoneY-arrowSize*.5);
-    ctx.scale(-arrowSize/24,arrowSize/24);ctx.stroke(rotateArrow);ctx.restore();
 
     const titleY=Math.min(H*.735,phoneY+phoneW*.56+arrowSize*1.42);
     txt('ROTATE YOUR SCREEN',W*.5,titleY,Math.max(16,Math.min(W*.059,26)),'#f2f5ed',850);
