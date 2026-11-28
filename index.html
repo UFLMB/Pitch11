@@ -1838,7 +1838,7 @@ function drawHud(){
     // Typographic hierarchy: the action is clearly above the phone, never on its display.
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.fillStyle='rgba(163,230,53,.92)';ctx.font='800 '+Math.max(10,Math.min(W*.032,12))+'px Arial,sans-serif';ctx.fillText('A BETTER VIEW OF THE GAME',cx,H*.255);
-    ctx.fillStyle='#f4f7f2';ctx.font='900 '+Math.max(24,Math.min(W*.085,34))+'px Arial,sans-serif';ctx.fillText('ROTATE YOUR SCREEN',cx,H*.305);
+    ctx.fillStyle='#f4f7f2';let titleSize=Math.max(20,Math.min(W*.068,27));ctx.font='900 '+titleSize+'px Arial,sans-serif';const titleWidth=ctx.measureText('ROTATE YOUR SCREEN').width;if(titleWidth>W*.86){titleSize*=W*.86/titleWidth;ctx.font='900 '+titleSize+'px Arial,sans-serif';}ctx.fillText('ROTATE YOUR SCREEN',cx,H*.305);
     ctx.fillStyle='rgba(225,234,225,.58)';ctx.font='500 '+Math.max(10,Math.min(W*.033,13))+'px Arial,sans-serif';ctx.fillText('Turn your phone sideways to continue',cx,H*.355);
 
     const phoneW=Math.min(W*.68,H*.245,300),phoneH=phoneW*.445;
