@@ -17,6 +17,8 @@ test('portrait orientation uses the supplied minimalist rotate-phone reference',
   assert.match(rotateScreen, /YOUR/);
   assert.match(rotateScreen, /PHONE/);
   assert.match(rotateScreen, /bezierCurveTo/, 'curved rotation arrows');
+  assert.match(rotateScreen, /ctx\.strokeStyle='#a3e635'/, 'PITCH 11 lime arrow accent');
+  assert.match(rotateScreen, /font='italic 900 /, 'PITCH 11 branded wordmark');
   assert.match(rotateScreen, /PITCH 11/);
   assert.doesNotMatch(rotateScreen, /miniature football pitch|football pitch|Path2D|arrowSize|createLinearGradient|createRadialGradient|THE GAME AWAITS/);
   assert.match(rotateScreen, /return;/);
